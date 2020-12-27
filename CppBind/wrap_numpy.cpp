@@ -116,9 +116,9 @@ bool apply_filters_RAW(
             // bayer 2 rgb
             // try to speed-up input data access
             auto input_ptr = &input(i, j, 0);
-            input_type red   = input_ptr[r];
-            input_type green = (input_ptr[gr]+input_ptr[gb]+1)>>1;
-            input_type blue  = input_ptr[b];
+            input_type red   = std::min(max_value,(input_type)input_ptr[r]);
+            input_type green = std::min(max_value,(input_type) ((input_ptr[gr]+input_ptr[gb]+1)>>1));
+            input_type blue  = std::min(max_value,(input_type)(input_ptr[b]));
 
             // for the moment put result in first three components
             auto output_ptr = &output(i, j, 0);
