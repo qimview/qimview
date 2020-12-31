@@ -9,6 +9,8 @@ import time
 import traceback
 import abc
 import inspect
+from image_viewers.ImageFilterParameters import ImageFilterParameters
+
 
 # copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
 def get_class_from_frame(fr):
@@ -27,6 +29,7 @@ def get_class_from_frame(fr):
           return None
   # return None otherwise
   return None
+
 
 def get_function_name():
     return traceback.extract_stack(None, 2)[0][2]
@@ -89,16 +92,7 @@ class ImageViewer:
         self.trace_calls  = False
         self.image_name = ""
         self.active_window = False
-        self.black_level_int = 0
-        self.white_level_int = 255
-        self.black_level = 0.0
-        self.white_level = 1.0
-        self.g_b_coeff = 1.0
-        self.g_r_coeff = 1.0
-        self.gamma = 1.0
-        self.whitepoint_default = 255
-        self.blackpoint_default = 0
-        self.gamma_default = 1.0
+        self.filter_params = ImageFilterParameters()
         self.save_image_clipboard = False
         self.clipboard = None
         self.setMouseTracking(True)
@@ -152,17 +146,17 @@ class ImageViewer:
             print(self.timings[caller_name])
 
     def set_intensity_levels(self, black, white):
-        self.black_level_int = black
-        self.white_level_int = white
-        self.black_level = black/255.0
-        self.white_level = white/255.0
+        self.filter_params.black_level_int = black
+        self.filter_params.white_level_int = white
+        self.filter_params.black_level = black/255.0
+        self.filter_params.white_level = white/255.0
 
     def set_white_balance_scales(self, g_r, g_b):
-        self.g_r_coeff = g_r
-        self.g_b_coeff = g_b
+        self.filter_params.g_r_coeff = g_r
+        self.filter_params.g_b_coeff = g_b
 
     def set_gamma(self, gamma):
-        self.gamma = gamma
+        self.filter_params.gamma = gamma
 
     def set_synchronize(self, viewer):
         self.synchronize_viewer = viewer

@@ -353,9 +353,9 @@ class glImageViewerWithShaders(QOpenGLWidget, ImageViewer):
         gl.glUniform1i(self.uBackgroundTexture, 0)
 
         # set color transformation parameters
-        gl.glUniform1f( self.black_level_location, self.black_level)
-        gl.glUniform1f( self.white_level_location, self.white_level)
-        gl.glUniform1f( self.gamma_location,       self.gamma)
+        gl.glUniform1f( self.black_level_location, self.filter_params.black_level)
+        gl.glUniform1f( self.white_level_location, self.filter_params.white_level)
+        gl.glUniform1f( self.gamma_location,       self.filter_params.gamma)
 
         # enable attribute arrays
         gl.glEnableVertexAttribArray(self.aVert)

@@ -166,13 +166,13 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         ch = self.cv_image.channels
         if has_cppbind and ch != CH_RGB:
             channels = current_image.channels
-            black_level = self.black_level
-            white_level = self.white_level
-            g_r_coeff = self.g_r_coeff
-            g_b_coeff = self.g_b_coeff
+            black_level = self.filter_params.black_level
+            white_level = self.filter_params.white_level
+            g_r_coeff = self.filter_params.g_r_coeff
+            g_b_coeff = self.filter_params.g_b_coeff
             max_value = ((1<<current_image.precision)-1)
             max_type = 1  # not used
-            gamma = self.gamma  # not used
+            gamma = self.filter_params.gamma  # not used
 
             rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=np.uint8)
             time1 = get_time()
@@ -203,10 +203,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             # Use cv2.convertScaleAbs(I,a,b) function for fast processing
             # res = sat(|I*a+b|)
             # if current_image is not in 8 bits, we need to rescale
-            if self.black_level_int != self.blackpoint_default or self.white_level_int != self.whitepoint_default\
-                    or current_image.precision!=8:
-                min_val = self.black_level_int
-                max_val = self.white_level_int
+            if self.filter_params.black_level_int != self.filter_params.blackpoint_default or \
+                    self.filter_params.white_level_int != self.filter_params.whitepoint_default or \
+                    current_image.precision!=8:
+                min_val = self.filter_params.black_level_int
+                max_val = self.filter_params.white_level_int
                 # adjust levels to precision
                 precision = current_image.precision
                 min_val = min_val/255*((1<<precision)-1)
@@ -217,8 +218,8 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                 current_image = cv2.convertScaleAbs(current_image, alpha=255. / float(max_val - min_val), beta=0)
 
             # if gamma changed
-            if self.gamma != self.gamma_default:
-                gamma_coeff = self.gamma
+            if self.filter_params.gamma != self.filter_params.gamma_default:
+                gamma_coeff = self.filter_params.gamma
                 # self.gamma_label.setText("Gamma  {}".format(gamma_coeff))
                 invGamma = 1.0 / gamma_coeff
                 table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
