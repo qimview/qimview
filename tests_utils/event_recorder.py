@@ -2,8 +2,7 @@
 from Qt import QtGui, QtCore, QtWidgets
 from utils.utils import get_time
 import json
-from tests.qtdump import *
-
+from tests_utils.qtdump import *
 
 class EventRecorder:
 
@@ -18,14 +17,17 @@ class EventRecorder:
         self.widgets[id] = name
 
     def store_event(self, widget, evt):
-        event_filter = MOUSE_EVENTS + RESIZE_EVENTS
+        # event_filter = MOUSE_EVENTS + RESIZE_EVENTS + WHEEL_EVENT
         if evt.type() in MOUSE_EVENTS and evt.spontaneous():
             evt_info = QtDump.mouseevent2dict(evt)
         else:
             if evt.type() in RESIZE_EVENTS and evt.spontaneous():
                 evt_info = QtDump.resizeevent2dict(evt)
             else:
-                return
+                if evt.type() in WHEEL_EVENT and evt.spontaneous():
+                    evt_info = QtDump.wheelevent2dict(evt)
+                else:
+                    return
         evt_time = get_time() - self.event_start
         evt_info = {'info': evt_info, 'time': evt_time}
         if id(widget) in self.widgets:
@@ -34,6 +36,14 @@ class EventRecorder:
             print(f"recording {evt_info}")
         self.event_list.append(evt_info)
 
+    def save_screen(self, widget):
+        image_hash = QtDump.get_screen_hash(widget)
+        print(f"image hash ${image_hash}")
+        evt_time = get_time() - self.event_start
+        evt_info = {'info': {'type':'save_screen', 'hash':image_hash}, 'time': evt_time}
+        if id(widget) in self.widgets:
+            evt_info['widget_name'] = self.widgets[id(widget)]
+        self.event_list.append(evt_info)
 
     def save_events(self, filename=None):
         if filename is None:
