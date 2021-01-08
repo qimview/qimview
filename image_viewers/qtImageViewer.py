@@ -21,6 +21,7 @@ from tests_utils.event_recorder import EventRecorder
 from tests_utils.event_player   import EventPlayer
 from tests_utils.qtdump import *
 
+
 try:
     import cppimport.import_hook
     from CppBind import wrap_numpy as wrap_numpy
@@ -45,7 +46,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         self.setSizePolicy(size_policy)
         # self.setAlignment(QtCore.Qt.AlignCenter )
         self.output_crop = (0., 0., 1., 1.)
-        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+
+        if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
         # self.display_timing = True
         # self.verbose = True
         # self.trace_calls = True
@@ -56,7 +61,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
     def set_image(self, image, active=False):
         super(qtImageViewer, self).set_image(image)
         # no need for paintAll() show() is called in QTableWindow
-        # self.paintAll()
+        #self.paintAll()
 
     def apply_zoom(self, crop):
         # Apply zoom
@@ -141,6 +146,9 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         return new_crop
 
     def apply_filters(self, current_image):
+        print(f"current_image.shape {current_image.shape}")
+        # return current_image
+
         self.start_timing()
         # # if change saturation
         # saturation_int = int(self.saturation_slider.value())
@@ -164,18 +172,22 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
         # Output RGB from input
         ch = self.cv_image.channels
-        if has_cppbind and ch != CH_RGB:
+        if has_cppbind and ch in CH_RAWFORMATS:
             channels = current_image.channels
-            black_level = self.filter_params.black_level
-            white_level = self.filter_params.white_level
-            g_r_coeff = self.filter_params.g_r_coeff
-            g_b_coeff = self.filter_params.g_b_coeff
+            black_level = self.filter_params.black_level.get_float()
+            white_level = self.filter_params.white_level.get_float()
+            g_r_coeff = self.filter_params.g_r_coeff.get_float()
+            g_b_coeff = self.filter_params.g_b_coeff.get_float()
             max_value = ((1<<current_image.precision)-1)
             max_type = 1  # not used
-            gamma = self.filter_params.gamma  # not used
+            gamma = self.filter_params.gamma.get_float()  # not used
 
             rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=np.uint8)
             time1 = get_time()
+            print(f"wrap_numpy.apply_filters_RAW(current_image, rgb_image, channels, "
+                  f"black_level={black_level}, white_level={white_level}, "
+                  f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
+                  f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
             ok = wrap_numpy.apply_filters_RAW(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
                                               g_b_coeff, max_value, max_type, gamma)
             self.add_time('apply_filters_RAW()',time1, force=True)
@@ -186,7 +198,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                                         channels=CH_RGB)
         else:
             # self.print_log("current channels {}".format(ch))
-            if ch != CH_RGB:
+            if ch in CH_RAWFORMATS:
                 ch_pos = channel_position[current_image.channels]
                 self.print_log("Converting to RGB")
                 # convert Bayer to RGB
@@ -195,40 +207,64 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                 rgb_image[:, :, 1] = (current_image[:, :, ch_pos['gr']]+current_image[:, :, ch_pos['gb']])/2
                 rgb_image[:, :, 2] = current_image[:, :, ch_pos['b']]
                 self.print_log(" {} --> {}".format(current_image.shape, rgb_image.shape))
-                current_image = ViewerImage(rgb_image, precision=current_image.precision,
+                work_image = ViewerImage(rgb_image, precision=current_image.precision,
                                             downscale=current_image.downscale,
                                             channels=CH_RGB)
                 self.print_log(" {} ".format(current_image.shape))
+            else:
+                if ch == CH_Y:
+                    # Transform to RGB is it a good idea?
+                    rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=current_image.dtype)
+                    rgb_image[:, :, 0] = current_image
+                    rgb_image[:, :, 1] = current_image
+                    rgb_image[:, :, 2] = current_image
+                    self.print_log(" {} --> {}".format(current_image.shape, rgb_image.shape))
+                    work_image = ViewerImage(rgb_image, precision=current_image.precision,
+                                                downscale=current_image.downscale,
+                                                channels=CH_RGB)
+                    self.print_log(" {} ".format(work_image.shape))
+                else:
+                    work_image = current_image
 
             # Use cv2.convertScaleAbs(I,a,b) function for fast processing
             # res = sat(|I*a+b|)
             # if current_image is not in 8 bits, we need to rescale
-            if self.filter_params.black_level_int != self.filter_params.blackpoint_default or \
-                    self.filter_params.white_level_int != self.filter_params.whitepoint_default or \
-                    current_image.precision!=8:
-                min_val = self.filter_params.black_level_int
-                max_val = self.filter_params.white_level_int
+            if self.filter_params.black_level.value != self.filter_params.black_level.default_value or \
+                    self.filter_params.white_level.value != self.filter_params.white_level.default_value or \
+                    work_image.precision!=8:
+                min_val = self.filter_params.black_level.get_float()
+                max_val = self.filter_params.white_level.get_float()
                 # adjust levels to precision
-                precision = current_image.precision
-                min_val = min_val/255*((1<<precision)-1)
-                max_val = max_val/255*((1<<precision)-1)
-                # to rescale: add min_val and multiply by (max_val-min_val)/255
-                if min_val != 0:
-                    current_image = cv2.add(current_image, (-min_val, -min_val, -min_val, 0))
-                current_image = cv2.convertScaleAbs(current_image, alpha=255. / float(max_val - min_val), beta=0)
+                precision = work_image.precision
+                min_val = min_val*((1 << precision)-1)
+                max_val = max_val*((1 << precision)-1)
+                if work_image.dtype == np.uint32:
+                    work_image = ((work_image - min_val)*(255/(max_val-min_val))).astype(np.uint8)
+                else:
+                    # to rescale: add min_val and multiply by (max_val-min_val)/255
+                    if min_val != 0:
+                        work_image = cv2.add(work_image, (-min_val, -min_val, -min_val, 0))
+                    work_image = cv2.convertScaleAbs(work_image, alpha=255. / float(max_val - min_val), beta=0)
 
-            # if gamma changed
-            if self.filter_params.gamma != self.filter_params.gamma_default:
-                gamma_coeff = self.filter_params.gamma
-                # self.gamma_label.setText("Gamma  {}".format(gamma_coeff))
-                invGamma = 1.0 / gamma_coeff
-                table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
-                current_image = cv2.LUT(current_image, table)
+            # # if gamma changed
+            # if self.filter_params.gamma.value != self.filter_params.gamma.default_value and work_image.dtype == np.uint8:
+            #     gamma_coeff = self.filter_params.gamma.get_float()
+            #     # self.gamma_label.setText("Gamma  {}".format(gamma_coeff))
+            #     invGamma = 1.0 / gamma_coeff
+            #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
+            #     work_image = cv2.LUT(work_image, table)
+
+            current_image = ViewerImage(work_image,
+                                        precision=8 if work_image.dtype==np.uint8 else current_image.precision,
+                                        downscale=current_image.downscale,
+                                        channels=CH_RGB)
 
         self.print_timing()
         return current_image
 
     def paintAll(self):
+        #if self.cv_image is not None:
+        #    self.paint_image()
         self.update()
 
     def paint_image(self):
@@ -352,7 +388,10 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         if display_cursor:
             if self.display_timing: time1 = self.get_time()
             # get image position
-            (height, width, channels) = cropped_image.shape
+            if len(cropped_image.shape) == 3:
+                (height, width, channels) = cropped_image.shape
+            else:
+                (height, width) = cropped_image.shape
             im_x = int((self.mouse_x -rect.x())/rect.width()*width)
             im_y = int((self.mouse_y -rect.y())/rect.height()*height)
 
@@ -377,7 +416,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
             # Update text
             if im_x>=0 and im_x<cropped_image.shape[1] and im_y>=0 and im_y<cropped_image.shape[0]:
-                values = cropped_image[im_y, im_x, :]
+                values = cropped_image[im_y, im_x]
                 self.display_message = " pos {:4}, {:4} \n rgb {} \n {}".format(
                     im_x, im_y, values, self.cv_image.shape)
             else:
@@ -402,7 +441,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
     def paintEvent(self, event):
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.paint_image()
+        # try:
+        if self.cv_image is not None:
+            self.paint_image()
+        # except Exception as e:
+        #     print(f"Failed paint_image() {e}")
 
     def resizeEvent(self, event):
         """Called upon window resizing: reinitialize the viewport.
