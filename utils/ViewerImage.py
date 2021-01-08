@@ -10,6 +10,7 @@ CH_RGGB = 4  # phase 0, bayer 2
 CH_GRBG = 5  # phase 1, bayer 3 (Boilers)
 CH_GBRG = 6  # phase 2, bayer 0
 CH_BGGR = 7  # phase 3, bayer 1 (Coconuts)
+CH_RAWFORMATS = [CH_RGGB, CH_GRBG, CH_GBRG, CH_BGGR]
 
 channel_position = {
     CH_RGGB: {'r' :0, 'gr':1, 'gb':2, 'b' :3},
