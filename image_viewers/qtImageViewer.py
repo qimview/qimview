@@ -417,8 +417,10 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             # Update text
             if im_x>=0 and im_x<cropped_image.shape[1] and im_y>=0 and im_y<cropped_image.shape[0]:
                 values = cropped_image[im_y, im_x]
-                self.display_message = " pos {:4}, {:4} \n rgb {} \n {}".format(
-                    im_x, im_y, values, self.cv_image.shape)
+                if do_crop:
+                    im_x += crop_xmin
+                    im_y += crop_ymin
+                self.display_message = "pos {:4}, {:4} \n rgb {} \n {}".format(im_x, im_y, values, self.cv_image.shape)
             else:
                 self.display_message = "Out of image"
                 # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
