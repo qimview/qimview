@@ -264,23 +264,23 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         gl.glUniform1i(self.uBackgroundTexture, 0)
 
-
         gl.glUniform1i( self.channels_location, self.cv_image.channels)
 
         # set color transformation parameters
-        self.print_log("levels {} {}".format(self.filter_params.black_level, self.filter_params.white_level))
-        gl.glUniform1f( self.black_level_location, self.filter_params.black_level)
-        gl.glUniform1f( self.white_level_location, self.filter_params.white_level)
+        self.print_log("levels {} {}".format(self.filter_params.black_level.value,
+                                             self.filter_params.white_level.value))
+        gl.glUniform1f( self.black_level_location, self.filter_params.black_level.get_float())
+        gl.glUniform1f( self.white_level_location, self.filter_params.white_level.get_float())
 
         # white balance coefficients
-        gl.glUniform1f( self.g_r_coeff_location, self.filter_params.g_r_coeff)
-        gl.glUniform1f( self.g_b_coeff_location, self.filter_params.g_b_coeff)
+        gl.glUniform1f( self.g_r_coeff_location, self.filter_params.g_r_coeff.get_float())
+        gl.glUniform1f( self.g_b_coeff_location, self.filter_params.g_b_coeff.get_float())
 
         # Should work for unsigned types for the moment
         gl.glUniform1f( self.max_value_location, (1 << self.cv_image.precision)-1)
         gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.dtype).max)
 
-        gl.glUniform1f( self.gamma_location,       self.filter_params.gamma)
+        gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.get_float())
 
         # enable attribute arrays
         gl.glEnableVertexAttribArray(self.aVert)
