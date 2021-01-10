@@ -11,6 +11,7 @@ from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
 from PySide2.QtMultimediaWidgets import QVideoWidget
 from PySide2.QtGui import QIcon, QPalette
 from PySide2.QtCore import Qt, QUrl
+from utils.utils import get_time
 
 
 class VideoPlayer(QWidget):
@@ -25,6 +26,8 @@ class VideoPlayer(QWidget):
         p.setColor(QPalette.Window, Qt.black)
         self.setPalette(p)
 
+        self.synchronize_viewer = None
+        self.add_open_button = False
         self.init_ui()
 
         self.show()
@@ -39,14 +42,15 @@ class VideoPlayer(QWidget):
         videowidget = QVideoWidget()
 
         # create open button
-        openBtn = QPushButton('Open Video')
-        openBtn.clicked.connect(self.open_file)
+        if self.add_open_button:
+            openBtn = QPushButton('Open Video')
+            openBtn.clicked.connect(self.open_file)
 
         # create button for playing
         self.playBtn = QPushButton()
         self.playBtn.setEnabled(False)
         self.playBtn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
-        self.playBtn.clicked.connect(self.play_video)
+        self.playBtn.clicked.connect(lambda: self.synchronize_toggle_play(self))
 
         # create slider
         self.slider = QSlider(Qt.Horizontal)
@@ -62,7 +66,8 @@ class VideoPlayer(QWidget):
         hboxLayout.setContentsMargins(0, 0, 0, 0)
 
         # set widgets to the hbox layout
-        hboxLayout.addWidget(openBtn)
+        if self.add_open_button:
+            hboxLayout.addWidget(openBtn)
         hboxLayout.addWidget(self.playBtn)
         hboxLayout.addWidget(self.slider)
 
@@ -82,6 +87,26 @@ class VideoPlayer(QWidget):
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
 
+
+    def set_synchronize(self, viewer):
+        self.synchronize_viewer = viewer
+
+    # def synchronize_data(self, other_viewer):
+    #     other_viewer.current_scale = self.current_scale
+    #     other_viewer.current_dx = self.current_dx
+    #     other_viewer.current_dy = self.current_dy
+    #     other_viewer.mouse_dx = self.mouse_dx
+    #     other_viewer.mouse_dy = self.mouse_dy
+    #     other_viewer.mouse_zx = self.mouse_zx
+    #     other_viewer.mouse_zy = self.mouse_zy
+    #     other_viewer.mouse_x = self.mouse_x
+    #     other_viewer.mouse_y = self.mouse_y
+
+    def synchronize_toggle_play(self, event_viewer):
+        self.toggle_play_video()
+        if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
+            self.synchronize_viewer.synchronize_toggle_play(event_viewer)
+
     def open_file(self):
         filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
 
@@ -94,25 +119,17 @@ class VideoPlayer(QWidget):
             self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filename)))
             self.playBtn.setEnabled(True)
 
-    def play_video(self):
+    def toggle_play_video(self):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
-
         else:
             self.mediaPlayer.play()
 
     def mediastate_changed(self, state):
         if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-            self.playBtn.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaPause)
-
-            )
-
+            self.playBtn.setIcon( self.style().standardIcon(QStyle.SP_MediaPause) )
         else:
-            self.playBtn.setIcon(
-                self.style().standardIcon(QStyle.SP_MediaPlay)
-
-            )
+            self.playBtn.setIcon( self.style().standardIcon(QStyle.SP_MediaPlay) )
 
     def position_changed(self, position):
         self.slider.setValue(position)
