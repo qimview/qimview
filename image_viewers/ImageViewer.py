@@ -145,17 +145,6 @@ class ImageViewer:
         if self.timings[caller_name] != '':
             print(self.timings[caller_name])
 
-    def set_intensity_levels(self, black, white):
-        self.filter_params.black_level.value = black
-        self.filter_params.white_level.value = white
-
-    def set_white_balance_scales(self, g_r, g_b):
-        self.filter_params.g_r_coeff.value = g_r
-        self.filter_params.g_b_coeff.value = g_b
-
-    def set_gamma(self, gamma):
-        self.filter_params.gamma.value = gamma
-
     def set_synchronize(self, viewer):
         self.synchronize_viewer = viewer
 
