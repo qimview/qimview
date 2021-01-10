@@ -2,6 +2,7 @@
 from Qt import QtGui, QtCore, QtWidgets
 from _md5 import md5
 import numpy as np
+import os
 
 # Adapt to different versions
 if "MouseButtonPress" in QtCore.QEvent.__dict__:
@@ -14,6 +15,7 @@ MOUSE_EVENTS = [
             qevent_types.MouseButtonPress,
             qevent_types.MouseButtonRelease,
             qevent_types.MouseMove,
+            qevent_types.MouseButtonDblClick,
         ]
 
 RESIZE_EVENTS = [ qevent_types.Resize ]
@@ -174,7 +176,10 @@ class QtDump:
     def get_screen_hash(widget):
         image = QtGui.QImage(widget.size(), QtGui.QImage.Format.Format_RGB32)
         widget.render(image)
-        # image.save("_pixmap.png")
+        i = 0
+        while os.path.isfile(f"display_dump_{i}.png"):
+            i += 1
+        image.save(f"display_dump_{i}.png")
         # get hash from image data pixmap.toImage().bits()
         image_bits = image.constBits()
         arr = np.array(image_bits).reshape(image.height(), image.width(), 4)
