@@ -4,12 +4,11 @@
 
 from Qt import QtGui, QtCore, QtOpenGL, QtWidgets
 import cv2
-import sys
-import time
 import traceback
 import abc
 import inspect
 from image_viewers.ImageFilterParameters import ImageFilterParameters
+from utils.utils import get_time
 
 
 # copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
@@ -33,17 +32,6 @@ def get_class_from_frame(fr):
 
 def get_function_name():
     return traceback.extract_stack(None, 2)[0][2]
-
-
-def get_time():
-    is_windows = sys.platform.startswith('win')
-    if is_windows:
-        if hasattr(time, 'clock'):
-            return time.clock()
-        else:
-            return time.perf_counter()
-    else:
-        return time.time()
 
 
 def ReadImage(filename):
