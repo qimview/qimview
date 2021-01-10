@@ -177,9 +177,9 @@ class QtDump:
         image = QtGui.QImage(widget.size(), QtGui.QImage.Format.Format_RGB32)
         widget.render(image)
         i = 0
-        while os.path.isfile(f"display_dump_{i}.png"):
+        while os.path.isfile(f"_display_dump_{i}.png"):
             i += 1
-        image.save(f"display_dump_{i}.png")
+        image.save(f"_display_dump_{i}.png")
         # get hash from image data pixmap.toImage().bits()
         image_bits = image.constBits()
         arr = np.array(image_bits).reshape(image.height(), image.width(), 4)
