@@ -17,8 +17,6 @@ import cv2
 from utils.ViewerImage import *
 import json
 
-from tests_utils.event_recorder import EventRecorder
-from tests_utils.event_player   import EventPlayer
 from tests_utils.qtdump import *
 
 
@@ -146,7 +144,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         return new_crop
 
     def apply_filters(self, current_image):
-        print(f"current_image.shape {current_image.shape}")
+        self.print_log(f"current_image.shape {current_image.shape}")
         # return current_image
 
         self.start_timing()
@@ -172,30 +170,68 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
         # Output RGB from input
         ch = self.cv_image.channels
-        if has_cppbind and ch in CH_RAWFORMATS:
+        if has_cppbind:
             channels = current_image.channels
-            black_level = self.filter_params.black_level.get_float()
-            white_level = self.filter_params.white_level.get_float()
-            g_r_coeff = self.filter_params.g_r_coeff.get_float()
-            g_b_coeff = self.filter_params.g_b_coeff.get_float()
+            black_level = self.filter_params.black_level.float
+            white_level = self.filter_params.white_level.float
+            g_r_coeff = self.filter_params.g_r.float
+            g_b_coeff = self.filter_params.g_b.float
             max_value = ((1<<current_image.precision)-1)
             max_type = 1  # not used
-            gamma = self.filter_params.gamma.get_float()  # not used
+            gamma = self.filter_params.gamma.float  # not used
 
             rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=np.uint8)
             time1 = get_time()
-            print(f"wrap_numpy.apply_filters_RAW(current_image, rgb_image, channels, "
-                  f"black_level={black_level}, white_level={white_level}, "
-                  f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
-                  f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-            ok = wrap_numpy.apply_filters_RAW(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
-                                              g_b_coeff, max_value, max_type, gamma)
-            self.add_time('apply_filters_RAW()',time1, force=True)
+            ok = False
+            if ch in CH_RAWFORMATS or ch in CH_RGBFORMATS:
+                if current_image.dtype == np.uint16:
+                    self.print_log(f"wrap_numpy.apply_filters_u16_u8(current_image, rgb_image, channels, "
+                          f"black_level={black_level}, white_level={white_level}, "
+                          f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
+                          f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
+                    ok = wrap_numpy.apply_filters_u16_u8(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
+                                                      g_b_coeff, max_value, max_type, gamma)
+                    self.add_time('apply_filters_u16_u8()',time1, force=True)
+                else:
+                    if current_image.dtype == np.uint8:
+                        self.print_log(f"wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, "
+                              f"black_level={black_level}, white_level={white_level}, "
+                              f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
+                              f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
+                        ok = wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, black_level, white_level,
+                                                            g_r_coeff,
+                                                          g_b_coeff, max_value, max_type, gamma)
+                        self.add_time('apply_filters_u8_u8()',time1, force=True)
+                    else:
+                        print(f"apply_filters() not available for {current_image.dtype} data type !")
+            else:
+                if current_image.dtype == np.uint8:
+                    self.print_log(f"wrap_numpy.apply_filters_scalar_u8_u8(current_image, rgb_image, "
+                          f"black_level={black_level}, white_level={white_level}, "
+                          f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
+                    ok = wrap_numpy.apply_filters_scalar_u8_u8(current_image, rgb_image, black_level,
+                                                            white_level, max_value, max_type, gamma)
+                    self.add_time('apply_filters_scalar_u8_u8()', time1, force=True)
+                else:
+                    if current_image.dtype == np.uint16:
+                        self.print_log(f"wrap_numpy.apply_filters_scalar_u16_u8(current_image, rgb_image, "
+                              f"black_level={black_level}, white_level={white_level}, "
+                              f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
+                        ok = wrap_numpy.apply_filters_scalar_u16_u8(current_image, rgb_image, black_level,
+                                                                   white_level, max_value, max_type, gamma)
+                        self.add_time('apply_filters_scalar_u16_u8()', time1, force=True)
+                    else:
+                        if current_image.dtype == np.uint32:
+                            self.print_log(f"wrap_numpy.apply_filters_scalar_u32_u8(current_image, rgb_image, "
+                                  f"black_level={black_level}, white_level={white_level}, "
+                                  f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
+                            ok = wrap_numpy.apply_filters_scalar_u32_u8(current_image, rgb_image, black_level,
+                                                                       white_level, max_value, max_type, gamma)
+                            self.add_time('apply_filters_scalar_u32_u8()', time1, force=True)
+                        else:
+                            print(f"apply_filters_scalar() not available for {current_image.dtype} data type !")
             if not ok:
-                self.print_log("Failed running wrap_num.apply_filters_RAW ...", force=True)
-            current_image = ViewerImage(rgb_image, precision=current_image.precision,
-                                        downscale=current_image.downscale,
-                                        channels=CH_RGB)
+                self.print_log("Failed running wrap_num.apply_filters_u16_u8 ...", force=True)
         else:
             # self.print_log("current channels {}".format(ch))
             if ch in CH_RAWFORMATS:
@@ -206,11 +242,6 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                 rgb_image[:, :, 0] = current_image[:, :, ch_pos['r']]
                 rgb_image[:, :, 1] = (current_image[:, :, ch_pos['gr']]+current_image[:, :, ch_pos['gb']])/2
                 rgb_image[:, :, 2] = current_image[:, :, ch_pos['b']]
-                self.print_log(" {} --> {}".format(current_image.shape, rgb_image.shape))
-                work_image = ViewerImage(rgb_image, precision=current_image.precision,
-                                            downscale=current_image.downscale,
-                                            channels=CH_RGB)
-                self.print_log(" {} ".format(current_image.shape))
             else:
                 if ch == CH_Y:
                     # Transform to RGB is it a good idea?
@@ -218,49 +249,42 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                     rgb_image[:, :, 0] = current_image
                     rgb_image[:, :, 1] = current_image
                     rgb_image[:, :, 2] = current_image
-                    self.print_log(" {} --> {}".format(current_image.shape, rgb_image.shape))
-                    work_image = ViewerImage(rgb_image, precision=current_image.precision,
-                                                downscale=current_image.downscale,
-                                                channels=CH_RGB)
-                    self.print_log(" {} ".format(work_image.shape))
                 else:
-                    work_image = current_image
+                    rgb_image = current_image
 
             # Use cv2.convertScaleAbs(I,a,b) function for fast processing
             # res = sat(|I*a+b|)
             # if current_image is not in 8 bits, we need to rescale
-            if self.filter_params.black_level.value != self.filter_params.black_level.default_value or \
-                    self.filter_params.white_level.value != self.filter_params.white_level.default_value or \
-                    work_image.precision!=8:
-                min_val = self.filter_params.black_level.get_float()
-                max_val = self.filter_params.white_level.get_float()
+            min_val = self.filter_params.black_level.float
+            max_val = self.filter_params.white_level.float
+
+            if min_val != 0 or max_val != 1 or current_image.precision!=8:
+                min_val = self.filter_params.black_level.float
+                max_val = self.filter_params.white_level.float
                 # adjust levels to precision
-                precision = work_image.precision
+                precision = current_image.precision
                 min_val = min_val*((1 << precision)-1)
                 max_val = max_val*((1 << precision)-1)
-                if work_image.dtype == np.uint32:
-                    work_image = ((work_image - min_val)*(255/(max_val-min_val))).astype(np.uint8)
+                if rgb_image.dtype == np.uint32:
+                    # Formula a bit complicated, we need to be careful with unsigned processing
+                    rgb_image =np.clip(((np.clip(rgb_image, min_val, None) - min_val)*(255/(max_val-min_val)))+0.5,
+                                       None, 255).astype(np.uint8)
                 else:
                     # to rescale: add min_val and multiply by (max_val-min_val)/255
                     if min_val != 0:
-                        work_image = cv2.add(work_image, (-min_val, -min_val, -min_val, 0))
-                    work_image = cv2.convertScaleAbs(work_image, alpha=255. / float(max_val - min_val), beta=0)
+                        rgb_image = cv2.add(rgb_image, (-min_val, -min_val, -min_val, 0))
+                    rgb_image = cv2.convertScaleAbs(rgb_image, alpha=255. / float(max_val - min_val), beta=0)
 
             # # if gamma changed
             # if self.filter_params.gamma.value != self.filter_params.gamma.default_value and work_image.dtype == np.uint8:
-            #     gamma_coeff = self.filter_params.gamma.get_float()
+            #     gamma_coeff = self.filter_params.gamma.float
             #     # self.gamma_label.setText("Gamma  {}".format(gamma_coeff))
             #     invGamma = 1.0 / gamma_coeff
             #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
             #     work_image = cv2.LUT(work_image, table)
 
-            current_image = ViewerImage(work_image,
-                                        precision=8 if work_image.dtype==np.uint8 else current_image.precision,
-                                        downscale=current_image.downscale,
-                                        channels=CH_RGB)
-
         self.print_timing()
-        return current_image
+        return rgb_image
 
     def paintAll(self):
         #if self.cv_image is not None:
@@ -420,7 +444,10 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                 if do_crop:
                     im_x += crop_xmin
                     im_y += crop_ymin
-                self.display_message = "pos {:4}, {:4} \n rgb {} \n {}".format(im_x, im_y, values, self.cv_image.shape)
+                self.display_message = "pos {:4}, {:4} \n rgb {} \n {} {} {} bits".format(im_x, im_y, values,
+                                                                                self.cv_image.shape,
+                                                                                self.cv_image.dtype,
+                                                                                self.cv_image.precision)
             else:
                 self.display_message = "Out of image"
                 # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
@@ -481,73 +508,3 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
     def keyReleaseEvent(self, evt):
         print(f"evt {evt.type()}")
-
-
-if __name__ == '__main__':
-    # import numpy for generating random data points
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i', '--input_image', help='input image')
-    parser.add_argument('-p', '--play', help='events json file', default=None)
-    parser.add_argument('-r', '--record', help='record events in given json file', default=None)
-    args = parser.parse_args()
-    _params = vars(args)
-    print(f"record {_params['record']}")
-
-    # define a Qt window with an OpenGL widget inside it
-    # class TestWindow(QtGui.QMainWindow):
-    class TestWindow(QtWidgets.QMainWindow):
-        def __init__(self, events):
-            super(TestWindow, self).__init__()
-
-            record_file = _params['record']
-            if record_file is not None:
-                self.event_recorder = EventRecorder(filename=record_file)
-                self.event_recorder.register_widget(id(self), "TestWindow")
-            else:
-                self.event_recorder = None
-
-            self.widget = qtImageViewer(event_recorder = self.event_recorder)
-            if record_file is not None:
-                self.event_recorder.register_widget(id(self.widget), "widget")
-
-            from utils.utils import read_image
-            im = read_image(_params['input_image'])
-            self.widget.set_image(im)
-            # put the window at the screen position (100, 100)
-            self.setGeometry(0, 0, self.widget.width(), self.widget.height())
-            self.setCentralWidget(self.widget)
-            self.show()
-            if events != None:
-                event_list = events['events']
-                # self.event_recorder.register_widget(self.id(), "TestWindow")
-                # self.event_recorder.register_widget(self.widget.id(), "widget")
-                event_player = EventPlayer()
-                event_player.register_widget("TestWindow", self)
-                event_player.register_widget("widget", self.widget)
-                event_player.play_events(event_list=event_list)
-
-        def event(self, evt):
-            if self.event_recorder is not None:
-                if evt.type() in RESIZE_EVENTS:
-                    self.event_recorder.store_event(self, evt)
-            return QtWidgets.QMainWindow.event(self, evt)
-
-        def closeEvent(self, event):
-            # Save event list
-            if self.event_recorder is not None:
-                self.event_recorder.save_screen(self)
-                self.event_recorder.save_events()
-            event.accept()
-
-
-    # create the Qt App and window
-    app = QtWidgets.QApplication(sys.argv)
-    if _params['play'] is not None:
-        with open(_params['play']) as json_file:
-            events = json.load(json_file)
-    else:
-        events = None
-
-    window = TestWindow(events)
-    window.show()
-    app.exec_()
