@@ -211,10 +211,11 @@ class VideoPlayer(QWidget):
         self.mediaPlayer.setPosition(position)
 
     def synchronize_set_play_position(self, event_viewer):
-        self.set_play_position()
-        if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
-            self.synchronize_viewer.play_position.copy_from(self.play_position)
-            self.synchronize_viewer.synchronize_set_play_position(event_viewer)
+        if self.mediaPlayer.state() != QMediaPlayer.PlayingState:
+            self.set_play_position()
+            if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
+                self.synchronize_viewer.play_position.copy_from(self.play_position)
+                self.synchronize_viewer.synchronize_set_play_position(event_viewer)
 
     def set_play_position(self):
         self.mediaPlayer.setPosition(self.play_position.int)
