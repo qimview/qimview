@@ -12,6 +12,8 @@ class NumericParameterGui(QtWidgets.QSlider):
         self.event_recorder = None
         self.parent_name = parent_name
         self.widget_name = f"slider_{self.parent_name}_{self.name}"
+        self.created = False
+        self.decimals = 2
         if layout is not None:
             self.create()
             self.add_to_layout(layout)
@@ -24,14 +26,20 @@ class NumericParameterGui(QtWidgets.QSlider):
     def register_event_player(self, event_player):
         event_player.register_widget(self.widget_name, self)
 
-    def create(self):
+    def create(self, moved_callback=False):
         self.label = QtWidgets.QLabel("")
         self.setRange(self.param.range[0], self.param.range[1])
         self.setValue(self.param.value)
         self.changed()
-        self.valueChanged.connect(lambda: self.changed(self.callback))
+        if moved_callback:
+            self.sliderMoved.connect(lambda: self.changed(self.callback))
+        else:
+            self.valueChanged.connect(lambda: self.changed(self.callback))
+        self.created = True
 
     def add_to_layout(self, layout):
+        if not self.created:
+            self.create()
         layout.addWidget(self.label)
         layout.addWidget(self)
 
@@ -40,7 +48,7 @@ class NumericParameterGui(QtWidgets.QSlider):
 
     def changed(self, callback=None):
         self.param.int = int(self.value())
-        self.label.setText(f"{self.name} {self.param.float:0.2f}")
+        self.label.setText(f"{self.name} {self.param.float:0.{self.decimals}f}")
         if callback is not None:
             callback()
 
