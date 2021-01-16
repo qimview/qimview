@@ -12,10 +12,12 @@ from image_viewers.ImageFilterParameters import ImageFilterParameters
 from image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
 
 from utils.utils import get_time, read_image
+from utils.image_cache import ImageCache
 from utils.ViewerImage import *
 from utils import MyQLabel
 import types
 import math
+import cv2
 
 class ViewerType(Enum):
     QT_VIEWER = 1
@@ -60,12 +62,24 @@ class MultiView(QtWidgets.QWidget):
         self.set_verbosity(self.verbosity_TRACE)
 
         self.current_image_filename = None
+        self.save_image_clipboard = False
 
         self.filter_params = ImageFilterParameters()
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params)
 
+        self.raw_bayer = {'Read': None, 'Bayer0': CH_GBRG, 'Bayer1': CH_BGGR, 'Bayer2': CH_RGGB, 'Bayer3': CH_GRBG}
+        self.default_raw_bayer = 'Read'
+        self.current_raw_bayer = self.default_raw_bayer
+
         self.viewer_layouts = ['1', '2', '3', '2+2', '3+2', '3+3', '4+3', '4+4', '3+3+3']
         self.default_viewer_layout = '1'
+
+        # save images of last visited row
+        self.cache = ImageCache()
+        self.image_dict = { "out": None }
+        self.read_size = 'full'
+        self.image1 = dict()
+        self.image2 = dict()
 
     def set_verbosity(self, flag, enable=True):
         """
@@ -136,6 +150,10 @@ class MultiView(QtWidgets.QWidget):
             time_spent = get_time() - update_start
             print(" Update image took {0:0.3f} sec.".format(time_spent))
 
+    def set_images(self, images):
+        self.image_dict = images
+        self.CreateImageDisplay(list(images.keys()))
+
     def CreateImageDisplay(self, image_list):
         # choose image to display
         self.image_list = image_list
@@ -161,9 +179,12 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             self.image_viewers.append(self.image_viewer_class())
 
-        self.output_label_current_rowid = ""
-        self.output_label_current_image = ""
-        self.output_label_reference_image = ""
+        if len(image_list)>0:
+            self.output_label_current_image = image_list[0]
+            self.output_label_reference_image = image_list[0]
+        else:
+            self.output_label_current_image = ''
+            self.output_label_reference_image = ''
         self.output_images = dict()
         self.output_image_label = dict()
 
@@ -267,6 +288,50 @@ class MultiView(QtWidgets.QWidget):
         self.figures_widget.setVisible(self.display_profiles.isChecked())
         self.update_image()
 
+    def get_output_image(self, im_string_id, filename=None):
+        """
+        Search for the image with given label in the current row
+        if not in cache reads it and add it to the cache
+        :param im_string_id: string that identifies the image to display
+        :return:
+        """
+        start = get_time()
+
+        # Read both clean and original images and save them in dict as QPixmaps
+        image_filename = self.image_dict[im_string_id] if filename is None else filename
+        image_transform = pyQtGraphImageViewer.numpy2imageitem if self.use_pyqtgraph else None
+
+        image_data, _ = self.cache.get_image(image_filename, self.read_size, verbose=self.show_timing_detailed(),
+                                             use_RGB=not self.use_opengl, image_transform=image_transform)
+
+        if image_data is not None:
+            self.output_image_label[im_string_id] = image_filename
+            self.output_images[im_string_id] = image_data
+        else:
+            print(f"failed to get image {image_filename}")
+
+        if im_string_id in self.image1 and im_string_id in self.image2:
+            # Add difference image, now fast to process no need to have it in cache
+            self.output_images[im_string_id] = self.difference_image(self.image1[im_string_id],
+                                                                     self.image2[im_string_id])
+            self.output_image_label[im_string_id] = "127+ ({0} - {1})".format(self.image2[im_string_id],
+                                                                              self.image1[im_string_id])
+
+        if self.show_timing_detailed():
+            print(" get_output_image took {0:0.3f} sec.".format(get_time() - start))
+
+        # force image bayer information if selected from menu
+        res = self.output_images[im_string_id]
+        set_bayer = self.raw_bayer[self.current_raw_bayer]
+        if res.channels in [CH_BGGR, CH_GBRG, CH_GRBG, CH_RGGB] and set_bayer is not None:
+            res.channels = set_bayer
+
+        return res
+
+    def setMessage(self, mess):
+        print(mess)
+        # self.statusBar().showMessage("Image: {0}".format(mess))
+
     def update_image(self, image_name=None, image_filename=None):
         '''
         Uses the variable self.output_label_current_image
@@ -304,9 +369,8 @@ class MultiView(QtWidgets.QWidget):
 
         if self.show_timing_detailed():
             time_spent = get_time() - update_image_start
-            print(" Update statusbar message took {0:0.3f} sec.".format(time_spent))
 
-        self.statusBar().showMessage("Image: {0}".format(current_filename))
+        self.setMessage("Image: {0}".format(current_filename))
         for im_name in self.image_list:
             # possibility to disable an image using the string 'none', especially useful for input image
             if im_name != 'none':
@@ -317,7 +381,6 @@ class MultiView(QtWidgets.QWidget):
                 self.label[im_name].setWordWrap(True)
             # self.label[im_name].setMaximumWidth(160)
 
-        # convert PIL image to a PIL.ImageQt object
         if show_diff and self.output_label_reference_image != self.output_label_current_image:
             # don't save the difference
             if self.verbosity > 1:
@@ -333,16 +396,15 @@ class MultiView(QtWidgets.QWidget):
             if self.image_viewers[n].is_active():
                 first_active_window = n
                 break
-        print("first_active_window = {}".format(first_active_window))
 
         if self.save_image_clipboard:
             print("set save image to clipboard")
             self.image_viewers[first_active_window].set_clipboard(self.clip, True)
-        print("first_active_window {}".format(first_active_window))
         self.image_viewers[first_active_window].set_active(True)
         self.image_viewers[first_active_window].set_image_name(self.output_label_current_image)
         self.image_viewers[first_active_window].set_image(current_image)
         self.image_viewers[first_active_window].show()
+        self.image_viewers[first_active_window].update()
         if self.save_image_clipboard:
             print("end save image to clipboard")
             self.image_viewers[first_active_window].set_clipboard(None, False)
@@ -366,6 +428,7 @@ class MultiView(QtWidgets.QWidget):
                         viewer.set_image(viewer_image)
 
                 viewer.show()
+                viewer.update()
                 self.image_viewers[prev_n].set_synchronize(viewer)
                 prev_n = n1
             # Create a synchronization loop
@@ -376,6 +439,21 @@ class MultiView(QtWidgets.QWidget):
         if self.show_timing():
             time_spent = get_time() - update_image_start
             print(" Update image took {0:0.3f} sec.".format(time_spent))
+
+    def difference_image(self, image1, image2):
+        factor = int(self.diff_color_slider.value())
+        # Fast OpenCV code
+        start = get_time()
+        # add difference image
+        im1 = self.get_output_image(image1)
+        im2 = self.get_output_image(image2)
+        # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
+        diff_plus = cv2.subtract(im1, im2)
+        diff_minus = cv2.subtract(im2, im1)
+        res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+        # print " difference_image OpenCV took {0} sec.".format(get_time() - start)
+        # print "max diff = ", np.max(res-res2)
+        return res
 
     def update_viewer_layout(self, layout_name='1'):
         print("*** update_viewer_layout()")
@@ -423,3 +501,86 @@ class MultiView(QtWidgets.QWidget):
         self.viewer_grid_layout.update()
         self.update_image()
 
+    def keyReleaseEvent(self, event):
+        if type(event) == QtGui.QKeyEvent:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
+            if modifiers & (QtCore.Qt.AltModifier | QtCore.Qt.ControlModifier):
+                event.accept()
+            else:
+                try:
+                    # reset reference image
+                    if self.output_label_current_image != self.output_label_reference_image:
+                        self.update_image(self.output_label_reference_image)
+                except Exception as e:
+                    print(" Error: {}".format(e))
+
+    def keyPressEvent(self, event):
+        if type(event) == QtGui.QKeyEvent:
+            if self.show_trace():
+                print("key is ", event.key())
+                print("key down int is ", int(QtCore.Qt.Key_Down))
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            if event.key() == QtCore.Qt.Key_F11:
+                print("key F11 pressed")
+                # self.main_tab_widget.setWindowState(
+                # 	#self.main_tab_widget.windowState() ^
+                #                                     QtCore.Qt.WindowFullScreen)
+                self.setWindowState(self.windowState() ^ QtCore.Qt.WindowFullScreen)
+                self.button_widget.setVisible(not self.button_widget.isVisible())
+            # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
+            if modifiers & QtCore.Qt.AltModifier:
+                for n in range(len(self.image_list)):
+                    if self.image_list[n] is not None:
+                        if event.key() == QtCore.Qt.Key_0 + n:
+                            if self.output_label_current_image != self.image_list[n]:
+                                # with Alt+Ctrl, change reference image
+                                if modifiers & QtCore.Qt.ControlModifier:
+                                    self.output_label_reference_image = self.image_list[n]
+                                self.update_image(self.image_list[n])
+
+                if event.key() == QtCore.Qt.Key_A:
+                    # select upper left crop
+                    self.output_label_crop = (0.0, 0.0, 0.5, 0.5)
+                    self.update_image()
+                if event.key() == QtCore.Qt.Key_B:
+                    # select upper right crop
+                    self.output_label_crop = (0.5, 0.0, 1.5, 0.5)
+                    self.update_image()
+                if event.key() == QtCore.Qt.Key_C:
+                    # select lower left crop
+                    self.output_label_crop = (0.0, 0.5, 0.5, 1.0)
+                    self.update_image()
+                if event.key() == QtCore.Qt.Key_D:
+                    # select lower right crop
+                    self.output_label_crop = (0.5, 0.5, 1.0, 1.0)
+                    self.update_image()
+                if event.key() == QtCore.Qt.Key_V:
+                    # Vertical crop: Horizontal reduction by 2
+                    crop = list(self.output_label_crop)
+                    crop[2] = crop[0] + (crop[2] - crop[0]) / 2
+                    self.output_label_crop = tuple(crop)
+                    self.update_image()
+                if event.key() == QtCore.Qt.Key_H:
+                    # Horizontal crop: Vertical reduction by 2
+                    crop = list(self.output_label_crop)
+                    crop[3] = crop[1] + (crop[3] - crop[1]) / 2
+                    self.output_label_crop = tuple(crop)
+                    self.update_image()
+                if event.key() == QtCore.Qt.Key_F:
+                    # select full crop
+                    self.output_label_crop = (0.0, 0.0, 1.0, 1.0)
+                    self.update_image()
+                event.accept()
+                return
+            if event.modifiers() & QtCore.Qt.ControlModifier:
+                # allow to switch between images by pressing Ctrl+'image position' (Ctrl+0, Ctrl+1, etc)
+                for n in range(len(self.image_list)):
+                    if self.image_list[n] != 'none':
+                        if event.key() == QtCore.Qt.Key_0 + n:
+                            if self.output_label_current_image != self.image_list[n]:
+                                self.update_image(self.image_list[n])
+                                event.accept()
+                                return
+        else:
+            event.ignore()
