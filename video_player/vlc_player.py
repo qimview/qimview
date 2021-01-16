@@ -29,7 +29,91 @@ from Qt.QtWidgets import QMainWindow, QWidget, QFrame, QSlider
 from parameters.numeric_parameter import  NumericParameter
 from parameters.numeric_parameter_gui import NumericParameterGui
 
+
 unicode = str  # Python 3
+
+# TODO: deal with macOS
+# if sys.platform == "darwin":  # for MacOS
+#     self.videoframe = QtGui.QMacCocoaViewContainer(0)
+
+if sys.platform == "darwin":  # for MacOS
+    BaseWidget = QtGui.QMacCocoaViewContainer
+else:
+    BaseWidget = QFrame
+
+
+class myVideoWidget(BaseWidget):
+    def __init__(self):
+        if sys.platform == "darwin":  # for MacOS
+            super().__init__(0)
+        else:
+            super().__init__()
+        self.current_scale = 1
+        self.media_player = None
+
+    def new_scale(self, mouse_zy, height):
+        return max(1, self.current_scale * (1 + mouse_zy * 5.0 / height))
+        # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
+
+    def set_media_player(self, media_player):
+        self.media_player = media_player
+
+        # now if we set both inputs mouse and keyboard to false, we are able to catch event from the player!
+        self.media_player.video_set_mouse_input(False)
+        self.media_player.video_set_key_input(False)
+
+        if sys.platform.startswith('linux'): # for Linux using the X Server
+            media_player.set_xwindow(self.winId())
+        elif sys.platform == "win32": # for Windows
+            media_player.set_hwnd(self.winId())
+        elif sys.platform == "darwin": # for MacOS
+            media_player.set_nsobject(self.winId())
+
+    def wheelEvent(self, event):
+        if hasattr(event, 'delta'):
+            delta = event.delta()
+        else:
+            delta = event.angleDelta().y()
+        coeff = delta/5
+        rect = self.geometry()
+        prev_scale = self.current_scale
+        self.current_scale = self.new_scale(coeff, rect.height())
+        # print(f" geometry {rect.x()} {rect.y()} {rect.width()} {rect.height()}")
+        # print(f" current_scale {self.current_scale}")
+        rect.setWidth (rect.width() *(self.current_scale/prev_scale))
+        rect.setHeight(rect.height()*(self.current_scale/prev_scale))
+        # self.setGeometry(rect)
+        # self.setFixedSize(rect.width(), rect.height())
+
+        if self.media_player is not None:
+            (video_w, video_h) = self.media_player.video_get_size()
+            print(f"media size {video_w}x{video_h}")
+            print(f" geometry  {rect.width()}x{rect.height()}")
+            print(f" scale approx  {rect.width()/video_w:0.2f}x{rect.height()/video_h:0.2f}")
+
+            geom = self.media_player.video_get_crop_geometry()
+            print(f"geom: {geom}")
+            print(f"video_get_scale: {self.media_player.video_get_scale()}")
+            center_x = video_w/2
+            center_y = video_h/2
+            new_w = int(video_w/self.current_scale+0.5)
+            new_h = int(video_h/self.current_scale+0.5)
+            start_x = int((video_w-new_w)/2+0.5)
+            start_y = int((video_h-new_h)/2+0.5)
+            # not clear why it requires to multiply by 2 the top-left position
+            self.media_player.video_set_crop_geometry(f"{new_w}x{new_h}+{start_x*2}+{start_y*2}")
+            # else:
+            #     self.mediaplayer.video_set_crop_geometry(None)
+            # print(f"geom: {self.mediaplayer.video_get_crop_geometry()}")
+
+
+
+    def resizeEvent(self, event):
+        """Called upon window resizing: reinitialize the viewport.
+        """
+        # print("resize {} {}  self {} {}".format(event.size().width(), event.size().height(),
+        #       self.width(), self.height()))
+        # event.ignore()
 
 
 class VLCPlayer(QWidget):
@@ -59,7 +143,7 @@ class VLCPlayer(QWidget):
         if sys.platform == "darwin": # for MacOS
             self.videoframe = QtGui.QMacCocoaViewContainer(0)
         else:
-            self.videoframe = QFrame()
+            self.videoframe = myVideoWidget()
         self.palette = self.videoframe.palette()
         self.palette.setColor (QtGui.QPalette.Window,
                                QtGui.QColor(0,0,0))
@@ -175,12 +259,9 @@ class VLCPlayer(QWidget):
         # this is platform specific!
         # you have to give the id of the QFrame (or similar object) to
         # vlc, different platforms have different functions for this
-        if sys.platform.startswith('linux'): # for Linux using the X Server
-            self.mediaplayer.set_xwindow(self.videoframe.winId())
-        elif sys.platform == "win32": # for Windows
-            self.mediaplayer.set_hwnd(self.videoframe.winId())
-        elif sys.platform == "darwin": # for MacOS
-            self.mediaplayer.set_nsobject(self.videoframe.winId())
+
+        self.videoframe.set_media_player(self.mediaplayer)
+
         self.PlayPause()
 
     def setVolume(self, Volume):
