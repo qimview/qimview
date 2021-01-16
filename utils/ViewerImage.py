@@ -47,3 +47,11 @@ class ViewerImage(np.ndarray):
         self.precision = getattr(obj, 'precision', 8)
         self.downscale = getattr(obj, 'downscale', 1)
         self.channels = getattr(obj, 'channels', CH_RGB)
+
+    def __sizeof__(self):
+        # approximative estimation
+        size = self.nbytes
+        for v in vars(self):
+            print(f" v {v} {self.__dict__[v].__sizeof__()}")
+            size += self.__dict__[v].__sizeof__()
+        return size
