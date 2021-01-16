@@ -43,3 +43,27 @@ class ImageCache:
             cache_size = deep_getsizeof(self.cache, set())
         self.print_log(f"Cache::append() {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
         self.cache_size = cache_size
+
+    def get_image(self, filename, read_size='full', verbose=False, use_RGB=True, image_transform=None):
+        """
+        :param filename:
+        :param show_timing:
+        :return: pair image_data, boolean (True is coming from cache)
+        """
+        start = get_time()
+        image_data = self.search(filename)
+        if image_data is not None:
+            return image_data, True
+        else:
+            try:
+                image_data = read_image(filename, read_size, verbose=verbose, use_RGB=use_RGB)
+                if image_transform is not None:
+                    image_data = image_transform(image_data)
+                self.append(filename, image_data)
+                if verbose:
+                    print(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
+            except Exception as e:
+                print("Failed to load image {0}: {1}".format(filename, e))
+                return None, False
+            else:
+                return image_data, False
