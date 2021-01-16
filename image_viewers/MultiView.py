@@ -28,7 +28,7 @@ class ViewerType(Enum):
 
 class MultiView(QtWidgets.QWidget):
 
-    def __init__(self, parent=None, viewer_mode=ViewerType.QT_VIEWER, nb_viewers=1):
+    def __init__(self, parent=None, viewer_mode=ViewerType.OPENGL_SHADERS_VIEWER, nb_viewers=1):
         """
         :param parent:
         :param viewer_mode:
@@ -76,7 +76,7 @@ class MultiView(QtWidgets.QWidget):
 
         # save images of last visited row
         self.cache = ImageCache()
-        self.image_dict = { "out": None }
+        self.image_dict = { }
         self.read_size = 'full'
         self.image1 = dict()
         self.image2 = dict()
@@ -151,8 +151,14 @@ class MultiView(QtWidgets.QWidget):
             print(" Update image took {0:0.3f} sec.".format(time_spent))
 
     def set_images(self, images):
+        if images.keys() == self.image_dict.keys():
+            self.update_images(images)
+        else:
+            self.image_dict = images
+            self.CreateImageDisplay(list(images.keys()))
+
+    def update_images(self, images):
         self.image_dict = images
-        self.CreateImageDisplay(list(images.keys()))
 
     def CreateImageDisplay(self, image_list):
         # choose image to display
@@ -185,7 +191,6 @@ class MultiView(QtWidgets.QWidget):
         else:
             self.output_label_current_image = ''
             self.output_label_reference_image = ''
-        self.output_images = dict()
         self.output_image_label = dict()
 
     def layout_buttons(self, vertical_layout):
@@ -300,19 +305,21 @@ class MultiView(QtWidgets.QWidget):
         # Read both clean and original images and save them in dict as QPixmaps
         image_filename = self.image_dict[im_string_id] if filename is None else filename
         image_transform = pyQtGraphImageViewer.numpy2imageitem if self.use_pyqtgraph else None
+        print(f"MultiView.get_output_image() image_filename:{image_filename}")
 
         image_data, _ = self.cache.get_image(image_filename, self.read_size, verbose=self.show_timing_detailed(),
                                              use_RGB=not self.use_opengl, image_transform=image_transform)
 
         if image_data is not None:
             self.output_image_label[im_string_id] = image_filename
-            self.output_images[im_string_id] = image_data
+            output_image = image_data
         else:
-            print(f"failed to get image {image_filename}")
+            print(f"failed to get image {im_string_id}: {image_filename}")
+            return None
 
         if im_string_id in self.image1 and im_string_id in self.image2:
             # Add difference image, now fast to process no need to have it in cache
-            self.output_images[im_string_id] = self.difference_image(self.image1[im_string_id],
+            output_image = self.difference_image(self.image1[im_string_id],
                                                                      self.image2[im_string_id])
             self.output_image_label[im_string_id] = "127+ ({0} - {1})".format(self.image2[im_string_id],
                                                                               self.image1[im_string_id])
@@ -321,7 +328,7 @@ class MultiView(QtWidgets.QWidget):
             print(" get_output_image took {0:0.3f} sec.".format(get_time() - start))
 
         # force image bayer information if selected from menu
-        res = self.output_images[im_string_id]
+        res = output_image
         set_bayer = self.raw_bayer[self.current_raw_bayer]
         if res.channels in [CH_BGGR, CH_GBRG, CH_GRBG, CH_RGGB] and set_bayer is not None:
             res.channels = set_bayer
@@ -341,6 +348,7 @@ class MultiView(QtWidgets.QWidget):
         update_image_start = get_time()
         if image_name is not None:
             self.output_label_current_image = image_name
+        print(f"MultiView.update_image() output_label_current_image = {self.output_label_current_image} ")
         if self.output_label_current_image == "" and image_filename is None:
             if self.current_image_filename is not None:
                 image_filename = self.current_image_filename
@@ -353,6 +361,8 @@ class MultiView(QtWidgets.QWidget):
         show_diff = modifiers & QtCore.Qt.ControlModifier and self.output_label_current_image != ""
         try:
             current_image = self.get_output_image(self.output_label_current_image, image_filename)
+            if current_image is None:
+                return
         except Exception as e:
             print("Error: failed to get image {}: {}".format(self.output_label_current_image, e))
             return
@@ -582,5 +592,11 @@ class MultiView(QtWidgets.QWidget):
                                 self.update_image(self.image_list[n])
                                 event.accept()
                                 return
+            if event.modifiers() & QtCore.Qt.MetaModifier:
+                for n in range(len(self.viewer_layouts)):
+                    if event.key() == QtCore.Qt.Key_0 + (n+1):
+                        self.update_viewer_layout(self.viewer_layouts[n])
+                        self.viewer_grid_layout.update()
+                        self.update_image()
         else:
             event.ignore()
