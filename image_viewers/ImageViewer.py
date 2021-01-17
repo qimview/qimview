@@ -90,7 +90,7 @@ class ImageViewer:
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
-        print('set_image({}): is_different = {}'.format(image.shape, is_different))
+        self.print_log('set_image({}): is_different = {}'.format(image.shape, is_different))
         if is_different:
             self.cv_image = image
         return is_different
@@ -104,30 +104,43 @@ class ImageViewer:
             caller_name = inspect.stack()[1][3]
             print("{}{}: {}".format(self.tab[0], caller_name, mess))
 
-    def start_timing(self):
-        caller_name = inspect.stack()[1][3]
-        class_name = get_class_from_frame(inspect.stack()[1][0])
-        if class_name is not None:
-            caller_name = "{}.{}".format(class_name, caller_name)
-        self.start_time[caller_name] = get_time()
-        self.timings[caller_name] = ''
-
-    def add_time(self, mess, current_start, force=False):
-        if self.display_timing or force:
+    def start_timing(self, title=None):
+        if not self.display_timing: return
+        if title is None:
+            # it seems that inspect is slow
             caller_name = inspect.stack()[1][3]
             class_name = get_class_from_frame(inspect.stack()[1][0])
             if class_name is not None:
                 caller_name = "{}.{}".format(class_name, caller_name)
+        else:
+            caller_name = title
+        self.start_time[caller_name] = get_time()
+        self.timings[caller_name] = ''
+
+    def add_time(self, mess, current_start, force=False, title=None):
+        if not self.display_timing: return
+        if self.display_timing or force:
+            if title is None:
+                caller_name = inspect.stack()[1][3]
+                class_name = get_class_from_frame(inspect.stack()[1][0])
+                if class_name is not None:
+                    caller_name = "{}.{}".format(class_name, caller_name)
+            else:
+                caller_name = title
             total_start = self.start_time[caller_name]
             ctime = get_time()
             mess = "{} {:0.1f} ms, total {:0.1f} ms".format(mess, (ctime -current_start)*1000, (ctime-total_start)*1000)
             self.timings[caller_name] += "{}{}: {}\n".format(self.tab[0], caller_name, mess)
 
-    def print_timing(self, add_total=False, force=False):
-        caller_name = inspect.stack()[1][3]
-        class_name = get_class_from_frame(inspect.stack()[1][0])
-        if class_name is not None:
-            caller_name = "{}.{}".format(class_name, caller_name)
+    def print_timing(self, add_total=False, force=False, title=None):
+        if not self.display_timing: return
+        if title is None:
+            caller_name = inspect.stack()[1][3]
+            class_name = get_class_from_frame(inspect.stack()[1][0])
+            if class_name is not None:
+                caller_name = "{}.{}".format(class_name, caller_name)
+        else:
+            caller_name = title
         if add_total:
             self.add_time("total", self.start_time[caller_name], force)
         if self.timings[caller_name] != '':
@@ -156,7 +169,8 @@ class ImageViewer:
         if self==event_viewer:
             if self.display_timing:
                 start_time = get_time()
-                print("[ --- Start sync")
+                if self.display_timing:
+                    print("[ --- Start sync")
         if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
             self.synchronize_data(self.synchronize_viewer)
             self.synchronize_viewer.paintAll()
@@ -172,7 +186,6 @@ class ImageViewer:
         return self.active_window
 
     def set_image_name(self, image_name=''):
-        # print('caption {}'.format(text))
         self.image_name = image_name
 
     def get_image_name(self):
