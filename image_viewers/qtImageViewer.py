@@ -22,7 +22,7 @@ from tests_utils.qtdump import *
 
 try:
     import cppimport.import_hook
-    from CppBind import wrap_numpy as wrap_numpy
+    from CppBind import wrap_numpy
 except Exception as e:
     has_cppbind = False
     print("Failed to load wrap_numpy: {}".format(e))
@@ -58,8 +58,6 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
     def set_image(self, image, active=False):
         super(qtImageViewer, self).set_image(image)
-        # no need for paintAll() show() is called in QTableWindow
-        #self.paintAll()
 
     def apply_zoom(self, crop):
         # Apply zoom
@@ -147,7 +145,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         self.print_log(f"current_image.shape {current_image.shape}")
         # return current_image
 
-        self.start_timing()
+        self.start_timing(title='apply_filters()')
         # # if change saturation
         # saturation_int = int(self.saturation_slider.value())
         # if saturation_int != self.saturation_default:
@@ -191,7 +189,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                     ok = wrap_numpy.apply_filters_u16_u8(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
                                                       g_b_coeff, max_value, max_type, gamma)
-                    self.add_time('apply_filters_u16_u8()',time1, force=True)
+                    self.add_time('apply_filters_u16_u8()',time1, force=True, title='apply_filters()')
                 else:
                     if current_image.dtype == np.uint8:
                         self.print_log(f"wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, "
@@ -201,7 +199,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                         ok = wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, black_level, white_level,
                                                             g_r_coeff,
                                                           g_b_coeff, max_value, max_type, gamma)
-                        self.add_time('apply_filters_u8_u8()',time1, force=True)
+                        self.add_time('apply_filters_u8_u8()',time1, force=True, title='apply_filters()')
                     else:
                         print(f"apply_filters() not available for {current_image.dtype} data type !")
             else:
@@ -211,7 +209,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                     ok = wrap_numpy.apply_filters_scalar_u8_u8(current_image, rgb_image, black_level,
                                                             white_level, max_value, max_type, gamma)
-                    self.add_time('apply_filters_scalar_u8_u8()', time1, force=True)
+                    self.add_time('apply_filters_scalar_u8_u8()', time1, force=True, title='apply_filters()')
                 else:
                     if current_image.dtype == np.uint16:
                         self.print_log(f"wrap_numpy.apply_filters_scalar_u16_u8(current_image, rgb_image, "
@@ -219,7 +217,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                               f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                         ok = wrap_numpy.apply_filters_scalar_u16_u8(current_image, rgb_image, black_level,
                                                                    white_level, max_value, max_type, gamma)
-                        self.add_time('apply_filters_scalar_u16_u8()', time1, force=True)
+                        self.add_time('apply_filters_scalar_u16_u8()', time1, force=True, title='apply_filters()')
                     else:
                         if current_image.dtype == np.uint32:
                             self.print_log(f"wrap_numpy.apply_filters_scalar_u32_u8(current_image, rgb_image, "
@@ -227,7 +225,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                                   f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                             ok = wrap_numpy.apply_filters_scalar_u32_u8(current_image, rgb_image, black_level,
                                                                        white_level, max_value, max_type, gamma)
-                            self.add_time('apply_filters_scalar_u32_u8()', time1, force=True)
+                            self.add_time('apply_filters_scalar_u32_u8()', time1, force=True, title='apply_filters()')
                         else:
                             print(f"apply_filters_scalar() not available for {current_image.dtype} data type !")
             if not ok:
@@ -283,7 +281,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
             #     work_image = cv2.LUT(work_image, table)
 
-        self.print_timing()
+        self.print_timing(title='apply_filters()')
         return rgb_image
 
     def paintAll(self):
@@ -309,12 +307,13 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             current_image = self.cv_image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
         else:
             current_image = self.cv_image
+            crop_xmin = crop_ymin = 0
+
+        cropped_image_shape = current_image.shape
         self.add_time('crop', time1)
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
-        display_cursor =  modifiers & QtCore.Qt.AltModifier
-        if display_cursor:
-            cropped_image = np.copy(current_image)
+        display_cursor =  modifiers & QtCore.Qt.ControlModifier
 
         # time1 = get_time()
         label_width = self.size().width()
@@ -412,10 +411,10 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         if display_cursor:
             if self.display_timing: time1 = self.get_time()
             # get image position
-            if len(cropped_image.shape) == 3:
-                (height, width, channels) = cropped_image.shape
+            if len(cropped_image_shape) == 3:
+                (height, width, channels) = cropped_image_shape
             else:
-                (height, width) = cropped_image.shape
+                (height, width) = cropped_image_shape
             im_x = int((self.mouse_x -rect.x())/rect.width()*width)
             im_y = int((self.mouse_y -rect.y())/rect.height()*height)
 
@@ -439,11 +438,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
 
             # Update text
-            if im_x>=0 and im_x<cropped_image.shape[1] and im_y>=0 and im_y<cropped_image.shape[0]:
-                values = cropped_image[im_y, im_x]
-                if do_crop:
-                    im_x += crop_xmin
-                    im_y += crop_ymin
+            if im_x>=0 and im_x<cropped_image_shape[1] and im_y>=0 and im_y<cropped_image_shape[0]:
+                # values = cropped_image[im_y, im_x]
+                im_x += crop_xmin
+                im_y += crop_ymin
+                values = self.cv_image[im_y, im_x]
                 self.display_message = "pos {:4}, {:4} \n rgb {} \n {} {} {} bits".format(im_x, im_y, values,
                                                                                 self.cv_image.shape,
                                                                                 self.cv_image.dtype,
@@ -481,8 +480,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         """
         if self.trace_calls:
             t = trace_method(self.tab)
-        print("resize {} {}  self {} {}".format(event.size().width(), event.size().height(),
-              self.width(), self.height()))
+        self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
 
@@ -507,4 +505,4 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         return QtWidgets.QWidget.event(self, evt)
 
     def keyReleaseEvent(self, evt):
-        print(f"evt {evt.type()}")
+        self.print_log(f"evt {evt.type()}")
