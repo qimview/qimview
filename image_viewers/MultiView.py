@@ -318,7 +318,7 @@ class MultiView(QtWidgets.QWidget):
         self.figures_widget.setVisible(self.display_profiles.isChecked())
         self.update_image()
 
-    def get_output_image(self, im_string_id, filename=None):
+    def get_output_image(self, im_string_id):
         """
         Search for the image with given label in the current row
         if not in cache reads it and add it to the cache
@@ -328,7 +328,7 @@ class MultiView(QtWidgets.QWidget):
         start = get_time()
 
         # Read both clean and original images and save them in dict as QPixmaps
-        image_filename = self.image_dict[im_string_id] if filename is None else filename
+        image_filename = self.image_dict[im_string_id]
         image_transform = pyQtGraphImageViewer.numpy2imageitem if self.use_pyqtgraph else None
         self.print_log(f"MultiView.get_output_image() image_filename:{image_filename}")
 
@@ -367,7 +367,7 @@ class MultiView(QtWidgets.QWidget):
         if self.message_cb is not None:
             self.message_cb(mess)
 
-    def update_image(self, image_name=None, image_filename=None):
+    def update_image(self, image_name=None):
         '''
         Uses the variable self.output_label_current_image
         :return:
@@ -376,33 +376,25 @@ class MultiView(QtWidgets.QWidget):
         update_image_start = get_time()
         if image_name is not None:
             self.output_label_current_image = image_name
-        if self.output_label_current_image == "" and image_filename is None:
-            if self.current_image_filename is not None:
-                image_filename = self.current_image_filename
-            else:
-                return
+        if self.output_label_current_image == "":
+            return
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
         # Control key enable display of difference image
         show_diff = modifiers & QtCore.Qt.ControlModifier and self.output_label_current_image != ""
         try:
-            current_image = self.get_output_image(self.output_label_current_image, image_filename)
+            current_image = self.get_output_image(self.output_label_current_image)
             if current_image is None:
                 return
         except Exception as e:
             print("Error: failed to get image {}: {}".format(self.output_label_current_image, e))
             return
 
-        if image_filename is None:
-            if self.output_label_current_image != "":
-                current_filename = self.output_image_label[self.output_label_current_image]
-            else:
-                print("Error, we should not get here ...")
-                current_filename = self.current_image_filename
+        if self.output_label_current_image != "":
+            current_filename = self.output_image_label[self.output_label_current_image]
         else:
-            current_filename = image_filename
-            self.current_image_filename = current_filename
+            print("Error, we should not get here ...")
 
         if self.show_timing_detailed():
             time_spent = get_time() - update_image_start
@@ -453,16 +445,18 @@ class MultiView(QtWidgets.QWidget):
                 viewer = self.image_viewers[n1]
                 viewer.set_active(False)
                 if viewer.get_image() is None:
-                    viewer.set_image_name(self.output_label_current_image)
+                    if n1<len(self.image_list):
+                        viewer.set_image_name(self.image_list[n1])
+                    else:
+                        viewer.set_image_name(self.output_label_current_image)
+                # try to update corresponding images in row
+                try:
+                    viewer_image = self.get_output_image(viewer.get_image_name())
+                except Exception as e:
+                    print("Error: failed to get image {}: {}".format(viewer.get_image_name(), e))
                     viewer.set_image(current_image)
                 else:
-                    # try to update corresponding images in row
-                    try:
-                        viewer_image = self.get_output_image(viewer.get_image_name())
-                    except Exception as e:
-                        print("Error: failed to get image {}: {}".format(viewer.get_image_name(), e))
-                    else:
-                        viewer.set_image(viewer_image)
+                    viewer.set_image(viewer_image)
 
                 viewer.show()
                 viewer.update()
@@ -493,7 +487,7 @@ class MultiView(QtWidgets.QWidget):
         return res
 
     def update_viewer_layout(self, layout_name='1'):
-        print("*** update_viewer_layout()")
+        self.print_log("*** update_viewer_layout()")
         # # Action from menu ...
         # menu = self.option_viewer_layout
         # for action in menu.actions():
@@ -575,6 +569,8 @@ class MultiView(QtWidgets.QWidget):
                                 if modifiers & QtCore.Qt.ControlModifier:
                                     self.output_label_reference_image = self.image_list[n]
                                 self.update_image(self.image_list[n])
+                                self.setFocus()
+                                return
 
                 if event.key() == QtCore.Qt.Key_A:
                     # select upper left crop
@@ -619,11 +615,15 @@ class MultiView(QtWidgets.QWidget):
                                 self.update_image(self.image_list[n])
                                 event.accept()
                                 return
-            if event.modifiers() & QtCore.Qt.MetaModifier:
-                for n in range(len(self.viewer_layouts)):
-                    if event.key() == QtCore.Qt.Key_0 + (n+1):
-                        self.update_viewer_layout(self.viewer_layouts[n])
-                        self.viewer_grid_layout.update()
-                        self.update_image()
+            # print(f"event.modifiers {event.modifiers()}")
+            # if not event.modifiers():
+            for n in range(len(self.viewer_layouts)):
+                if event.key() == QtCore.Qt.Key_0 + (n+1):
+                    self.update_viewer_layout(self.viewer_layouts[n])
+                    self.viewer_grid_layout.update()
+                    self.update_image()
+                    self.setFocus()
+                    event.accept()
+                    return
         else:
             event.ignore()

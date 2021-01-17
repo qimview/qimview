@@ -53,6 +53,8 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         # self.verbose = True
         # self.trace_calls = True
 
+        # self.display_cursor = False
+
     #def __del__(self):
     #    pass
 
@@ -313,7 +315,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         self.add_time('crop', time1)
 
         modifiers = QtWidgets.QApplication.keyboardModifiers()
-        display_cursor =  modifiers & QtCore.Qt.ControlModifier
+        display_cursor =  modifiers & QtCore.Qt.AltModifier
 
         # time1 = get_time()
         label_width = self.size().width()
