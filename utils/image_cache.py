@@ -10,7 +10,7 @@ class ImageCache:
         self.cache_size = 0
         # Max size in Mb
         self.max_cache_size = 2000
-        self.verbose = True
+        self.verbose = False
         self.cache_unit = 1024*1024 # Megabyte
 
     def reset(self):
@@ -34,12 +34,12 @@ class ImageCache:
         :return:
         """
         # update cache
-        print("added size ", deep_getsizeof([id, value, extra], set()))
+        self.print_log(f"added size {deep_getsizeof([id, value, extra], set())}")
         self.cache.append([id, value, extra])
         cache_size = deep_getsizeof(self.cache, set())
         while cache_size >= self.max_cache_size * self.cache_unit:
             self.cache.popleft()
-            print(" *** cache pop ")
+            self.print_log(" *** cache pop ")
             cache_size = deep_getsizeof(self.cache, set())
         self.print_log(f"Cache::append() {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
         self.cache_size = cache_size
@@ -60,8 +60,7 @@ class ImageCache:
                 if image_transform is not None:
                     image_data = image_transform(image_data)
                 self.append(filename, image_data)
-                if verbose:
-                    print(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
+                self.print_log(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
             except Exception as e:
                 print("Failed to load image {0}: {1}".format(filename, e))
                 return None, False
