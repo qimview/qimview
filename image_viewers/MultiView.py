@@ -48,6 +48,10 @@ class MultiView(QtWidgets.QWidget):
             ViewerType.PYQTGRAPH_VIEWER:      pyQtGraphImageViewer
         }[viewer_mode]
 
+        # Create viewer instances
+        for n in range(self.nb_viewers_used):
+            self.image_viewers.append(self.image_viewer_class())
+
         self.viewer_mode = viewer_mode
         self.bold_font = QtGui.QFont()
 
@@ -58,8 +62,8 @@ class MultiView(QtWidgets.QWidget):
         self.verbosity_TIMING_DETAILED = 1 << 3
         self.verbosity_TRACE = 1 << 4
         self.verbosity_DEBUG = 1 << 5
-        self.set_verbosity(self.verbosity_TIMING_DETAILED)
-        self.set_verbosity(self.verbosity_TRACE)
+        # self.set_verbosity(self.verbosity_TIMING_DETAILED)
+        # self.set_verbosity(self.verbosity_TRACE)
 
         self.current_image_filename = None
         self.save_image_clipboard = False
@@ -80,6 +84,8 @@ class MultiView(QtWidgets.QWidget):
         self.read_size = 'full'
         self.image1 = dict()
         self.image2 = dict()
+        self.button_layout = None
+        self.message_cb = None
 
     def set_verbosity(self, flag, enable=True):
         """
@@ -94,6 +100,10 @@ class MultiView(QtWidgets.QWidget):
 
     def check_verbosity(self, flag):
         return self.verbosity & flag
+
+    def print_log(self, mess):
+        if self.verbosity & self.verbosity_LIGHT:
+            print(mess)
 
     def show_timing(self):
         return self.check_verbosity(self.verbosity_TIMING) or self.check_verbosity(self.verbosity_TIMING_DETAILED)
@@ -128,6 +138,11 @@ class MultiView(QtWidgets.QWidget):
 
         return types.MethodType(mouse_double_click, self)
 
+    def set_read_size(self, read_size):
+        self.read_size = read_size
+        # reset cache
+        self.cache.reset()
+
     def update_image_intensity_event(self):
         self.update_image_parameters()
 
@@ -151,24 +166,23 @@ class MultiView(QtWidgets.QWidget):
             print(" Update image took {0:0.3f} sec.".format(time_spent))
 
     def set_images(self, images):
+        self.print_log(f"MultiView.set_images() {images}")
         if images.keys() == self.image_dict.keys():
-            self.update_images(images)
+            self.image_dict = images
         else:
             self.image_dict = images
-            self.CreateImageDisplay(list(images.keys()))
+            self.update_image_buttons()
 
-    def update_images(self, images):
-        self.image_dict = images
-
-    def CreateImageDisplay(self, image_list):
+    def update_image_buttons(self):
         # choose image to display
-        self.image_list = image_list
-        print("CreateImageDisplay {}".format(image_list))
+        self.clear_buttons()
+        self.image_list = list(self.image_dict.keys())
+        self.print_log("MultiView.update_image_buttons() {}".format(self.image_list))
         self.label = dict()
         for image_name in self.image_list:
             # possibility to disable an image using the string 'none', especially useful for input image
             if image_name != 'none':
-                self.label[image_name] = MyQLabel.MyQLabel(image_name)
+                self.label[image_name] = MyQLabel.MyQLabel(image_name, self)
                 self.label[image_name].setFrameShape(QtWidgets.QFrame.Panel)
                 self.label[image_name].setFrameShadow(QtWidgets.QFrame.Sunken)
                 self.label[image_name].setLineWidth(3)
@@ -177,39 +191,50 @@ class MultiView(QtWidgets.QWidget):
                 self.label[image_name].mousePressEvent = self.make_mouse_press(image_name)
                 self.label[image_name].mouseReleaseEvent = self.mouse_release
                 self.label[image_name].mouseDoubleClickEvent = self.make_mouse_double_click(image_name)
+        self.create_buttons()
 
         # the crop area can be changed using the mouse wheel
         self.output_label_crop = (0., 0., 1., 1.)
 
-        # set viewers
-        for n in range(self.nb_viewers_used):
-            self.image_viewers.append(self.image_viewer_class())
-
-        if len(image_list)>0:
-            self.output_label_current_image = image_list[0]
-            self.output_label_reference_image = image_list[0]
+        if len(self.image_list)>0:
+            self.output_label_current_image = self.image_list[0]
+            self.output_label_reference_image = self.image_list[0]
         else:
             self.output_label_current_image = ''
             self.output_label_reference_image = ''
         self.output_image_label = dict()
 
+    def clear_buttons(self):
+        if self.button_layout is not None:
+            # start clearing the layout
+            # for i in range(self.button_layout.count()): self.button_layout.itemAt(i).widget().close()
+            self.print_log(f"MultiView.clear_buttons() {self.image_list}")
+            for image_name in reversed(self.image_list):
+                if image_name in self.label:
+                    self.button_layout.removeWidget(self.label[image_name])
+                    self.label[image_name].close()
+
+    def create_buttons(self):
+        if self.button_layout is not None:
+            max_grid_columns = 5
+            idx = 0
+            for image_name in self.image_list:
+                # possibility to disable an image using the string 'none', especially useful for input image
+                if image_name != 'none':
+                    self.button_layout.addWidget(self.label[image_name], idx // max_grid_columns, idx % max_grid_columns)
+                    idx += 1
+
     def layout_buttons(self, vertical_layout):
         self.button_widget = QtWidgets.QWidget(self)
-        button_layout = QtWidgets.QGridLayout()
-        button_layout.setHorizontalSpacing(0)
-        button_layout.setVerticalSpacing(0)
+        self.button_layout = QtWidgets.QGridLayout()
+        self.button_layout.setHorizontalSpacing(0)
+        self.button_layout.setVerticalSpacing(0)
         # button_layout.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
-        max_grid_columns = 5
-        idx = 0
-        for image_name in self.image_list:
-            # possibility to disable an image using the string 'none', especially useful for input image
-            if image_name != 'none':
-                button_layout.addWidget(self.label[image_name], idx // max_grid_columns, idx % max_grid_columns)
-                idx += 1
+        self.create_buttons()
         vertical_layout.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
         # vertical_layout.setSizeConstraint(QtWidgets.QLayout.SetNoConstraint)
         self.button_widget.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
-        self.button_widget.setLayout(button_layout)
+        self.button_widget.setLayout(self.button_layout)
         vertical_layout.addWidget(self.button_widget, 0, QtCore.Qt.AlignTop)
 
     def layout_parameters(self, parameters_layout):
@@ -259,7 +284,7 @@ class MultiView(QtWidgets.QWidget):
         self.filter_params_gui.add_g_b(parameters2_layout, self.update_image_intensity_event)
 
     def update_layout(self):
-        print("update_layout")
+        self.print_log("update_layout")
         vertical_layout = QtWidgets.QVBoxLayout()
         self.layout_buttons(vertical_layout)
 
@@ -305,7 +330,7 @@ class MultiView(QtWidgets.QWidget):
         # Read both clean and original images and save them in dict as QPixmaps
         image_filename = self.image_dict[im_string_id] if filename is None else filename
         image_transform = pyQtGraphImageViewer.numpy2imageitem if self.use_pyqtgraph else None
-        print(f"MultiView.get_output_image() image_filename:{image_filename}")
+        self.print_log(f"MultiView.get_output_image() image_filename:{image_filename}")
 
         image_data, _ = self.cache.get_image(image_filename, self.read_size, verbose=self.show_timing_detailed(),
                                              use_RGB=not self.use_opengl, image_transform=image_transform)
@@ -335,20 +360,22 @@ class MultiView(QtWidgets.QWidget):
 
         return res
 
+    def set_message_callback(self, message_cb):
+        self.message_cb = message_cb
+
     def setMessage(self, mess):
-        print(mess)
-        # self.statusBar().showMessage("Image: {0}".format(mess))
+        if self.message_cb is not None:
+            self.message_cb(mess)
 
     def update_image(self, image_name=None, image_filename=None):
         '''
         Uses the variable self.output_label_current_image
         :return:
         '''
-        print('update_image {} current: {}'.format(image_name, self.output_label_current_image))
+        self.print_log('update_image {} current: {}'.format(image_name, self.output_label_current_image))
         update_image_start = get_time()
         if image_name is not None:
             self.output_label_current_image = image_name
-        print(f"MultiView.update_image() output_label_current_image = {self.output_label_current_image} ")
         if self.output_label_current_image == "" and image_filename is None:
             if self.current_image_filename is not None:
                 image_filename = self.current_image_filename
