@@ -50,6 +50,16 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
         if self.trace_calls:
             t = trace_method(self.tab)
         changed = super(qglImageViewerBase, self).set_image(image)
+
+        img_width = self.cv_image.shape[1]
+        if img_width % 4 != 0:
+            print("Image is resized to a multiple of 4 dimension in X")
+            img_width = ((img_width >> 4) << 4)
+            im = np.ascontiguousarray(self.cv_image[:,:img_width, :])
+            self.cv_image = ViewerImage(im, precision = self.cv_image.precision, downscale = 1,
+                                        channels = self.cv_image.channels)
+            print(self.cv_image.shape)
+
         if changed:  # and self.textureID is not None:
             if self.setTexture():
                 print("paintAll()")
@@ -97,7 +107,8 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
             'float64': gl.GL_DOUBLE
         }
         gl_type = gl_types[self.cv_image.dtype.name]
-        print("gl_type {}".format(gl_type))
+
+        # It seems that the dimension in X should be even
 
         # Not sure what is the right parameter for internal format of 2D texture based
         # on the input data type uint8, uint16, ...
@@ -295,7 +306,7 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
     def image_centered_position(self):
         w = self._width
         h = self._height
-        print('self width height {} {} tex {} {}'.format(self._width, self._height, self.tex_width, self.tex_height))
+        self.print_log(f'self width height {self._width} {self._height} tex {self.tex_width} {self.tex_height}')
         if self.tex_width == 0 or self.tex_height == 0:
             return 0, w, 0, h
         # self.print_log(' {}x{}'.format(w, h))
