@@ -64,14 +64,12 @@ class ImageViewer:
         self._width = 500
         self._height = 500
         self.lastPos = None # Last mouse position before mouse click
-        self.mouse_dx = 0
-        self.mouse_dy = 0
-        self.current_dx = 0
-        self.current_dy = 0
+        self.mouse_dx = self.mouse_dy = 0
         self.mouse_zx = 0
         self.mouse_zy = 0
         self.mouse_x = 0
         self.mouse_y = 0
+        self.current_dx = self.current_dy = 0
         self.current_scale = 1
         self.cv_image = None
         self.synchronize_viewer = None
@@ -87,6 +85,7 @@ class ImageViewer:
         self.verbose = False
         self.start_time = dict()
         self.timings = dict()
+        self.is_maximized = False
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
@@ -270,3 +269,67 @@ class ImageViewer:
         self.current_scale = self.new_scale(coeff, self.cv_image.shape[0])
         self.paintAll()
         self.synchronize(self)
+
+    def key_press_event(self, event, wsize):
+        if type(event) == QtGui.QKeyEvent:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            if event.key() == QtCore.Qt.Key_F11:
+                # self.setWindowState(self.windowState() ^ QtCore.Qt.WindowFullScreen)
+                if not self.is_maximized:
+                    self.before_max_parent = self.parent()
+                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                    self.parent().layout().replaceWidget(self,self.replacing_widget)
+                    self.setParent(None)
+                    self.showMaximized()
+                    self.is_maximized = True
+                else:
+                    self.setParent(self.before_max_parent)
+                    self.parent().layout().replaceWidget(self.replacing_widget,self)
+                    #self.resize(self.before_max_size)
+                    self.show()
+                    self.parent().update()
+                    self.is_maximized = False
+                    self.setFocus()
+                event.accept()
+                return
+
+            # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
+            key_list = [QtCore.Qt.Key_A, QtCore.Qt.Key_B, QtCore.Qt.Key_C, QtCore.Qt.Key_D, QtCore.Qt.Key_F]
+            if event.key() == QtCore.Qt.Key_A:
+                # select upper left crop
+                self.current_dx = wsize.width()/4
+                self.current_dy = -wsize.height()/4
+                self.current_scale = 2
+            else:
+                if event.key() == QtCore.Qt.Key_B:
+                    # select upper left crop
+                    self.current_dx = -wsize.width() / 4
+                    self.current_dy = -wsize.height() / 4
+                    self.current_scale = 2
+                else:
+                    if event.key() == QtCore.Qt.Key_C:
+                        # select lower left crop
+                        self.current_dx = wsize.width() / 4
+                        self.current_dy = wsize.height() / 4
+                        self.current_scale = 2
+                    else:
+                        if event.key() == QtCore.Qt.Key_D:
+                            # select lower right crop
+                            self.current_dx = -wsize.width() / 4
+                            self.current_dy = wsize.height() / 4
+                            self.current_scale = 2
+                        else:
+                            if event.key() == QtCore.Qt.Key_F:
+                                # select full crop
+                                self.output_crop = (0., 0., 1., 1.)
+                                self.current_dx = 0
+                                self.current_dy = 0
+                                self.current_scale = 1
+            if event.key() in key_list:
+                self.paintAll()
+                self.synchronize(self)
+                event.accept()
+                return
+            event.ignore()
+        else:
+            event.ignore()

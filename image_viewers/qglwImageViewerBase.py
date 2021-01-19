@@ -37,6 +37,11 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
         self.cursor_imy_ratio = 0.5
         self.trace_calls = False
 
+        if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
     # def __del__(self):
     #     if self.textureID is not None:
     #         gl.glDeleteTextures(np.array([self.textureID]))
@@ -388,6 +393,12 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
 
     def wheelEvent(self, event):
         self.mouse_wheel_event(event)
+
+    def keyPressEvent(self, event):
+        # TODO: Fix the correct parameters for selecting image zoom/pan
+        x0, x1, y0, y1 = self.image_centered_position()
+        print(f"{x1-x0} x {y1-y0}")
+        self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
 
 
 if __name__ == '__main__':

@@ -3,17 +3,29 @@ from image_viewers.MultiView import MultiView
 import sys
 import argparse
 import os
+from image_viewers.MultiView import ViewerType
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('-i', '--images', nargs='+', help='input images')
+    parser.add_argument('--viewer', type=str, choices={'gl', 'qt', 'shader', 'pyqtgraph'}, default='qt',
+                        help="Viewer mode, qt: standard qt display, gl: use opengl,  shader: enable opengl with "
+                             "shaders, pyqtgraph: experimental, use pyqtgraph module if installed")
 
     args = parser.parse_args()
     _params = vars(args)
 
     app = QtWidgets.QApplication(sys.argv)
-    mv = MultiView()
+
+    mode = {
+        'qt': ViewerType.QT_VIEWER,
+        'gl': ViewerType.OPENGL_VIEWER,
+        'shader': ViewerType.OPENGL_SHADERS_VIEWER,
+        'pyqtgraph': ViewerType.PYQTGRAPH_VIEWER
+    }[_params['viewer']]
+
+    mv = MultiView(viewer_mode=mode)
 
     # table_win.setWindowTitle('Image Set Comparison ' + title_string)
     # table_win.set_default_report_file(default_report_file + '.json')

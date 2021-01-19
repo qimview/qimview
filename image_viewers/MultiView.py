@@ -28,7 +28,7 @@ class ViewerType(Enum):
 
 class MultiView(QtWidgets.QWidget):
 
-    def __init__(self, parent=None, viewer_mode=ViewerType.OPENGL_SHADERS_VIEWER, nb_viewers=1):
+    def __init__(self, parent=None, viewer_mode=ViewerType.QT_VIEWER, nb_viewers=1):
         """
         :param parent:
         :param viewer_mode:
@@ -86,6 +86,12 @@ class MultiView(QtWidgets.QWidget):
         self.image2 = dict()
         self.button_layout = None
         self.message_cb = None
+
+        if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
 
     def set_verbosity(self, flag, enable=True):
         """
@@ -356,6 +362,7 @@ class MultiView(QtWidgets.QWidget):
         res = output_image
         set_bayer = self.raw_bayer[self.current_raw_bayer]
         if res.channels in [CH_BGGR, CH_GBRG, CH_GRBG, CH_RGGB] and set_bayer is not None:
+            print(f"Setting bayer {set_bayer}")
             res.channels = set_bayer
 
         return res
@@ -571,39 +578,6 @@ class MultiView(QtWidgets.QWidget):
                                 self.update_image(self.image_list[n])
                                 self.setFocus()
                                 return
-
-                if event.key() == QtCore.Qt.Key_A:
-                    # select upper left crop
-                    self.output_label_crop = (0.0, 0.0, 0.5, 0.5)
-                    self.update_image()
-                if event.key() == QtCore.Qt.Key_B:
-                    # select upper right crop
-                    self.output_label_crop = (0.5, 0.0, 1.5, 0.5)
-                    self.update_image()
-                if event.key() == QtCore.Qt.Key_C:
-                    # select lower left crop
-                    self.output_label_crop = (0.0, 0.5, 0.5, 1.0)
-                    self.update_image()
-                if event.key() == QtCore.Qt.Key_D:
-                    # select lower right crop
-                    self.output_label_crop = (0.5, 0.5, 1.0, 1.0)
-                    self.update_image()
-                if event.key() == QtCore.Qt.Key_V:
-                    # Vertical crop: Horizontal reduction by 2
-                    crop = list(self.output_label_crop)
-                    crop[2] = crop[0] + (crop[2] - crop[0]) / 2
-                    self.output_label_crop = tuple(crop)
-                    self.update_image()
-                if event.key() == QtCore.Qt.Key_H:
-                    # Horizontal crop: Vertical reduction by 2
-                    crop = list(self.output_label_crop)
-                    crop[3] = crop[1] + (crop[3] - crop[1]) / 2
-                    self.output_label_crop = tuple(crop)
-                    self.update_image()
-                if event.key() == QtCore.Qt.Key_F:
-                    # select full crop
-                    self.output_label_crop = (0.0, 0.0, 1.0, 1.0)
-                    self.update_image()
                 event.accept()
                 return
             if event.modifiers() & QtCore.Qt.ControlModifier:

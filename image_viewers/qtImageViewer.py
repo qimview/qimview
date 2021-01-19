@@ -134,13 +134,13 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         return diff_x, diff_y
 
     def update_crop(self):
-        # print("output_crop {}".format(self.output_crop))
         # Apply zoom
         new_crop = self.apply_zoom(np.array(self.output_crop))
         # Apply translation
         new_crop = self.apply_translation(new_crop)
         new_crop = np.clip(new_crop, 0, 1)
         # print("move new crop {}".format(new_crop))
+        # print(f"output_crop {self.output_crop} new crop {new_crop}")
         return new_crop
 
     def apply_filters(self, current_image):
@@ -505,6 +505,9 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         if self.event_recorder is not None:
             self.event_recorder.store_event(self, evt)
         return QtWidgets.QWidget.event(self, evt)
+
+    def keyPressEvent(self, event):
+        self.key_press_event(event, wsize=self.size())
 
     def keyReleaseEvent(self, evt):
         self.print_log(f"evt {evt.type()}")
