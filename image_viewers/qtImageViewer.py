@@ -16,6 +16,7 @@ from image_viewers.ImageViewer import ImageViewer, trace_method, get_time
 import cv2
 from utils.ViewerImage import *
 import json
+import numpy as np
 
 from tests_utils.qtdump import *
 
@@ -30,6 +31,9 @@ else:
     has_cppbind = True
 
 print("Do we have cpp binding ? {}".format(has_cppbind))
+
+from scipy.ndimage import gaussian_filter1d
+
 
 class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
@@ -465,6 +469,94 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                          QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft | QtCore.Qt.TextWordWrap,
                          self.display_message)
         self.add_time('painter.drawText',time1)
+
+        # draw histogram
+        histo_timings = False
+        #if histo_timings:
+        h_start = get_time()
+        width = int(rect.width()/4)
+        height = int(rect.height()/6)
+        start_x = self.evt_width - width - 10
+        start_y = self.evt_height - 10
+        margin = 3
+
+        if histo_timings: rect_start = get_time()
+        rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        if histo_timings: rect_time = get_time()-rect_start
+
+        hist_x_step = 4
+        hist_y_step = 2
+        input_image = current_image
+        # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
+        # input_image = self.cv_image
+        resized_im = input_image[::hist_x_step, ::hist_y_step, :]
+        if histo_timings: resized_time = get_time()-h_start
+
+        calc_hist_time = 0
+        path_time = 0
+        gauss_time = 0
+
+        pen = QtGui.QPen()
+        pen.setWidth(2)
+
+        # First compute all histograms
+        if histo_timings: start_hist = get_time()
+        hist_all = np.empty((3, 256), dtype=np.float32)
+        # print(f"{resized_im[::100,::100,:]}")
+        for channel in range(3):
+            hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
+            hist_all[channel, :] = hist[:, 0].astype(np.float32)
+        hist_all = hist_all / np.max(hist_all)
+        # print(f"{hist_all[:,::10]}")
+        if histo_timings: end_hist = get_time()
+        if histo_timings: calc_hist_time += end_hist-start_hist
+        # print(f"histogram painting 1.1 took {get_time() - h_start} sec.")
+
+        if histo_timings: gauss_start = get_time()
+
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+
+        if histo_timings: gauss_time += get_time() - gauss_start
+
+
+        qcolors = {
+            0: QtGui.QColor(255, 50, 50, 255),
+            1: QtGui.QColor(50, 255, 50, 255),
+            2: QtGui.QColor(50, 50, 255, 255)
+        }
+
+        step_x = float(width) / 256
+
+        for channel in range(3):
+            pen.setColor(qcolors[channel])
+            painter.setPen(pen)
+            # painter.setBrush(color)
+            # print(f"histogram painting 1 took {get_time() - h_start} sec.")
+
+            # print(f"histogram painting 2 took {get_time() - h_start} sec.")
+
+            if histo_timings: start_path = get_time()
+
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+
+            step = 2
+            x_range = np.array(range(0, 256, step))
+            x_pos = start_x + x_range*step_x
+            y_pos = start_y - hist_all[channel, x_range]*height
+            polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
+            path.addPolygon(polygon)
+            painter.drawPath(path)
+            if histo_timings: path_time += get_time()-start_path
+
+        print(f"hist took {(get_time()-h_start)*1000:0.1f} msec. ")
+        if histo_timings: print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
+              f"resizing:{resized_time*1000:0.1f}, "
+              f"path:{path_time*1000:0.1f}, "
+              f"rect:{rect_time*1000:0.1f}, "
+              f"gauss:{gauss_time*1000:0.1f}")
+
         painter.end()
         self.print_timing()
 
