@@ -4,7 +4,9 @@ from parameters.numeric_parameter import NumericParameter
 class ImageFilterParameters:
     def __init__(self):
         # white/black levels
-        self.black_level = NumericParameter(int(4095*5/100), int(4095*5/100), [0, 800]  , 4095)
+        # default_black = int(4095*5/100)
+        default_black = 0
+        self.black_level = NumericParameter(default_black, default_black, [0, 800]  , 4095)
         self.white_level = NumericParameter(4095, 4095,            [480, 4095], 4095)
         # gamma curve coefficient
         self.gamma       = NumericParameter(100, 100,            [50, 300], 100)
