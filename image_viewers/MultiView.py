@@ -86,6 +86,7 @@ class MultiView(QtWidgets.QWidget):
         self.image2 = dict()
         self.button_layout = None
         self.message_cb = None
+        self.replacing_widget = self.before_max_parent = None
 
         if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
@@ -560,12 +561,28 @@ class MultiView(QtWidgets.QWidget):
                 print("key down int is ", int(QtCore.Qt.Key_Down))
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             if event.key() == QtCore.Qt.Key_F11:
-                print("key F11 pressed")
-                # self.main_tab_widget.setWindowState(
-                # 	#self.main_tab_widget.windowState() ^
-                #                                     QtCore.Qt.WindowFullScreen)
-                self.setWindowState(self.windowState() ^ QtCore.Qt.WindowFullScreen)
-                self.button_widget.setVisible(not self.button_widget.isVisible())
+                # Should be inside a layout
+                if self.before_max_parent is None:
+                    if self.parent() is not None and self.parent().layout() is not None and \
+                            self.parent().layout().indexOf(self) != -1:
+                        self.before_max_parent = self.parent()
+                        self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                        self.parent().layout().replaceWidget(self, self.replacing_widget)
+                        self.setParent(None)
+                        self.showMaximized()
+                        event.accept()
+                        return
+                if self.before_max_parent is not None:
+                    self.setParent(self.before_max_parent)
+                    self.parent().layout().replaceWidget(self.replacing_widget, self)
+                    self.replacing_widget = self.before_max_parent = None
+                    # self.resize(self.before_max_size)
+                    self.show()
+                    self.parent().update()
+                    self.setFocus()
+                    event.accept()
+                    return
+
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             if modifiers & QtCore.Qt.AltModifier:
                 for n in range(len(self.image_list)):
@@ -589,6 +606,7 @@ class MultiView(QtWidgets.QWidget):
                                 self.update_image(self.image_list[n])
                                 event.accept()
                                 return
+                return
             # print(f"event.modifiers {event.modifiers()}")
             # if not event.modifiers():
             for n in range(len(self.viewer_layouts)):
