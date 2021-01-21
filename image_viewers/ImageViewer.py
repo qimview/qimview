@@ -85,7 +85,8 @@ class ImageViewer:
         self.verbose = False
         self.start_time = dict()
         self.timings = dict()
-        self.is_maximized = False
+        self.replacing_widget = None
+        self.before_max_parent = None
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
@@ -274,24 +275,27 @@ class ImageViewer:
         if type(event) == QtGui.QKeyEvent:
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             if event.key() == QtCore.Qt.Key_F11:
-                # self.setWindowState(self.windowState() ^ QtCore.Qt.WindowFullScreen)
-                if not self.is_maximized:
-                    self.before_max_parent = self.parent()
-                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.parent().layout().replaceWidget(self,self.replacing_widget)
-                    self.setParent(None)
-                    self.showMaximized()
-                    self.is_maximized = True
-                else:
+                # Should be inside a layout
+                if self.before_max_parent is None:
+                    if self.parent() is not None and self.parent().layout() is not None and \
+                            self.parent().layout().indexOf(self) != -1:
+                        self.before_max_parent = self.parent()
+                        self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                        self.parent().layout().replaceWidget(self, self.replacing_widget)
+                        self.setParent(None)
+                        self.showMaximized()
+                        event.accept()
+                        return
+                if self.before_max_parent is not None:
                     self.setParent(self.before_max_parent)
-                    self.parent().layout().replaceWidget(self.replacing_widget,self)
-                    #self.resize(self.before_max_size)
+                    self.parent().layout().replaceWidget(self.replacing_widget, self)
+                    self.replacing_widget = self.before_max_parent = None
+                    # self.resize(self.before_max_size)
                     self.show()
                     self.parent().update()
-                    self.is_maximized = False
                     self.setFocus()
-                event.accept()
-                return
+                    event.accept()
+                    return
 
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             key_list = [QtCore.Qt.Key_A, QtCore.Qt.Key_B, QtCore.Qt.Key_C, QtCore.Qt.Key_D, QtCore.Qt.Key_F]
