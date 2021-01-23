@@ -192,9 +192,9 @@ class MultiView(QtWidgets.QWidget):
                 self.label[image_name] = MyQLabel.MyQLabel(image_name, self)
                 self.label[image_name].setFrameShape(QtWidgets.QFrame.Panel)
                 self.label[image_name].setFrameShadow(QtWidgets.QFrame.Sunken)
-                self.label[image_name].setLineWidth(3)
+                # self.label[image_name].setLineWidth(3)
                 self.label[image_name].setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
-                self.label[image_name].setFixedHeight(40)
+                # self.label[image_name].setFixedHeight(40)
                 self.label[image_name].mousePressEvent = self.make_mouse_press(image_name)
                 self.label[image_name].mouseReleaseEvent = self.mouse_release
                 self.label[image_name].mouseDoubleClickEvent = self.make_mouse_double_click(image_name)
@@ -223,7 +223,7 @@ class MultiView(QtWidgets.QWidget):
 
     def create_buttons(self):
         if self.button_layout is not None:
-            max_grid_columns = 5
+            max_grid_columns = 10
             idx = 0
             for image_name in self.image_list:
                 # possibility to disable an image using the string 'none', especially useful for input image
@@ -441,7 +441,7 @@ class MultiView(QtWidgets.QWidget):
         self.image_viewers[first_active_window].set_image_name(self.output_label_current_image)
         self.image_viewers[first_active_window].set_image(current_image)
         self.image_viewers[first_active_window].show()
-        self.image_viewers[first_active_window].update()
+        # self.image_viewers[first_active_window].update()
         if self.save_image_clipboard:
             print("end save image to clipboard")
             self.image_viewers[first_active_window].set_clipboard(None, False)
@@ -467,7 +467,7 @@ class MultiView(QtWidgets.QWidget):
                     viewer.set_image(viewer_image)
 
                 viewer.show()
-                viewer.update()
+                # viewer.update()
                 self.image_viewers[prev_n].set_synchronize(viewer)
                 prev_n = n1
             # Create a synchronization loop
@@ -567,8 +567,11 @@ class MultiView(QtWidgets.QWidget):
                             self.parent().layout().indexOf(self) != -1:
                         self.before_max_parent = self.parent()
                         self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+
                         self.parent().layout().replaceWidget(self, self.replacing_widget)
                         self.setParent(None)
+                        # Prevent user from closing the window
+                        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
                         self.showMaximized()
                         event.accept()
                         return
