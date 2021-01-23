@@ -56,7 +56,6 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         # self.display_timing = True
         # self.verbose = True
         # self.trace_calls = True
-
         # self.display_cursor = False
 
     #def __del__(self):
@@ -353,6 +352,8 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
 
         current_image = self.apply_filters(current_image)
 
+        # TODO: we should compute the histogram here, with the smallest image!!!
+
         # TODO: Resize before apply_filters, but it is tricky for Bayer, should maintain channels and precision,
         #  and ViewerImage information
         # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
@@ -504,9 +505,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         if histo_timings: start_hist = get_time()
         hist_all = np.empty((3, 256), dtype=np.float32)
         # print(f"{resized_im[::100,::100,:]}")
-        for channel in range(3):
-            hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
-            hist_all[channel, :] = hist[:, 0].astype(np.float32)
+        for channel, im_ch in enumerate(cv2.split(resized_im)):
+            # hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
+            hist = cv2.calcHist([im_ch], [0], None, [256], [0, 256])
+            # print(f"max diff {np.max(np.abs(hist-hist2))}")
+            hist_all[channel, :] = hist[:, 0]
         hist_all = hist_all / np.max(hist_all)
         # print(f"{hist_all[:,::10]}")
         if histo_timings: end_hist = get_time()
