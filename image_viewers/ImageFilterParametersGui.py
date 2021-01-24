@@ -1,4 +1,5 @@
-from Qt import QtWidgets, QtCore, QtGui
+
+from utils.qt_imports import *
 from parameters.numeric_parameter_gui import NumericParameterGui
 
 class ImageFilterParametersGui:

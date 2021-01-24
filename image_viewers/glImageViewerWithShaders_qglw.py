@@ -4,7 +4,7 @@
 #
 #
 
-from Qt import QtWidgets
+from utils.qt_imports import QtWidgets
 
 import OpenGL.GL as gl
 import argparse

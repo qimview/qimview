@@ -4,10 +4,7 @@
 #
 #
 
-from Qt import QtGui, QtWidgets
-import PySide2.QtWidgets
-import PySide2.QtGui
-from  PySide2.QtWidgets import QOpenGLWidget as QOpenGLWidget
+from utils.qt_imports import *
 
 import OpenGL.GL as gl
 import argparse
@@ -63,13 +60,13 @@ class glImageViewerWithShaders(QOpenGLWidget, ImageViewer):
 
         # self.setUpdateBehavior(QOpenGLWidget.PartialUpdate)
 
-        _format = PySide2.QtGui.QSurfaceFormat()
+        _format = QtGui.QSurfaceFormat()
         print('profile is {}'.format(_format.profile()))
         print('version is {}'.format(_format.version()))
         # _format.setDepthBufferSize(24)
         # _format.setVersion(4,0)
         # _format.setProfile(PySide2.QtGui.QSurfaceFormat.CoreProfile)
-        _format.setProfile(PySide2.QtGui.QSurfaceFormat.CompatibilityProfile)
+        _format.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
         self.setFormat(_format)
 
         self.setAutoFillBackground(False)

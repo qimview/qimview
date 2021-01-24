@@ -5,7 +5,7 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from Qt import QtWidgets
+from utils.qt_imports import QtWidgets
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
