@@ -16,7 +16,19 @@ class ImageFilterParameters:
 
     def copy_from(self, p):
         for v in vars(self):
-            self.__dict__[v] = p.__dict__[v]
+            if isinstance(self.__dict__[v], NumericParameter):
+                self.__dict__[v].copy_from(p.__dict__[v])
+
+    def is_equal(self, other):
+        if not isinstance(other, ImageFilterParameters):
+            return NotImplemented
+        for v in vars(self):
+            var1 = self.__dict__[v]
+            if isinstance(var1, NumericParameter):
+                var2 = other.__dict__[v]
+                if var1.float != var2.float:
+                    return False
+        return True
 
     def __repr__(self):
         return f"<ImageFilterParameters {id(self)}>"
