@@ -87,12 +87,17 @@ class ImageViewer:
         self.timings = dict()
         self.replacing_widget = None
         self.before_max_parent = None
+        self.show_histogram = True
+        self.show_cursor    = False
+        # We track an image counter, changed by set_image, to help reducing same calculations
+        self.image_id       = -1
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
         self.print_log('set_image({}): is_different = {}'.format(image.shape, is_different))
         if is_different:
             self.cv_image = image
+            self.image_id += 1
         return is_different
 
     def set_clipboard(self, clipboard, save_image):
@@ -159,6 +164,9 @@ class ImageViewer:
         other_viewer.mouse_zy = self.mouse_zy
         other_viewer.mouse_x = self.mouse_x
         other_viewer.mouse_y = self.mouse_y
+
+        other_viewer.show_histogram = self.show_histogram
+        other_viewer.show_cursor    = self.show_cursor
 
     def synchronize(self, event_viewer):
         """
@@ -230,7 +238,7 @@ class ImageViewer:
                 self.synchronize(self)
             else:
                 modifiers = QtWidgets.QApplication.keyboardModifiers()
-                if modifiers & QtCore.Qt.AltModifier:
+                if self.show_cursor:
                     self.paintAll()
                     self.synchronize(self)
 
@@ -298,37 +306,54 @@ class ImageViewer:
                     return
 
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-            key_list = [QtCore.Qt.Key_A, QtCore.Qt.Key_B, QtCore.Qt.Key_C, QtCore.Qt.Key_D, QtCore.Qt.Key_F]
+            key_list = []
+
+            # select upper left crop
+            key_list.append(QtCore.Qt.Key_A)
             if event.key() == QtCore.Qt.Key_A:
-                # select upper left crop
                 self.current_dx = wsize.width()/4
                 self.current_dy = -wsize.height()/4
                 self.current_scale = 2
-            else:
-                if event.key() == QtCore.Qt.Key_B:
-                    # select upper left crop
-                    self.current_dx = -wsize.width() / 4
-                    self.current_dy = -wsize.height() / 4
-                    self.current_scale = 2
-                else:
-                    if event.key() == QtCore.Qt.Key_C:
-                        # select lower left crop
-                        self.current_dx = wsize.width() / 4
-                        self.current_dy = wsize.height() / 4
-                        self.current_scale = 2
-                    else:
-                        if event.key() == QtCore.Qt.Key_D:
-                            # select lower right crop
-                            self.current_dx = -wsize.width() / 4
-                            self.current_dy = wsize.height() / 4
-                            self.current_scale = 2
-                        else:
-                            if event.key() == QtCore.Qt.Key_F:
-                                # select full crop
-                                self.output_crop = (0., 0., 1., 1.)
-                                self.current_dx = 0
-                                self.current_dy = 0
-                                self.current_scale = 1
+
+            # select upper left crop
+            key_list.append(QtCore.Qt.Key_B)
+            if event.key() == QtCore.Qt.Key_B:
+                self.current_dx = -wsize.width() / 4
+                self.current_dy = -wsize.height() / 4
+                self.current_scale = 2
+
+            # # select lower left crop
+            # key_list.append(QtCore.Qt.Key_C)
+            # if event.key() == QtCore.Qt.Key_C:
+            #     self.current_dx = wsize.width() / 4
+            #     self.current_dy = wsize.height() / 4
+            #     self.current_scale = 2
+
+            # # select lower right crop
+            # key_list.append(QtCore.Qt.Key_D)
+            # if event.key() == QtCore.Qt.Key_D:
+            #     self.current_dx = -wsize.width() / 4
+            #     self.current_dy = wsize.height() / 4
+            #     self.current_scale = 2
+
+            # select full crop
+            key_list.append(QtCore.Qt.Key_F)
+            if event.key() == QtCore.Qt.Key_F:
+                self.output_crop = (0., 0., 1., 1.)
+                self.current_dx = 0
+                self.current_dy = 0
+                self.current_scale = 1
+
+            # toggle histograph
+            key_list.append(QtCore.Qt.Key_H)
+            if event.key() == QtCore.Qt.Key_H:
+                self.show_histogram = not self.show_histogram
+
+            # toggle cursor
+            key_list.append(QtCore.Qt.Key_C)
+            if event.key() == QtCore.Qt.Key_C:
+                self.show_cursor = not self.show_cursor
+
             if event.key() in key_list:
                 self.paintAll()
                 self.synchronize(self)
