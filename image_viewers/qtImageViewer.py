@@ -5,7 +5,9 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from Qt import QtGui, QtCore, QtWidgets
+
+from utils.qt_imports import *
+
 from PIL import Image
 from PIL.ImageQt import ImageQt
 
@@ -17,9 +19,10 @@ import cv2
 from utils.ViewerImage import *
 import json
 import numpy as np
+from image_viewers.ImageFilterParameters import ImageFilterParameters
 
 from tests_utils.qtdump import *
-
+import copy
 
 try:
     import cppimport.import_hook
@@ -53,10 +56,12 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         else:
             self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+        self.paint_cache = None
+
         # self.display_timing = True
         # self.verbose = True
         # self.trace_calls = True
-        # self.display_cursor = False
 
     #def __del__(self):
     #    pass
@@ -294,198 +299,78 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         #    self.paint_image()
         self.update()
 
-    def paint_image(self):
-        draw_text = True
-        if self.trace_calls: t = trace_method(self.tab)
-        self.start_timing()
-
-        time1 = get_time()
-        c = self.update_crop()
-        do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
-        if do_crop:
-            w = self.cv_image.shape[1]
-            h = self.cv_image.shape[0]
-            crop_xmin = int(np.round(c[0] * w))
-            crop_xmax = int(np.round(c[2] * w))
-            crop_ymin = int(np.round(c[1] * h))
-            crop_ymax = int(np.round(c[3] * h))
-            current_image = self.cv_image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
-        else:
-            current_image = self.cv_image
-            crop_xmin = crop_ymin = 0
-
-        cropped_image_shape = current_image.shape
-        self.add_time('crop', time1)
-
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        display_cursor =  modifiers & QtCore.Qt.AltModifier
-
-        # time1 = get_time()
-        label_width = self.size().width()
-        label_height = self.size().height()
-        image_width = current_image.shape[1]
-        image_height = current_image.shape[0]
-
-        ratio_width = float(label_width) / image_width
-        ratio_height = float(label_height) / image_height
-        ratio = min(ratio_width, ratio_height)
-        display_width = int(round(image_width * ratio))
-        display_height = int(round(image_height * ratio))
-        anti_aliasing = ratio < 1
-        #self.print_log("ratio is {:0.2f}".format(ratio))
-        use_opencv_resize = anti_aliasing
-        opencv_interpolation = cv2.INTER_NEAREST
-        resize_applied = False
-        # self.print_time('several settings', time1, start_time)
-
-        # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
-        if use_opencv_resize and not resize_applied and current_image.channels == CH_RGB:
-            time1 = get_time()
-            resized_image = cv2.resize(current_image, (display_width, display_height),
-                                       interpolation=opencv_interpolation)
-            resized_image = ViewerImage(resized_image, precision=current_image.precision,
-                                                        downscale=current_image.downscale,
-                                                        channels=current_image.channels)
-            current_image = resized_image
-            resize_applied = True
-            self.add_time('cv2.resize',time1)
-
-        current_image = self.apply_filters(current_image)
-
-        # TODO: we should compute the histogram here, with the smallest image!!!
-
-        # TODO: Resize before apply_filters, but it is tricky for Bayer, should maintain channels and precision,
-        #  and ViewerImage information
-        # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
-        # opencv_interpolation = cv2.INTER_AREA
-        #if use_opencv_resize and not resize_applied:
-        # try to resize anyway with opencv since qt resizing seems too slow
-        if not resize_applied:
-            time1 = get_time()
-            current_image = cv2.resize(current_image, (display_width, display_height),
-                                       interpolation=opencv_interpolation)
-            resize_applied = True
-            self.add_time('cv2.resize',time1)
-
-        # Conversion from numpy array to QImage
-        # version 1: goes through PIL image
-        # version 2: use QImage constructor directly, faster
-        # time1 = get_time()
-
-        numpy2QImage_version = 2
-        if numpy2QImage_version == 1:
-            current_image_pil = Image.fromarray(current_image)
-            self.image_qt = ImageQt(current_image_pil)
-            self.qimage = QtGui.QImage(self.image_qt)  # cast PIL.ImageQt object to QImage object -that's the trick!!!
-        else:
-            if not current_image.flags['C_CONTIGUOUS']:
-                current_image = np.require(current_image, np.uint8, 'C')
-            self.qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
-                                       current_image.strides[0], QtGui.QImage.Format_RGB888)
-
-        # self.add_time('QtGui.QPixmap',time1)
-
-        if self.save_image_clipboard:
-            self.print_log("exporting to clipboard")
-            self.clipboard.setImage(self.qimage, mode=QtGui.QClipboard.Clipboard)
-
-        self.in_paint_all = False
-
-
-        if not resize_applied:
-            time1 = get_time()
-            if anti_aliasing:
-                qimage = self.qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            else:
-                qimage = self.qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
-            self.add_time('qimage.scaled', time1)
-            resize_applied = True
-        else:
-            qimage = self.qimage
-
-        painter = QtGui.QPainter()
-        painter.begin(self)
-
-        rect = QtCore.QRect(qimage.rect())
-        devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
-        rect.moveCenter(devRect.center())
-
-        time1 = get_time()
-        painter.drawImage(rect.topLeft(), qimage)
-        self.add_time('painter.drawImage',time1)
-
+    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter):
+        """
+        :param cropped_image_shape: dimensions of current crop
+        :param crop_xmin: left pixel of current crop
+        :param crop_ymin: top pixel of current crop
+        :param rect: displayed image area
+        :param painter:
+        :return:
+        """
         # Draw cursor
-        if display_cursor:
-            if self.display_timing: time1 = self.get_time()
-            # get image position
-            if len(cropped_image_shape) == 3:
-                (height, width, channels) = cropped_image_shape
-            else:
-                (height, width) = cropped_image_shape
-            im_x = int((self.mouse_x -rect.x())/rect.width()*width)
-            im_y = int((self.mouse_y -rect.y())/rect.height()*height)
-
-            pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
-            pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
-
-            # ratio = self.screen().devicePixelRatio()
-            # print("ratio = {}".format(ratio))
-            pos_x = pos_from_im_x  # *ratio
-            pos_y = pos_from_im_y  # *ratio
-            length_percent = 0.04
-            # use percentage of the displayed image dimensions
-            length = int(max(self.width(),self.height())*length_percent)
-            pen_width = 4
-            color = QtGui.QColor(0, 255, 255, 200)
-            pen = QtGui.QPen()
-            pen.setColor(color)
-            pen.setWidth(pen_width)
-            painter.setPen(pen)
-            painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
-            painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
-
-            # Update text
-            if im_x>=0 and im_x<cropped_image_shape[1] and im_y>=0 and im_y<cropped_image_shape[0]:
-                # values = cropped_image[im_y, im_x]
-                im_x += crop_xmin
-                im_y += crop_ymin
-                values = self.cv_image[im_y, im_x]
-                self.display_message = "pos {:4}, {:4} \n rgb {} \n {} {} {} bits".format(im_x, im_y, values,
-                                                                                self.cv_image.shape,
-                                                                                self.cv_image.dtype,
-                                                                                self.cv_image.precision)
-            else:
-                self.display_message = "Out of image"
-                # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
-                #                                     self.cv_image.shape, (self.mouse_x, self.mouse_y), rect)
-            self.add_time('drawCursor',time1)
+        if self.display_timing: time1 = self.get_time()
+        # get image position
+        if len(cropped_image_shape) == 3:
+            (height, width, channels) = cropped_image_shape
         else:
-            self.display_message = self.image_name
+            (height, width) = cropped_image_shape
+        im_x = int((self.mouse_x -rect.x())/rect.width()*width)
+        im_y = int((self.mouse_y -rect.y())/rect.height()*height)
 
+        pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
+        pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
+
+        # ratio = self.screen().devicePixelRatio()
+        # print("ratio = {}".format(ratio))
+        pos_x = pos_from_im_x  # *ratio
+        pos_y = pos_from_im_y  # *ratio
+        length_percent = 0.04
+        # use percentage of the displayed image dimensions
+        length = int(max(self.width(),self.height())*length_percent)
+        pen_width = 4
+        color = QtGui.QColor(0, 255, 255, 200)
+        pen = QtGui.QPen()
+        pen.setColor(color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
+        painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
+
+        # Update text
+        if im_x>=0 and im_x<cropped_image_shape[1] and im_y>=0 and im_y<cropped_image_shape[0]:
+            # values = cropped_image[im_y, im_x]
+            im_x += crop_xmin
+            im_y += crop_ymin
+            values = self.cv_image[im_y, im_x]
+            display_message = f"pos {im_x:4}, {im_y:4} \n rgb {values} \n " \
+                              f"{self.cv_image.shape} {self.cv_image.dtype} {self.cv_image.precision} bits"
+        else:
+            display_message = "Out of image"
+            # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
+            #                                     self.cv_image.shape, (self.mouse_x, self.mouse_y), rect)
+        if self.display_timing: self.add_time('drawCursor',time1)
+        return display_message
+
+    def display_text(self, painter):
         time1 = get_time()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
         painter.setFont(QtGui.QFont('Decorative', 16))
-        painter.drawText(10, self.evt_height-200, 400, 200,
-                         QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft | QtCore.Qt.TextWordWrap,
+        text_options = QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft | QtCore.Qt.TextWordWrap
+        area_width = 400
+        area_height = 200
+        bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
+        margin_x = 8
+        margin_y = 5
+        painter.drawText(margin_x, self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
+                         text_options,
                          self.display_message)
         self.add_time('painter.drawText',time1)
 
-        # draw histogram
-        histo_timings = False
-        #if histo_timings:
+    def compute_histogram(self, current_image, show_timings=False):
         h_start = get_time()
-        width = int(rect.width()/4)
-        height = int(rect.height()/6)
-        start_x = self.evt_width - width - 10
-        start_y = self.evt_height - 10
-        margin = 3
-
-        if histo_timings: rect_start = get_time()
-        rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
-        painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
-        if histo_timings: rect_time = get_time()-rect_start
-
+        histo_timings = show_timings
         hist_x_step = 4
         hist_y_step = 2
         input_image = current_image
@@ -495,11 +380,6 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         if histo_timings: resized_time = get_time()-h_start
 
         calc_hist_time = 0
-        path_time = 0
-        gauss_time = 0
-
-        pen = QtGui.QPen()
-        pen.setWidth(2)
 
         # First compute all histograms
         if histo_timings: start_hist = get_time()
@@ -517,11 +397,42 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         # print(f"histogram painting 1.1 took {get_time() - h_start} sec.")
 
         if histo_timings: gauss_start = get_time()
-
         hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if histo_timings: gauss_time = get_time() - gauss_start
 
-        if histo_timings: gauss_time += get_time() - gauss_start
+        # print(f"compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. ")
+        if histo_timings: print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
+              f"resizing:{resized_time*1000:0.1f}, "
+              f"gauss:{gauss_time*1000:0.1f}")
+        return hist_all
 
+
+    def display_histogram(self, hist_all, painter, rect, show_timings=False):
+        """
+        :param painter:
+        :param rect: displayed image area
+        :return:
+        """
+        histo_timings = show_timings
+        #if histo_timings:
+        h_start = get_time()
+        width = int(rect.width()/4)
+        height = int(rect.height()/6)
+        start_x = self.evt_width - width - 10
+        start_y = self.evt_height - 10
+        margin = 3
+
+        if histo_timings: rect_start = get_time()
+        rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        if histo_timings: rect_time = get_time()-rect_start
+
+        # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
+        # input_image = self.cv_image
+        path_time = 0
+
+        pen = QtGui.QPen()
+        pen.setWidth(2)
 
         qcolors = {
             0: QtGui.QColor(255, 50, 50, 255),
@@ -553,17 +464,176 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             painter.drawPath(path)
             if histo_timings: path_time += get_time()-start_path
 
-        print(f"hist took {(get_time()-h_start)*1000:0.1f} msec. ")
-        if histo_timings: print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
-              f"resizing:{resized_time*1000:0.1f}, "
-              f"path:{path_time*1000:0.1f}, "
-              f"rect:{rect_time*1000:0.1f}, "
-              f"gauss:{gauss_time*1000:0.1f}")
+        # print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ")
+        if histo_timings: print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
+
+
+    def paint_image(self):
+        if self.trace_calls: t = trace_method(self.tab)
+        self.start_timing()
+        time0 = time1 = get_time()
+
+        label_width = self.size().width()
+        label_height = self.size().height()
+
+        c = self.update_crop()
+        # check paint_cache
+        if self.paint_cache is not None:
+            use_cache = self.paint_cache['imid'] == self.image_id and \
+                        np.array_equal(self.paint_cache['crop'],c) and \
+                        self.paint_cache['labelw'] == label_width and \
+                        self.paint_cache['labelh'] == label_height and \
+                        self.paint_cache['filterp'].is_equal(self.filter_params) and \
+                        (self.paint_cache['showhist'] == self.show_histogram or not self.show_histogram)
+        else:
+            use_cache = False
+
+        # could_use_cache = use_cache
+        # if could_use_cache:
+        #     print(" Could use cache here ... !!!")
+        # use_cache = False
+
+        do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
+        if do_crop:
+            w = self.cv_image.shape[1]
+            h = self.cv_image.shape[0]
+            crop_xmin = int(np.round(c[0] * w))
+            crop_xmax = int(np.round(c[2] * w))
+            crop_ymin = int(np.round(c[1] * h))
+            crop_ymax = int(np.round(c[3] * h))
+            current_image = self.cv_image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+        else:
+            current_image = self.cv_image
+            crop_xmin = crop_ymin = 0
+
+        cropped_image_shape = current_image.shape
+        self.add_time('crop', time1)
+
+        # time1 = get_time()
+        image_width = current_image.shape[1]
+        image_height = current_image.shape[0]
+
+        resize_applied = False
+        if not use_cache:
+            ratio_width = float(label_width) / image_width
+            ratio_height = float(label_height) / image_height
+            ratio = min(ratio_width, ratio_height)
+            display_width = int(round(image_width * ratio))
+            display_height = int(round(image_height * ratio))
+            anti_aliasing = ratio < 1
+            #self.print_log("ratio is {:0.2f}".format(ratio))
+            use_opencv_resize = anti_aliasing
+            opencv_interpolation = cv2.INTER_NEAREST
+            # self.print_time('several settings', time1, start_time)
+
+            # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
+            # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
+            # opencv_interpolation = cv2.INTER_AREA
+            if use_opencv_resize and not resize_applied and current_image.channels == CH_RGB:
+                time1 = get_time()
+                resized_image = cv2.resize(current_image, (display_width, display_height),
+                                           interpolation=opencv_interpolation)
+                resized_image = ViewerImage(resized_image, precision=current_image.precision,
+                                                            downscale=current_image.downscale,
+                                                            channels=current_image.channels)
+                current_image = resized_image
+                resize_applied = True
+                self.add_time('cv2.resize',time1)
+
+            current_image = self.apply_filters(current_image)
+
+            # Compute the histogram here, with the smallest image!!!
+            if self.show_histogram:
+                histograms = self.compute_histogram(current_image, show_timings=self.display_timing)
+            else:
+                histograms = None
+
+            # try to resize anyway with opencv since qt resizing seems too slow
+            if not resize_applied:
+                time1 = get_time()
+                current_image = cv2.resize(current_image, (display_width, display_height),
+                                           interpolation=opencv_interpolation)
+                resize_applied = True
+                self.add_time('cv2.resize',time1)
+
+            # Conversion from numpy array to QImage
+            # version 1: goes through PIL image
+            # version 2: use QImage constructor directly, faster
+            # time1 = get_time()
+
+        else:
+            resize_applied = True
+            current_image = self.paint_cache['current_image']
+            histograms = self.paint_cache['histograms']
+
+        # if could_use_cache:
+        #     print(f" ======= current_image equal ? {np.array_equal(self.paint_cache['current_image'],current_image)}")
+
+        if not use_cache:
+            # cache_time = get_time()
+            fp = ImageFilterParameters()
+            fp.copy_from(self.filter_params)
+            self.paint_cache = {
+                'imid': self.image_id, 'crop': c, 'labelw': label_width, 'labelh': label_height,
+                'filterp': fp, 'showhist': self.show_histogram,
+                'histograms': histograms, 'current_image': current_image}
+            # print(f"create cache data took {int((get_time() - cache_time) * 1000)} ms")
+
+        numpy2QImage_version = 2
+        if numpy2QImage_version == 1:
+            current_image_pil = Image.fromarray(current_image)
+            self.image_qt = ImageQt(current_image_pil)
+            qimage = QtGui.QImage(self.image_qt)  # cast PIL.ImageQt object to QImage object -that's the trick!!!
+        else:
+            if not current_image.flags['C_CONTIGUOUS']:
+                current_image = np.require(current_image, np.uint8, 'C')
+            qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
+                                       current_image.strides[0], QtGui.QImage.Format_RGB888)
+        # self.add_time('QtGui.QPixmap',time1)
+
+        if not resize_applied:
+            time1 = get_time()
+            if anti_aliasing:
+                qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            else:
+                qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
+            self.add_time('qimage.scaled', time1)
+            resize_applied = True
+
+        if self.save_image_clipboard:
+            self.print_log("exporting to clipboard")
+            self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
+
+        painter = QtGui.QPainter()
+        painter.begin(self)
+
+        rect = QtCore.QRect(qimage.rect())
+        devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+        rect.moveCenter(devRect.center())
+
+        time1 = get_time()
+        painter.drawImage(rect.topLeft(), qimage)
+        self.add_time('painter.drawImage',time1)
+
+        # Draw cursor
+        if self.show_cursor:
+            self.display_message = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
+        else:
+            self.display_message = self.image_name
+
+        self.display_text(painter)
+
+        # draw histogram
+        if self.show_histogram:
+            self.display_histogram(histograms, painter, rect, show_timings=self.display_timing)
 
         painter.end()
         self.print_timing()
 
+        print(f" paint_image took {int((get_time()-time0)*1000)} ms")
+
     def paintEvent(self, event):
+        # print(f" qtImageViewer.paintEvent() {self.image_name}")
         if self.trace_calls:
             t = trace_method(self.tab)
         # try:
