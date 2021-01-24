@@ -5,8 +5,7 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from Qt import QtGui, QtCore, QtWidgets
-from Qt.QtOpenGL import QGLWidget
+from utils.qt_imports import *
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
@@ -268,8 +267,7 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
 
     def gl_draw_cursor(self):
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        if modifiers & QtCore.Qt.AltModifier:
+        if self.show_cursor:
             x0, x1, y0, y1 = self.image_centered_position()
 
             im_x = int(self.cursor_imx_ratio*self.tex_width)
@@ -391,8 +389,7 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
         self.mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        if modifiers & QtCore.Qt.AltModifier:
+        if self.show_cursor:
             self.set_cursor_image_position(event.x(), event.y())
         self.mouse_move_event(event)
 
