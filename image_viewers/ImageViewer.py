@@ -72,9 +72,9 @@ class ImageViewer:
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
         self.cv_image = None
+        self.cv_image_ref = None
         self.synchronize_viewer = None
         self.tab = ["--"]
-        self.display_timing = False
         self.trace_calls  = False
         self.image_name = ""
         self.active_window = False
@@ -82,15 +82,36 @@ class ImageViewer:
         self.save_image_clipboard = False
         self.clipboard = None
         self.setMouseTracking(True)
-        self.verbose = False
+        self._display_timing = False
+        self._verbose = False
         self.start_time = dict()
         self.timings = dict()
         self.replacing_widget = None
         self.before_max_parent = None
         self.show_histogram = True
         self.show_cursor    = False
+        self.show_overlay   = False
+        self.show_image_differences = False
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
+        self.image_ref_id   = -1
+
+
+    @property
+    def display_timing(self):
+        return self._display_timing
+
+    @display_timing.setter
+    def display_timing(self, v):
+        self._display_timing = v
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, v):
+        self._verbose = v
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
@@ -99,6 +120,12 @@ class ImageViewer:
             self.cv_image = image
             self.image_id += 1
         return is_different
+
+    def set_image_ref(self, image_ref=None):
+        is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+        if is_different:
+            self.cv_image_ref = image_ref
+            self.image_ref_id += 1
 
     def set_clipboard(self, clipboard, save_image):
         self.clipboard = clipboard
@@ -132,10 +159,11 @@ class ImageViewer:
                     caller_name = "{}.{}".format(class_name, caller_name)
             else:
                 caller_name = title
-            total_start = self.start_time[caller_name]
-            ctime = get_time()
-            mess = "{} {:0.1f} ms, total {:0.1f} ms".format(mess, (ctime -current_start)*1000, (ctime-total_start)*1000)
-            self.timings[caller_name] += "{}{}: {}\n".format(self.tab[0], caller_name, mess)
+            if caller_name in self.start_time:
+                total_start = self.start_time[caller_name]
+                ctime = get_time()
+                mess = "{} {:0.1f} ms, total {:0.1f} ms".format(mess, (ctime -current_start)*1000, (ctime-total_start)*1000)
+                self.timings[caller_name] += "{}{}: {}\n".format(self.tab[0], caller_name, mess)
 
     def print_timing(self, add_total=False, force=False, title=None):
         if not self.display_timing: return
@@ -224,6 +252,8 @@ class ImageViewer:
     def mouse_move_event(self, event):
         self.mouse_x = event.x()
         self.mouse_y = event.y()
+        if self.show_overlay:
+            self.paintAll()
         if event.buttons() & QtCore.Qt.LeftButton:
             self.mouse_dx = event.x() - self.lastPos.x()
             self.mouse_dy = - (event.y() - self.lastPos.y())
@@ -349,10 +379,20 @@ class ImageViewer:
             if event.key() == QtCore.Qt.Key_H:
                 self.show_histogram = not self.show_histogram
 
+            # toggle overlay
+            key_list.append(QtCore.Qt.Key_O)
+            if event.key() == QtCore.Qt.Key_O:
+                self.show_overlay = not self.show_overlay
+
             # toggle cursor
             key_list.append(QtCore.Qt.Key_C)
             if event.key() == QtCore.Qt.Key_C:
                 self.show_cursor = not self.show_cursor
+
+            # toggle cursor
+            key_list.append(QtCore.Qt.Key_D)
+            if event.key() == QtCore.Qt.Key_D:
+                self.show_image_differences = not self.show_image_differences
 
             if event.key() in key_list:
                 self.paintAll()
