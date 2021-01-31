@@ -32,6 +32,7 @@ print("Do we have cpp binding ? {}".format(has_cppbind))
 
 from scipy.ndimage import gaussian_filter1d
 
+# the opengl version is a bit slow for the moment, due to the texture generation
 use_opengl = False
 base_widget = QOpenGLWidget if use_opengl else QtWidgets.QWidget
 
