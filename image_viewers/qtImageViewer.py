@@ -5,14 +5,9 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-
 from utils.qt_imports import *
 
-from PIL import Image
-from PIL.ImageQt import ImageQt
-
 import argparse
-import sys
 from image_viewers.ImageViewer import ImageViewer, trace_method, get_time
 
 import cv2
@@ -37,12 +32,14 @@ print("Do we have cpp binding ? {}".format(has_cppbind))
 
 from scipy.ndimage import gaussian_filter1d
 
+use_opengl = False
+base_widget = QOpenGLWidget if use_opengl else QtWidgets.QWidget
 
-class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
+class qtImageViewer(base_widget, ImageViewer ):
 
     def __init__(self, parent=None, event_recorder=None):
         self.event_recorder = event_recorder
-        QtWidgets.QWidget.__init__(self, parent)
+        base_widget.__init__(self, parent)
         ImageViewer.__init__(self, parent)
         self.anti_aliasing = True
         size_policy = QtWidgets.QSizePolicy()
@@ -57,16 +54,20 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         else:
             self.setFocusPolicy(QtCore.Qt.ClickFocus)
 
-        self.paint_cache = None
+        self.paint_cache      = None
+        self.paint_diff_cache = None
+        self.diff_image       = None
 
-        # self.display_timing = True
+        self.display_timing = False
+        if base_widget is QOpenGLWidget:
+            self.setAutoFillBackground(True)
         # self.verbose = True
         # self.trace_calls = True
 
     #def __del__(self):
     #    pass
 
-    def set_image(self, image, active=False):
+    def set_image(self, image):
         super(qtImageViewer, self).set_image(image)
 
     def apply_zoom(self, crop):
@@ -184,6 +185,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             white_level = self.filter_params.white_level.float
             g_r_coeff = self.filter_params.g_r.float
             g_b_coeff = self.filter_params.g_b.float
+            saturation = self.filter_params.saturation.float
             max_value = ((1<<current_image.precision)-1)
             max_type = 1  # not used
             gamma = self.filter_params.gamma.float  # not used
@@ -198,7 +200,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                           f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                     ok = wrap_numpy.apply_filters_u16_u8(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
-                                                      g_b_coeff, max_value, max_type, gamma)
+                                                      g_b_coeff, max_value, max_type, gamma, saturation)
                     self.add_time('apply_filters_u16_u8()',time1, force=True, title='apply_filters()')
                 else:
                     if current_image.dtype == np.uint8:
@@ -208,7 +210,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                               f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                         ok = wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, black_level, white_level,
                                                             g_r_coeff,
-                                                          g_b_coeff, max_value, max_type, gamma)
+                                                          g_b_coeff, max_value, max_type, gamma, saturation)
                         self.add_time('apply_filters_u8_u8()',time1, force=True, title='apply_filters()')
                     else:
                         print(f"apply_filters() not available for {current_image.dtype} data type !")
@@ -297,7 +299,27 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
     def paintAll(self):
         #if self.cv_image is not None:
         #    self.paint_image()
-        self.update()
+        if base_widget is QOpenGLWidget:
+            self.paint_image()
+            self.repaint()
+        else:
+            self.update()
+
+    def draw_overlay_separation(self, cropped_image_shape, rect, painter):
+        (height, width) = cropped_image_shape[:2]
+        im_x = int((self.mouse_x - rect.x())/rect.width()*width)
+        im_x = max(0, min(width - 1, im_x))
+        # im_y = int((self.mouse_y - rect.y())/rect.height()*height)
+        # Set position at the beginning of the pixel
+        pos_from_im_x = int(im_x*rect.width()/width + rect.x())
+        # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
+        pen_width = 4
+        color = QtGui.QColor(255, 255, 0 , 128)
+        pen = QtGui.QPen()
+        pen.setColor(color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
 
     def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter):
         """
@@ -309,12 +331,9 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         :return:
         """
         # Draw cursor
-        if self.display_timing: time1 = self.get_time()
+        if self.display_timing: self.start_timing()
         # get image position
-        if len(cropped_image_shape) == 3:
-            (height, width, channels) = cropped_image_shape
-        else:
-            (height, width) = cropped_image_shape
+        (height, width) = cropped_image_shape[:2]
         im_x = int((self.mouse_x -rect.x())/rect.width()*width)
         im_y = int((self.mouse_y -rect.y())/rect.height()*height)
 
@@ -349,11 +368,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
             display_message = "Out of image"
             # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
             #                                     self.cv_image.shape, (self.mouse_x, self.mouse_y), rect)
-        if self.display_timing: self.add_time('drawCursor',time1)
+        if self.display_timing: self.print_timing()
         return display_message
 
     def display_text(self, painter):
-        time1 = get_time()
+        self.start_timing()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
         painter.setFont(QtGui.QFont('Decorative', 16))
@@ -366,17 +385,23 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         painter.drawText(margin_x, self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
                          text_options,
                          self.display_message)
-        self.add_time('painter.drawText',time1)
+        self.print_timing()
 
     def compute_histogram(self, current_image, show_timings=False):
         h_start = get_time()
-        histo_timings = show_timings
-        hist_x_step = 4
-        hist_y_step = 2
+        histo_timings = True
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
         input_image = current_image
         # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
         # input_image = self.cv_image
-        resized_im = input_image[::hist_x_step, ::hist_y_step, :]
+        resized_im = input_image[::hist_y_step, ::hist_x_step, :]
+        print(f"qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} "
+              f"shape {current_image.shape} --> {resized_im.shape}")
         if histo_timings: resized_time = get_time()-h_start
 
         calc_hist_time = 0
@@ -467,6 +492,32 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         # print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ")
         if histo_timings: print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
 
+    def get_difference_image(self):
+        if self.paint_diff_cache is not None:
+            use_cache = self.paint_diff_cache['imid'] == self.image_id and \
+                        self.paint_diff_cache['imrefid'] == self.image_ref_id
+        else:
+            use_cache = False
+
+        if not use_cache:
+            im1 = self.cv_image
+            im2 = self.cv_image_ref
+            # TODO: get factor from parameters ...
+            # factor = int(self.diff_color_slider.value())
+            factor = 3
+            # Fast OpenCV code
+            start = get_time()
+            # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
+            diff_plus = cv2.subtract(im1, im2)
+            diff_minus = cv2.subtract(im2, im1)
+            res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+            print(f" qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms")
+            # print "max diff = ", np.max(res-res2)
+            res = ViewerImage(res, precision=im1.precision, downscale=im1.downscale, channels=im1.channels)
+            self.paint_diff_cache = {'imid': self.image_id, 'imrefid': self.image_ref_id}
+            self.diff_image = res
+
+        return self.diff_image
 
     def paint_image(self):
         if self.trace_calls: t = trace_method(self.tab)
@@ -476,6 +527,9 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         label_width = self.size().width()
         label_height = self.size().height()
 
+        show_diff = self.show_image_differences and self.cv_image is not self.cv_image_ref and \
+                    self.cv_image_ref is not None and self.cv_image.shape == self.cv_image_ref.shape
+
         c = self.update_crop()
         # check paint_cache
         if self.paint_cache is not None:
@@ -484,9 +538,18 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                         self.paint_cache['labelw'] == label_width and \
                         self.paint_cache['labelh'] == label_height and \
                         self.paint_cache['filterp'].is_equal(self.filter_params) and \
-                        (self.paint_cache['showhist'] == self.show_histogram or not self.show_histogram)
+                        (self.paint_cache['showhist'] == self.show_histogram or not self.show_histogram) and \
+                        self.paint_cache['show_diff'] == show_diff and \
+                        not self.show_overlay
         else:
             use_cache = False
+
+        # if show_diff, compute the image difference (put it in cache??)
+        if show_diff:
+            # don't save the difference
+            current_image = self.get_difference_image()
+        else:
+            current_image = self.cv_image
 
         # could_use_cache = use_cache
         # if could_use_cache:
@@ -494,45 +557,72 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         # use_cache = False
 
         do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
+        h, w  = current_image.shape[:2]
         if do_crop:
-            w = self.cv_image.shape[1]
-            h = self.cv_image.shape[0]
             crop_xmin = int(np.round(c[0] * w))
             crop_xmax = int(np.round(c[2] * w))
             crop_ymin = int(np.round(c[1] * h))
             crop_ymax = int(np.round(c[3] * h))
-            current_image = self.cv_image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+            current_image = current_image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
         else:
-            current_image = self.cv_image
             crop_xmin = crop_ymin = 0
+            crop_xmax = w
+            crop_ymax = h
 
         cropped_image_shape = current_image.shape
         self.add_time('crop', time1)
 
         # time1 = get_time()
-        image_width = current_image.shape[1]
-        image_height = current_image.shape[0]
+        image_height, image_width  = current_image.shape[:2]
+        ratio_width = float(label_width) / image_width
+        ratio_height = float(label_height) / image_height
+        ratio = min(ratio_width, ratio_height)
+        display_width = int(round(image_width * ratio))
+        display_height = int(round(image_height * ratio))
+
+        if self.show_overlay and self.cv_image_ref is not self.cv_image and \
+            self.cv_image.shape == self.cv_image_ref.shape:
+            # to create the overlay rapidly, we will mix the two images based on the current cursor position
+            # 1. convert cursor position to image position
+            (height, width) = cropped_image_shape[:2]
+            # compute rect
+            rect = QtCore.QRect(0, 0, display_width, display_height)
+            devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+            rect.moveCenter(devRect.center())
+            im_x = int((self.mouse_x - rect.x()) / rect.width() * width)
+            im_x = max(0,min(width-1, im_x))
+            # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
+            # We need to have a copy here .. slow, better option???
+            current_image = np.copy(current_image)
+            current_image[:, :im_x] = self.cv_image_ref[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+            # re-instantiate ViewerImage
+            current_image = ViewerImage(current_image, precision=self.cv_image.precision,
+                                        downscale=self.cv_image.downscale,
+                                        channels=self.cv_image.channels)
 
         resize_applied = False
         if not use_cache:
-            ratio_width = float(label_width) / image_width
-            ratio_height = float(label_height) / image_height
-            ratio = min(ratio_width, ratio_height)
-            display_width = int(round(image_width * ratio))
-            display_height = int(round(image_height * ratio))
             anti_aliasing = ratio < 1
             #self.print_log("ratio is {:0.2f}".format(ratio))
             use_opencv_resize = anti_aliasing
-            opencv_interpolation = cv2.INTER_NEAREST
+            # enable this as optional?
+            # opencv_downscale_interpolation = cv2.INTER_AREA
+            # opencv_upscale_interpolation   = cv2.INTER_LINEAR
+            opencv_fast_interpolation = cv2.INTER_NEAREST
+            opencv_downscale_interpolation = opencv_fast_interpolation
+            opencv_upscale_interpolation   = opencv_fast_interpolation
             # self.print_time('several settings', time1, start_time)
 
             # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
             # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
-            # opencv_interpolation = cv2.INTER_AREA
             if use_opencv_resize and not resize_applied and current_image.channels == CH_RGB:
                 time1 = get_time()
+                start_0 = get_time()
+                prev_shape = current_image.shape
                 resized_image = cv2.resize(current_image, (display_width, display_height),
-                                           interpolation=opencv_interpolation)
+                                        interpolation=opencv_downscale_interpolation)
+                print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
+                    f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
                 resized_image = ViewerImage(resized_image, precision=current_image.precision,
                                                             downscale=current_image.downscale,
                                                             channels=current_image.channels)
@@ -549,12 +639,18 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
                 histograms = None
 
             # try to resize anyway with opencv since qt resizing seems too slow
-            if not resize_applied:
+            if not resize_applied and base_widget is not QOpenGLWidget:
                 time1 = get_time()
+                start_0 = get_time()
+                prev_shape = current_image.shape
                 current_image = cv2.resize(current_image, (display_width, display_height),
-                                           interpolation=opencv_interpolation)
-                resize_applied = True
+                                           interpolation=opencv_upscale_interpolation)
+                print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
+                      f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
                 self.add_time('cv2.resize',time1)
+
+            # no need for more resizing
+            resize_applied = True
 
             # Conversion from numpy array to QImage
             # version 1: goes through PIL image
@@ -569,57 +665,69 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         # if could_use_cache:
         #     print(f" ======= current_image equal ? {np.array_equal(self.paint_cache['current_image'],current_image)}")
 
-        if not use_cache:
+        if not use_cache and not self.show_overlay:
             # cache_time = get_time()
             fp = ImageFilterParameters()
             fp.copy_from(self.filter_params)
             self.paint_cache = {
-                'imid': self.image_id, 'crop': c, 'labelw': label_width, 'labelh': label_height,
+                'imid': self.image_id,
+                'imrefid': self.image_ref_id,
+                'crop': c, 'labelw': label_width, 'labelh': label_height,
                 'filterp': fp, 'showhist': self.show_histogram,
-                'histograms': histograms, 'current_image': current_image}
+                'histograms': histograms, 'current_image': current_image,
+                'show_diff' : show_diff}
             # print(f"create cache data took {int((get_time() - cache_time) * 1000)} ms")
 
-        numpy2QImage_version = 2
-        if numpy2QImage_version == 1:
-            current_image_pil = Image.fromarray(current_image)
-            self.image_qt = ImageQt(current_image_pil)
-            qimage = QtGui.QImage(self.image_qt)  # cast PIL.ImageQt object to QImage object -that's the trick!!!
-        else:
-            if not current_image.flags['C_CONTIGUOUS']:
-                current_image = np.require(current_image, np.uint8, 'C')
-            qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
-                                       current_image.strides[0], QtGui.QImage.Format_RGB888)
+        if not current_image.flags['C_CONTIGUOUS']:
+            current_image = np.require(current_image, np.uint8, 'C')
+        qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
+                                    current_image.strides[0], QtGui.QImage.Format_RGB888)
         # self.add_time('QtGui.QPixmap',time1)
 
-        if not resize_applied:
-            time1 = get_time()
-            if anti_aliasing:
-                qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-            else:
-                qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
-            self.add_time('qimage.scaled', time1)
-            resize_applied = True
+        assert resize_applied, "Image resized should be applied at this point"
+        # if not resize_applied:
+        #     printf("*** We should never get here ***")
+        #     time1 = get_time()
+        #     if anti_aliasing:
+        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        #     else:
+        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
+        #     self.add_time('qimage.scaled', time1)
+        #     resize_applied = True
 
         if self.save_image_clipboard:
             self.print_log("exporting to clipboard")
             self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
 
         painter = QtGui.QPainter()
-        painter.begin(self)
 
-        rect = QtCore.QRect(qimage.rect())
+        painter.begin(self)
+        if base_widget is QOpenGLWidget:
+            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        # TODO: check that this condition is not needed
+        if base_widget is QOpenGLWidget:
+            rect = QtCore.QRect(0,0, display_width, display_height)
+        else:
+            rect = QtCore.QRect(qimage.rect())
         devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
         rect.moveCenter(devRect.center())
 
         time1 = get_time()
-        painter.drawImage(rect.topLeft(), qimage)
+        # painter.drawImage(rect.topLeft(), qimage)
+        painter.drawImage(rect, qimage)
         self.add_time('painter.drawImage',time1)
+
+        if self.show_overlay:
+            self.draw_overlay_separation(cropped_image_shape, rect, painter)
 
         # Draw cursor
         if self.show_cursor:
             self.display_message = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
         else:
             self.display_message = self.image_name
+        if self.show_overlay:
+            self.display_message = " REF vs " + self.display_message
 
         self.display_text(painter)
 
@@ -631,6 +739,11 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         self.print_timing()
 
         print(f" paint_image took {int((get_time()-time0)*1000)} ms")
+
+    def show(self):
+        if base_widget==QOpenGLWidget:
+            self.update()
+        base_widget.show(self)
 
     def paintEvent(self, event):
         # print(f" qtImageViewer.paintEvent() {self.image_name}")
@@ -650,6 +763,8 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
+        base_widget.resizeEvent(self, event)
+        self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
     def mousePressEvent(self, event):
         self.mouse_press_event(event)
@@ -669,7 +784,7 @@ class qtImageViewer(QtWidgets.QWidget, ImageViewer ):
     def event(self, evt):
         if self.event_recorder is not None:
             self.event_recorder.store_event(self, evt)
-        return QtWidgets.QWidget.event(self, evt)
+        return base_widget.event(self, evt)
 
     def keyPressEvent(self, event):
         self.key_press_event(event, wsize=self.size())
