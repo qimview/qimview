@@ -42,6 +42,7 @@ class MultiView(QtWidgets.QWidget):
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
 
         self.nb_viewers_used = nb_viewers
+        self.allocated_image_viewers = []  # keep allocated image viewers here
         self.image_viewers = []
         self.image_viewer_class = {
             ViewerType.QT_VIEWER:             qtImageViewer,
@@ -52,12 +53,12 @@ class MultiView(QtWidgets.QWidget):
 
         # Create viewer instances
         for n in range(self.nb_viewers_used):
-            self.image_viewers.append(self.image_viewer_class())
+            viewer = self.image_viewer_class()
+            self.allocated_image_viewers.append(viewer)
+            self.image_viewers.append(viewer)
 
         self.viewer_mode = viewer_mode
         self.bold_font = QtGui.QFont()
-
-        self.verbosity = 0
 
         self.verbosity_LIGHT = 1
         self.verbosity_TIMING = 1 << 2
@@ -66,6 +67,8 @@ class MultiView(QtWidgets.QWidget):
         self.verbosity_DEBUG = 1 << 5
         # self.set_verbosity(self.verbosity_TIMING_DETAILED)
         # self.set_verbosity(self.verbosity_TRACE)
+
+        self.verbosity = self.verbosity_LIGHT
 
         self.current_image_filename = None
         self.save_image_clipboard = False
@@ -94,8 +97,6 @@ class MultiView(QtWidgets.QWidget):
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         else:
             self.setFocusPolicy(QtCore.Qt.ClickFocus)
-
-        self.show_image_differences    = False
 
     def set_verbosity(self, flag, enable=True):
         """
@@ -175,13 +176,44 @@ class MultiView(QtWidgets.QWidget):
             time_spent = get_time() - update_start
             print(" Update image took {0:0.3f} sec.".format(time_spent))
 
-    def set_images(self, images):
+    def set_images(self, images, set_viewers=False):
         self.print_log(f"MultiView.set_images() {images}")
         if images.keys() == self.image_dict.keys():
             self.image_dict = images
         else:
             self.image_dict = images
             self.update_image_buttons()
+
+    def set_viewer_images(self):
+        """
+        Set viewer images based on self.image_dict.keys()
+        :return:
+        """
+        # if set_viewers, we force the viewer layout and images based on the list
+        self.nb_viewers_used = eval(self.current_viewer_layout)
+        # be sure to have enough image viewers allocated
+        while self.nb_viewers_used > len(self.allocated_image_viewers):
+            viewer = self.image_viewer_class()
+            self.allocated_image_viewers.append(viewer)
+        self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
+        image_names = list(self.image_dict.keys())
+        for n in range(self.nb_viewers_used):
+            if n < len(image_names):
+                self.image_viewers[n].set_image_name(image_names[n])
+            else:
+                self.image_viewers[n].set_image_name(image_names[len(image_names)-1])
+
+    def set_reference_label(self, ref):
+        try:
+            if ref is not None:
+                self.output_label_reference_image = ref
+                reference_image = self.get_output_image(self.output_label_reference_image)
+                for n in range(self.nb_viewers_used):
+                    viewer = self.image_viewers[n]
+                    # set reference image
+                    viewer.set_image_ref(reference_image)
+        except Exception as e:
+            print(f' Failed to set reference label {e}')
 
     def update_image_buttons(self):
         # choose image to display
@@ -208,7 +240,7 @@ class MultiView(QtWidgets.QWidget):
 
         if len(self.image_list)>0:
             self.output_label_current_image = self.image_list[0]
-            self.output_label_reference_image = self.image_list[0]
+            self.set_reference_label(self.image_list[0])
         else:
             self.output_label_current_image = ''
             self.output_label_reference_image = ''
@@ -270,16 +302,19 @@ class MultiView(QtWidgets.QWidget):
         self.diff_color_slider.setValue(3)
         parameters_layout.addWidget(self.diff_color_slider)
 
+        # self.saturation_default = 50
+        # self.saturation_label = QtWidgets.QLabel("Saturation")
+        # parameters_layout.addWidget(self.saturation_label)
+        # self.saturation_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        # self.saturation_slider.setRange(1, 150)
+        # self.saturation_slider.setValue(self.saturation_default)
+        # self.saturation_slider.setToolTip("{}".format(self.saturation_default))
+        # self.saturation_slider.valueChanged.connect(self.update_image_intensity_event)
         # Add saturation slider
-        self.saturation_default = 50
-        self.saturation_label = QtWidgets.QLabel("Saturation")
-        parameters_layout.addWidget(self.saturation_label)
-        self.saturation_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.saturation_slider.setRange(1, 150)
-        self.saturation_slider.setValue(self.saturation_default)
-        self.saturation_slider.setToolTip("{}".format(self.saturation_default))
-        self.saturation_slider.valueChanged.connect(self.update_image_intensity_event)
-        parameters_layout.addWidget(self.saturation_slider)
+        # parameters_layout.addWidget(self.saturation_slider)
+
+        # --- Saturation adjustment
+        self.filter_params_gui.add_saturation(parameters_layout, self.update_image_intensity_event)
         # --- Black point adjustment
         self.filter_params_gui.add_blackpoint(parameters_layout, self.update_image_intensity_event)
         # --- white point adjustment
@@ -392,6 +427,21 @@ class MultiView(QtWidgets.QWidget):
         self.cache.add_images(image_filenames, self.read_size, verbose=False, use_RGB=not self.use_opengl,
                              image_transform=image_transform)
 
+    def update_label_fonts(self):
+        # Update selected image label, we could do it later too
+        for im_name in self.image_list:
+            # possibility to disable an image using the string 'none', especially useful for input image
+            if im_name != 'none':
+                is_bold      = im_name == self.output_label_current_image
+                is_underline = im_name == self.output_label_reference_image
+                is_bold |= is_underline
+                self.bold_font.setBold(is_bold)
+                self.bold_font.setUnderline(is_underline)
+                self.bold_font.setPointSize(8)
+                self.label[im_name].setFont(self.bold_font)
+                self.label[im_name].setWordWrap(True)
+            # self.label[im_name].setMaximumWidth(160)
+
     def update_image(self, image_name=None):
         """
         Uses the variable self.output_label_current_image
@@ -410,16 +460,7 @@ class MultiView(QtWidgets.QWidget):
             print(" No image filename for current image")
             return
 
-        # Update selected image label, we could do it later too
-        for im_name in self.image_list:
-            # possibility to disable an image using the string 'none', especially useful for input image
-            if im_name != 'none':
-                is_bold = im_name == self.output_label_current_image
-                self.bold_font.setBold(is_bold)
-                self.bold_font.setPointSize(8)
-                self.label[im_name].setFont(self.bold_font)
-                self.label[im_name].setWordWrap(True)
-            # self.label[im_name].setMaximumWidth(160)
+        self.update_label_fonts()
 
         # find first active window
         first_active_window = 0
@@ -433,15 +474,13 @@ class MultiView(QtWidgets.QWidget):
         # set all viewers image names (labels)
         image_filenames = [self.image_dict[self.output_label_current_image]]
         # define image associated to each used viewer and add it to the list of images to get
-        prev_n = first_active_window
         for n in range(self.nb_viewers_used):
-            n1 = (first_active_window + n) % self.nb_viewers_used
-            viewer = self.image_viewers[n1]
+            viewer = self.image_viewers[n]
             # Set active only the first active window
-            viewer.set_active(n == 0)
+            viewer.set_active(n == first_active_window)
             if viewer.get_image() is None:
-                if n1<len(self.image_list):
-                    viewer.set_image_name(self.image_list[n1])
+                if n < len(self.image_list):
+                    viewer.set_image_name(self.image_list[n])
                     image_filenames.append(self.image_dict[self.image_list[n]])
                 else:
                     viewer.set_image_name(self.output_label_current_image)
@@ -474,15 +513,15 @@ class MultiView(QtWidgets.QWidget):
 
         # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
         # Control key enable display of difference image
-        show_diff = self.show_image_differences and self.output_label_reference_image != self.output_label_current_image
-        if show_diff:
-            # don't save the difference
-            if self.verbosity > 1:
-                print(">> Not saving difference")
-            diff_image = self.difference_image(self.output_label_reference_image, self.output_label_current_image)
-            current_image = ViewerImage(diff_image, precision=current_image.precision,
-                                        downscale=current_image.downscale,
-                                        channels=current_image.channels)
+        # show_diff = self.show_image_differences and self.output_label_reference_image != self.output_label_current_image
+        # if show_diff:
+        #     # don't save the difference
+        #     if self.verbosity > 1:
+        #         print(">> Not saving difference")
+        #     diff_image = self.difference_image(self.output_label_reference_image, self.output_label_current_image)
+        #     current_image = ViewerImage(diff_image, precision=current_image.precision,
+        #                                 downscale=current_image.downscale,
+        #                                 channels=current_image.channels)
 
         current_viewer = self.image_viewers[first_active_window]
         if self.save_image_clipboard:
@@ -494,6 +533,8 @@ class MultiView(QtWidgets.QWidget):
         if self.save_image_clipboard:
             print("end save image to clipboard")
             current_viewer.set_clipboard(None, False)
+
+        reference_image = self.get_output_image(self.output_label_reference_image)
 
         if self.nb_viewers_used >= 2:
             prev_n = first_active_window
@@ -509,6 +550,9 @@ class MultiView(QtWidgets.QWidget):
                     viewer.set_image(current_image)
                 else:
                     viewer.set_image(viewer_image)
+
+                # set reference image
+                viewer.set_image_ref(reference_image)
 
                 self.image_viewers[prev_n].set_synchronize(viewer)
                 prev_n = n1
@@ -571,13 +615,16 @@ class MultiView(QtWidgets.QWidget):
         col_length = int(math.sqrt(self.nb_viewers_used))
         row_length = int(math.ceil(self.nb_viewers_used / col_length))
         print('col_length = {} row_length = {}'.format(col_length, row_length))
-        prev_image_viewers = self.image_viewers
-        self.image_viewers = []
-        for n in range(self.nb_viewers_used):
-            if n < len(prev_image_viewers):
-                self.image_viewers.append(prev_image_viewers[n])
-            else:
-                self.image_viewers.append(self.image_viewer_class())
+        # be sure to have enough image viewers allocated
+        while self.nb_viewers_used > len(self.allocated_image_viewers):
+            viewer = self.image_viewer_class()
+            self.allocated_image_viewers.append(viewer)
+
+        self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
+        # self.image_viewers = []
+        # for n in range(self.nb_viewers_used):
+        #     self.image_viewers.append(self.allocated_image_viewers[n])
+
         for n in range(self.nb_viewers_used):
             self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
             self.image_viewers[n].hide()
@@ -587,8 +634,8 @@ class MultiView(QtWidgets.QWidget):
         # for n in range(col_length):
         # 	self.viewer_grid_layout.setRowStretch(n, 1)
 
-        for n in range(self.nb_viewers_used):
-            print("Viewer {} size {}".format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
+        # for n in range(self.nb_viewers_used):
+        #     print("Viewer {} size {}".format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
 
     def update_viewer_layout_callback(self):
         self.update_viewer_layout()
@@ -601,13 +648,13 @@ class MultiView(QtWidgets.QWidget):
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             if modifiers & (QtCore.Qt.AltModifier | QtCore.Qt.ControlModifier):
                 event.accept()
-            else:
-                try:
-                    # reset reference image
-                    if self.output_label_current_image != self.output_label_reference_image:
-                        self.update_image(self.output_label_reference_image)
-                except Exception as e:
-                    print(" Error: {}".format(e))
+            # else:
+            #     try:
+            #         # reset reference image
+            #         if self.output_label_current_image != self.output_label_reference_image:
+            #             self.update_image(self.output_label_reference_image)
+            #     except Exception as e:
+            #         print(" Error: {}".format(e))
 
     def keyPressEvent(self, event):
         if type(event) == QtGui.QKeyEvent:
@@ -648,20 +695,22 @@ class MultiView(QtWidgets.QWidget):
                         if event.key() == QtCore.Qt.Key_0 + n:
                             if self.output_label_current_image != self.image_list[n]:
                                 # with Alt+Ctrl, change reference image
-                                if modifiers & QtCore.Qt.ControlModifier:
-                                    self.output_label_reference_image = self.image_list[n]
+                                # if modifiers & QtCore.Qt.ControlModifier:
+                                #     self.set_reference_label(self.image_list[n])
                                 self.update_image(self.image_list[n])
                                 self.setFocus()
                                 return
                 event.accept()
                 return
+
             if event.modifiers() & QtCore.Qt.ControlModifier:
                 # allow to switch between images by pressing Ctrl+'image position' (Ctrl+0, Ctrl+1, etc)
                 for n in range(len(self.image_list)):
                     if self.image_list[n] != 'none':
                         if event.key() == QtCore.Qt.Key_0 + n:
                             if self.output_label_current_image != self.image_list[n]:
-                                self.update_image(self.image_list[n])
+                                self.set_reference_label(self.image_list[n])
+                                self.update_image()
                                 event.accept()
                                 return
                 return
@@ -675,10 +724,6 @@ class MultiView(QtWidgets.QWidget):
                     self.setFocus()
                     event.accept()
                     return
-
-            # toggle cursor
-            if event.key() == QtCore.Qt.Key_D:
-                self.show_image_differences = not self.show_image_differences
 
         else:
             event.ignore()
