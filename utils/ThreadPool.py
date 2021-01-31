@@ -49,14 +49,17 @@ class Worker(QtCore.QRunnable):
         # self.kwargs['progress_callback'] = self.signals.progress
 
     def set_progress_callback(self, cb):
-        self.signals.progress.connect(cb)
+        if cb is not None:
+            self.signals.progress.connect(cb)
 
     def set_finished_callback(self, cb):
-        self.signals.finished.connect(cb)
+        if cb is not None:
+            self.signals.finished.connect(cb)
 
     def set_result_callback(self, cb):
         # self.signals.result.connect(cb)
-        self.result_cb = cb
+        if cb is not None:
+            self.result_cb = cb
 
     @Slot()
     def run(self):
