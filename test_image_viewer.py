@@ -16,6 +16,8 @@ if __name__ == '__main__':
     parser.add_argument('-i', '--input_image', help='input image')
     parser.add_argument('-p', '--play', help='events json file', default=None)
     parser.add_argument('-r', '--record', help='record events in given json file', default=None)
+    parser.add_argument('--timing', action='store_true', help='display timings')
+    parser.add_argument('--gl', action='store_true', help='use opengl viewer')
     args = parser.parse_args()
     _params = vars(args)
     print(f"record {_params['record']}")
@@ -38,6 +40,8 @@ if __name__ == '__main__':
             self.main_widget.setLayout(vertical_layout)
 
             self.widget = qtImageViewer(event_recorder = self.event_recorder)
+            if _params['timing']:
+                self.widget.display_timing = True
             if record_file is not None:
                 self.event_recorder.register_widget(id(self.widget), "widget")
 
