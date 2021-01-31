@@ -51,9 +51,21 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
     
         void main() {
           colour = texture(backgroundTexture, UV).rgb;
+
+          // black level
           colour.rgb = colour.rgb/max_value*max_type;
-          colour.rgb = max((colour.rgb-vec3(black_level).rgb)/(white_level-black_level), 0.0);
+          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
+
+          // white balance
+          colour.r = colour.r*g_r_coeff;
+          colour.b = colour.b*g_b_coeff;
+
+          // rescale to white level as saturation level
+          colour.rgb = colour.rgb/(white_level-black_level);
+          
+          // apply gamma
           colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+
         }
     """
 
