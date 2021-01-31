@@ -565,13 +565,13 @@ class MultiView(QtWidgets.QWidget):
             viewer = self.image_viewers[n]
             # print(f"show viewer {n}")
             # Note: calling show in any case seems to avoid double calls to paint event that update() triggers
-            viewer.show()
-            # if viewer.isHidden():
-            #     print(f"show viewer {n}")
-            #     viewer.show()
-            # else:
-            #     print(f"update viewer {n}")
-            #     viewer.update()
+            # viewer.show()
+            if viewer.isHidden():
+                print(f"show viewer {n}")
+                viewer.show()
+            else:
+                print(f"update viewer {n}")
+                viewer.update()
 
 
         # self.image_scroll_area.adjustSize()
