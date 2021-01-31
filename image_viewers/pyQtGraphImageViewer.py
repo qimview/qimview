@@ -35,7 +35,7 @@ class pyQtGraphImageViewer(pg.GraphicsLayoutWidget, ImageViewer):
 	def numpy2imageitem(im):
 		return pg.ImageItem(im[::-1, :, :], autoLevels=False, levels=None)
 
-	def set_image(self, image, active=False):
+	def set_image(self, image):
 		super(pyQtGraphImageViewer, self).set_image(image)
 		self.viewbox.removeItem(self.imv)
 		self.viewbox.addItem(image)
