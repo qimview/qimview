@@ -125,7 +125,8 @@ class glImageViewerWithShaders(QOpenGLWidget, ImageViewer):
         self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
         self.gamma_location       = shaders.glGetUniformLocation(self.program, "gamma")
 
-        print('initiliazeGL shaders time {:0.1f} ms'.format((get_time()-start_time)*1000))
+        if self.display_timing:
+            print('initiliazeGL shaders time {:0.1f} ms'.format((get_time()-start_time)*1000))
 
         # set background vertices
         backgroundVertices = [
@@ -386,6 +387,8 @@ class glImageViewerWithShaders(QOpenGLWidget, ImageViewer):
 
     def updateViewPort(self):
 
+        if self.tex_height == 0:
+            return
         # gl.glEnable(gl.GL_DEPTH_TEST)
 
         self.opengl_error()
