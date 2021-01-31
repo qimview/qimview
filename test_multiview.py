@@ -4,6 +4,7 @@ import sys
 import argparse
 import os
 from image_viewers.MultiView import ViewerType
+import glob
 
 if __name__ == '__main__':
 
@@ -15,6 +16,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     _params = vars(args)
+
+    filenames = []
+    for im in _params['images']:
+      filenames.extend(glob.glob(im,recursive=False))
 
     app = QtWidgets.QApplication(sys.argv)
 
@@ -34,7 +39,7 @@ if __name__ == '__main__':
         return os.path.splitext(os.path.basename(path))[0][-maxlength:]
 
     images_dict = {}
-    for im in _params['images']:
+    for im in filenames:
         images_dict[get_name(im)] = im
     mv.set_images(images_dict)
     mv.update_layout()
