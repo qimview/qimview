@@ -20,10 +20,13 @@ import pygame
 import traceback
 from utils.ViewerImage import *
 
-class qglImageViewerBase(QGLWidget, ImageViewer):
+# opengl_class = QOpenGLWidget
+opengl_class = QGLWidget
+
+class qglImageViewerBase(opengl_class, ImageViewer):
 
     def __init__(self, parent=None):
-        QGLWidget.__init__(self, parent)
+        opengl_class.__init__(self, parent)
         ImageViewer.__init__(self, parent)
         self.setAutoFillBackground(False)
         # self.setFormat()
@@ -45,7 +48,7 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
     #     if self.textureID is not None:
     #         gl.glDeleteTextures(np.array([self.textureID]))
 
-    def set_image(self, image, active=False):
+    def set_image(self, image):
         if self.trace_calls:
             t = trace_method(self.tab)
         changed = super(qglImageViewerBase, self).set_image(image)
@@ -143,6 +146,7 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
         }
         texture_pixel_format = channels2format[self.cv_image.channels]
 
+        print(f"self.tex_width,self.tex_height ")
         if (self.tex_width,self.tex_height) != (img_width,img_height):
             if self.textureID is not None:
                 gl.glDeleteTextures(np.array([self.textureID]))
@@ -207,6 +211,12 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
         self.print_timing(add_total=True)
 
     def paintAll(self):
+        #     self.update()
+
+        # def draw_scene(self):
+        #     pass
+
+        # def paintGL(self):
         if self.trace_calls:
             t = trace_method(self.tab)
         if self.textureID is None or not self.isValid() or not self.isVisible():
@@ -221,6 +231,7 @@ class qglImageViewerBase(QGLWidget, ImageViewer):
             self.updateViewPort()
             self.updateTransforms()
             self.paintGL()
+            # self.draw_scene()
             draw_text = True
             if draw_text:
                 color = (255, 50, 50, 128) if self.is_active() else (255, 255, 255, 128)

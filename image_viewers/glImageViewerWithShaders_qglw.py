@@ -235,6 +235,7 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
         # self.setTexture()
         self.print_timing()
 
+    # def draw_scene(self):
     def paintGL(self):
         """Paint the scene.
         """
