@@ -13,6 +13,8 @@ class ImageFilterParameters:
         # white balance coefficients
         self.g_b = NumericParameter(256, 256, [50, 512], 256)
         self.g_r = NumericParameter(256, 256, [50, 512], 256)
+        # Saturation
+        self.saturation = NumericParameter(50, 50, [0, 150], 50)
 
     def copy_from(self, p):
         for v in vars(self):

@@ -13,6 +13,7 @@ class ImageFilterParametersGui:
         self.gamma_gui = None
         self.g_r_gui   = None
         self.g_b_gui   = None
+        self.saturation_gui = None
         self.event_recorder = None
         self.name           = name
 
@@ -38,6 +39,10 @@ class ImageFilterParametersGui:
     def add_g_b(self, layout, callback):
         self.g_b_gui = NumericParameterGui("G/B", self.params.g_b, callback, layout, self.name)
         self.g_b_gui.set_event_recorder(self.event_recorder)
+
+    def add_saturation(self, layout, callback):
+        self.saturation_gui = NumericParameterGui("Saturation", self.params.saturation, callback, layout, self.name)
+        self.saturation_gui.set_event_recorder(self.event_recorder)
 
     def register_event_player(self, event_player):
         for v in vars(self):
