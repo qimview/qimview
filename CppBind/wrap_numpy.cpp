@@ -136,7 +136,8 @@ bool apply_filters(
         float g_b_coeff,
         input_type max_value, // maximal value based on image precision
         output_type max_type,  // maximal value based on image type (uint8, etc...)
-        float gamma
+        float gamma,
+        float saturation
 )
 {
     auto input  = in.template unchecked<3>(); // Will throw if ndim != 3
@@ -217,9 +218,48 @@ bool apply_filters(
 
             // for the moment put result in first three components
             auto output_ptr = &output(i, j, 0);
-            *output_ptr++ = output_lut[red  *3];
-            *output_ptr++ = output_lut[green*3+1];
-            *output_ptr   = output_lut[blue *3+2];
+            if (saturation != 1.0f) {
+                float r = output_lut[red  *3];
+                float g = output_lut[green*3+1];
+                float b = output_lut[blue *3+2];
+                float mean = (r+b+g)/3;
+                // get saturation vector
+                r = r-mean;
+                g = g-mean;
+                b = b-mean;
+                // by applying mean+(r,g,b)*coeff find the maximal possible coeff that maintain
+                // the values in the RGB cube
+                // Check the coefficient that reaches 255
+                float val_max_pos = std::max(0.f, std::max(r,std::max(g,b)));
+                float max_pos_coeff = 1.f;
+                if (val_max_pos>0) max_pos_coeff = (255.f-mean)/val_max_pos;
+                // Check the coefficient that reaches 0
+                float val_max_neg = std::max(0.f, std::max(-r,std::max(-g,-b)));
+                float max_neg_coeff = 1.f;
+                if (val_max_neg>0) max_neg_coeff = mean/val_max_neg;
+                // Combine both coeff
+                float max_coeff = std::min(max_neg_coeff, max_pos_coeff);
+                // max_coeff should be > 1
+                if (max_coeff<1)
+                    printf(" vibrancy: max_coeff<1 %f \n", max_coeff);
+
+                // 1. saturation cannot go beyond max_coeff
+                float sat = std::min(max_coeff, saturation);
+                // 2. vibrancy = saturation * f(1/max_coeff):
+                // 1/max_coeff is the proportion of color in the current pixel compared to the maximal
+                float vibrancy =  sat;
+                // the additional saturation is weighted by the distance to the maximal coefficient
+                if (sat>1)
+                    vibrancy = 1.f + (sat-1.f) * (1.0f-1.0f/max_coeff);
+
+                *output_ptr++ = static_cast<output_type>(std::max(0.f, std::min(255.f, mean + r*vibrancy)) + 0.5);
+                *output_ptr++ = static_cast<output_type>(std::max(0.f, std::min(255.f, mean + g*vibrancy)) + 0.5);
+                *output_ptr   = static_cast<output_type>(std::max(0.f, std::min(255.f, mean + b*vibrancy)) + 0.5);
+            } else {
+                *output_ptr++ = output_lut[red  *3];
+                *output_ptr++ = output_lut[green*3+1];
+                *output_ptr   = output_lut[blue *3+2];
+            }
        }
    }
 
@@ -245,11 +285,13 @@ PYBIND11_MODULE(wrap_numpy, m) {
     py::arg(),
     py::arg(),
     py::arg(),
+    py::arg(),
     py::arg()
      );
     m.def("apply_filters_u8_u8", &apply_filters<uint8_t, uint8_t>,
     py::arg().noconvert(),
     py::arg().noconvert(),
+    py::arg(),
     py::arg(),
     py::arg(),
     py::arg(),
