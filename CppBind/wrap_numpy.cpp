@@ -18,6 +18,7 @@ setup_pybind11(cfg)
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <type_traits>
 
 namespace py = pybind11;
 
@@ -120,6 +121,52 @@ bool apply_filters_scalar(
                 *output_ptr   = val_out;
            }
        }
+    }
+    return true;
+}
+
+
+template <class input_type, class output_type>
+bool apply_filters_scalar_float(
+        py::array_t<input_type> in,
+        py::array_t<output_type> out,
+        float black_level,
+        float white_level,
+        input_type max_value, // maximal value based on image precision
+        output_type max_type,  // maximal value based on image type (uint8, etc...)
+        float gamma
+)
+{
+    auto input  = in.template unchecked<2>(); // Will throw if ndim != 2
+    auto output = out.template mutable_unchecked<3>(); // Will throw if ndim != 3 or flags.writeable is false
+
+    // float values: no lookup table
+
+    #pragma omp parallel for
+    for (py::ssize_t i = 0; i < input.shape(0); i++)
+    {
+        for (py::ssize_t j = 0; j < input.shape(1); j++)
+        {
+            input_type v   = std::min(max_value,(input_type)input(i, j));
+            float y;
+            // normalize to 1
+            y = float(v)/max_value;
+            // black level
+            y  = (y<black_level)?0:(y-black_level);
+            // rescale to white level as saturation level
+            y  /= (white_level-black_level);
+            if (gamma!=1) {
+                float p = 1.0f/gamma;
+                // apply gamma
+                y  = powf(y, p);
+            }
+            // for the moment put result in first three components
+            output_type val_out = static_cast<output_type>(std::min(1.f,y)*255.f);
+            auto output_ptr = &output(i, j, 0);
+            *output_ptr++ = val_out;
+            *output_ptr++ = val_out;
+            *output_ptr   = val_out;
+        }
     }
     return true;
 }
@@ -301,7 +348,46 @@ PYBIND11_MODULE(wrap_numpy, m) {
     py::arg(),
     py::arg()
      );
-    m.def("apply_filters_scalar_u8_u8", &apply_filters_scalar<uint8_t, uint8_t>,
+    m.def("apply_filters_u32_u8", &apply_filters<uint32_t, uint8_t>,
+    py::arg().noconvert(),
+    py::arg().noconvert(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg()
+     );
+     m.def("apply_filters_s32_u8", &apply_filters<int32_t, uint8_t>,
+    py::arg().noconvert(),
+    py::arg().noconvert(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg()
+     );
+     m.def("apply_filters_s16_u8", &apply_filters<int16_t, uint8_t>,
+    py::arg().noconvert(),
+    py::arg().noconvert(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg()
+     );
+   m.def("apply_filters_scalar_u8_u8", &apply_filters_scalar<uint8_t, uint8_t>,
     py::arg().noconvert(),
     py::arg().noconvert(),
     py::arg(),
@@ -320,6 +406,15 @@ PYBIND11_MODULE(wrap_numpy, m) {
     py::arg()
      );
     m.def("apply_filters_scalar_u32_u8", &apply_filters_scalar<uint32_t, uint8_t>,
+    py::arg().noconvert(),
+    py::arg().noconvert(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg()
+     );
+    m.def("apply_filters_scalar_f64_u8", &apply_filters_scalar_float<double, uint8_t>,
     py::arg().noconvert(),
     py::arg().noconvert(),
     py::arg(),
