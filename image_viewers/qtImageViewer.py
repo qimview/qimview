@@ -195,52 +195,44 @@ class qtImageViewer(base_widget, ImageViewer ):
             time1 = get_time()
             ok = False
             if ch in CH_RAWFORMATS or ch in CH_RGBFORMATS:
-                if current_image.dtype == np.uint16:
-                    self.print_log(f"wrap_numpy.apply_filters_u16_u8(current_image, rgb_image, channels, "
+                cases = {
+                    'uint8':  { 'func': wrap_numpy.apply_filters_u8_u8  , 'name': 'apply_filters_u8_u8'},
+                    'uint16': { 'func': wrap_numpy.apply_filters_u16_u8, 'name': 'apply_filters_u16_u8'},
+                    'uint32': { 'func': wrap_numpy.apply_filters_u32_u8, 'name': 'apply_filters_u32_u8'},
+                    'int16': { 'func': wrap_numpy.apply_filters_s16_u8, 'name': 'apply_filters_s16_u8'},
+                    'int32': { 'func': wrap_numpy.apply_filters_s32_u8, 'name': 'apply_filters_s32_u8'}
+                }
+                if current_image.dtype.name in cases:
+                    func = cases[current_image.dtype.name]['func']
+                    name = cases[current_image.dtype.name]['name']
+                    self.print_log(f"wrap_numpy.{name}(current_image, rgb_image, channels, "
                           f"black_level={black_level}, white_level={white_level}, "
                           f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                    ok = wrap_numpy.apply_filters_u16_u8(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
-                                                      g_b_coeff, max_value, max_type, gamma, saturation)
-                    self.add_time('apply_filters_u16_u8()',time1, force=True, title='apply_filters()')
+                    ok = func(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
+                                g_b_coeff, max_value, max_type, gamma, saturation)
+                    self.add_time(f'{name}()',time1, force=True, title='apply_filters()')
                 else:
-                    if current_image.dtype == np.uint8:
-                        self.print_log(f"wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, "
-                              f"black_level={black_level}, white_level={white_level}, "
-                              f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
-                              f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                        ok = wrap_numpy.apply_filters_u8_u8(current_image, rgb_image, channels, black_level, white_level,
-                                                            g_r_coeff,
-                                                          g_b_coeff, max_value, max_type, gamma, saturation)
-                        self.add_time('apply_filters_u8_u8()',time1, force=True, title='apply_filters()')
-                    else:
-                        print(f"apply_filters() not available for {current_image.dtype} data type !")
+                    print(f"apply_filters() not available for {current_image.dtype} data type !")
             else:
-                if current_image.dtype == np.uint8:
-                    self.print_log(f"wrap_numpy.apply_filters_scalar_u8_u8(current_image, rgb_image, "
+                cases = {
+                    'uint8':  { 'func': wrap_numpy.apply_filters_scalar_u8_u8 , 'name': 'apply_filters_scalar_u8_u8'},
+                    'uint16': { 'func': wrap_numpy.apply_filters_scalar_u16_u8, 'name': 'apply_filters_scalar_u16_u8'},
+                    'uint32': { 'func': wrap_numpy.apply_filters_scalar_u32_u8, 'name': 'apply_filters_scalar_u32_u8'},
+                    'float64': { 'func': wrap_numpy.apply_filters_scalar_f64_u8, 'name': 'apply_filters_scalar_f64_u8'},
+                }
+                if current_image.dtype.name.startswith('float'):
+                    max_value = 1.0
+                if current_image.dtype.name in cases:
+                    func = cases[current_image.dtype.name]['func']
+                    name = cases[current_image.dtype.name]['name']
+                    self.print_log(f"wrap_numpy.{name}(current_image, rgb_image, "
                           f"black_level={black_level}, white_level={white_level}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                    ok = wrap_numpy.apply_filters_scalar_u8_u8(current_image, rgb_image, black_level,
-                                                            white_level, max_value, max_type, gamma)
-                    self.add_time('apply_filters_scalar_u8_u8()', time1, force=True, title='apply_filters()')
+                    ok = func(current_image, rgb_image, black_level, white_level, max_value, max_type, gamma)
+                    self.add_time(f'{name}()', time1, force=True, title='apply_filters()')
                 else:
-                    if current_image.dtype == np.uint16:
-                        self.print_log(f"wrap_numpy.apply_filters_scalar_u16_u8(current_image, rgb_image, "
-                              f"black_level={black_level}, white_level={white_level}, "
-                              f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                        ok = wrap_numpy.apply_filters_scalar_u16_u8(current_image, rgb_image, black_level,
-                                                                   white_level, max_value, max_type, gamma)
-                        self.add_time('apply_filters_scalar_u16_u8()', time1, force=True, title='apply_filters()')
-                    else:
-                        if current_image.dtype == np.uint32:
-                            self.print_log(f"wrap_numpy.apply_filters_scalar_u32_u8(current_image, rgb_image, "
-                                  f"black_level={black_level}, white_level={white_level}, "
-                                  f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                            ok = wrap_numpy.apply_filters_scalar_u32_u8(current_image, rgb_image, black_level,
-                                                                       white_level, max_value, max_type, gamma)
-                            self.add_time('apply_filters_scalar_u32_u8()', time1, force=True, title='apply_filters()')
-                        else:
-                            print(f"apply_filters_scalar() not available for {current_image.dtype} data type !")
+                    print(f"apply_filters_scalar() not available for {current_image.dtype} data type !")
             if not ok:
                 self.print_log("Failed running wrap_num.apply_filters_u16_u8 ...", force=True)
         else:
@@ -715,8 +707,10 @@ class qtImageViewer(base_widget, ImageViewer ):
         rect.moveCenter(devRect.center())
 
         time1 = get_time()
-        # painter.drawImage(rect.topLeft(), qimage)
-        painter.drawImage(rect, qimage)
+        if base_widget is QOpenGLWidget:
+            painter.drawImage(rect, qimage)
+        else:
+            painter.drawImage(rect.topLeft(), qimage)
         self.add_time('painter.drawImage',time1)
 
         if self.show_overlay:
