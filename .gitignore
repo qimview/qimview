@@ -1,0 +1,8 @@
+*.pyc
+_*
+*.orig
+.idea
+*.pyd
+*.bak
+.vscode
+*\ -\ Copy.*
