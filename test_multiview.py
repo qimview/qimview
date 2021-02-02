@@ -1,9 +1,9 @@
 from Qt import QtGui, QtCore, QtWidgets
-from image_viewers.MultiView import MultiView
+from .image_viewers.MultiView import MultiView
+from .image_viewers.MultiView import ViewerType
 import sys
 import argparse
 import os
-from image_viewers.MultiView import ViewerType
 import glob
 
 if __name__ == '__main__':

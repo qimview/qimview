@@ -1,6 +1,7 @@
 
 from ..utils.qt_imports import *
-from ..utils.utils import get_time, read_image
+from ..utils.utils import get_time
+from ..utils.image_reader import ImageReader
 from ..utils.image_cache import ImageCache
 from ..utils.ViewerImage import *
 from ..utils import MyQLabel
