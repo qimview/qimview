@@ -5,7 +5,9 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from utils.qt_imports import *
+from ..utils.qt_imports import *
+from ..utils.ViewerImage import *
+from .ImageViewer import ImageViewer, ReadImage, trace_method
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
@@ -14,11 +16,9 @@ import OpenGL.GLU as glu
 
 import argparse
 import sys
-from image_viewers.ImageViewer import ImageViewer, ReadImage, trace_method
 
 import pygame
 import traceback
-from utils.ViewerImage import *
 
 # opengl_class = QOpenGLWidget
 opengl_class = QGLWidget

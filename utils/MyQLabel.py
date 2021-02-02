@@ -1,4 +1,4 @@
-from utils.qt_imports import *
+from .qt_imports import *
 
 
 class MyQLabel(QLabel):

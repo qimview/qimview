@@ -26,8 +26,8 @@ import os.path
 import vlc
 from Qt import QtWidgets, QtCore, QtGui
 from Qt.QtWidgets import QMainWindow, QWidget, QFrame, QSlider
-from parameters.numeric_parameter import  NumericParameter
-from parameters.numeric_parameter_gui import NumericParameterGui
+from ..parameters.numeric_parameter import  NumericParameter
+from ..parameters.numeric_parameter_gui import NumericParameterGui
 
 
 unicode = str  # Python 3

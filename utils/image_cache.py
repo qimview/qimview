@@ -1,10 +1,11 @@
 
+from .utils import get_time, read_image, deep_getsizeof
+from .ThreadPool import ThreadPool
+
 from collections import deque
-from utils.utils import get_time, read_image, deep_getsizeof
 # import multiprocessing as mp
 from time import sleep
 import os
-from utils.ThreadPool import ThreadPool
 
 
 class ImageCache:

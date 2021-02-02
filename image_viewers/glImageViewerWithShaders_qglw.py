@@ -4,16 +4,15 @@
 #
 #
 
-from utils.qt_imports import QtWidgets
+from ..utils.qt_imports import QtWidgets
+from .ImageViewer import ReadImage, trace_method, get_time
+from .qglwImageViewerBase import qglImageViewerBase
 
 import OpenGL.GL as gl
 import argparse
 import sys
 from OpenGL.GL import shaders
 import numpy as np
-from image_viewers.ImageViewer import ReadImage, trace_method, get_time
-from image_viewers.qglwImageViewerBase import qglImageViewerBase
-
 import pygame
 
 

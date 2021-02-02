@@ -1,3 +1,4 @@
+from .ImageViewer import ImageViewer
 try:
 	import pyqtgraph as pg
 except ImportError as e:
@@ -6,7 +7,6 @@ except ImportError as e:
 else:
 	loaded_pyqtgraph = True
 
-from image_viewers.ImageViewer import ImageViewer
 
 
 class pyQtGraphImageViewer(pg.GraphicsLayoutWidget, ImageViewer):

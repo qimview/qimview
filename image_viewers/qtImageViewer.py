@@ -5,32 +5,28 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from utils.qt_imports import *
-
-import argparse
-from image_viewers.ImageViewer import ImageViewer, trace_method, get_time
-
-import cv2
-from utils.ViewerImage import *
-import json
-import numpy as np
-from image_viewers.ImageFilterParameters import ImageFilterParameters
-
-from tests_utils.qtdump import *
-import copy
-
+from ..utils.qt_imports import *
+from ..utils.ViewerImage import *
+from ..tests_utils.qtdump import *
 try:
     import cppimport.import_hook
-    from CppBind import wrap_numpy
+    from ..CppBind import wrap_numpy
 except Exception as e:
     has_cppbind = False
     print("Failed to load wrap_numpy: {}".format(e))
 else:
     has_cppbind = True
-
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
+from .ImageViewer import ImageViewer, trace_method, get_time
+from .ImageFilterParameters import ImageFilterParameters
+
+import cv2
+import json
+import numpy as np
+import copy
 from scipy.ndimage import gaussian_filter1d
+
 
 # the opengl version is a bit slow for the moment, due to the texture generation
 use_opengl = False

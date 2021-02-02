@@ -1,21 +1,18 @@
 
-from utils.qt_imports import *
+from ..utils.qt_imports import *
+from ..utils.utils import get_time, read_image
+from ..utils.image_cache import ImageCache
+from ..utils.ViewerImage import *
+from ..utils import MyQLabel
 
-from image_viewers.glImageViewer import glImageViewer
-from image_viewers.pyQtGraphImageViewer import pyQtGraphImageViewer
-#import glImageViewerWithShaders
-from image_viewers.glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
-from image_viewers.qtImageViewer import qtImageViewer
+from .glImageViewer import glImageViewer
+from .pyQtGraphImageViewer import pyQtGraphImageViewer
+from .glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
+from .qtImageViewer import qtImageViewer
+from .ImageFilterParameters import ImageFilterParameters
+from .ImageFilterParametersGui import ImageFilterParametersGui
 
 from enum import Enum
-
-from image_viewers.ImageFilterParameters import ImageFilterParameters
-from image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
-
-from utils.utils import get_time, read_image
-from utils.image_cache import ImageCache
-from utils.ViewerImage import *
-from utils import MyQLabel
 
 import types
 import math

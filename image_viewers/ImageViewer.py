@@ -2,13 +2,14 @@
 #
 #
 
-from Qt import QtGui, QtCore, QtOpenGL, QtWidgets
+from .ImageFilterParameters import ImageFilterParameters
+from ..utils.utils import get_time
+from ..utils.qt_imports import QtGui, QtCore, QtWidgets
+
 import cv2
 import traceback
 import abc
 import inspect
-from image_viewers.ImageFilterParameters import ImageFilterParameters
-from utils.utils import get_time
 
 
 # copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python

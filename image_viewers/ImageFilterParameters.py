@@ -1,5 +1,5 @@
 
-from parameters.numeric_parameter import NumericParameter
+from ..parameters.numeric_parameter import NumericParameter
 
 class ImageFilterParameters:
     def __init__(self):

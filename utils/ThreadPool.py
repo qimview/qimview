@@ -1,6 +1,6 @@
 # example from https://www.learnpyqt.com/tutorials/multithreading-pyqt-applications-qthreadpool/
 
-from utils.qt_imports import *
+from .qt_imports import *
 
 import traceback, sys
 
