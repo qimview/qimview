@@ -1,6 +1,6 @@
 
 from .utils import get_time, deep_getsizeof
-from .image_reader import ImageReader
+from .image_reader import image_reader
 from .ThreadPool import ThreadPool
 
 from collections import deque
@@ -90,8 +90,7 @@ class ImageCache:
             return image_data, True
         else:
             try:
-                reader = ImageReader()
-                image_data = reader.read(filename, read_size, use_RGB=use_RGB, verbose=verbose)
+                image_data = image_reader.read(filename, read_size, use_RGB=use_RGB, verbose=verbose)
                 if image_transform is not None:
                     image_data = image_transform(image_data)
                 self.append(filename, image_data, check_size=check_size)

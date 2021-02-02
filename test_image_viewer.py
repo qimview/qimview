@@ -8,7 +8,7 @@ from tests_utils.qtdump import *
 from image_viewers.qtImageViewer import qtImageViewer
 from image_viewers.ImageFilterParameters import ImageFilterParameters
 from image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
-from utils.image_reader import ImageReader
+from utils.image_reader import image_reader
 
 
 if __name__ == '__main__':
@@ -46,8 +46,7 @@ if __name__ == '__main__':
             if record_file is not None:
                 self.event_recorder.register_widget(id(self.widget), "widget")
 
-            reader = ImageReader()
-            im = reader.read(_params['input_image'])
+            im = image_reader.read(_params['input_image'])
             self.widget.set_image(im)
             # put the window at the screen position (100, 100)
             self.setGeometry(0, 0, self.widget.width(), self.widget.height())

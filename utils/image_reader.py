@@ -203,3 +203,5 @@ class ImageReader:
             print(f"Exception while reading image {filename}: {e}")
             return None
 
+# unique instance of ImageReader for the application
+image_reader = ImageReader()
