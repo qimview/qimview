@@ -55,7 +55,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         self.paint_diff_cache = None
         self.diff_image       = None
 
-        self.display_timing = False
+        # self.display_timing = False
         if base_widget is QOpenGLWidget:
             self.setAutoFillBackground(True)
         # self.verbose = True

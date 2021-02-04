@@ -4,7 +4,7 @@ from ..utils.utils import get_time
 from ..utils.image_reader import image_reader
 from ..utils.image_cache import ImageCache
 from ..utils.ViewerImage import *
-from ..utils import MyQLabel
+from ..utils.mvlabel import MVLabel
 
 from .glImageViewer import glImageViewer
 from .pyQtGraphImageViewer import pyQtGraphImageViewer
@@ -222,7 +222,7 @@ class MultiView(QtWidgets.QWidget):
         for image_name in self.image_list:
             # possibility to disable an image using the string 'none', especially useful for input image
             if image_name != 'none':
-                self.label[image_name] = MyQLabel.MyQLabel(image_name, self)
+                self.label[image_name] = MVLabel(image_name, self)
                 self.label[image_name].setFrameShape(QtWidgets.QFrame.Panel)
                 self.label[image_name].setFrameShadow(QtWidgets.QFrame.Sunken)
                 # self.label[image_name].setLineWidth(3)
