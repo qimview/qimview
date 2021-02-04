@@ -87,6 +87,7 @@ def read_jpeg_turbojpeg(image_filename, read_size='full', use_RGB=True, verbose=
 
 
 def read_jpeg_simplejpeg(image_filename, read_size='full', use_RGB=True, verbose=False):
+    print(f"read_jpeg_simplejpeg use_RGB {use_RGB}")
     if verbose:
         start_time = get_time()
     format = 'RGB' if use_RGB else 'BGR'
@@ -197,7 +198,7 @@ class ImageReader:
             return None
 
         try:
-            res = self._plugins[extension](filename, read_size, verbose, use_RGB)
+            res = self._plugins[extension](filename, read_size, use_RGB, verbose)
             return res
         except Exception as e:
             print(f"Exception while reading image {filename}: {e}")
