@@ -1,9 +1,10 @@
 from .qt_imports import *
 
 
-class MyQLabel(QLabel):
+class MVLabel(QLabel):
 	'''
 	This Class is a standard QLabel with the simple and double click mouse events
+	created for MultiView class
 	'''
 	def __init__(self, text, parent = None):
 		QLabel.__init__(self, text, parent)
