@@ -20,6 +20,17 @@ class ImageCache:
         self.verbose = True
         self.cache_unit = 1024*1024 # Megabyte
         self.thread_pool = ThreadPool()
+        self.memory_bar = None
+
+    def set_memory_bar(self, progress_bar):
+        self.memory_bar = progress_bar
+        self.memory_bar.setRange(0, self.max_cache_size)
+        self.memory_bar.setFormat("%v Mb")
+
+    def set_max_cache_size(self, size):
+        self.max_cache_size = size
+        if self.memory_bar is not None:
+            self.memory_bar.setRange(0, self.max_cache_size)
 
     def reset(self):
         self.cache = deque()
@@ -58,6 +69,10 @@ class ImageCache:
             cache_size = deep_getsizeof(self.cache, set())
         self.print_log(f" *** Cache::append() {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
         self.cache_size = cache_size
+        if self.memory_bar is not None:
+            new_progress_value = int(self.cache_size/self.cache_unit+0.5)
+            if new_progress_value != self.memory_bar.value():
+                self.memory_bar.setValue(new_progress_value)
 
     def append(self, id, value, extra=None, check_size=True):
         """
