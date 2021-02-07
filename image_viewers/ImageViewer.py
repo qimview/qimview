@@ -83,7 +83,7 @@ class ImageViewer:
         self.save_image_clipboard = False
         self.clipboard = None
         self.setMouseTracking(True)
-        self._display_timing = True
+        self._display_timing = False
         self._verbose = False
         self.start_time = dict()
         self.timings = dict()
