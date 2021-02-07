@@ -7,6 +7,7 @@
 
 from ..utils.qt_imports import *
 from ..utils.ViewerImage import *
+from ..utils.utils import clip_value
 from ..tests_utils.qtdump import *
 try:
     import cppimport.import_hook
@@ -44,7 +45,9 @@ class qtImageViewer(base_widget, ImageViewer ):
         size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.Ignored)
         self.setSizePolicy(size_policy)
         # self.setAlignment(QtCore.Qt.AlignCenter )
-        self.output_crop = (0., 0., 1., 1.)
+        self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float)
+        self.zoom_center = np.array([0.5, 0.5, 0.5, 0.5])
+
 
         if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
@@ -68,35 +71,40 @@ class qtImageViewer(base_widget, ImageViewer ):
         super(qtImageViewer, self).set_image(image)
 
     def apply_zoom(self, crop):
+        (height, width) = self.cv_image.shape[:2]
+        # print(f"height, width = {height, width}")
         # Apply zoom
-        coeff = 1.0/self.new_scale(self.mouse_zy, self.cv_image.shape[0])
+        coeff = 1.0/self.new_scale(self.mouse_zy, height)
         # zoom from the center of the image
-        center = np.array([0.5, 0.5, 0.5, 0.5])
+        center = self.zoom_center
         new_crop = center + (crop - center) * coeff
 
         # print("new crop zoom 1 {}".format(new_crop))
 
         # allow crop increase based on the available space
-        label_width = self.size().width()
-        label_height = self.size().height()
-        im_width = self.cv_image.shape[1] * coeff
-        im_height = self.cv_image.shape[0] * coeff
+        label_width = self.width()
+        # print(f"label_width {label_width}")
+        label_height = self.height()
 
-        ratio_width = float(label_width) / im_width
-        ratio_height = float(label_height) / im_height
+        new_width = width * coeff
+        new_height = height * coeff
 
+        ratio_width = float(label_width) / new_width
+        ratio_height = float(label_height) / new_height
+
+        # print(f" ratio_width {ratio_width} ratio_height {ratio_height}")
         ratio = min(ratio_width, ratio_height)
 
         if ratio_width<ratio_height:
             # margin to increase height
-            margin_pixels = label_height/ratio - im_height
-            margin_height = margin_pixels/self.cv_image.shape[0]
+            margin_pixels = label_height/ratio - new_height
+            margin_height = margin_pixels/height
             new_crop[1] -= margin_height/2
             new_crop[3] += margin_height/2
         else:
             # margin to increase width
-            margin_pixels = label_width/ratio - im_width
-            margin_width = margin_pixels/self.cv_image.shape[1]
+            margin_pixels = label_width/ratio - new_width
+            margin_width = margin_pixels/width
             new_crop[0] -= margin_width/2
             new_crop[2] += margin_width/2
         # print("new crop zoom 2 {}".format(new_crop))
@@ -113,12 +121,15 @@ class qtImageViewer(base_widget, ImageViewer ):
         diff_y = - diff_y
         # print(" new translation {} {}".format(diff_x, diff_y))
         # apply the maximal allowed translation
-        tr_x = float(diff_x) / self.size().width()
-        tr_y = float(diff_y) / self.size().height()
-        tr_x = np.clip(tr_x, crop[2]-1, crop[0])
-        tr_y = np.clip(tr_y, crop[3]-1, crop[1])
+        tr_x = float(diff_x) / self.width()
+        tr_y = float(diff_y) / self.height()
+        tr_x = clip_value(tr_x, crop[2]-1, crop[0])
+        tr_y = clip_value(tr_y, crop[3]-1, crop[1])
         # normalized position relative to the full image
-        return crop - np.array([tr_x, tr_y, tr_x,  tr_y])
+        crop[0] -= tr_x
+        crop[1] -= tr_y
+        crop[2] -= tr_x
+        crop[3] -= tr_y
 
     def check_translation(self):
         """
@@ -126,24 +137,24 @@ class qtImageViewer(base_widget, ImageViewer ):
         :return:
         """
         # Apply zoom
-        crop = self.apply_zoom(np.array(self.output_crop))
+        crop = self.apply_zoom(self.output_crop)
 
         # Compute the translation that is really applied after applying the constraints
         diff_x, diff_y = self.new_translation()
         diff_y = - diff_y
         # print(" new translation {} {}".format(diff_x, diff_y))
         # apply the maximal allowed translation
-        w, h = self.size().width(), self.size().height()
-        diff_x = np.clip(diff_x, w*(crop[2]-1), w*(crop[0]))
-        diff_y = - np.clip(diff_y, h*(crop[3]-1), h*(crop[1]))
+        w, h = self.width(), self.height()
+        diff_x = clip_value(diff_x, w*(crop[2]-1), w*(crop[0]))
+        diff_y = - clip_value(diff_y, h*(crop[3]-1), h*(crop[1]))
         # normalized position relative to the full image
         return diff_x, diff_y
 
     def update_crop(self):
         # Apply zoom
-        new_crop = self.apply_zoom(np.array(self.output_crop))
+        new_crop = self.apply_zoom(self.output_crop)
         # Apply translation
-        new_crop = self.apply_translation(new_crop)
+        self.apply_translation(new_crop)
         new_crop = np.clip(new_crop, 0, 1)
         # print("move new crop {}".format(new_crop))
         # print(f"output_crop {self.output_crop} new crop {new_crop}")
@@ -368,17 +379,22 @@ class qtImageViewer(base_widget, ImageViewer ):
         text_options = QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft | QtCore.Qt.TextWordWrap
         area_width = 400
         area_height = 200
-        bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
+        # boundingRect is interesting but slow to be called at each display
+        # bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
         margin_x = 8
         margin_y = 5
-        painter.drawText(margin_x, self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
-                         text_options,
-                         self.display_message)
+        painter.drawText(
+            margin_x, 
+            # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
+            margin_y, area_width, area_height,
+            text_options,
+            self.display_message
+            )
         self.print_timing()
 
     def compute_histogram(self, current_image, show_timings=False):
-        h_start = get_time()
-        histo_timings = True
+        # print(f"compute_histogram show_timings {show_timings}")
+        if show_timings: h_start = get_time()
         # Compute steps based on input image resolution
         im_w, im_h = current_image.shape[1], current_image.shape[0]
         target_w = 800
@@ -389,14 +405,16 @@ class qtImageViewer(base_widget, ImageViewer ):
         # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
         # input_image = self.cv_image
         resized_im = input_image[::hist_y_step, ::hist_x_step, :]
-        print(f"qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} "
-              f"shape {current_image.shape} --> {resized_im.shape}")
-        if histo_timings: resized_time = get_time()-h_start
+        resized_im = input_image
+        if self.verbose:
+            print(f"qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} "
+                f"shape {current_image.shape} --> {resized_im.shape}")
+        if show_timings: resized_time = get_time()-h_start
 
         calc_hist_time = 0
 
         # First compute all histograms
-        if histo_timings: start_hist = get_time()
+        if show_timings: start_hist = get_time()
         hist_all = np.empty((3, 256), dtype=np.float32)
         # print(f"{resized_im[::100,::100,:]}")
         for channel, im_ch in enumerate(cv2.split(resized_im)):
@@ -404,35 +422,55 @@ class qtImageViewer(base_widget, ImageViewer ):
             hist = cv2.calcHist([im_ch], [0], None, [256], [0, 256])
             # print(f"max diff {np.max(np.abs(hist-hist2))}")
             hist_all[channel, :] = hist[:, 0]
+
         hist_all = hist_all / np.max(hist_all)
-        # print(f"{hist_all[:,::10]}")
-        if histo_timings: end_hist = get_time()
-        if histo_timings: calc_hist_time += end_hist-start_hist
-        # print(f"histogram painting 1.1 took {get_time() - h_start} sec.")
-
-        if histo_timings: gauss_start = get_time()
+        if show_timings: end_hist = get_time()
+        if show_timings: calc_hist_time += end_hist-start_hist
+        if show_timings: gauss_start = get_time()
         hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
-        if histo_timings: gauss_time = get_time() - gauss_start
+        if show_timings: gauss_time = get_time() - gauss_start
 
-        # print(f"compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. ")
-        if histo_timings: print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
+        if show_timings: 
+            print(f"compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end="")
+            print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
               f"resizing:{resized_time*1000:0.1f}, "
               f"gauss:{gauss_time*1000:0.1f}")
+
         return hist_all
 
+    def compute_histogram_Cpp(self, current_image, show_timings=False):
+        # print(f"compute_histogram show_timings {show_timings}")
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        output_histogram = np.empty((3,256), dtype=np.uint32)
+        wrap_numpy.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
+        if show_timings: t1 = get_time()
+        hist_all = output_histogram.astype(np.float32)
+        hist_all = hist_all / np.max(hist_all)
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: print(f"wrap_numpy.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, "
+                                f"{(get_time()-t1)*1000:0.1f} ms")
+        return hist_all
 
-    def display_histogram(self, hist_all, painter, rect, show_timings=False):
+    def display_histogram(self, hist_all, id, painter, im_rect, show_timings=False):
         """
         :param painter:
         :param rect: displayed image area
         :return:
         """
+        if hist_all is None:
+            return
         histo_timings = show_timings
         #if histo_timings:
         h_start = get_time()
-        width = int(rect.width()/4)
-        height = int(rect.height()/6)
-        start_x = self.evt_width - width - 10
+        width = int(im_rect.width()/4)
+        height = int(im_rect.height()/6)
+        start_x = self.evt_width - width*id - 10
         start_y = self.evt_height - 10
         margin = 3
 
@@ -455,6 +493,9 @@ class qtImageViewer(base_widget, ImageViewer ):
         }
 
         step_x = float(width) / 256
+        step = 2
+        x_range = np.array(range(0, 256, step))
+        x_pos = start_x + x_range*step_x
 
         for channel in range(3):
             pen.setColor(qcolors[channel])
@@ -469,17 +510,18 @@ class qtImageViewer(base_widget, ImageViewer ):
             # apply a small Gaussian filtering to histogram curve
             path = QtGui.QPainterPath()
 
-            step = 2
-            x_range = np.array(range(0, 256, step))
-            x_pos = start_x + x_range*step_x
             y_pos = start_y - hist_all[channel, x_range]*height
-            polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
-            path.addPolygon(polygon)
+            # polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
+            # path.addPolygon(polygon)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
             painter.drawPath(path)
             if histo_timings: path_time += get_time()-start_path
 
-        # print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ")
-        if histo_timings: print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
+        if histo_timings: 
+            print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end='')
+            print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
 
     def get_difference_image(self):
         if self.paint_diff_cache is not None:
@@ -509,6 +551,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         return self.diff_image
 
     def paint_image(self):
+        # print(f"paint_image display_timing {self.display_timing}")
         if self.trace_calls: t = trace_method(self.tab)
         self.start_timing()
         time0 = time1 = get_time()
@@ -610,8 +653,9 @@ class qtImageViewer(base_widget, ImageViewer ):
                 prev_shape = current_image.shape
                 resized_image = cv2.resize(current_image, (display_width, display_height),
                                         interpolation=opencv_downscale_interpolation)
-                print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
-                    f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
+                if self.display_timing:
+                    print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
+                        f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
                 resized_image = ViewerImage(resized_image, precision=current_image.precision,
                                                             downscale=current_image.downscale,
                                                             channels=current_image.channels)
@@ -623,7 +667,10 @@ class qtImageViewer(base_widget, ImageViewer ):
 
             # Compute the histogram here, with the smallest image!!!
             if self.show_histogram:
-                histograms = self.compute_histogram(current_image, show_timings=self.display_timing)
+                # previous version only python with its modules
+                # histograms  = self.compute_histogram    (current_image, show_timings=self.display_timing)
+                # new version with bound C++ code and openMP: much faster
+                histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
             else:
                 histograms = None
 
@@ -634,9 +681,10 @@ class qtImageViewer(base_widget, ImageViewer ):
                 prev_shape = current_image.shape
                 current_image = cv2.resize(current_image, (display_width, display_height),
                                            interpolation=opencv_upscale_interpolation)
-                print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
-                      f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
-                self.add_time('cv2.resize',time1)
+                if self.display_timing:
+                    print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
+                        f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
+                    self.add_time('cv2.resize',time1)
 
             # no need for more resizing
             resize_applied = True
@@ -650,6 +698,7 @@ class qtImageViewer(base_widget, ImageViewer ):
             resize_applied = True
             current_image = self.paint_cache['current_image']
             histograms = self.paint_cache['histograms']
+            # histograms2 = self.paint_cache['histograms2']
 
         # if could_use_cache:
         #     print(f" ======= current_image equal ? {np.array_equal(self.paint_cache['current_image'],current_image)}")
@@ -663,7 +712,9 @@ class qtImageViewer(base_widget, ImageViewer ):
                 'imrefid': self.image_ref_id,
                 'crop': c, 'labelw': label_width, 'labelh': label_height,
                 'filterp': fp, 'showhist': self.show_histogram,
-                'histograms': histograms, 'current_image': current_image,
+                'histograms': histograms, 
+                # 'histograms2': histograms2, 
+                'current_image': current_image,
                 'show_diff' : show_diff}
             # print(f"create cache data took {int((get_time() - cache_time) * 1000)} ms")
 
@@ -718,18 +769,22 @@ class qtImageViewer(base_widget, ImageViewer ):
         else:
             self.display_message = self.image_name
         if self.show_overlay:
-            self.display_message = " REF vs " + self.display_message
+            self.display_message = "over:" + self.display_message
+        if self.show_image_differences:
+            self.display_message = "diff:" + self.display_message
 
         self.display_text(painter)
 
         # draw histogram
         if self.show_histogram:
-            self.display_histogram(histograms, painter, rect, show_timings=self.display_timing)
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+            # self.display_histogram(histograms2, 2, painter, rect, show_timings=self.display_timing)
 
         painter.end()
         self.print_timing()
 
-        print(f" paint_image took {int((get_time()-time0)*1000)} ms")
+        if self.display_timing:
+            print(f" paint_image took {int((get_time()-time0)*1000)} ms")
 
     def show(self):
         if base_widget==QOpenGLWidget:
