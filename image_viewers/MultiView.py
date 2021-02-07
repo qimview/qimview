@@ -662,6 +662,10 @@ class MultiView(QtWidgets.QWidget):
 
     def keyPressEvent(self, event):
         if type(event) == QtGui.QKeyEvent:
+            # print("key is ", event.key())
+            print(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
+            # print( QtGui.QKeySequence(event.key()).toString())
+            # print(f" capslock: {event.getModifierState('CapsLock')}")
             if self.show_trace():
                 print("key is ", event.key())
                 print("key down int is ", int(QtCore.Qt.Key_Down))
