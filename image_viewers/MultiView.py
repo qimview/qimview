@@ -66,7 +66,7 @@ class MultiView(QtWidgets.QWidget):
         # self.set_verbosity(self.verbosity_TIMING_DETAILED)
         # self.set_verbosity(self.verbosity_TRACE)
 
-        self.verbosity = self.verbosity_LIGHT
+        self.verbosity = 0
 
         self.current_image_filename = None
         self.save_image_clipboard = False
@@ -95,6 +95,9 @@ class MultiView(QtWidgets.QWidget):
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         else:
             self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+    def set_cache_memory_bar(self, progress_bar):
+        self.cache.set_memory_bar(progress_bar)
 
     def set_verbosity(self, flag, enable=True):
         """
@@ -342,6 +345,8 @@ class MultiView(QtWidgets.QWidget):
         vertical_layout.addLayout(parameters2_layout, 1)
 
         self.viewer_grid_layout = QtWidgets.QGridLayout()
+        self.viewer_grid_layout.setHorizontalSpacing(1)
+        self.viewer_grid_layout.setVerticalSpacing(1)
         self.update_viewer_layout('1')
         vertical_layout.addLayout(self.viewer_grid_layout, 1)
 
@@ -394,7 +399,7 @@ class MultiView(QtWidgets.QWidget):
                                                                               self.image1[im_string_id])
 
         if self.show_timing_detailed():
-            print(" get_output_image took {0:0.3f} sec.".format(get_time() - start))
+            print(f" get_output_image took {int((get_time() - start)*1000+0.5)} ms".format)
 
         # force image bayer information if selected from menu
         res = output_image
@@ -463,6 +468,7 @@ class MultiView(QtWidgets.QWidget):
         # find first active window
         first_active_window = 0
         for n in range(self.nb_viewers_used):
+            self.image_viewers[n].display_timing = self.show_timing_detailed()>0
             if self.image_viewers[n].is_active():
                 first_active_window = n
                 break
