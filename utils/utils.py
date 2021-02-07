@@ -16,6 +16,8 @@ def get_time():
 	else:
 		return time.time()
 
+def clip_value(value, lower, upper):
+    return lower if value < lower else upper if value > upper else value
 
 def get_size(obj, seen=None):
 	"""
