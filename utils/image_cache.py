@@ -29,6 +29,7 @@ class ImageCache:
 
     def set_max_cache_size(self, size):
         self.max_cache_size = size
+        self.check_size_limit()
         if self.memory_bar is not None:
             self.memory_bar.setRange(0, self.max_cache_size)
 
