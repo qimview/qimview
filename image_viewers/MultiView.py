@@ -4,6 +4,7 @@ from ..utils.utils import get_time
 from ..utils.image_reader import image_reader
 from ..utils.image_cache import ImageCache
 from ..utils.ViewerImage import *
+from ..utils.menu_selection import MenuSelection
 from ..utils.mvlabel import MVLabel
 
 from .glImageViewer import glImageViewer
@@ -42,16 +43,18 @@ class MultiView(QtWidgets.QWidget):
         self.nb_viewers_used = nb_viewers
         self.allocated_image_viewers = []  # keep allocated image viewers here
         self.image_viewers = []
-        self.image_viewer_class = {
+        self.image_viewer_classes = {
             ViewerType.QT_VIEWER:             qtImageViewer,
             ViewerType.OPENGL_VIEWER:         glImageViewer,
             ViewerType.OPENGL_SHADERS_VIEWER: glImageViewerWithShaders_qglw,
             ViewerType.PYQTGRAPH_VIEWER:      pyQtGraphImageViewer
-        }[viewer_mode]
+        }
+        self.image_viewer_class = self.image_viewer_classes[viewer_mode]
 
         # Create viewer instances
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
+            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
 
@@ -95,6 +98,47 @@ class MultiView(QtWidgets.QWidget):
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
         else:
             self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+        self.add_context_menu()
+
+    def add_context_menu(self):
+        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.customContextMenuRequested.connect(self.show_context_menu)
+        self._context_menu = QtWidgets.QMenu()
+        self.viewer_modes = {}
+        for v in ViewerType:
+            self.viewer_modes[v.name] = v
+        self._default_viewer_mode = ViewerType.QT_VIEWER.name
+        self.viewer_mode_selection = MenuSelection("Viewer mode", 
+            self._context_menu, self.viewer_modes, self._default_viewer_mode, self.update_viewer_mode)
+        self._context_menu.addSeparator()
+        action = self._context_menu.addAction("Reset viewers")
+        action.triggered.connect(self.reset_viewers)
+
+    def reset_viewers(self):
+        for v in self.image_viewers:
+            v.hide()
+            self.viewer_grid_layout.removeWidget(v)
+        self.allocated_image_viewers.clear()
+        self.image_viewers.clear()
+        # Create viewer instances
+        for n in range(self.nb_viewers_used):
+            viewer = self.image_viewer_class()
+            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            self.allocated_image_viewers.append(viewer)
+            self.image_viewers.append(viewer)
+        self.update_viewer_layout(self.current_viewer_layout)
+        self.viewer_grid_layout.update()
+        self.update_image()
+
+    def update_viewer_mode(self):
+        viewer_mode = self.viewer_mode_selection.get_selection_value()
+        self.image_viewer_class = self.image_viewer_classes[viewer_mode]
+
+    def show_context_menu(self, pos):
+        # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
+        self._context_menu.show()
+        self._context_menu.popup( self.mapToGlobal(pos) )
 
     def set_cache_memory_bar(self, progress_bar):
         self.cache.set_memory_bar(progress_bar)
@@ -195,6 +239,7 @@ class MultiView(QtWidgets.QWidget):
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
+            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
         image_names = list(self.image_dict.keys())
@@ -468,7 +513,7 @@ class MultiView(QtWidgets.QWidget):
         # find first active window
         first_active_window = 0
         for n in range(self.nb_viewers_used):
-            self.image_viewers[n].display_timing = self.show_timing_detailed()>0
+            self.image_viewers[n].display_timing = self.show_timing()>0
             if self.image_viewers[n].is_active():
                 first_active_window = n
                 break
@@ -571,10 +616,10 @@ class MultiView(QtWidgets.QWidget):
             # Note: calling show in any case seems to avoid double calls to paint event that update() triggers
             # viewer.show()
             if viewer.isHidden():
-                print(f"show viewer {n}")
+                # print(f"show viewer {n}")
                 viewer.show()
             else:
-                print(f"update viewer {n}")
+                # print(f"update viewer {n}")
                 viewer.update()
 
 
@@ -622,6 +667,7 @@ class MultiView(QtWidgets.QWidget):
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
+            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
 
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
