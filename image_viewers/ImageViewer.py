@@ -93,10 +93,10 @@ class ImageViewer:
         self.show_cursor    = False
         self.show_overlay   = False
         self.show_image_differences = False
+        self.antialiasing = False
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
-
 
     @property
     def display_timing(self):
@@ -249,6 +249,8 @@ class ImageViewer:
 
     def mouse_press_event(self, event):
         self.lastPos = event.pos()
+        if event.buttons() & QtCore.Qt.RightButton:
+            event.accept()
 
     def mouse_move_event(self, event):
         self.mouse_x = event.x()
@@ -260,6 +262,7 @@ class ImageViewer:
             self.mouse_dy = - (event.y() - self.lastPos.y())
             self.paintAll()
             self.synchronize(self)
+            event.accept()
         else:
             if event.buttons() & QtCore.Qt.RightButton:
                 # right button zoom
@@ -267,6 +270,7 @@ class ImageViewer:
                 self.mouse_zy = - (event.y() - self.lastPos.y())
                 self.paintAll()
                 self.synchronize(self)
+                event.accept()
             else:
                 modifiers = QtWidgets.QApplication.keyboardModifiers()
                 if self.show_cursor:
@@ -278,11 +282,13 @@ class ImageViewer:
             self.current_dx, self.current_dy = self.check_translation()
             self.mouse_dy = 0
             self.mouse_dx = 0
+            event.accept()
         if event.button() & QtCore.Qt.RightButton:
             if self.cv_image is not None:
                 self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.shape[0])
             self.mouse_zy = 0
             self.mouse_zx = 0
+            event.accept()
         self.synchronize(self)
 
     def mouse_double_click_event(self, event):
@@ -339,12 +345,12 @@ class ImageViewer:
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             key_list = []
 
-            # select upper left crop
-            key_list.append(QtCore.Qt.Key_A)
-            if event.key() == QtCore.Qt.Key_A:
-                self.current_dx = wsize.width()/4
-                self.current_dy = -wsize.height()/4
-                self.current_scale = 2
+            # # select upper left crop
+            # key_list.append(QtCore.Qt.Key_A)
+            # if event.key() == QtCore.Qt.Key_A:
+            #     self.current_dx = wsize.width()/4
+            #     self.current_dy = -wsize.height()/4
+            #     self.current_scale = 2
 
             # select upper left crop
             key_list.append(QtCore.Qt.Key_B)
@@ -374,6 +380,12 @@ class ImageViewer:
                 self.current_dx = 0
                 self.current_dy = 0
                 self.current_scale = 1
+
+            # toggle antialiasing
+            key_list.append(QtCore.Qt.Key_A)
+            if event.key() == QtCore.Qt.Key_A:
+                self.antialiasing = not self.antialiasing
+                print(f"antialiasing {self.antialiasing}")
 
             # toggle histograph
             key_list.append(QtCore.Qt.Key_H)

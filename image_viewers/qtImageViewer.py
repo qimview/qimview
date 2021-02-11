@@ -61,6 +61,13 @@ class qtImageViewer(base_widget, ImageViewer ):
         # self.display_timing = False
         if base_widget is QOpenGLWidget:
             self.setAutoFillBackground(True)
+
+        # TODO: how can I set the background color to black without impacting display speed?
+        # p = self.palette()
+        # p.setColor(self.backgroundRole(), QtCore.Qt.black) 
+        # self.setPalette(p)
+        # self.setAutoFillBackground(True)
+
         # self.verbose = True
         # self.trace_calls = True
 
@@ -153,6 +160,20 @@ class qtImageViewer(base_widget, ImageViewer ):
     def update_crop(self):
         # Apply zoom
         new_crop = self.apply_zoom(self.output_crop)
+        # print(f"update_crop {self.output_crop} --> {new_crop}")
+        # Apply translation
+        self.apply_translation(new_crop)
+        new_crop = np.clip(new_crop, 0, 1)
+        # print("move new crop {}".format(new_crop))
+        # print(f"output_crop {self.output_crop} new crop {new_crop}")
+        return new_crop
+
+    def update_crop_new(self):
+        # 1. transform crop to display coordinates
+        
+        # Apply zoom
+        new_crop = self.apply_zoom(self.output_crop)
+        # print(f"update_crop {self.output_crop} --> {new_crop}")
         # Apply translation
         self.apply_translation(new_crop)
         new_crop = np.clip(new_crop, 0, 1)
@@ -572,6 +593,7 @@ class qtImageViewer(base_widget, ImageViewer ):
                         self.paint_cache['filterp'].is_equal(self.filter_params) and \
                         (self.paint_cache['showhist'] == self.show_histogram or not self.show_histogram) and \
                         self.paint_cache['show_diff'] == show_diff and \
+                        self.paint_cache['antialiasing'] == self.antialiasing and \
                         not self.show_overlay
         else:
             use_cache = False
@@ -638,27 +660,60 @@ class qtImageViewer(base_widget, ImageViewer ):
             #self.print_log("ratio is {:0.2f}".format(ratio))
             use_opencv_resize = anti_aliasing
             # enable this as optional?
-            # opencv_downscale_interpolation = cv2.INTER_AREA
-            # opencv_upscale_interpolation   = cv2.INTER_LINEAR
+            # opencv_downscale_interpolation = opencv_fast_interpolation
             opencv_fast_interpolation = cv2.INTER_NEAREST
-            opencv_downscale_interpolation = opencv_fast_interpolation
+            if self.antialiasing:
+                opencv_downscale_interpolation = cv2.INTER_AREA
+            else:
+                opencv_downscale_interpolation = cv2.INTER_NEAREST
+            # opencv_upscale_interpolation   = cv2.INTER_LINEAR
             opencv_upscale_interpolation   = opencv_fast_interpolation
             # self.print_time('several settings', time1, start_time)
 
             # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
             # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
             if use_opencv_resize and not resize_applied and current_image.channels == CH_RGB:
+
+
+                prev_shape = current_image.shape
+                precision  = current_image.precision
+                downscale  = current_image.downscale
+                channels   = current_image.channels
+
+                # if ratio is >2, start with integer downsize which is much faster
+                # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
+                if ratio<=0.5:
+                    if current_image.shape[0]%2!=0 or current_image.shape[1]%2 !=0:
+                        # clip image to multiple of 2 dimension
+                        current_image = current_image[:2*(current_image.shape[0]//2),:2*(current_image.shape[1]//2)]
+                    start_0 = get_time()
+                    resized_image = cv2.resize(current_image, (image_width>>1, image_height>>1),
+                                            interpolation=opencv_downscale_interpolation)
+                    if self.display_timing:
+                        print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from {current_image.shape} to '
+                            f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
+                    current_image = resized_image
+                    if ratio<=0.25:
+                        if current_image.shape[0]%2!=0 or current_image.shape[1]%2 !=0:
+                            # clip image to multiple of 2 dimension
+                            current_image = current_image[:2*(current_image.shape[0]//2),:2*(current_image.shape[1]//2)]
+                        start_0 = get_time()
+                        resized_image = cv2.resize(current_image, (image_width>>2, image_height>>2),
+                                                interpolation=opencv_downscale_interpolation)
+                        if self.display_timing:
+                            print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from {current_image.shape} to '
+                                f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
+                        current_image = resized_image
+
                 time1 = get_time()
                 start_0 = get_time()
-                prev_shape = current_image.shape
                 resized_image = cv2.resize(current_image, (display_width, display_height),
                                         interpolation=opencv_downscale_interpolation)
                 if self.display_timing:
-                    print(f' === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to '
-                        f'{(display_height, display_width)} --> {int((get_time()-start_0)*1000)} ms')
-                resized_image = ViewerImage(resized_image, precision=current_image.precision,
-                                                            downscale=current_image.downscale,
-                                                            channels=current_image.channels)
+                    print(f' === qtImageViewer: paint_image() OpenCV resize from {current_image.shape} to '
+                        f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
+
+                resized_image = ViewerImage(resized_image, precision=precision, downscale=downscale, channels=channels)
                 current_image = resized_image
                 resize_applied = True
                 self.add_time('cv2.resize',time1)
@@ -715,7 +770,9 @@ class qtImageViewer(base_widget, ImageViewer ):
                 'histograms': histograms, 
                 # 'histograms2': histograms2, 
                 'current_image': current_image,
-                'show_diff' : show_diff}
+                'show_diff' : show_diff,
+                'antialiasing': self.antialiasing
+                }
             # print(f"create cache data took {int((get_time() - cache_time) * 1000)} ms")
 
         if not current_image.flags['C_CONTIGUOUS']:
