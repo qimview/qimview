@@ -84,6 +84,8 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         """
         :return: set opengl texture based on input numpy array image
         """
+        # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
+
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
@@ -155,17 +157,22 @@ class qglImageViewerBase(opengl_class, ImageViewer):
             gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
                             internal_format,
                             img_width, img_height,
                          0, texture_pixel_format, gl_type, self.cv_image)
+            # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
             self.tex_width, self.tex_height = img_width, img_height
         else:
             try:
                 gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
                              texture_pixel_format, gl_type, self.cv_image)
+                # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
             except Exception as e:
                 print("setTexture failed shape={}: {}".format(self.cv_image.shape, e))
                 return False
