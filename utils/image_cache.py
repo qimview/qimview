@@ -45,7 +45,7 @@ class ImageCache:
     def search(self, id):
         if id in self.image_list:
             pos = self.image_list.index(id)
-            print(f"pos {pos} len(cache) {len(self.cache)}")
+            # print(f"pos {pos} len(cache) {len(self.cache)}")
             try:
                 res = self.cache[pos][1]
             except Exception as e:
