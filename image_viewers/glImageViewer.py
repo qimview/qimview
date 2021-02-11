@@ -46,6 +46,7 @@ class glImageViewer(qglImageViewerBase):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+        # gl.glGenerateMipmap (gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBegin(gl.GL_QUADS)
 
