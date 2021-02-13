@@ -560,18 +560,6 @@ class MultiView(QtWidgets.QWidget):
 
         self.setMessage("Image: {0}".format(current_filename))
 
-        # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-        # Control key enable display of difference image
-        # show_diff = self.show_image_differences and self.output_label_reference_image != self.output_label_current_image
-        # if show_diff:
-        #     # don't save the difference
-        #     if self.verbosity > 1:
-        #         print(">> Not saving difference")
-        #     diff_image = self.difference_image(self.output_label_reference_image, self.output_label_current_image)
-        #     current_image = ViewerImage(diff_image, precision=current_image.precision,
-        #                                 downscale=current_image.downscale,
-        #                                 channels=current_image.channels)
-
         current_viewer = self.image_viewers[first_active_window]
         if self.save_image_clipboard:
             print("set save image to clipboard")

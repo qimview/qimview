@@ -116,7 +116,7 @@ class ImageViewer:
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
-        self.print_log('set_image({}): is_different = {}'.format(image.shape, is_different))
+        self.print_log('set_image({}): is_different = {}'.format(image.data.shape, is_different))
         if is_different:
             self.cv_image = image
             self.image_id += 1
@@ -285,7 +285,7 @@ class ImageViewer:
             event.accept()
         if event.button() & QtCore.Qt.RightButton:
             if self.cv_image is not None:
-                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.shape[0])
+                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
             self.mouse_zy = 0
             self.mouse_zx = 0
             event.accept()
@@ -312,7 +312,7 @@ class ImageViewer:
         # print("delta = {}".format(delta))
         coeff = delta/5
         # coeff = 20 if delta > 0 else -20
-        self.current_scale = self.new_scale(coeff, self.cv_image.shape[0])
+        self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
         self.paintAll()
         self.synchronize(self)
 

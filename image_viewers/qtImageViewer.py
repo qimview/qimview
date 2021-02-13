@@ -78,7 +78,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         super(qtImageViewer, self).set_image(image)
 
     def apply_zoom(self, crop):
-        (height, width) = self.cv_image.shape[:2]
+        (height, width) = self.cv_image.data.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
         coeff = 1.0/self.new_scale(self.mouse_zy, height)
@@ -182,29 +182,10 @@ class qtImageViewer(base_widget, ImageViewer ):
         return new_crop
 
     def apply_filters(self, current_image):
-        self.print_log(f"current_image.shape {current_image.shape}")
+        self.print_log(f"current_image.data.shape {current_image.data.shape}")
         # return current_image
 
         self.start_timing(title='apply_filters()')
-        # # if change saturation
-        # saturation_int = int(self.saturation_slider.value())
-        # if saturation_int != self.saturation_default:
-        #     saturation_coeff = float(saturation_int) / self.saturation_default
-        #     print(">> saturation coeff = ", saturation_coeff)
-        #     self.saturation_slider.setToolTip("sat. coeff = {}".format(saturation_coeff))
-        #     self.saturation_label.setText("Sat coeff {}".format(saturation_coeff))
-        #     # saturation_start = get_time()
-        #     imghsv = cv2.cvtColor(current_image, cv2.COLOR_BGR2HSV)
-        #     # (h, s, v) = cv2.split(imghsv)
-        #     sat = imghsv[:, :, 1]
-        #     non_saturated = sat < 255 / saturation_coeff
-        #     sat[non_saturated] = sat[non_saturated] * saturation_coeff
-        #     sat[np.logical_not(non_saturated)] = 255
-        #     imghsv[:, :, 1] = sat
-        #     # s = np.clip(s, 0, 255)
-        #     # imghsv = cv2.merge([h, s, v])
-        #     current_image = cv2.cvtColor(imghsv, cv2.COLOR_HSV2BGR)
-        # # print " saturation took {0} sec.".format(get_time() - saturation_start)
 
         # Output RGB from input
         ch = self.cv_image.channels
@@ -219,7 +200,7 @@ class qtImageViewer(base_widget, ImageViewer ):
             max_type = 1  # not used
             gamma = self.filter_params.gamma.float  # not used
 
-            rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=np.uint8)
+            rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), dtype=np.uint8)
             time1 = get_time()
             ok = False
             if ch in CH_RAWFORMATS or ch in CH_RGBFORMATS:
@@ -230,37 +211,37 @@ class qtImageViewer(base_widget, ImageViewer ):
                     'int16': { 'func': wrap_numpy.apply_filters_s16_u8, 'name': 'apply_filters_s16_u8'},
                     'int32': { 'func': wrap_numpy.apply_filters_s32_u8, 'name': 'apply_filters_s32_u8'}
                 }
-                if current_image.dtype.name in cases:
-                    func = cases[current_image.dtype.name]['func']
-                    name = cases[current_image.dtype.name]['name']
+                if current_image.data.dtype.name in cases:
+                    func = cases[current_image.data.dtype.name]['func']
+                    name = cases[current_image.data.dtype.name]['name']
                     self.print_log(f"wrap_numpy.{name}(current_image, rgb_image, channels, "
                           f"black_level={black_level}, white_level={white_level}, "
                           f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                    ok = func(current_image, rgb_image, channels, black_level, white_level, g_r_coeff,
+                    ok = func(current_image.data, rgb_image, channels, black_level, white_level, g_r_coeff,
                                 g_b_coeff, max_value, max_type, gamma, saturation)
                     self.add_time(f'{name}()',time1, force=True, title='apply_filters()')
                 else:
-                    print(f"apply_filters() not available for {current_image.dtype} data type !")
+                    print(f"apply_filters() not available for {current_image.data.dtype} data type !")
             else:
                 cases = {
-                    'uint8':  { 'func': wrap_numpy.apply_filters_scalar_u8_u8 , 'name': 'apply_filters_scalar_u8_u8'},
+                    'uint8': { 'func': wrap_numpy.apply_filters_scalar_u8_u8, 'name': 'apply_filters_scalar_u8_u8'},
                     'uint16': { 'func': wrap_numpy.apply_filters_scalar_u16_u8, 'name': 'apply_filters_scalar_u16_u8'},
                     'uint32': { 'func': wrap_numpy.apply_filters_scalar_u32_u8, 'name': 'apply_filters_scalar_u32_u8'},
                     'float64': { 'func': wrap_numpy.apply_filters_scalar_f64_u8, 'name': 'apply_filters_scalar_f64_u8'},
                 }
-                if current_image.dtype.name.startswith('float'):
+                if current_image.data.dtype.name.startswith('float'):
                     max_value = 1.0
-                if current_image.dtype.name in cases:
-                    func = cases[current_image.dtype.name]['func']
-                    name = cases[current_image.dtype.name]['name']
+                if current_image.data.dtype.name in cases:
+                    func = cases[current_image.data.dtype.name]['func']
+                    name = cases[current_image.data.dtype.name]['name']
                     self.print_log(f"wrap_numpy.{name}(current_image, rgb_image, "
                           f"black_level={black_level}, white_level={white_level}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
-                    ok = func(current_image, rgb_image, black_level, white_level, max_value, max_type, gamma)
+                    ok = func(current_image.data, rgb_image, black_level, white_level, max_value, max_type, gamma)
                     self.add_time(f'{name}()', time1, force=True, title='apply_filters()')
                 else:
-                    print(f"apply_filters_scalar() not available for {current_image.dtype} data type !")
+                    print(f"apply_filters_scalar() not available for {current_image.data.dtype} data type !")
             if not ok:
                 self.print_log("Failed running wrap_num.apply_filters_u16_u8 ...", force=True)
         else:
@@ -269,19 +250,21 @@ class qtImageViewer(base_widget, ImageViewer ):
                 ch_pos = channel_position[current_image.channels]
                 self.print_log("Converting to RGB")
                 # convert Bayer to RGB
-                rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=current_image.dtype)
-                rgb_image[:, :, 0] = current_image[:, :, ch_pos['r']]
-                rgb_image[:, :, 1] = (current_image[:, :, ch_pos['gr']]+current_image[:, :, ch_pos['gb']])/2
-                rgb_image[:, :, 2] = current_image[:, :, ch_pos['b']]
+                rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                        dtype=current_image.data.dtype)
+                rgb_image[:, :, 0] = current_image.data[:, :, ch_pos['r']]
+                rgb_image[:, :, 1] = (current_image.data[:, :, ch_pos['gr']]+current_image.data[:, :, ch_pos['gb']])/2
+                rgb_image[:, :, 2] = current_image.data[:, :, ch_pos['b']]
             else:
                 if ch == CH_Y:
                     # Transform to RGB is it a good idea?
-                    rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=current_image.dtype)
-                    rgb_image[:, :, 0] = current_image
-                    rgb_image[:, :, 1] = current_image
-                    rgb_image[:, :, 2] = current_image
+                    rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                            dtype=current_image.data.dtype)
+                    rgb_image[:, :, 0] = current_image.data
+                    rgb_image[:, :, 1] = current_image.data
+                    rgb_image[:, :, 2] = current_image.data
                 else:
-                    rgb_image = current_image
+                    rgb_image = current_image.data
 
             # Use cv2.convertScaleAbs(I,a,b) function for fast processing
             # res = sat(|I*a+b|)
@@ -552,8 +535,8 @@ class qtImageViewer(base_widget, ImageViewer ):
             use_cache = False
 
         if not use_cache:
-            im1 = self.cv_image
-            im2 = self.cv_image_ref
+            im1 = self.cv_image.data
+            im2 = self.cv_image_ref.data
             # TODO: get factor from parameters ...
             # factor = int(self.diff_color_slider.value())
             factor = 3
@@ -565,7 +548,9 @@ class qtImageViewer(base_widget, ImageViewer ):
             res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
             print(f" qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms")
             # print "max diff = ", np.max(res-res2)
-            res = ViewerImage(res, precision=im1.precision, downscale=im1.downscale, channels=im1.channels)
+            res = ViewerImage(res,  precision=self.cv_image.precision, 
+                                    downscale=self.cv_image.downscale,
+                                    channels=self.cv_image.channels)
             self.paint_diff_cache = {'imid': self.image_id, 'imrefid': self.image_ref_id}
             self.diff_image = res
 
@@ -605,29 +590,35 @@ class qtImageViewer(base_widget, ImageViewer ):
         else:
             current_image = self.cv_image
 
+        precision  = current_image.precision
+        downscale  = current_image.downscale
+        channels   = current_image.channels
+
+        image_data = current_image.data
+
         # could_use_cache = use_cache
         # if could_use_cache:
         #     print(" Could use cache here ... !!!")
         # use_cache = False
 
         do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
-        h, w  = current_image.shape[:2]
+        h, w  = image_data.shape[:2]
         if do_crop:
             crop_xmin = int(np.round(c[0] * w))
             crop_xmax = int(np.round(c[2] * w))
             crop_ymin = int(np.round(c[1] * h))
             crop_ymax = int(np.round(c[3] * h))
-            current_image = current_image[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+            image_data = image_data[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
         else:
             crop_xmin = crop_ymin = 0
             crop_xmax = w
             crop_ymax = h
 
-        cropped_image_shape = current_image.shape
+        cropped_image_shape = image_data.shape
         self.add_time('crop', time1)
 
         # time1 = get_time()
-        image_height, image_width  = current_image.shape[:2]
+        image_height, image_width  = image_data.shape[:2]
         ratio_width = float(label_width) / image_width
         ratio_height = float(label_height) / image_height
         ratio = min(ratio_width, ratio_height)
@@ -635,7 +626,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         display_height = int(round(image_height * ratio))
 
         if self.show_overlay and self.cv_image_ref is not self.cv_image and \
-            self.cv_image.shape == self.cv_image_ref.shape:
+            self.cv_image.data.shape == self.cv_image_ref.data.shape:
             # to create the overlay rapidly, we will mix the two images based on the current cursor position
             # 1. convert cursor position to image position
             (height, width) = cropped_image_shape[:2]
@@ -647,12 +638,8 @@ class qtImageViewer(base_widget, ImageViewer ):
             im_x = max(0,min(width-1, im_x))
             # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
             # We need to have a copy here .. slow, better option???
-            current_image = np.copy(current_image)
-            current_image[:, :im_x] = self.cv_image_ref[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
-            # re-instantiate ViewerImage
-            current_image = ViewerImage(current_image, precision=self.cv_image.precision,
-                                        downscale=self.cv_image.downscale,
-                                        channels=self.cv_image.channels)
+            image_data = np.copy(image_data)
+            image_data[:, :im_x] = self.cv_image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
 
         resize_applied = False
         if not use_cache:
@@ -672,52 +659,48 @@ class qtImageViewer(base_widget, ImageViewer ):
 
             # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
             # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
-            if use_opencv_resize and not resize_applied and current_image.channels == CH_RGB:
+            if use_opencv_resize and not resize_applied and channels == CH_RGB:
 
-
-                prev_shape = current_image.shape
-                precision  = current_image.precision
-                downscale  = current_image.downscale
-                channels   = current_image.channels
+                prev_shape = image_data.shape
 
                 # if ratio is >2, start with integer downsize which is much faster
                 # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
                 if ratio<=0.5:
-                    if current_image.shape[0]%2!=0 or current_image.shape[1]%2 !=0:
+                    if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
                         # clip image to multiple of 2 dimension
-                        current_image = current_image[:2*(current_image.shape[0]//2),:2*(current_image.shape[1]//2)]
+                        image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
                     start_0 = get_time()
-                    resized_image = cv2.resize(current_image, (image_width>>1, image_height>>1),
+                    resized_image = cv2.resize(image_data, (image_width>>1, image_height>>1),
                                             interpolation=opencv_downscale_interpolation)
                     if self.display_timing:
                         print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from {current_image.shape} to '
                             f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
-                    current_image = resized_image
+                    image_data = resized_image
                     if ratio<=0.25:
-                        if current_image.shape[0]%2!=0 or current_image.shape[1]%2 !=0:
+                        if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
                             # clip image to multiple of 2 dimension
-                            current_image = current_image[:2*(current_image.shape[0]//2),:2*(current_image.shape[1]//2)]
+                            image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
                         start_0 = get_time()
-                        resized_image = cv2.resize(current_image, (image_width>>2, image_height>>2),
+                        resized_image = cv2.resize(image_data, (image_width>>2, image_height>>2),
                                                 interpolation=opencv_downscale_interpolation)
                         if self.display_timing:
                             print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from {current_image.shape} to '
                                 f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
-                        current_image = resized_image
+                        image_data = resized_image
 
                 time1 = get_time()
                 start_0 = get_time()
-                resized_image = cv2.resize(current_image, (display_width, display_height),
+                resized_image = cv2.resize(image_data, (display_width, display_height),
                                         interpolation=opencv_downscale_interpolation)
                 if self.display_timing:
-                    print(f' === qtImageViewer: paint_image() OpenCV resize from {current_image.shape} to '
+                    print(f' === qtImageViewer: paint_image() OpenCV resize from {image_data.shape} to '
                         f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
 
-                resized_image = ViewerImage(resized_image, precision=precision, downscale=downscale, channels=channels)
-                current_image = resized_image
+                image_data = resized_image
                 resize_applied = True
                 self.add_time('cv2.resize',time1)
 
+            current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
             current_image = self.apply_filters(current_image)
 
             # Compute the histogram here, with the smallest image!!!
