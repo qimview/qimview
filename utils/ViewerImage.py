@@ -21,37 +21,28 @@ channel_position = {
     CH_BGGR: {'b' :0, 'gb':1, 'gr':2, 'r' :3}
 }
 
-class ViewerImage(np.ndarray):
+class ViewerImage:
     """
     Own image class that inherits from np.ndarray
     """
 
-    def __new__(cls, input_array, precision=8, downscale=1, channels=CH_RGB):
+    def __init__(self, input_array, precision=8, downscale=1, channels=CH_RGB):
         """
         :param input_array:
         :param precision: Integer image precision (number of bits)
         """
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
-        obj = np.asarray(input_array).view(cls)
+        self.data = input_array
         # add the new attribute to the created instance
-        obj.precision = precision
-        obj.downscale = downscale
-        obj.channels  = channels
-        # Finally, we must return the newly created object:
-        return obj
-
-    def __array_finalize__(self, obj):
-        # see InfoArray.__array_finalize__ for comments
-        if obj is None: return
-        self.precision = getattr(obj, 'precision', 8)
-        self.downscale = getattr(obj, 'downscale', 1)
-        self.channels = getattr(obj, 'channels', CH_RGB)
+        self.precision = precision
+        self.downscale = downscale
+        self.channels  = channels
 
     def __sizeof__(self):
         # approximative estimation
-        size = self.nbytes
+        size = self.data.nbytes
         for v in vars(self):
-            print(f" v {v} {self.__dict__[v].__sizeof__()}")
+            # print(f" v {v} {self.__dict__[v].__sizeof__()}")
             size += self.__dict__[v].__sizeof__()
         return size
