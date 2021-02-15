@@ -38,6 +38,10 @@ class ViewerImage:
         self.precision = precision
         self.downscale = downscale
         self.channels  = channels
+        self.filename  = None
+
+    def set_filename(self, fn):
+        self.filename = fn
 
     def __sizeof__(self):
         # approximative estimation
