@@ -54,14 +54,13 @@ def libraw_supported_formats():
     return [".ARW", ".GPR"]
 
 
-def read_jpeg_turbojpeg(image_filename, read_size='full', use_RGB=True, verbose=False):
+def read_jpeg_turbojpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     try:
         if verbose:
             start = get_time()
         # using default library installation
         jpeg = TurboJPEG()
         # decoding input.jpg to BGR array
-        in_file = open(image_filename, 'rb')
         downscale = {'full': 1, '1/2': 2, '1/4': 4, '1/8': 8}[read_size]
         scale = (1, downscale)
 
@@ -70,12 +69,13 @@ def read_jpeg_turbojpeg(image_filename, read_size='full', use_RGB=True, verbose=
         pixel_format = TJPF_RGB if use_RGB else TJPF_BGR
 
         start1 = get_time()
+        if image_buffer is None:
+            with open(image_filename, 'rb') as d:
+                image_buffer = d.read()
         if verbose:
-            im_header = jpeg.decode_header(in_file.read())
+            im_header = jpeg.decode_header(image_buffer)
             print(f" header {im_header} {int(get_time() - start1) * 1000} ms")
-        in_file.seek(0)
-        im = jpeg.decode(in_file.read(), pixel_format=pixel_format, scaling_factor=scale, flags=flags)
-        in_file.close()
+        im = jpeg.decode(image_buffer, pixel_format=pixel_format, scaling_factor=scale, flags=flags)
 
         if verbose:
             print(f" turbojpeg read ...{image_filename[-15:]} took {get_time() - start:0.3f} sec.")
@@ -86,13 +86,16 @@ def read_jpeg_turbojpeg(image_filename, read_size='full', use_RGB=True, verbose=
         return None
 
 
-def read_jpeg_simplejpeg(image_filename, read_size='full', use_RGB=True, verbose=False):
+
+def read_jpeg_simplejpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     print(f"read_jpeg_simplejpeg use_RGB {use_RGB}")
     if verbose:
         start_time = get_time()
     format = 'RGB' if use_RGB else 'BGR'
-    with open(image_filename, 'rb') as d:
-        im = simplejpeg.decode_jpeg(d.read(), format)
+    if image_buffer is None:
+        with open(image_filename, 'rb') as d:
+            image_buffer = d.read()
+    im = simplejpeg.decode_jpeg(image_buffer, format)
 
     if verbose:
         end_time = get_time()
@@ -102,7 +105,7 @@ def read_jpeg_simplejpeg(image_filename, read_size='full', use_RGB=True, verbose
     return viewer_image
 
 
-def read_opencv(image_filename, read_size='full', use_RGB=True, verbose=False):
+def read_opencv(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     if verbose:
         open_cv2_start = get_time()
     cv_size = {'full': cv2.IMREAD_COLOR,
@@ -110,13 +113,18 @@ def read_opencv(image_filename, read_size='full', use_RGB=True, verbose=False):
                 '1/4': cv2.IMREAD_REDUCED_COLOR_4,
                 '1/8': cv2.IMREAD_REDUCED_COLOR_8,
                 }
-    cv2_im = cv2.imread(image_filename, cv_size[read_size])
+    flags = cv_size[read_size]
+    if image_buffer is None:
+        cv2_im = cv2.imread(image_filename, flags)
+    else:
+        bytes_as_np_array = np.frombuffer(image_buffer, dtype=np.uint8)
+        cv2_im = cv2.imdecode(bytes_as_np_array, flags) 
+
     open_cv2_start2 = get_time()
     # transform default opencv BGR to RGB
     if use_RGB:
         im = cv2.cvtColor(cv2_im, cv2.COLOR_BGR2RGB)
-    else:
-        im = cv2_im
+
     if verbose:
         last_time = get_time()
         print(" cv2 imread {0} took {1:0.3f} ( {2:0.3f} + {3:0.3f} ) sec.".format(image_filename, last_time - open_cv2_start,
@@ -146,18 +154,18 @@ def opencv_supported_formats():
             '.pnm', '.pfm', '.sr', '.ras', '.tiff', '.tif', '.exr', '.hdr', '.pic']
 
 
-def read_jpeg(image_filename, read_size='full', use_RGB=True, verbose=False):
+def read_jpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     # verbose = True
     downscales = {'full': 1, '1/2': 2, '1/4': 4, '1/8': 8}
     if has_simplejpeg and read_size == 'full':
-        return read_jpeg_simplejpeg(image_filename, read_size, use_RGB, verbose)
+        return read_jpeg_simplejpeg(image_filename, image_buffer, read_size, use_RGB, verbose)
     if has_turbojpeg:
-        return  read_jpeg_turbojpeg(image_filename, read_size=read_size, verbose=verbose, use_RGB=use_RGB)
+        return  read_jpeg_turbojpeg(image_filename, image_buffer, read_size=read_size, verbose=verbose, use_RGB=use_RGB)
         if im is not None:
             viewer_image = ViewerImage(im, precision=8, downscale=downscales[read_size],
                                         channels=CH_RGB if use_RGB else CH_BGR)
             return viewer_image
-    return read_opencv(image_filename, read_size, use_RGB, verbose)
+    return read_opencv(image_filename, image_buffer, read_size, use_RGB, verbose)
 
 
 class ImageReader:
@@ -175,22 +183,26 @@ class ImageReader:
         for ext in opencv_supported_formats():
             if ext.upper() not in self._plugins:
                 self._plugins[ext.upper()] = read_opencv
+        self.file_cache = None
 
     def extensions(self):
         return list(self._plugins.keys())
+
+    def set_file_cache(self, file_cache):
+        self.file_cache = file_cache
 
     def set_plugin(self, extensions, callback):
         """ Set support to a image format based on list of extensions and callback
 
         Args:
             extensions ([type]): [description]
-            callback (function): callback has signature (image_filename, read_size='full', use_RGB=True, verbose=False) 
+            callback (function): callback has signature (image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False) 
             and returns a ViewerImage object
         """
         for ext in extensions:
             self._plugins[ext.upper()] = callback
 
-    def read(self, filename, read_size='full', use_RGB=True, verbose=False):
+    def read(self, filename, buffer=None, read_size='full', use_RGB=True, verbose=False):
         extension = os.path.splitext(filename)[1].upper()
         if extension not in self._plugins:
             print(  f"ERROR: ImageRead.read({filename}) extension not supported, "
@@ -198,7 +210,11 @@ class ImageReader:
             return None
 
         try:
-            res = self._plugins[extension](filename, read_size, use_RGB, verbose)
+            if buffer is None and self.file_cache is not None:
+                # try to get the buffer from the file cache
+                buffer, fromcache = self.file_cache.get_file(filename, check_size=True)
+                print(f" got buffer from cache? {fromcache}")
+            res = self._plugins[extension](filename, buffer, read_size, use_RGB, verbose)
             return res
         except Exception as e:
             print(f"Exception while reading image {filename}: {e}")
