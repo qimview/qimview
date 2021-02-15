@@ -365,9 +365,9 @@ class qtImageViewer(base_widget, ImageViewer ):
             # values = cropped_image[im_y, im_x]
             im_x += crop_xmin
             im_y += crop_ymin
-            values = self.cv_image[im_y, im_x]
+            values = self.cv_image.data[im_y, im_x]
             display_message = f"pos {im_x:4}, {im_y:4} \n rgb {values} \n " \
-                              f"{self.cv_image.shape} {self.cv_image.dtype} {self.cv_image.precision} bits"
+                              f"{self.cv_image.data.shape} {self.cv_image.data.dtype} {self.cv_image.precision} bits"
         else:
             display_message = "Out of image"
             # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
@@ -566,7 +566,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         label_height = self.size().height()
 
         show_diff = self.show_image_differences and self.cv_image is not self.cv_image_ref and \
-                    self.cv_image_ref is not None and self.cv_image.shape == self.cv_image_ref.shape
+                    self.cv_image_ref is not None and self.cv_image.data.shape == self.cv_image_ref.data.shape
 
         c = self.update_crop()
         # check paint_cache
@@ -673,7 +673,8 @@ class qtImageViewer(base_widget, ImageViewer ):
                     resized_image = cv2.resize(image_data, (image_width>>1, image_height>>1),
                                             interpolation=opencv_downscale_interpolation)
                     if self.display_timing:
-                        print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from {current_image.shape} to '
+                        print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from '
+                            f'{current_image.data.shape} to '
                             f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
                     image_data = resized_image
                     if ratio<=0.25:
@@ -684,7 +685,8 @@ class qtImageViewer(base_widget, ImageViewer ):
                         resized_image = cv2.resize(image_data, (image_width>>2, image_height>>2),
                                                 interpolation=opencv_downscale_interpolation)
                         if self.display_timing:
-                            print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from {current_image.shape} to '
+                            print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from '
+                                f'{current_image.data.shape} to '
                                 f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
                         image_data = resized_image
 
