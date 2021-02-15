@@ -116,7 +116,8 @@ class ImageViewer:
 
     def set_image(self, image):
         is_different = (self.cv_image is None) or (self.cv_image is not image)
-        self.print_log('set_image({}): is_different = {}'.format(image.data.shape, is_different))
+        if image is not None:
+            self.print_log('set_image({}): is_different = {}'.format(image.data.shape, is_different))
         if is_different:
             self.cv_image = image
             self.image_id += 1
