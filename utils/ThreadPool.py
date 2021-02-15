@@ -45,8 +45,8 @@ class Worker(QtCore.QRunnable):
         self.signals = WorkerSignals()
         self.result_cb = None
 
-        # # Add the callback to our kwargs
-        # self.kwargs['progress_callback'] = self.signals.progress
+        # Add the callback to our kwargs
+        self.kwargs['progress_callback'] = self.signals.progress
 
     def set_progress_callback(self, cb):
         if cb is not None:
