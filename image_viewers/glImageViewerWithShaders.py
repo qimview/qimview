@@ -159,7 +159,7 @@ class glImageViewerWithShaders(QOpenGLWidget, ImageViewer):
         # background color
         # gl.glClearColor(0, 0, 0, 0)
         # Replace texture only if required
-        img_height, img_width = self.cv_image.shape[0:2]
+        img_height, img_width = self.cv_image.data.shape[0:2]
         if (self.tex_width,self.tex_height) != (img_width,img_height):
             if self.textureID is not None:
                 gl.glDeleteTextures(np.array([self.textureID]))
@@ -171,14 +171,14 @@ class glImageViewerWithShaders(QOpenGLWidget, ImageViewer):
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
             gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_RGB, img_width, img_height,
-                         0, gl.GL_BGR, gl.GL_UNSIGNED_BYTE, self.cv_image)
+                         0, gl.GL_BGR, gl.GL_UNSIGNED_BYTE, self.cv_image.data)
             self.tex_width, self.tex_height = img_width, img_height
         else:
             try:
                 gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
-                             gl.GL_BGR, gl.GL_UNSIGNED_BYTE, self.cv_image)
+                             gl.GL_BGR, gl.GL_UNSIGNED_BYTE, self.cv_image.data)
             except Exception as e:
-                print("glTexSubImage2D failed shape={}: {}".format(self.cv_image.shape, e))
+                print("glTexSubImage2D failed shape={}: {}".format(self.cv_image.data.shape, e))
         if self.display_timing:
             self.print_log('initiliazeGL time {:0.1f} ms'.format((get_time()-start_time)*1000))
 

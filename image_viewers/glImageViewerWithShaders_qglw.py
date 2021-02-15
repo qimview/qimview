@@ -246,7 +246,7 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        if self.cv_image.shape[2] == 4:
+        if self.cv_image.data.shape[2] == 4:
             self.program = self.program_RAW
         else:
             # TODO: check for other types: scalar ...
@@ -290,7 +290,7 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
 
         # Should work for unsigned types for the moment
         gl.glUniform1f( self.max_value_location, (1 << self.cv_image.precision)-1)
-        gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.dtype).max)
+        gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.data.dtype).max)
 
         gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
 

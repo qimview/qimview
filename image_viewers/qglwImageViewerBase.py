@@ -53,14 +53,14 @@ class qglImageViewerBase(opengl_class, ImageViewer):
             t = trace_method(self.tab)
         changed = super(qglImageViewerBase, self).set_image(image)
 
-        img_width = self.cv_image.shape[1]
+        img_width = self.cv_image.data.shape[1]
         if img_width % 4 != 0:
             print("Image is resized to a multiple of 4 dimension in X")
             img_width = ((img_width >> 4) << 4)
-            im = np.ascontiguousarray(self.cv_image[:,:img_width, :])
+            im = np.ascontiguousarray(self.cv_image.data[:,:img_width, :])
             self.cv_image = ViewerImage(im, precision = self.cv_image.precision, downscale = 1,
                                         channels = self.cv_image.channels)
-            print(self.cv_image.shape)
+            print(self.cv_image.data.shape)
 
         if changed:  # and self.textureID is not None:
             if self.setTexture():
@@ -97,7 +97,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
             print("self.cv_image is None")
             return False
 
-        img_height, img_width = self.cv_image.shape[0:2]
+        img_height, img_width = self.cv_image.data.shape[:2]
 
         # default type
         gl_types = {
@@ -110,7 +110,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
             'float32': gl.GL_FLOAT,
             'float64': gl.GL_DOUBLE
         }
-        gl_type = gl_types[self.cv_image.dtype.name]
+        gl_type = gl_types[self.cv_image.data.dtype.name]
 
         # It seems that the dimension in X should be even
 
@@ -118,14 +118,14 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         # on the input data type uint8, uint16, ...
         # need to test with different DXR images
         internal_format = gl.GL_RGB
-        if self.cv_image.shape[2] == 3:
+        if self.cv_image.data.shape[2] == 3:
             if self.cv_image.precision == 8:
                 internal_format = gl.GL_RGB
             if self.cv_image.precision == 10:
                 internal_format = gl.GL_RGB10
             if self.cv_image.precision == 12:
                 internal_format = gl.GL_RGB12
-        if self.cv_image.shape[2] == 4:
+        if self.cv_image.data.shape[2] == 4:
             if self.cv_image.precision == 8:
                 internal_format = gl.GL_RGBA
             else:
@@ -165,16 +165,16 @@ class qglImageViewerBase(opengl_class, ImageViewer):
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
                             internal_format,
                             img_width, img_height,
-                         0, texture_pixel_format, gl_type, self.cv_image)
+                         0, texture_pixel_format, gl_type, self.cv_image.data)
             # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
             self.tex_width, self.tex_height = img_width, img_height
         else:
             try:
                 gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
-                             texture_pixel_format, gl_type, self.cv_image)
+                             texture_pixel_format, gl_type, self.cv_image.data)
                 # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
             except Exception as e:
-                print("setTexture failed shape={}: {}".format(self.cv_image.shape, e))
+                print("setTexture failed shape={}: {}".format(self.cv_image.data.shape, e))
                 return False
 
         self.print_timing(add_total=True)
@@ -296,7 +296,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
 
             # self.display_message = "pos {} {} ratio {}".format(pos_x, pos_y, ratio)
             if im_x>=0 and im_x<self.tex_width and im_y>=0 and im_y<=self.tex_height:
-                values = self.cv_image[im_y, im_x, :]
+                values = self.cv_image.data[im_y, im_x, :]
                 self.display_message = " pos {:4}, {:4} I {}".format(im_x, im_y, values)
             else:
                 self.display_message = "Out of image"
