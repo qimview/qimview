@@ -88,20 +88,32 @@ def read_jpeg_turbojpeg(image_filename, image_buffer, read_size='full', use_RGB=
 
 
 def read_jpeg_simplejpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
-    print(f"read_jpeg_simplejpeg use_RGB {use_RGB}")
+    print(f"read_jpeg_simplejpeg use_RGB {use_RGB} running ...")
     if verbose:
         start_time = get_time()
     format = 'RGB' if use_RGB else 'BGR'
-    if image_buffer is None:
-        with open(image_filename, 'rb') as d:
-            image_buffer = d.read()
-    im = simplejpeg.decode_jpeg(image_buffer, format)
+    try:
+        if image_buffer is None:
+            with open(image_filename, 'rb') as d:
+                image_buffer = d.read()
+    except IOError as e:
+        print("read_jpeg_simplejpeg() I/O error({0}): {1}".format(e.errno, e.strerror))
+    except Exception as e: #handle other exceptions such as attribute errors
+        print(f"read_jpeg_simplejpeg() Unexpected error: {e}")
+
+    try:
+        print("start decode_jpeg")
+        im = simplejpeg.decode_jpeg(image_buffer, format)
+        print("end decode_jpeg")
+    except Exception as e:
+        print(f"failed to decode jpeg {e}")
 
     if verbose:
         end_time = get_time()
         print(f" simplejpeg.decode_jpeg() {format} {os.path.basename(image_filename)} "
                 f"took {int((end_time-start_time)*1000+0.5)} ms")
     viewer_image = ViewerImage(im, precision=8, downscale=1, channels=CH_RGB if use_RGB else CH_BGR)
+    print(f"read_jpeg_simplejpeg done ")
     return viewer_image
 
 
@@ -155,12 +167,12 @@ def opencv_supported_formats():
 
 
 def read_jpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
-    # verbose = True
+    verbose = True
     downscales = {'full': 1, '1/2': 2, '1/4': 4, '1/8': 8}
     if has_simplejpeg and read_size == 'full':
         return read_jpeg_simplejpeg(image_filename, image_buffer, read_size, use_RGB, verbose)
     if has_turbojpeg:
-        return  read_jpeg_turbojpeg(image_filename, image_buffer, read_size=read_size, verbose=verbose, use_RGB=use_RGB)
+        return  read_jpeg_turbojpeg(image_filename, image_buffer, read_size=read_size, use_RGB=use_RGB, verbose=verbose)
         if im is not None:
             viewer_image = ViewerImage(im, precision=8, downscale=downscales[read_size],
                                         channels=CH_RGB if use_RGB else CH_BGR)
