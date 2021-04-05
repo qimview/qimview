@@ -1,17 +1,13 @@
 
 # required to install codecs to work well on windows, I installed K-Lite standard codecs
 
-from PySide2.QtWidgets import QApplication, QWidget, QPushButton, QHBoxLayout, QVBoxLayout, QLabel, \
-    QSlider, QStyle, QSizePolicy, QFileDialog, QGraphicsScene, QGraphicsView, QScrollArea
-import sys
-from PySide2.QtMultimedia import QMediaPlayer, QMediaContent
-from PySide2.QtMultimediaWidgets import QVideoWidget, QGraphicsVideoItem
-from PySide2.QtGui import QIcon, QPalette
-from PySide2.QtCore import Qt, QUrl
-from parameters.numeric_parameter import  NumericParameter
-from parameters.numeric_parameter_gui import NumericParameterGui
+from ..utils.qt_imports import QtGui, QtCore, QtWidgets, QtMultimedia, QtMultimediaWidgets
+from ..parameters.numeric_parameter import  NumericParameter
+from ..parameters.numeric_parameter_gui import NumericParameterGui
 
-class myVideoWidget(QVideoWidget):
+import sys
+
+class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
     def __init__(self):
         super().__init__()
         self.current_scale = 1
@@ -43,16 +39,16 @@ class myVideoWidget(QVideoWidget):
         #       self.width(), self.height()))
         # event.ignore()
 
-class VideoPlayer(QWidget):
+class VideoPlayer(QtWidgets.QWidget):
     def __init__(self, open_button=False):
         super().__init__()
 
         self.setWindowTitle("PyQt5 Media Player")
         self.setGeometry(350, 100, 700, 500)
-        self.setWindowIcon(QIcon('player.png'))
+        self.setWindowIcon(QtGui.QIcon('player.png'))
 
         p = self.palette()
-        p.setColor(QPalette.Window, Qt.black)
+        p.setColor(QtGui.QPalette.Window, QtCore.Qt.black)
         self.setPalette(p)
 
         self.synchronize_viewer = None
@@ -66,7 +62,7 @@ class VideoPlayer(QWidget):
     def init_ui(self):
 
         # create media player objectexamples_qtvlc.py
-        self.mediaPlayer = QMediaPlayer(None, QMediaPlayer.VideoSurface)
+        self.mediaPlayer = QtMultimedia.QMediaPlayer(None, QtMultimedia.QMediaPlayer.VideoSurface)
         # self.mediaPlayer.setNotifyInterval(20)
 
         # create videowidget object
@@ -74,26 +70,26 @@ class VideoPlayer(QWidget):
         # using graphics view may seem a good idea but the video is playing with lags
         use_graphic_view = False
         if use_graphic_view:
-            video_item = QGraphicsVideoItem()
-            self.video_view  = QGraphicsView()
+            video_item = QtMultimediaWidgets.QGraphicsVideoItem()
+            self.video_view  = QtWidgets.QGraphicsView()
         else:
             use_scroll = False
             videowidget = myVideoWidget()
             if use_scroll:
-                video_scroll = QScrollArea()
+                video_scroll = QtWidgets.QScrollArea()
                 video_scroll.setWidget(videowidget)
             else:
                 video_scroll = videowidget
 
         # create open button
         if self.add_open_button:
-            openBtn = QPushButton('Open Video')
+            openBtn = QtWidgets.QPushButton('Open Video')
             openBtn.clicked.connect(self.open_file)
 
         # create button for playing
-        self.playBtn = QPushButton()
+        self.playBtn = QtWidgets.QPushButton()
         self.playBtn.setEnabled(False)
-        self.playBtn.setIcon(self.style().standardIcon(QStyle.SP_MediaPlay))
+        self.playBtn.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_MediaPlay))
         self.playBtn.clicked.connect(lambda: self.synchronize_toggle_play(self))
 
         # create slider
@@ -102,15 +98,15 @@ class VideoPlayer(QWidget):
         self.play_position_gui.decimals = 3
 
 
-        self.slider = QSlider(Qt.Horizontal)
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.slider.setRange(0, 0)
         self.slider.sliderMoved.connect(self.set_position)
         # create label
-        self.label = QLabel()
-        self.label.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Maximum)
+        self.label = QtWidgets.QLabel()
+        self.label.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Maximum)
 
         # create hbox layout
-        hboxLayout = QHBoxLayout()
+        hboxLayout = QtWidgets.QHBoxLayout()
         hboxLayout.setContentsMargins(0, 0, 0, 0)
 
         # set widgets to the hbox layout
@@ -121,11 +117,11 @@ class VideoPlayer(QWidget):
         self.play_position_gui.add_to_layout(hboxLayout)
 
         # create vbox layout
-        vboxLayout = QVBoxLayout()
+        vboxLayout = QtWidgets.QVBoxLayout()
 
         if use_graphic_view:
             vboxLayout.addWidget(self.video_view)
-            self.video_scene = QGraphicsScene(0, 0, self.video_view.size().width(), self.video_view.size().height())
+            self.video_scene = QtWidgets.QGraphicsScene(0, 0, self.video_view.size().width(), self.video_view.size().height())
             self.video_view.setScene(self.video_scene)
             self.video_scene.addItem(video_item)
         else:
@@ -168,26 +164,26 @@ class VideoPlayer(QWidget):
             self.synchronize_viewer.synchronize_toggle_play(event_viewer)
 
     def open_file(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Open Video")
+        filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Video")
 
         if filename != '':
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filename)))
+            self.mediaPlayer.setMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(filename)))
             self.playBtn.setEnabled(True)
 
     def set_video(self, filename):
         if filename != '':
-            self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(filename)))
+            self.mediaPlayer.setMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(filename)))
             self.playBtn.setEnabled(True)
 
     def toggle_play_video(self):
-        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
+        if self.mediaPlayer.state() == QtMultimedia.QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
 
     def mediastate_changed(self, state):
-        if self.mediaPlayer.state() == QMediaPlayer.PlayingState:
-            self.playBtn.setIcon( self.style().standardIcon(QStyle.SP_MediaPause) )
+        if self.mediaPlayer.state() == QtMultimedia.QMediaPlayer.PlayingState:
+            self.playBtn.setIcon( self.style().standardIcon(QtWidgets.QStyle.SP_MediaPause) )
             metadatalist = self.mediaPlayer.availableMetaData()
             print(f"metadatalist = {metadatalist}")
             print(f"metadatalist = {metadatalist}")
@@ -195,7 +191,7 @@ class VideoPlayer(QWidget):
                 var_data = self.mediaPlayer.metaData(key)
                 print(f"{key}: {var_data}")
         else:
-            self.playBtn.setIcon( self.style().standardIcon(QStyle.SP_MediaPlay) )
+            self.playBtn.setIcon( self.style().standardIcon(QtWidgets.QStyle.SP_MediaPlay) )
 
     def position_changed(self, position):
         self.slider.setValue(position)
@@ -211,7 +207,7 @@ class VideoPlayer(QWidget):
         self.mediaPlayer.setPosition(position)
 
     def synchronize_set_play_position(self, event_viewer):
-        if self.mediaPlayer.state() != QMediaPlayer.PlayingState:
+        if self.mediaPlayer.state() != QtMultimedia.QMediaPlayer.PlayingState:
             self.set_play_position()
             if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
                 self.synchronize_viewer.play_position.copy_from(self.play_position)
@@ -226,7 +222,7 @@ class VideoPlayer(QWidget):
 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     window = VideoPlayer(open_button=True)
     window.show()
     sys.exit(app.exec_())
