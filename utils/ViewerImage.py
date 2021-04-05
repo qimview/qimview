@@ -2,6 +2,8 @@
 # from https://numpy.org/doc/stable/user/basics.subclassing.html
 
 import numpy as np
+import cv2
+from .utils import get_time
 
 CH_RGB = 1
 CH_BGR = 2
@@ -33,12 +35,54 @@ class ViewerImage:
         """
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
-        self.data = input_array
+        self._data = input_array
         # add the new attribute to the created instance
         self.precision = precision
         self.downscale = downscale
         self.channels  = channels
         self.filename  = None
+        self.data_reduced_2 = None
+        self.data_reduced_4 = None
+
+
+    @property
+    def data(self):
+        return self._data
+
+    @data.setter
+    def data(self, v):
+        self._data = v
+
+    def reduce_half(self, input_data, interpolation=cv2.INTER_AREA, display_timing=False):
+        image_height, image_width  = input_data.shape[:2]
+        start_0 = get_time()
+        if image_height % 2 != 0 or image_width % 2 != 0:
+            # clip image to multiple of 2 dimension
+            input_2 = input_data[:2*(image_height//2),:2*(image_width[1]//2)]
+        else:
+            input_2 = input_data
+        data_2 = cv2.resize(input_2, (image_width>>1, image_height>>1), interpolation=interpolation)
+        if display_timing:
+            print(  f' === ViewerImage.reduce_half(): OpenCV resize from {input_data.shape} to '
+                    f'{data_2.shape} --> {int((get_time()-start_0)*1000)} ms')
+        return data_2
+
+    # Seems interesting to have this method, but it is not so obvious
+    def get_data_for_ratio(self, ratio, display_timing=False):
+        prev_shape = self._data.shape
+        image_height, image_width  = self._data.shape[:2]
+        downscale_interpolation = cv2.INTER_AREA
+        # if ratio is >2, start with integer downsize which is much faster
+        # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
+        if ratio<=0.5:
+            data_2 = self.reduce_half(self._data, interpolation=downscale_interpolation, display_timing=display_timing)
+            if ratio<=0.25:
+                data_4 = self.reduce_half(data_2, interpolation=downscale_interpolation, display_timing=display_timing)
+                return data_4
+            else:
+                return data_2
+        else:
+            return self._data
 
     def set_filename(self, fn):
         self.filename = fn
