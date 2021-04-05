@@ -38,8 +38,8 @@ class pyQtGraphImageViewer(pg.GraphicsLayoutWidget, ImageViewer):
 	def set_image(self, image):
 		super(pyQtGraphImageViewer, self).set_image(image)
 		self.viewbox.removeItem(self.imv)
-		self.viewbox.addItem(image)
-		self.imv = image
+		self.viewbox.addItem(image.data)
+		self.imv = image.data
 		# 	if self.show_timing_detailed():
 		# 		time_spent = get_time() - update_image_start
 		# 		print(" After setImage took {0:0.3f} sec.".format(time_spent))
