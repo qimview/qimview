@@ -99,7 +99,16 @@ class MultiView(QtWidgets.QWidget):
         else:
             self.setFocusPolicy(QtCore.Qt.ClickFocus)
 
+        self.key_up_callback = None
+        self.key_down_callback = None
+
         self.add_context_menu()
+
+    def set_key_up_callback(self, c):
+        self.key_up_callback = c
+
+    def set_key_down_callback(self, c):
+        self.key_down_callback = c
 
     def add_context_menu(self):
         self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
@@ -702,7 +711,6 @@ class MultiView(QtWidgets.QWidget):
             # print(f" capslock: {event.getModifierState('CapsLock')}")
             if self.show_trace():
                 print("key is ", event.key())
-                print("key down int is ", int(QtCore.Qt.Key_Down))
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             if event.key() == QtCore.Qt.Key_F11:
                 # Should be inside a layout
@@ -767,5 +775,33 @@ class MultiView(QtWidgets.QWidget):
                     event.accept()
                     return
 
+            if event.key() == QtCore.Qt.Key_Up:
+                if self.key_up_callback is not None:
+                    self.key_up_callback()
+                event.accept()
+                return
+
+            if event.key() == QtCore.Qt.Key_Down:
+                if self.key_down_callback is not None:
+                    self.key_down_callback()
+                event.accept()
+                return
+
+            nb_images = len(self.image_list)
+            if event.key() == QtCore.Qt.Key_Left:
+                for n in range(nb_images):
+                    if self.output_label_current_image == self.image_list[n]:
+                        print(f"setting new image index {(n+nb_images-1)%nb_images}")
+                        self.update_image(self.image_list[(n+nb_images-1)%nb_images])
+                        event.accept()
+                        return
+
+            if event.key() == QtCore.Qt.Key_Right:
+                for n in range(nb_images):
+                    if self.output_label_current_image == self.image_list[n]:
+                        print(f"setting new image index {(n+nb_images+1)%nb_images}")
+                        self.update_image(self.image_list[(n+1)%nb_images])
+                        event.accept()
+                        return
         else:
             event.ignore()
