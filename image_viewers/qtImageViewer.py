@@ -8,6 +8,7 @@
 from ..utils.qt_imports import *
 from ..utils.ViewerImage import *
 from ..utils.utils import clip_value
+from ..utils.utils import get_time
 from ..tests_utils.qtdump import *
 try:
     import cppimport.import_hook
@@ -19,7 +20,8 @@ else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
-from .ImageViewer import ImageViewer, trace_method, get_time
+from .ImageViewer import ImageViewer, trace_method
+
 from .ImageFilterParameters import ImageFilterParameters
 
 import cv2
@@ -594,6 +596,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         downscale  = current_image.downscale
         channels   = current_image.channels
 
+        # TODO: get data based on the display ratio?
         image_data = current_image.data
 
         # could_use_cache = use_cache
@@ -808,6 +811,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         # Draw cursor
         if self.show_cursor:
             self.display_message = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
+            self.display_message += f"\n ratio {ratio:0.2f}"
         else:
             self.display_message = self.image_name
         if self.show_overlay:
