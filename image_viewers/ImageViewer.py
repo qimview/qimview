@@ -93,7 +93,7 @@ class ImageViewer:
         self.show_cursor    = False
         self.show_overlay   = False
         self.show_image_differences = False
-        self.antialiasing = False
+        self.antialiasing = True
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
