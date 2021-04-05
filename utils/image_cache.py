@@ -2,6 +2,7 @@
 from .utils import get_time, deep_getsizeof
 from .image_reader import image_reader
 from .ThreadPool import ThreadPool
+from .qt_imports import *
 
 from collections import deque
 # import multiprocessing as mp
@@ -9,15 +10,9 @@ from time import sleep
 import os
 import psutil
 
-# vmem = psutil.virtual_memory()
-# print(f"Total: {get_size(svmem.total)}")
-# print(f"Available: {get_size(svmem.available)}")
-# print(f"Used: {get_size(svmem.used)}")
-# print(f"Percentage: {svmem.percent}%")
-# print("="*20, "SWAP", "="*20)
 
 class BaseCache:
-    def __init__(self):
+    def __init__(self, name=""):
         self.cache = deque()
         self.cache_list = []
         self.cache_size = 0
@@ -27,6 +22,8 @@ class BaseCache:
         self.cache_unit = 1024*1024 # Megabyte
         self.thread_pool = ThreadPool()
         self.memory_bar = None
+        self._name = name
+        self._check_size_mutex = QtCore.QMutex()
 
     def set_memory_bar(self, progress_bar):
         self.memory_bar = progress_bar
@@ -56,7 +53,7 @@ class BaseCache:
                 res = self.cache[pos][1]
             except Exception as e:
                 print(f" Error in getting cache data: {e}")
-                self.print_log(f" *** Cache: search() cache_list {len(self.cache_list)} cache {len(self.cache)}")
+                self.print_log(f" *** Cache {self._name}: search() cache_list {len(self.cache_list)} cache {len(self.cache)}")
                 res = None
             return res
         return None
@@ -72,11 +69,12 @@ class BaseCache:
         self.print_log(f"added size {deep_getsizeof([id, value, extra], set())}")
         self.cache.append([id, value, extra])
         self.cache_list.append(id)
-        self.print_log(f" *** Cache: append() cache_list {len(self.cache_list)} cache {len(self.cache)}")
+        self.print_log(f" *** Cache {self._name}: append() cache_list {len(self.cache_list)} cache {len(self.cache)}")
         if check_size:
             self.check_size_limit()
 
     def check_size_limit(self):
+        self._check_size_mutex.lock()
         print(" *** Cache: check_size_limit()")
         cache_size = deep_getsizeof(self.cache, set())
         while cache_size >= self.max_cache_size * self.cache_unit:
@@ -84,18 +82,19 @@ class BaseCache:
             self.cache_list.pop(0)
             self.print_log(" *** Cache: pop ")
             cache_size = deep_getsizeof(self.cache, set())
-        self.print_log(f" *** Cache::append() {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
+        self.print_log(f" *** Cache::append() {self._name} {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
         self.cache_size = cache_size
         if self.memory_bar is not None:
             new_progress_value = int(self.cache_size/self.cache_unit+0.5)
             if new_progress_value != self.memory_bar.value():
                 self.memory_bar.setValue(new_progress_value)
+        self._check_size_mutex.unlock()
 
 
 
 class FileCache(BaseCache): 
     def __init__(self):
-        BaseCache.__init__(self)
+        BaseCache.__init__(self, "FileCache")
         # let use 5% of total memory by default
         total_memory = psutil.virtual_memory().total / self.cache_unit
         self.max_cache_size = total_memory * 0.05
@@ -112,24 +111,29 @@ class FileCache(BaseCache):
         :param show_timing:
         :return: pair file_data, boolean (True is coming from cache)
         """
+        print(f'get_file {filename}')
         start = get_time()
         # Get absolute normalized path
         filename = os.path.abspath(filename)
         # print(f"image cache get_image({filename})")
         file_data = self.search(filename)
         if file_data is not None:
+            print(f'get_file {filename} found end')
             return file_data, True
         else:
             try:
                 # read file as binary data
+                self.print_log(" FileCache::get_file() before read() {0:0.3f} sec.".format(get_time() - start))
                 with open(filename, 'rb') as f:
                     file_data = f.read()
+                self.print_log(" FileCache::get_file() after read() {0:0.3f} sec.".format(get_time() - start))
                 self.append(filename, file_data, check_size=check_size)
-                self.print_log(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
+                self.print_log("  FileCache::get_file() after append took {0:0.3f} sec.".format(get_time() - start))
             except Exception as e:
                 print("Failed to load image {0}: {1}".format(filename, e))
                 return None, False
             else:
+                print(f'get_file {filename} read end')
                 return file_data, False
 
     def thread_add_files(self, filenames, progress_callback = None):
@@ -146,7 +150,7 @@ class FileCache(BaseCache):
             if f is not None and not self.has_file(f):
                 data, flag = self.get_file(f, check_size=False)
                 # slow down to simulate network drive
-                sleep(.500)
+                # sleep(.500)
                 if not flag:
                     nb_new_files += 1
             if progress_callback is not None:
@@ -185,7 +189,7 @@ class FileCache(BaseCache):
 
 class ImageCache(BaseCache): 
     def __init__(self):
-        BaseCache.__init__(self)
+        BaseCache.__init__(self, "ImageCache")
         # let use 25% of total memory
         total_memory = psutil.virtual_memory().total / self.cache_unit
         self.max_cache_size = total_memory * 0.25
