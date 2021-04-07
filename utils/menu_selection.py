@@ -47,3 +47,8 @@ class MenuSelection:
     def set_selection(self, selection):
         self._current = selection
         self._actions[self._current].setChecked(True)
+
+    def setEnabled(self, enabled):
+        for option in self._options:
+            self._actions[option].setEnabled(enabled)
+
