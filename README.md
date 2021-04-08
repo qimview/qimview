@@ -1,5 +1,5 @@
 # Description
-_ImComp_ (Image Comparison) is a set of classes that are designed to visualize and compare images. 
+_qimview_ (qt-based image view) is a set of classes that are designed to visualize and compare images. 
 It uses Python as the main language, and include some code in C++ or OpenGL shading language.
 Main features are:
 * **image reader**: read type image format (like jpeg and png) and also raw image format (bayer images)
