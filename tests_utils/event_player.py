@@ -1,5 +1,5 @@
 from Qt import QtGui, QtCore, QtWidgets
-from tests_utils.qtdump import *
+from .qtdump import *
 
 class EventPlayer:
 

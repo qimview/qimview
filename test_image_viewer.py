@@ -2,13 +2,13 @@ from Qt import QtGui, QtCore, QtWidgets
 import argparse
 import sys
 import json
-from tests_utils.event_recorder import EventRecorder
-from tests_utils.event_player   import EventPlayer
-from tests_utils.qtdump import *
-from image_viewers.qtImageViewer import qtImageViewer
-from image_viewers.ImageFilterParameters import ImageFilterParameters
-from image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
-from utils.image_reader import image_reader
+from .tests_utils.event_recorder import EventRecorder
+from .tests_utils.event_player   import EventPlayer
+from .tests_utils.qtdump import *
+from .image_viewers.qtImageViewer import qtImageViewer
+from .image_viewers.ImageFilterParameters import ImageFilterParameters
+from .image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
+from .utils.image_reader import image_reader
 
 
 if __name__ == '__main__':

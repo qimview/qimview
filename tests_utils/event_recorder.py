@@ -1,8 +1,8 @@
 
 from Qt import QtGui, QtCore, QtWidgets
-from utils.utils import get_time
+from ..utils.utils import get_time
 import json
-from tests_utils.qtdump import *
+from .qtdump import *
 
 class EventRecorder:
 
