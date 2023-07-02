@@ -13,9 +13,10 @@ class ImageFilterParametersGui:
         self.gamma_gui = None
         self.g_r_gui   = None
         self.g_b_gui   = None
-        self.saturation_gui = None
-        self.event_recorder = None
-        self.name           = name
+        self.saturation_gui    = None
+        self.imdiff_factor_gui = None
+        self.event_recorder    = None
+        self.name              = name
 
     def set_event_recorder(self, evtrec):
         self.event_recorder = evtrec
@@ -44,9 +45,13 @@ class ImageFilterParametersGui:
         self.saturation_gui = NumericParameterGui("Saturation", self.params.saturation, callback, layout, self.name)
         self.saturation_gui.set_event_recorder(self.event_recorder)
 
+    def add_imdiff_factor(self, layout, callback):
+        self.imdiff_factor_gui = NumericParameterGui("Image diff factor", self.params.imdiff_factor, callback, layout, self.name)
+        self.imdiff_factor_gui.set_event_recorder(self.event_recorder)
+
     def register_event_player(self, event_player):
         for v in vars(self):
-            if 'gui' in v:
+            if 'gui' in v and self.__dict__[v]:
                 self.__dict__[v].register_event_player(event_player)
 
     def reset_all(self):
