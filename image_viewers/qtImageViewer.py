@@ -530,9 +530,12 @@ class qtImageViewer(base_widget, ImageViewer ):
             print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
 
     def get_difference_image(self):
+
+        factor = self.filter_params.imdiff_factor.float
         if self.paint_diff_cache is not None:
             use_cache = self.paint_diff_cache['imid'] == self.image_id and \
-                        self.paint_diff_cache['imrefid'] == self.image_ref_id
+                        self.paint_diff_cache['imrefid'] == self.image_ref_id and \
+                        self.paint_diff_cache['factor'] == factor
         else:
             use_cache = False
 
@@ -541,7 +544,7 @@ class qtImageViewer(base_widget, ImageViewer ):
             im2 = self.cv_image_ref.data
             # TODO: get factor from parameters ...
             # factor = int(self.diff_color_slider.value())
-            factor = 3
+            print(f'factor = {factor}')
             # Fast OpenCV code
             start = get_time()
             # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
@@ -553,7 +556,9 @@ class qtImageViewer(base_widget, ImageViewer ):
             res = ViewerImage(res,  precision=self.cv_image.precision, 
                                     downscale=self.cv_image.downscale,
                                     channels=self.cv_image.channels)
-            self.paint_diff_cache = {'imid': self.image_id, 'imrefid': self.image_ref_id}
+            self.paint_diff_cache = {  'imid': self.image_id, 'imrefid': self.image_ref_id, 
+                                       'factor': self.filter_params.imdiff_factor.float
+                                    }
             self.diff_image = res
 
         return self.diff_image
@@ -587,6 +592,8 @@ class qtImageViewer(base_widget, ImageViewer ):
 
         # if show_diff, compute the image difference (put it in cache??)
         if show_diff:
+            # Cache does not work well with differences
+            use_cache = False
             # don't save the difference
             current_image = self.get_difference_image()
         else:

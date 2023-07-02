@@ -335,7 +335,7 @@ class MultiView(QtWidgets.QWidget):
         vertical_layout.addWidget(self.button_widget, 0, QtCore.Qt.AlignTop)
 
     def layout_parameters(self, parameters_layout):
-        # Add color difference slider
+        # Add Profiles and keep zoom options
         self.display_profiles = QtWidgets.QCheckBox("Profiles")
         self.display_profiles.stateChanged.connect(self.toggle_display_profiles)
         self.display_profiles.setChecked(False)
@@ -350,23 +350,13 @@ class MultiView(QtWidgets.QWidget):
         self.reset_button.clicked.connect(self.reset_intensities)
 
         # Add color difference slider
-        self.diff_color_label = QtWidgets.QLabel("Color diff. factor")
-        parameters_layout.addWidget(self.diff_color_label)
-        self.diff_color_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        self.diff_color_slider.setRange(1, 10)
-        self.diff_color_slider.setValue(3)
-        parameters_layout.addWidget(self.diff_color_slider)
-
-        # self.saturation_default = 50
-        # self.saturation_label = QtWidgets.QLabel("Saturation")
-        # parameters_layout.addWidget(self.saturation_label)
-        # self.saturation_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        # self.saturation_slider.setRange(1, 150)
-        # self.saturation_slider.setValue(self.saturation_default)
-        # self.saturation_slider.setToolTip("{}".format(self.saturation_default))
-        # self.saturation_slider.valueChanged.connect(self.update_image_intensity_event)
-        # Add saturation slider
-        # parameters_layout.addWidget(self.saturation_slider)
+        # self.diff_color_label = QtWidgets.QLabel("Color diff. factor")
+        # parameters_layout.addWidget(self.diff_color_label)
+        # self.diff_color_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        # self.diff_color_slider.setRange(1, 10)
+        # self.diff_color_slider.setValue(3)
+        # parameters_layout.addWidget(self.diff_color_slider)
+        self.filter_params_gui.add_imdiff_factor(parameters_layout, self.update_image_intensity_event)
 
         # --- Saturation adjustment
         self.filter_params_gui.add_saturation(parameters_layout, self.update_image_intensity_event)
@@ -445,12 +435,12 @@ class MultiView(QtWidgets.QWidget):
             print(f"failed to get image {im_string_id}: {image_filename}")
             return None
 
-        if im_string_id in self.image1 and im_string_id in self.image2:
-            # Add difference image, now fast to process no need to have it in cache
-            output_image = self.difference_image(self.image1[im_string_id],
-                                                                     self.image2[im_string_id])
-            self.output_image_label[im_string_id] = "127+ ({0} - {1})".format(self.image2[im_string_id],
-                                                                              self.image1[im_string_id])
+        # if im_string_id in self.image1 and im_string_id in self.image2:
+        #     # Add difference image, now fast to process no need to have it in cache
+        #     output_image = self.difference_image(self.image1[im_string_id],
+        #                                                              self.image2[im_string_id])
+        #     self.output_image_label[im_string_id] = "127+ ({0} - {1})".format(self.image2[im_string_id],
+        #                                                                       self.image1[im_string_id])
 
         if self.show_timing_detailed():
             print(f" get_output_image took {int((get_time() - start)*1000+0.5)} ms".format)
@@ -624,20 +614,20 @@ class MultiView(QtWidgets.QWidget):
         # if self.show_timing():
         print(f" Update image took {(get_time() - update_image_start)*1000:0.0f} ms")
 
-    def difference_image(self, image1, image2):
-        factor = int(self.diff_color_slider.value())
-        # Fast OpenCV code
-        start = get_time()
-        # add difference image
-        im1 = self.get_output_image(image1)
-        im2 = self.get_output_image(image2)
-        # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
-        diff_plus = cv2.subtract(im1, im2)
-        diff_minus = cv2.subtract(im2, im1)
-        res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
-        # print " difference_image OpenCV took {0} sec.".format(get_time() - start)
-        # print "max diff = ", np.max(res-res2)
-        return res
+    # def difference_image(self, image1, image2):
+    #     factor = int(self.diff_color_slider.value())
+    #     # Fast OpenCV code
+    #     start = get_time()
+    #     # add difference image
+    #     im1 = self.get_output_image(image1)
+    #     im2 = self.get_output_image(image2)
+    #     # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
+    #     diff_plus = cv2.subtract(im1, im2)
+    #     diff_minus = cv2.subtract(im2, im1)
+    #     res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+    #     # print " difference_image OpenCV took {0} sec.".format(get_time() - start)
+    #     # print "max diff = ", np.max(res-res2)
+    #     return res
 
     def update_viewer_layout(self, layout_name='1'):
         self.print_log("*** update_viewer_layout()")
