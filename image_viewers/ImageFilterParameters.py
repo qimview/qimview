@@ -15,6 +15,8 @@ class ImageFilterParameters:
         self.g_r = NumericParameter(256, 256, [50, 512], 256)
         # Saturation
         self.saturation = NumericParameter(50, 50, [0, 150], 50)
+        # Image difference factor
+        self.imdiff_factor = NumericParameter(30, 30, [1, 100], 10)
 
     def copy_from(self, p):
         for v in vars(self):
