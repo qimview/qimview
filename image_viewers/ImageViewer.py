@@ -82,7 +82,7 @@ class ImageViewer:
         self.filter_params = ImageFilterParameters()
         self.save_image_clipboard = False
         self.clipboard = None
-        self.setMouseTracking(True)
+        # self.setMouseTracking(True)
         self._display_timing = False
         self._verbose = False
         self.start_time = dict()

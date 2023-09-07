@@ -25,9 +25,7 @@ from .ImageViewer import ImageViewer, trace_method
 from .ImageFilterParameters import ImageFilterParameters
 
 import cv2
-import json
 import numpy as np
-import copy
 from scipy.ndimage import gaussian_filter1d
 
 
@@ -39,8 +37,8 @@ class qtImageViewer(base_widget, ImageViewer ):
 
     def __init__(self, parent=None, event_recorder=None):
         self.event_recorder = event_recorder
-        base_widget.__init__(self, parent)
-        ImageViewer.__init__(self, parent)
+        super().__init__(parent)
+        self.setMouseTracking(True)
         self.anti_aliasing = True
         size_policy = QtWidgets.QSizePolicy()
         size_policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Ignored)

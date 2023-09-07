@@ -1,4 +1,4 @@
-from Qt import QtGui, QtCore, QtWidgets
+from ..utils.qt_imports import QtCore, QtWidgets
 from .qtdump import *
 
 class EventPlayer:

@@ -1,4 +1,4 @@
-from Qt import QtWidgets, QtCore, QtGui
+from ..utils.qt_imports import QtWidgets, QtCore
 
 class NumericParameterGui(QtWidgets.QSlider):
     """

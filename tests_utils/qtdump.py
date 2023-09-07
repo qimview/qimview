@@ -1,5 +1,5 @@
 
-from Qt import QtGui, QtCore, QtWidgets
+from ..utils.qt_imports import QtGui, QtCore
 from _md5 import md5
 import numpy as np
 import os

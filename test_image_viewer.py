@@ -1,7 +1,30 @@
-from Qt import QtGui, QtCore, QtWidgets
+from utils.qt_imports import QtWidgets
 import argparse
 import sys
 import json
+
+import sys, importlib
+from pathlib import Path
+
+
+def import_parents(level=1):
+    global __package__
+    file = Path(__file__).resolve()
+    parent, top = file.parent, file.parents[level]
+    
+    sys.path.append(str(top))
+    try:
+        sys.path.remove(str(parent))
+    except ValueError: # already removed
+        pass
+
+    __package__ = '.'.join(parent.parts[len(top.parts):])
+    importlib.import_module(__package__) # won't be needed after that
+
+
+if __name__ == '__main__' and __package__ is None:
+    import_parents()
+
 from .tests_utils.event_recorder import EventRecorder
 from .tests_utils.event_player   import EventPlayer
 from .tests_utils.qtdump import *
@@ -27,7 +50,7 @@ if __name__ == '__main__':
     # class TestWindow(QtGui.QMainWindow):
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self, events):
-            super(TestWindow, self).__init__()
+            super().__init__()
 
             record_file = _params['record']
             if record_file is not None:
@@ -100,7 +123,6 @@ if __name__ == '__main__':
                 self.event_recorder.save_events()
             event.accept()
 
-
     # create the Qt App and window
     app = QtWidgets.QApplication(sys.argv)
     if _params['play'] is not None:
@@ -111,4 +133,4 @@ if __name__ == '__main__':
 
     window = TestWindow(events)
     window.show()
-    app.exec_()
+    app.exec()

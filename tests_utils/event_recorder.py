@@ -1,5 +1,4 @@
 
-from Qt import QtGui, QtCore, QtWidgets
 from ..utils.utils import get_time
 import json
 from .qtdump import *

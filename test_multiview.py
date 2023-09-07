@@ -1,4 +1,4 @@
-from Qt import QtGui, QtCore, QtWidgets
+from utils.qt_imports import QtWidgets
 from .image_viewers.MultiView import MultiView
 from .image_viewers.MultiView import ViewerType
 import sys
