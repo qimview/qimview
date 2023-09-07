@@ -27,7 +27,7 @@ class QtDump:
     # ----- Qt enum value -----
     @staticmethod
     def enum_value(v):
-        return v.__int__()
+        return v.value
 
     # ----- Convert QMouseEvent -----
     @staticmethod
