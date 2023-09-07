@@ -17,11 +17,11 @@ class MenuSelection:
         self._current = _default
         self._menu    = _menu
         self._menu.addSection(_title)
-        self._group = QtWidgets.QActionGroup(_menu)
+        self._group = QtGui.QActionGroup(_menu)
         self._actions = {}
         self._callback = _callback
         for option in self._options:
-            action = QtWidgets.QAction(option,  self._menu, checkable=True)
+            action = QtGui.QAction(option,  self._menu, checkable=True)
             action.setActionGroup(self._group)
             self._menu.addAction(action)
             self._actions[option] = action

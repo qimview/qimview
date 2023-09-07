@@ -21,7 +21,7 @@ import pygame
 import traceback
 
 # opengl_class = QOpenGLWidget
-opengl_class = QGLWidget
+opengl_class = QOpenGLWidget
 
 class qglImageViewerBase(opengl_class, ImageViewer):
 
