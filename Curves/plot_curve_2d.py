@@ -1,27 +1,6 @@
-import sys
-import Qt
 import numpy as np
 from scipy import signal
-
-# from Qt.QtWidgets import *
-# from Qt.QtCore import *
-# from Qt.QtGui import *
-
-# Switch easily between PyQt5 and PySide2
-if Qt.IsPyQt5:
-    print("Using PyQt5")
-    from PyQt5.QtWidgets import *
-    from PyQt5.QtCore import *
-    from PyQt5.QtGui import *
-    from PyQt5 import QChart as QtCharts
-
-if Qt.IsPySide2:
-    print("Using PySide2")
-    from PySide2.QtWidgets import *
-    from PySide2.QtCore import *
-    from PySide2.QtGui import *
-    from PySide2.QtCharts import QtCharts
-
+from PySide6 import QtCharts
 
 class PlotCurves2D(QtCharts.QChartView):
     def __init__(self):
