@@ -1,3 +1,4 @@
+#!/bin/python
 
 import sys
 import argparse
@@ -34,6 +35,7 @@ if __name__ == '__main__':
     parser.add_argument('--viewer', type=str, choices={'gl', 'qt', 'shader', 'pyqtgraph'}, default='qt',
                         help="Viewer mode, qt: standard qt display, gl: use opengl,  shader: enable opengl with "
                              "shaders, pyqtgraph: experimental, use pyqtgraph module if installed")
+    parser.add_argument('-l', '--layout', type=str, default='0', help='Set the layout (number of images in comparison on the window), if 0 try to use the number of input images')
 
     args = parser.parse_args()
     _params = vars(args)
@@ -68,4 +70,10 @@ if __name__ == '__main__':
 
     mv.show()
     mv.resize(1000, 800)
-    app.exec_()
+    nb_inputs = len(filenames)
+    if nb_inputs>=1 and nb_inputs<=9:
+        mv.update_viewer_layout(f'{nb_inputs}')
+        mv.viewer_grid_layout.update()
+        mv.update_image()
+        mv.setFocus()
+    app.exec()
