@@ -6,7 +6,7 @@ class ImageFilterParameters:
         # white/black levels
         # default_black = int(4095*5/100)
         default_black = 0
-        self.black_level = NumericParameter(default_black, default_black, [0, 800]  , 4095)
+        self.black_level = NumericParameter(default_black, default_black, [0, 4095]  , 4095)
         self.white_level = NumericParameter(4095, 4095,            [480, 4095], 4095)
         # gamma curve coefficient
         self.gamma       = NumericParameter(100, 100,            [50, 300], 100)
