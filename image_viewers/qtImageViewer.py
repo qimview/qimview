@@ -26,7 +26,6 @@ from .ImageFilterParameters import ImageFilterParameters
 
 import cv2
 import numpy as np
-from scipy.ndimage import gaussian_filter1d
 
 
 # the opengl version is a bit slow for the moment, due to the texture generation
@@ -45,7 +44,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.Ignored)
         self.setSizePolicy(size_policy)
         # self.setAlignment(QtCore.Qt.AlignCenter )
-        self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float)
+        self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float32)
         self.zoom_center = np.array([0.5, 0.5, 0.5, 0.5])
 
 
@@ -68,7 +67,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         # self.setPalette(p)
         # self.setAutoFillBackground(True)
 
-        # self.verbose = True
+        self.verbose = True
         # self.trace_calls = True
 
     #def __del__(self):
@@ -527,7 +526,7 @@ class qtImageViewer(base_widget, ImageViewer ):
             print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end='')
             print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
 
-    def get_difference_image(self):
+    def get_difference_image(self, verbose=True):
 
         factor = self.filter_params.imdiff_factor.float
         if self.paint_diff_cache is not None:
@@ -543,21 +542,56 @@ class qtImageViewer(base_widget, ImageViewer ):
             # TODO: get factor from parameters ...
             # factor = int(self.diff_color_slider.value())
             print(f'factor = {factor}')
+            print(f' im1.dtype {im1.dtype} im2.dtype {im2.dtype}')
             # Fast OpenCV code
             start = get_time()
             # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
-            diff_plus = cv2.subtract(im1, im2)
-            diff_minus = cv2.subtract(im2, im1)
-            res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
-            print(f" qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms")
-            # print "max diff = ", np.max(res-res2)
-            res = ViewerImage(res,  precision=self.cv_image.precision, 
-                                    downscale=self.cv_image.downscale,
-                                    channels=self.cv_image.channels)
-            self.paint_diff_cache = {  'imid': self.image_id, 'imrefid': self.image_ref_id, 
-                                       'factor': self.filter_params.imdiff_factor.float
-                                    }
-            self.diff_image = res
+            try:
+                if im1.dtype.name == 'uint8' and im2.dtype.name == 'uint8':
+                    diff_plus = cv2.subtract(im1, im2)
+                    diff_minus = cv2.subtract(im2, im1)
+                    res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+                    if verbose:
+                        print(f" qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms")
+                        vmin = np.min(res)
+                        vmax = np.max(res)
+                        print(f"min-max diff = {vmin} - {vmax}")
+                        histo,_ = np.histogram(res, bins=int(vmax-vmin+0.5), range=(vmin, vmax))
+                        sum = 0
+                        for v in range(vmin,vmax):
+                            if v!=127:
+                                nb = histo[v-vmin]
+                                if nb >0:
+                                    print(f"{v-127}:{nb} ",end='')
+                                    sum += nb
+                        print('')
+                        print(f'nb pixel diff  {sum}')
+                    res = ViewerImage(res,  precision=self.cv_image.precision, 
+                                            downscale=self.cv_image.downscale,
+                                            channels=self.cv_image.channels)
+                    self.paint_diff_cache = {  'imid': self.image_id, 'imrefid': self.image_ref_id, 
+                        'factor': self.filter_params.imdiff_factor.float
+                    }
+                    self.diff_image = res
+                else:
+                    d = (im1.astype(np.float32)-im2.astype(np.float32))*factor
+                    d[d<-127] = -127
+                    d[d>128] = 128
+                    d = (d+127).astype(np.uint8)*255
+                    res = ViewerImage(d,  precision=8, 
+                                            downscale=self.cv_image.downscale,
+                                            channels=self.cv_image.channels)
+                    self.paint_diff_cache = {  'imid': self.image_id, 'imrefid': self.image_ref_id, 
+                        'factor': self.filter_params.imdiff_factor.float
+                    }
+                    self.diff_image = res
+            except Exception as e:
+                print(f"Error {e}")
+                res = (im1!=im2).astype(np.uint8)*255
+                res = ViewerImage(res,  precision=8, 
+                                        downscale=self.cv_image.downscale,
+                                        channels=CH_Y)
+                self.diff_image = res
 
         return self.diff_image
 
@@ -670,6 +704,10 @@ class qtImageViewer(base_widget, ImageViewer ):
             if use_opencv_resize and not resize_applied and channels == CH_RGB:
 
                 prev_shape = image_data.shape
+                initial_type = image_data.dtype
+                if image_data.dtype != np.uint8:
+                    print(f"image_data type {type(image_data)} {image_data.dtype}")
+                    image_data = image_data.astype(np.float32)
 
                 # if ratio is >2, start with integer downsize which is much faster
                 # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
@@ -706,7 +744,7 @@ class qtImageViewer(base_widget, ImageViewer ):
                     print(f' === qtImageViewer: paint_image() OpenCV resize from {image_data.shape} to '
                         f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
 
-                image_data = resized_image
+                image_data = resized_image.astype(initial_type)
                 resize_applied = True
                 self.add_time('cv2.resize',time1)
 
