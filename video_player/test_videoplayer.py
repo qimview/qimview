@@ -1,10 +1,10 @@
 
-from PySide2.QtWidgets import QApplication
+from utils.qt_imports import QtWidgets
 import sys
 from video_player.video_player import VideoPlayer
 
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     window = VideoPlayer(open_button=True)
     sys.exit(app.exec_())
