@@ -18,7 +18,6 @@ from enum import Enum
 
 import types
 import math
-import cv2
 
 class ViewerType(Enum):
     QT_VIEWER = 1
@@ -219,7 +218,7 @@ class MultiView(QtWidgets.QWidget):
         Uses the variable self.output_label_current_image
         :return:
         '''
-        print('update_image_parameters')
+        self.print_log('update_image_parameters')
         update_start = get_time()
 
         for n in range(self.nb_viewers_used):
@@ -228,7 +227,7 @@ class MultiView(QtWidgets.QWidget):
 
         if self.show_timing():
             time_spent = get_time() - update_start
-            print(" Update image took {0:0.3f} sec.".format(time_spent))
+            self.print_log(" Update image took {0:0.3f} sec.".format(time_spent))
 
     def set_images(self, images, set_viewers=False):
         self.print_log(f"MultiView.set_images() {images}")
@@ -350,12 +349,6 @@ class MultiView(QtWidgets.QWidget):
         self.reset_button.clicked.connect(self.reset_intensities)
 
         # Add color difference slider
-        # self.diff_color_label = QtWidgets.QLabel("Color diff. factor")
-        # parameters_layout.addWidget(self.diff_color_label)
-        # self.diff_color_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
-        # self.diff_color_slider.setRange(1, 10)
-        # self.diff_color_slider.setValue(3)
-        # parameters_layout.addWidget(self.diff_color_slider)
         self.filter_params_gui.add_imdiff_factor(parameters_layout, self.update_image_intensity_event)
 
         # --- Saturation adjustment
@@ -434,13 +427,6 @@ class MultiView(QtWidgets.QWidget):
         else:
             print(f"failed to get image {im_string_id}: {image_filename}")
             return None
-
-        # if im_string_id in self.image1 and im_string_id in self.image2:
-        #     # Add difference image, now fast to process no need to have it in cache
-        #     output_image = self.difference_image(self.image1[im_string_id],
-        #                                                              self.image2[im_string_id])
-        #     self.output_image_label[im_string_id] = "127+ ({0} - {1})".format(self.image2[im_string_id],
-        #                                                                       self.image1[im_string_id])
 
         if self.show_timing_detailed():
             print(f" get_output_image took {int((get_time() - start)*1000+0.5)} ms".format)
@@ -614,21 +600,6 @@ class MultiView(QtWidgets.QWidget):
         # if self.show_timing():
         print(f" Update image took {(get_time() - update_image_start)*1000:0.0f} ms")
 
-    # def difference_image(self, image1, image2):
-    #     factor = int(self.diff_color_slider.value())
-    #     # Fast OpenCV code
-    #     start = get_time()
-    #     # add difference image
-    #     im1 = self.get_output_image(image1)
-    #     im2 = self.get_output_image(image2)
-    #     # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
-    #     diff_plus = cv2.subtract(im1, im2)
-    #     diff_minus = cv2.subtract(im2, im1)
-    #     res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
-    #     # print " difference_image OpenCV took {0} sec.".format(get_time() - start)
-    #     # print "max diff = ", np.max(res-res2)
-    #     return res
-
     def update_viewer_layout(self, layout_name='1'):
         self.print_log("*** update_viewer_layout()")
         # # Action from menu ...
@@ -650,7 +621,7 @@ class MultiView(QtWidgets.QWidget):
         self.nb_viewers_used = eval(self.current_viewer_layout)
         col_length = int(math.sqrt(self.nb_viewers_used))
         row_length = int(math.ceil(self.nb_viewers_used / col_length))
-        print('col_length = {} row_length = {}'.format(col_length, row_length))
+        self.print_log('col_length = {} row_length = {}'.format(col_length, row_length))
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
@@ -696,7 +667,7 @@ class MultiView(QtWidgets.QWidget):
     def keyPressEvent(self, event):
         if type(event) == QtGui.QKeyEvent:
             # print("key is ", event.key())
-            print(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
+            self.print_log(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
             # print( QtGui.QKeySequence(event.key()).toString())
             # print(f" capslock: {event.getModifierState('CapsLock')}")
             if self.show_trace():
