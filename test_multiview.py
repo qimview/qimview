@@ -1,10 +1,31 @@
-from utils.qt_imports import QtWidgets
-from .image_viewers.MultiView import MultiView
-from .image_viewers.MultiView import ViewerType
+
 import sys
 import argparse
 import os
 import glob
+import importlib
+from pathlib import Path
+
+def import_parents(current_file, level=1):
+    global __package__
+    file = Path(current_file).resolve()
+    parent, top = file.parent, file.parents[level]
+    
+    sys.path.append(str(top))
+    try:
+        sys.path.remove(str(parent))
+    except ValueError: # already removed
+        pass
+
+    __package__ = '.'.join(parent.parts[len(top.parts):])
+    importlib.import_module(__package__) # won't be needed after that
+
+if __name__ == '__main__' and __package__ is None:
+    import_parents(__file__)
+
+from .utils.qt_imports import QtWidgets
+from .image_viewers.MultiView import MultiView
+from .image_viewers.MultiView import ViewerType
 
 if __name__ == '__main__':
 
