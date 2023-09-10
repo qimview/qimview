@@ -18,7 +18,7 @@ class BaseCache:
         self.cache_size = 0
         # Max size in Mb
         self.max_cache_size = 2000
-        self.verbose = True
+        self.verbose = False
         self.cache_unit = 1024*1024 # Megabyte
         self.thread_pool = ThreadPool()
         self.memory_bar = None
@@ -75,7 +75,7 @@ class BaseCache:
 
     def check_size_limit(self):
         self._check_size_mutex.lock()
-        print(" *** Cache: check_size_limit()")
+        self.print_log(" *** Cache: check_size_limit()")
         cache_size = deep_getsizeof(self.cache, set())
         while cache_size >= self.max_cache_size * self.cache_unit:
             self.cache.popleft()
@@ -183,7 +183,7 @@ class FileCache(BaseCache):
         self.thread_pool.set_worker(self.thread_add_files, filenames)
         self.thread_pool.set_worker_callbacks(progress_cb=self.show_progress, finished_cb=self.on_finished)
         self.thread_pool.start_worker()
-        print(f" FileCache.add_files() {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
+        self.print_log(f" FileCache.add_files() {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
 
 
 
@@ -261,8 +261,8 @@ class ImageCache(BaseCache):
             # wait 5 ms before checking again
             sleep(0.002)
             wait_time += 0.002
-        print(f" ImageCache.add_images() wait_time {wait_time} took {int((get_time()-start)*1000+0.5)} ms;")
+        self.print_log(f" ImageCache.add_images() wait_time {wait_time} took {int((get_time()-start)*1000+0.5)} ms;")
         if num_workers>0:
             self.thread_pool.clear()
             self.check_size_limit()
-        print(f" ImageCache.add_images() {num_workers}, {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
+        self.print_log(f" ImageCache.add_images() {num_workers}, {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
