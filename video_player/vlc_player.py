@@ -24,8 +24,8 @@
 import sys
 import os.path
 import vlc
-from Qt import QtWidgets, QtCore, QtGui
-from Qt.QtWidgets import QMainWindow, QWidget, QFrame, QSlider
+from PySide6 import QtWidgets, QtCore, QtGui
+from PySide6.QtWidgets import QWidget, QFrame
 from ..parameters.numeric_parameter import  NumericParameter
 from ..parameters.numeric_parameter_gui import NumericParameterGui
 
