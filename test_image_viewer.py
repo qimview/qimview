@@ -27,6 +27,7 @@ from .tests_utils.event_recorder import EventRecorder
 from .tests_utils.event_player   import EventPlayer
 from .tests_utils.qtdump import *
 from .image_viewers.qtImageViewer import qtImageViewer
+from .image_viewers.glImageViewer import glImageViewer
 from .image_viewers.ImageFilterParameters import ImageFilterParameters
 from .image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
 from .utils.image_reader import image_reader
@@ -61,7 +62,10 @@ if __name__ == '__main__':
             vertical_layout = QtWidgets.QVBoxLayout()
             self.main_widget.setLayout(vertical_layout)
 
-            self.widget = qtImageViewer(event_recorder = self.event_recorder)
+            if _params['gl']:
+                self.widget = glImageViewer(event_recorder = self.event_recorder)
+            else:
+                self.widget = qtImageViewer(event_recorder = self.event_recorder)
             if _params['timing']:
                 self.widget.display_timing = True
             if record_file is not None:
