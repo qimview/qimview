@@ -210,7 +210,7 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
         """
-        print("resize")
+        print(f"resizeGL {width}x{height}")
         if self.trace_calls:
             t = trace_method(self.tab)
         self._width = width

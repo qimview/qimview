@@ -76,13 +76,12 @@ class ImageViewer:
         self.cv_image_ref = None
         self.synchronize_viewer = None
         self.tab = ["--"]
-        self.trace_calls  = False
+        self.trace_calls  = True
         self.image_name = ""
         self.active_window = False
         self.filter_params = ImageFilterParameters()
         self.save_image_clipboard = False
         self.clipboard = None
-        # self.setMouseTracking(True)
         self._display_timing = False
         self._verbose = False
         self.start_time = dict()
