@@ -21,7 +21,7 @@ def import_parents(current_file, level=1):
     __package__ = '.'.join(parent.parts[len(top.parts):])
     importlib.import_module(__package__) # won't be needed after that
 
-if __name__ == '__main__' and __package__ is None:
+if __name__ == '__main__' and __package__ is None or __package__ == '':
     import_parents(__file__)
 
 from .utils.qt_imports import QtWidgets
