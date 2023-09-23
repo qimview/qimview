@@ -19,8 +19,9 @@ import sys
 
 class glImageViewer(qglImageViewerBase):
 
-    def __init__(self, parent=None):
-        qglImageViewerBase.__init__(self, parent)
+    def __init__(self, parent=None, event_recorder=None):
+        self.event_recorder = event_recorder
+        super().__init__(parent)
         self.setAutoFillBackground(False)
         # self.setFormat()
         self.textureID  = None
@@ -75,6 +76,10 @@ class glImageViewer(qglImageViewerBase):
         self.print_timing(add_total=True)
         self.opengl_error()
 
+    def event(self, evt):
+        if self.event_recorder is not None:
+            self.event_recorder.store_event(self, evt)
+        return super().event(evt)
 
 if __name__ == '__main__':
     # import numpy for generating random data points
