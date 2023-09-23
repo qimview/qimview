@@ -37,7 +37,8 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         self.current_text = None
         self.cursor_imx_ratio = 0.5
         self.cursor_imy_ratio = 0.5
-        self.trace_calls = False
+        self.trace_calls = True
+        self.setMouseTracking(True)
 
         if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
@@ -65,6 +66,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         if changed:  # and self.textureID is not None:
             if self.setTexture():
                 print("paintAll()")
+                self.show()
                 self.paintAll()
             else:
                 print("setTexture() return False")
@@ -265,6 +267,8 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         #     self.opengl_error()
 
         painter.end()
+        # # It seems that calling update() is needed here, new since I have updated to PySide6
+        self.update()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
         """
@@ -312,12 +316,13 @@ class qglImageViewerBase(opengl_class, ImageViewer):
             gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
             gl.glEnd()
 
-    def paintEvent(self, event):
-        # self.makeCurrent()
-        if self.trace_calls:
-            t = trace_method(self.tab)
-        self.paintAll()
-        self.opengl_error()
+    # def paintEvent(self, event):
+    #     # self.makeCurrent()
+    #     if self.trace_calls:
+    #         t = trace_method(self.tab)
+    #     self.update()
+    #     # self.paintAll()
+    #     # self.opengl_error()
 
     def image_centered_position(self):
         w = self._width
@@ -351,6 +356,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         # keep image proportions
         w = self._width
         h = self._height
+        print(f" w, h {w, h}")
         try:
             gl.glViewport(0,0,w,h) # keep everything in viewport
         except Exception as e:
@@ -388,6 +394,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
         """
+        print("ResizeGL")
         if self.trace_calls:
             t = trace_method(self.tab)
         # size give for opengl are in pixels, qt uses device independent size otherwise
@@ -395,6 +402,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         self._height = height
         # print("width height ratios {} {}".format(self._width/self.width(), self._height/self.height()))
         self.paintAll()
+        self.update()
 
     def get_mouse_gl_coordinates(self, x, y):
         modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
@@ -423,7 +431,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
     def keyPressEvent(self, event):
         # TODO: Fix the correct parameters for selecting image zoom/pan
         x0, x1, y0, y1 = self.image_centered_position()
-        print(f"{x1-x0} x {y1-y0}")
+        print(f"image centered position {x1-x0} x {y1-y0}")
         self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
 
 
