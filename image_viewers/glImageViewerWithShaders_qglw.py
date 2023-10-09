@@ -8,6 +8,9 @@ from ..utils.qt_imports import QtWidgets
 from .ImageViewer import ReadImage, trace_method, get_time
 from .qglwImageViewerBase import qglImageViewerBase
 
+from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
+                              QOpenGLShaderProgram, QOpenGLTexture)
+
 import OpenGL.GL as gl
 import argparse
 import sys
@@ -179,13 +182,14 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
             x1, y1, 0.0,
             x0, y0, 0.0,
             x1, y0, 0.0]
+        vertexData = np.array(backgroundVertices, np.float32)
 
         if self.vertexBuffer is not None:
-            gl.glDeleteBuffers(1, np.array([self.vertexBuffer]))
-        self.vertexBuffer = gl.glGenBuffers(1)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
-        vertexData = np.array(backgroundVertices, np.float32)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, 4 * len(vertexData), vertexData, gl.GL_STATIC_DRAW)
+            self.vertexBuffer.destroy()
+        self.vertexBuffer = QOpenGLBuffer()
+        self.vertexBuffer.create()
+        self.vertexBuffer.bind()
+        self.vertexBuffer.allocate(vertexData, 4 * len(vertexData))
 
     def setBufferData(self):
         # set background UV
@@ -196,11 +200,12 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
             1.0, 0.0,
             0.0, 1.0,
             1.0, 1.0]
-
-        self.uvBuffer = gl.glGenBuffers(1)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer)
         uvData = np.array(backgroundUV, np.float32)
-        gl.glBufferData(gl.GL_ARRAY_BUFFER, 4 * len(uvData), uvData, gl.GL_STATIC_DRAW)
+
+        self.uvBuffer = QOpenGLBuffer()
+        self.uvBuffer.create()
+        self.uvBuffer.bind()
+        self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
     def setTexture(self):
         texture_ok = super(glImageViewerWithShaders_qglw, self).setTexture()
@@ -299,9 +304,15 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
         gl.glEnableVertexAttribArray(self.aUV)
 
         # set vertex and UV buffers
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer)
+        # vert_buffers = VertexBuffers()
+        # vert_buffers.vert_pos_buffer = vert_pos_buffer
+        # vert_buffers.normal_buffer = normal_buffer
+        # vert_buffers.tex_coord_buffer = tex_coord_buffer
+        # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
+
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
         gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
         gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
 
         # bind background texture
