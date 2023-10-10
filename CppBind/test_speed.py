@@ -5,12 +5,12 @@ import cppimport.import_hook
 import wrap_numpy
 import numpy as np
 
-if False:
-	a = (np.random.rand(2000,2000,3)*100).astype(np.float64)
-	b = a.copy()
-	%time b += 1
-	%time wrap_numpy.increment_3d_omp(b)
-	%time wrap_numpy.increment_3d(b)
+# if False:
+# 	a = (np.random.rand(2000,2000,3)*100).astype(np.float64)
+# 	b = a.copy()
+# 	%time b += 1
+# 	%time wrap_numpy.increment_3d_omp(b)
+# 	%time wrap_numpy.increment_3d(b)
 
 
 a = (np.random.rand(2000,2000,4)*4095).astype(np.uint16)
