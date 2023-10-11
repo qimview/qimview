@@ -1,8 +1,5 @@
-
 from .ViewerImage import *
 from .utils import get_time
-import sys
-import time
 import cv2
 import numpy as np
 from collections import deque
