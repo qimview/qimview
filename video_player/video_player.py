@@ -62,7 +62,7 @@ class VideoPlayer(QtWidgets.QWidget):
     def init_ui(self):
 
         # create media player objectexamples_qtvlc.py
-        self.mediaPlayer = QtMultimedia.QMediaPlayer(None, QtMultimedia.QMediaPlayer.VideoSurface)
+        self.mediaPlayer = QtMultimedia.QMediaPlayer(None)
         # self.mediaPlayer.setNotifyInterval(20)
 
         # create videowidget object
@@ -139,7 +139,7 @@ class VideoPlayer(QtWidgets.QWidget):
 
         # media player signals
 
-        self.mediaPlayer.stateChanged.connect(self.mediastate_changed)
+        self.mediaPlayer.playbackStateChanged.connect(self.mediastate_changed)
         self.mediaPlayer.positionChanged.connect(self.position_changed)
         self.mediaPlayer.durationChanged.connect(self.duration_changed)
 
@@ -167,24 +167,24 @@ class VideoPlayer(QtWidgets.QWidget):
         filename, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Open Video")
 
         if filename != '':
-            self.mediaPlayer.setMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(filename)))
+            self.mediaPlayer.setSource(QtCore.QUrl.fromLocalFile(filename))
             self.playBtn.setEnabled(True)
 
     def set_video(self, filename):
         if filename != '':
-            self.mediaPlayer.setMedia(QtMultimedia.QMediaContent(QtCore.QUrl.fromLocalFile(filename)))
+            self.mediaPlayer.setSource(QtCore.QUrl.fromLocalFile(filename))
             self.playBtn.setEnabled(True)
 
     def toggle_play_video(self):
-        if self.mediaPlayer.state() == QtMultimedia.QMediaPlayer.PlayingState:
+        if self.mediaPlayer.playbackState() == QtMultimedia.QMediaPlayer.PlayingState:
             self.mediaPlayer.pause()
         else:
             self.mediaPlayer.play()
 
     def mediastate_changed(self, state):
-        if self.mediaPlayer.state() == QtMultimedia.QMediaPlayer.PlayingState:
+        if self.mediaPlayer.playbackState() == QtMultimedia.QMediaPlayer.PlayingState:
             self.playBtn.setIcon( self.style().standardIcon(QtWidgets.QStyle.SP_MediaPause) )
-            metadatalist = self.mediaPlayer.availableMetaData()
+            metadatalist = self.mediaPlayer.metaData()
             print(f"metadatalist = {metadatalist}")
             print(f"metadatalist = {metadatalist}")
             for key in metadatalist:
@@ -207,7 +207,7 @@ class VideoPlayer(QtWidgets.QWidget):
         self.mediaPlayer.setPosition(position)
 
     def synchronize_set_play_position(self, event_viewer):
-        if self.mediaPlayer.state() != QtMultimedia.QMediaPlayer.PlayingState:
+        if self.mediaPlayer.playbackState() != QtMultimedia.QMediaPlayer.PlayingState:
             self.set_play_position()
             if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
                 self.synchronize_viewer.play_position.copy_from(self.play_position)
