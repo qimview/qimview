@@ -5,9 +5,9 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from ..utils.qt_imports import *
-from ..utils.ViewerImage import *
-from .ImageViewer import ImageViewer, ReadImage, trace_method
+from qimview.utils.qt_imports import *
+from qimview.utils.ViewerImage import *
+from qimview.image_viewers.ImageViewer import ImageViewer, ReadImage, trace_method
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True

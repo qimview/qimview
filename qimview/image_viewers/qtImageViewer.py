@@ -5,14 +5,14 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from ..utils.qt_imports import *
-from ..utils.ViewerImage import *
-from ..utils.utils import clip_value
-from ..utils.utils import get_time
-from ..tests_utils.qtdump import *
+from qimview.utils.qt_imports import *
+from qimview.utils.ViewerImage import *
+from qimview.utils.utils import clip_value
+from qimview.utils.utils import get_time
+from qimview.tests_utils.qtdump import *
 try:
     import cppimport.import_hook
-    from ..CppBind import wrap_numpy
+    from qimview.CppBind import wrap_numpy
 except Exception as e:
     has_cppbind = False
     print("Failed to load wrap_numpy: {}".format(e))
@@ -20,9 +20,9 @@ else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
-from .ImageViewer import ImageViewer, trace_method
+from qimview.image_viewers.ImageViewer import ImageViewer, trace_method
 
-from .ImageFilterParameters import ImageFilterParameters
+from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
 
 import cv2
 import numpy as np

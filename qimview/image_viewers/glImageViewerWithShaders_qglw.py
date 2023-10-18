@@ -4,7 +4,7 @@
 #
 #
 
-from ..utils.qt_imports import QtWidgets
+from qimview.utils.qt_imports import QtWidgets
 from .ImageViewer import ReadImage, trace_method, get_time
 from .qglwImageViewerBase import qglImageViewerBase
 

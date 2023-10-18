@@ -1,36 +1,18 @@
-from utils.qt_imports import QtWidgets
+from qimview.utils.qt_imports import QtWidgets
 import argparse
 import sys
 import json
 
-import sys, importlib
-from pathlib import Path
+import sys
 
-def import_parents(current_file, level=1):
-    global __package__
-    file = Path(current_file).resolve()
-    parent, top = file.parent, file.parents[level]
-    
-    sys.path.append(str(top))
-    try:
-        sys.path.remove(str(parent))
-    except ValueError: # already removed
-        pass
-
-    __package__ = '.'.join(parent.parts[len(top.parts):])
-    importlib.import_module(__package__) # won't be needed after that
-
-if __name__ == '__main__' and __package__ is None:
-    import_parents(__file__)
-
-from .tests_utils.event_recorder import EventRecorder
-from .tests_utils.event_player   import EventPlayer
-from .tests_utils.qtdump import *
-from .image_viewers.qtImageViewer import qtImageViewer
-from .image_viewers.glImageViewer import glImageViewer
-from .image_viewers.ImageFilterParameters import ImageFilterParameters
-from .image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
-from .utils.image_reader import image_reader
+from qimview.tests_utils.event_recorder import EventRecorder
+from qimview.tests_utils.event_player   import EventPlayer
+from qimview.tests_utils.qtdump import *
+from qimview.image_viewers.qtImageViewer import qtImageViewer
+from qimview.image_viewers.glImageViewer import glImageViewer
+from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
+from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
+from qimview.utils.image_reader import image_reader
 
 
 if __name__ == '__main__':

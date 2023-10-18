@@ -2,9 +2,9 @@
 #
 #
 
-from .ImageFilterParameters import ImageFilterParameters
-from ..utils.utils import get_time
-from ..utils.qt_imports import QtGui, QtCore, QtWidgets
+from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
+from qimview.utils.utils import get_time
+from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
 
 import cv2
 import traceback

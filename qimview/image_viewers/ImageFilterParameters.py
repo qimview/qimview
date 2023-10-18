@@ -1,5 +1,5 @@
 
-from ..parameters.numeric_parameter import NumericParameter
+from qimview.parameters.numeric_parameter import NumericParameter
 
 class ImageFilterParameters:
     def __init__(self):

@@ -1,18 +1,18 @@
 
-from ..utils.qt_imports import *
-from ..utils.utils import get_time
-from ..utils.image_reader import image_reader
-from ..utils.image_cache import ImageCache
-from ..utils.ViewerImage import *
-from ..utils.menu_selection import MenuSelection
-from ..utils.mvlabel import MVLabel
+from qimview.utils.qt_imports import *
+from qimview.utils.utils import get_time
+from qimview.utils.image_reader import image_reader
+from qimview.utils.image_cache import ImageCache
+from qimview.utils.ViewerImage import *
+from qimview.utils.menu_selection import MenuSelection
+from qimview.utils.mvlabel import MVLabel
 
-from .glImageViewer import glImageViewer
-from .pyQtGraphImageViewer import pyQtGraphImageViewer
-from .glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
-from .qtImageViewer import qtImageViewer
-from .ImageFilterParameters import ImageFilterParameters
-from .ImageFilterParametersGui import ImageFilterParametersGui
+from qimview.image_viewers.glImageViewer import glImageViewer
+from qimview.image_viewers.pyQtGraphImageViewer import pyQtGraphImageViewer
+from qimview.image_viewers.glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
+from qimview.image_viewers.qtImageViewer import qtImageViewer
+from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
+from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
 
 from enum import Enum
 

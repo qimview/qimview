@@ -1,6 +1,6 @@
 
-from ..utils.qt_imports import *
-from ..parameters.numeric_parameter_gui import NumericParameterGui
+from qimview.utils.qt_imports import *
+from qimview.parameters.numeric_parameter_gui import NumericParameterGui
 
 class ImageFilterParametersGui:
     def __init__(self, parameters, name=""):
