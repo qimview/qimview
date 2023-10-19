@@ -4,7 +4,7 @@
 #
 #
 
-from utils.qt_imports import *
+from qimview.utils.qt_imports import *
 
 import OpenGL.GL as gl
 import argparse
