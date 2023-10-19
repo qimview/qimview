@@ -22,8 +22,11 @@ if has_turbojpeg:
     from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
 
 
-def read_libraw(image_filename, read_size='full', use_RGB=True, verbose=False):
-    raw = rawpy.imread(image_filename)
+def read_libraw(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
+    if image_buffer:
+        raw = rawpy.imread(image_buffer)
+    else:
+        raw = rawpy.imread(image_filename)
     height, width = raw.raw_image.shape
     print(f"height, width {(height, width)}")
     # Transform Bayer image
