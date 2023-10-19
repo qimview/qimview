@@ -71,7 +71,6 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
 
         if changed:  # and self.textureID is not None:
             if self.setTexture():
-                print("paintAll()")
                 self.show()
                 self.paintAll()
             else:
@@ -98,7 +97,6 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
             t = trace_method(self.tab)
         self.start_timing()
         self.makeCurrent()
-        print("self.isVisible = {}".format(self.isVisible()))
 
         # Replace texture only if required
         if self.cv_image is None:
@@ -156,7 +154,6 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
         }
         texture_pixel_format = channels2format[self.cv_image.channels]
 
-        print(f"self.tex_width,self.tex_height ")
         if (self.tex_width,self.tex_height) != (img_width,img_height):
             if self.textureID is not None:
                 gl.glDeleteTextures(np.array([self.textureID]))
@@ -223,7 +220,6 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
 
         draw_text = True
         if draw_text:
-            print("try to draw text")
             color = QtGui.QColor(55, 50, 250, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
             brush = QtGui.QBrush(QtGui.QColor(250, 250, 250, 155))
             painter.CompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_DestinationOver)
