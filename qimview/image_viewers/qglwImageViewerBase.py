@@ -37,7 +37,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         self.current_text = None
         self.cursor_imx_ratio = 0.5
         self.cursor_imy_ratio = 0.5
-        self.trace_calls = True
+        self.trace_calls = False
         self.setMouseTracking(True)
 
         if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
@@ -356,7 +356,7 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         # keep image proportions
         w = self._width
         h = self._height
-        print(f" w, h {w, h}")
+        # print(f" w, h {w, h}")
         try:
             gl.glViewport(0,0,w,h) # keep everything in viewport
         except Exception as e:

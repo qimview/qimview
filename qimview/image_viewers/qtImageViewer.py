@@ -67,7 +67,7 @@ class qtImageViewer(base_widget, ImageViewer ):
         # self.setPalette(p)
         # self.setAutoFillBackground(True)
 
-        self.verbose = True
+        self.verbose = False
         # self.trace_calls = True
 
     #def __del__(self):

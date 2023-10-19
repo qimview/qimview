@@ -28,7 +28,7 @@ class glImageViewer(qglImageViewerBase):
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
         # pygame.font.init()
-        self.trace_calls  = True
+        self.trace_calls  = False
 
     def initializeGL(self):
         """Initialize OpenGL, VBOs, upload data on the GPU, etc.
