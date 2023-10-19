@@ -17,23 +17,29 @@ import OpenGL.GLU as glu
 import argparse
 import sys
 
-import pygame
 import traceback
 
-# opengl_class = QOpenGLWidget
-opengl_class = QOpenGLWidget
 
-class qglImageViewerBase(opengl_class, ImageViewer):
+class qglImageViewerBase(QOpenGLWidget, ImageViewer):
 
     def __init__(self, parent=None):
-        opengl_class.__init__(self, parent)
+        QOpenGLWidget.__init__(self, parent)
         ImageViewer.__init__(self, parent)
         self.setAutoFillBackground(False)
+
+        _format = QtGui.QSurfaceFormat()
+        print('profile is {}'.format(_format.profile()))
+        print('version is {}'.format(_format.version()))
+        # _format.setDepthBufferSize(24)
+        # _format.setVersion(4,0)
+        # _format.setProfile(PySide2.QtGui.QSurfaceFormat.CoreProfile)
+        _format.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
+        self.setFormat(_format)
+
         # self.setFormat()
         self.textureID  = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
-        pygame.font.init()
         self.current_text = None
         self.cursor_imx_ratio = 0.5
         self.cursor_imy_ratio = 0.5
@@ -183,43 +189,12 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         self.opengl_error()
         return True
 
-    def my_drawText(self, position, textString, size=64, color=(255, 255, 255, 127)):
-        self.start_timing()
-        new_text = (textString, size, color)
-
-        # Set font
-        # available_fonts = pygame.font.get_fonts()
-        # font_name = available_fonts[self.font_number]
-        # print("font_number {}".format(self.font_number))
-        # self.font_number = (self.font_number + 1) % len(available_fonts)
-        # font = pygame.font.Font(font_name, size)
-
-        if self.current_text is None or new_text != self.current_text:
-            font = pygame.font.Font(None, size)
-            font.set_bold(False)
-            # font = pygame.font.SysFont(available_fonts[0], 24)
-            # Draw text
-            self.textSurface = font.render(textString, True, color, (0, 0, 0, 0))
-            self.textData = pygame.image.tostring(self.textSurface, "RGBA", True)
-            self.current_text = new_text
-
-
-        # Set viewport and projection matrix
-        gl.glViewport(0, 0, self._width, self._height)
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-        gl.glOrtho(0, 1, 0, 1, -1, 1)
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-
-        # gl.glRasterPos3d(*position)
-        gl.glRasterPos3f(position[0], position[1], position[2])
-        gl.glDrawPixels(self.textSurface.get_width(), self.textSurface.get_height(), gl.GL_RGBA,
-                        gl.GL_UNSIGNED_BYTE,
-                        self.textData)
-        self.print_timing(add_total=True)
+    def myPaintGL():
+        pass 
 
     def paintAll(self):
+        # # It seems that calling update() is needed here, new since I have updated to PySide6
+        # self.update()
         #     self.update()
 
         # def draw_scene(self):
@@ -239,36 +214,27 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         try:
             self.updateViewPort()
             self.updateTransforms()
-            self.paintGL()
-            # self.draw_scene()
-            draw_text = True
-            if draw_text:
-                color = (255, 50, 50, 128) if self.is_active() else (255, 255, 255, 128)
-                self.my_drawText(position=[0.02, 0.02, 0], textString=self.display_message, color=color)
+            self.myPaintGL()
         except Exception as e:
             self.print_log(" failed paintGL {}".format(e))
             traceback.print_exc()
-        # if self.is_active():
-        #     gl.glColor3f(1, 0.2, 0.2)
-        # else:
-        #     gl.glColor3f(1., 1., 1.)
-        # self.opengl_error(force=True)
-        # self.renderText(20, 20, self.image_name)
-        # rectangle = QtCore.QRectF(10,10,20,20)
-        # painter.drawRect(rectangle)
         painter.endNativePainting()
         # status = gl.glGetError()
 
-        # if draw_text:
-        #     color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
-        #     painter.setPen(color)
-        #     painter.setFont(QtGui.QFont('Decorative', 16))
-        #     painter.drawText(10, self._height - 10, self.image_name)
-        #     self.opengl_error()
+        draw_text = True
+        if draw_text:
+            print("try to draw text")
+            color = QtGui.QColor(55, 50, 250, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
+            brush = QtGui.QBrush(QtGui.QColor(250, 250, 250, 155))
+            painter.CompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_DestinationOver)
+            painter.setBrush(brush)
+            painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
+            painter.setPen(color)
+            painter.setFont(QtGui.QFont('Decorative', 16))
+            painter.drawText(10, self.height() - 10, self.display_message)
+            self.opengl_error()
 
         painter.end()
-        # # It seems that calling update() is needed here, new since I have updated to PySide6
-        self.update()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
         """
@@ -398,8 +364,9 @@ class qglImageViewerBase(opengl_class, ImageViewer):
         if self.trace_calls:
             t = trace_method(self.tab)
         # size give for opengl are in pixels, qt uses device independent size otherwise
-        self._width = width
-        self._height = height
+        print(f"self.devicePixelRatio() {self.devicePixelRatio()}")
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
         # print("width height ratios {} {}".format(self._width/self.width(), self._height/self.height()))
         self.paintAll()
         self.update()

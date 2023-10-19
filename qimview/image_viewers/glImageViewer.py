@@ -23,11 +23,9 @@ class glImageViewer(qglImageViewerBase):
         self.event_recorder = event_recorder
         super().__init__(parent)
         self.setAutoFillBackground(False)
-        # self.setFormat()
         self.textureID  = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
-        # pygame.font.init()
         self.trace_calls  = False
 
     def initializeGL(self):

@@ -16,7 +16,6 @@ import argparse
 import sys
 from OpenGL.GL import shaders
 import numpy as np
-import pygame
 
 
 class glImageViewerWithShaders_qglw(qglImageViewerBase):
@@ -138,7 +137,6 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
         self.synchronize_viewer = None
         self.pMatrix  = np.identity(4, dtype=np.float32)
         self.mvMatrix = np.identity(4, dtype=np.float32)
-        pygame.font.init()
         self.program_RGB = None
         self.program_RAW = None
         self.program = None
@@ -218,8 +216,8 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
         print(f"resizeGL {width}x{height}")
         if self.trace_calls:
             t = trace_method(self.tab)
-        self._width = width
-        self._height = height
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
         self.setVerticesBufferData()
         self.paintAll()
 
@@ -239,8 +237,10 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
         # self.setTexture()
         self.print_timing()
 
-    # def draw_scene(self):
     def paintGL(self):
+        self.paintAll()
+
+    def myPaintGL(self):
         """Paint the scene.
         """
         if self.textureID is None or not self.isValid():
