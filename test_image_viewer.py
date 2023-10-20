@@ -18,7 +18,7 @@ from qimview.utils.image_reader import image_reader
 if __name__ == '__main__':
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i', '--input_image', help='input image')
+    parser.add_argument('input_image', help='input image')
     parser.add_argument('-p', '--play', help='events json file', default=None)
     parser.add_argument('-r', '--record', help='record events in given json file', default=None)
     parser.add_argument('--timing', action='store_true', help='display timings')
