@@ -38,5 +38,8 @@ dependencies = [
 "Homepage" = "https://github.com/karlkrissian/qimview"
 "Bug Tracker" = "https://github.com/karlkrissian/qimview/issues"
 
+#[build-system]
+#requires = [ "pyyaml!=6.0.0,!=5.4.0,!=5.4.1"]  # PEP 508 specifications.
+
 # [tool.setuptools]
 # py-modules = []
