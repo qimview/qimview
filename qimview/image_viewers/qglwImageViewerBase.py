@@ -190,14 +190,6 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
         pass 
 
     def paintAll(self):
-        # # It seems that calling update() is needed here, new since I have updated to PySide6
-        # self.update()
-        #     self.update()
-
-        # def draw_scene(self):
-        #     pass
-
-        # def paintGL(self):
         if self.trace_calls:
             t = trace_method(self.tab)
         if self.textureID is None or not self.isValid() or not self.isVisible():
@@ -230,7 +222,20 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
             painter.drawText(10, self.height() - 10, self.display_message)
             self.opengl_error()
 
+        # draw histogram
+        if self.show_histogram:
+            current_image = self.cv_image.data
+            # image_data = current_image.data
+            # precision  = current_image.precision
+            # downscale  = current_image.downscale
+            # channels   = current_image.channels
+            rect = QtCore.QRect(0, 0, self.width(), self.height())
+            histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+
         painter.end()
+        # Seems required here, at least on linux
+        self.update()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
         """
@@ -396,6 +401,17 @@ class qglImageViewerBase(QOpenGLWidget, ImageViewer):
         x0, x1, y0, y1 = self.image_centered_position()
         print(f"image centered position {x1-x0} x {y1-y0}")
         self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
+
+    def resizeEvent(self, event):
+        """Called upon window resizing: reinitialize the viewport.
+        """
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
+        self.evt_width = event.size().width()
+        self.evt_height = event.size().height()
+        QOpenGLWidget.resizeEvent(self, event)
+        self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
 
 if __name__ == '__main__':

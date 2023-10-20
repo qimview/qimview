@@ -10,6 +10,17 @@ import cv2
 import traceback
 import abc
 import inspect
+import numpy as np
+
+try:
+    import cppimport.import_hook
+    from qimview.CppBind import wrap_numpy
+except Exception as e:
+    has_cppbind = False
+    print("Failed to load wrap_numpy: {}".format(e))
+else:
+    has_cppbind = True
+print("Do we have cpp binding ? {}".format(has_cppbind))
 
 
 # copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
@@ -415,3 +426,134 @@ class ImageViewer:
             event.ignore()
         else:
             event.ignore()
+
+    def compute_histogram(self, current_image, show_timings=False):
+        # print(f"compute_histogram show_timings {show_timings}")
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        input_image = current_image
+        # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
+        # input_image = self.cv_image
+        resized_im = input_image[::hist_y_step, ::hist_x_step, :]
+        resized_im = input_image
+        if self.verbose:
+            print(f"qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} "
+                f"shape {current_image.shape} --> {resized_im.shape}")
+        if show_timings: resized_time = get_time()-h_start
+
+        calc_hist_time = 0
+
+        # First compute all histograms
+        if show_timings: start_hist = get_time()
+        hist_all = np.empty((3, 256), dtype=np.float32)
+        # print(f"{resized_im[::100,::100,:]}")
+        for channel, im_ch in enumerate(cv2.split(resized_im)):
+            # hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
+            hist = cv2.calcHist([im_ch], [0], None, [256], [0, 256])
+            # print(f"max diff {np.max(np.abs(hist-hist2))}")
+            hist_all[channel, :] = hist[:, 0]
+
+        hist_all = hist_all / np.max(hist_all)
+        if show_timings: end_hist = get_time()
+        if show_timings: calc_hist_time += end_hist-start_hist
+        if show_timings: gauss_start = get_time()
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: gauss_time = get_time() - gauss_start
+
+        if show_timings: 
+            print(f"compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end="")
+            print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
+              f"resizing:{resized_time*1000:0.1f}, "
+              f"gauss:{gauss_time*1000:0.1f}")
+
+        return hist_all
+
+    def compute_histogram_Cpp(self, current_image, show_timings=False):
+        # print(f"compute_histogram show_timings {show_timings}")
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        output_histogram = np.empty((3,256), dtype=np.uint32)
+        wrap_numpy.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
+        if show_timings: t1 = get_time()
+        hist_all = output_histogram.astype(np.float32)
+        hist_all = hist_all / np.max(hist_all)
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: print(f"wrap_numpy.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, "
+                                f"{(get_time()-t1)*1000:0.1f} ms")
+        return hist_all
+
+    def display_histogram(self, hist_all, id, painter, im_rect, show_timings=False):
+        """
+        :param painter:
+        :param rect: displayed image area
+        :return:
+        """
+        if hist_all is None:
+            return
+        histo_timings = show_timings
+        #if histo_timings:
+        h_start = get_time()
+        width = int(im_rect.width()/4)
+        height = int(im_rect.height()/6)
+        start_x = self.evt_width - width*id - 10
+        start_y = self.evt_height - 10
+        margin = 3
+
+        if histo_timings: rect_start = get_time()
+        rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        if histo_timings: rect_time = get_time()-rect_start
+
+        # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
+        # input_image = self.cv_image
+        path_time = 0
+
+        pen = QtGui.QPen()
+        pen.setWidth(2)
+
+        qcolors = {
+            0: QtGui.QColor(255, 50, 50, 255),
+            1: QtGui.QColor(50, 255, 50, 255),
+            2: QtGui.QColor(50, 50, 255, 255)
+        }
+
+        step_x = float(width) / 256
+        step = 2
+        x_range = np.array(range(0, 256, step))
+        x_pos = start_x + x_range*step_x
+
+        for channel in range(3):
+            pen.setColor(qcolors[channel])
+            painter.setPen(pen)
+            # painter.setBrush(color)
+            # print(f"histogram painting 1 took {get_time() - h_start} sec.")
+
+            # print(f"histogram painting 2 took {get_time() - h_start} sec.")
+
+            if histo_timings: start_path = get_time()
+
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+
+            y_pos = start_y - hist_all[channel, x_range]*height
+            # polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
+            # path.addPolygon(polygon)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
+            painter.drawPath(path)
+            if histo_timings: path_time += get_time()-start_path
+
+        if histo_timings: 
+            print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end='')
+            print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
