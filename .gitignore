@@ -13,3 +13,5 @@ build/
 *.so
 # VsCode workspaces
 *.code-workspace
+# Package builds
+dist/
