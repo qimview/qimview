@@ -28,8 +28,8 @@ from setuptools import setup
 
 setup_args = dict(
     ext_modules = [
-        Pybind11Extension("wrap_numpy",
-            ["qimview/CppBind/wrap_numpy.cpp"]
+        Pybind11Extension("qimview_cpp",
+            ["qimview/CppBind/qimview_cpp.cpp"]
             # Example: passing in the version to the compiled code
             # define_macros = [('VERSION_INFO', __version__)],
             ),

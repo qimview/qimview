@@ -13,10 +13,10 @@ import inspect
 import numpy as np
 
 try:
-    import wrap_numpy
+    import qimview_cpp
 except Exception as e:
     has_cppbind = False
-    print("Failed to load wrap_numpy: {}".format(e))
+    print("Failed to load qimview_cpp: {}".format(e))
 else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
@@ -482,12 +482,12 @@ class ImageViewer:
         hist_x_step = max(1, int(im_w/target_w+0.5))
         hist_y_step = max(1, int(im_h/target_h+0.5))
         output_histogram = np.empty((3,256), dtype=np.uint32)
-        wrap_numpy.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
+        qimview_cpp.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
         if show_timings: t1 = get_time()
         hist_all = output_histogram.astype(np.float32)
         hist_all = hist_all / np.max(hist_all)
         hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
-        if show_timings: print(f"wrap_numpy.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, "
+        if show_timings: print(f"qimview_cpp.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, "
                                 f"{(get_time()-t1)*1000:0.1f} ms")
         return hist_all
 

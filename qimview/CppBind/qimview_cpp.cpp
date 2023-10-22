@@ -22,7 +22,7 @@ namespace py = pybind11;
  * it will help improving the performance when we are not using OpenGL shader directly
  *
 */
-PYBIND11_MODULE(wrap_numpy, m) {
+PYBIND11_MODULE(qimview_cpp, m) {
     m.def("apply_filters_u16_u8", &apply_filters<uint16_t, uint8_t>,
     py::arg().noconvert(),
     py::arg().noconvert(),

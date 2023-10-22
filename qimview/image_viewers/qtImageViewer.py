@@ -11,10 +11,10 @@ from qimview.utils.utils import clip_value
 from qimview.utils.utils import get_time
 from qimview.tests_utils.qtdump import *
 try:
-    import wrap_numpy
+    import qimview_cpp
 except Exception as e:
     has_cppbind = False
-    print("Failed to load wrap_numpy: {}".format(e))
+    print("Failed to load qimview_cpp: {}".format(e))
 else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
@@ -203,16 +203,16 @@ class qtImageViewer(base_widget, ImageViewer ):
             ok = False
             if ch in CH_RAWFORMATS or ch in CH_RGBFORMATS:
                 cases = {
-                    'uint8':  { 'func': wrap_numpy.apply_filters_u8_u8  , 'name': 'apply_filters_u8_u8'},
-                    'uint16': { 'func': wrap_numpy.apply_filters_u16_u8, 'name': 'apply_filters_u16_u8'},
-                    'uint32': { 'func': wrap_numpy.apply_filters_u32_u8, 'name': 'apply_filters_u32_u8'},
-                    'int16': { 'func': wrap_numpy.apply_filters_s16_u8, 'name': 'apply_filters_s16_u8'},
-                    'int32': { 'func': wrap_numpy.apply_filters_s32_u8, 'name': 'apply_filters_s32_u8'}
+                    'uint8':  { 'func': qimview_cpp.apply_filters_u8_u8  , 'name': 'apply_filters_u8_u8'},
+                    'uint16': { 'func': qimview_cpp.apply_filters_u16_u8, 'name': 'apply_filters_u16_u8'},
+                    'uint32': { 'func': qimview_cpp.apply_filters_u32_u8, 'name': 'apply_filters_u32_u8'},
+                    'int16': { 'func': qimview_cpp.apply_filters_s16_u8, 'name': 'apply_filters_s16_u8'},
+                    'int32': { 'func': qimview_cpp.apply_filters_s32_u8, 'name': 'apply_filters_s32_u8'}
                 }
                 if current_image.data.dtype.name in cases:
                     func = cases[current_image.data.dtype.name]['func']
                     name = cases[current_image.data.dtype.name]['name']
-                    self.print_log(f"wrap_numpy.{name}(current_image, rgb_image, channels, "
+                    self.print_log(f"qimview_cpp.{name}(current_image, rgb_image, channels, "
                           f"black_level={black_level}, white_level={white_level}, "
                           f"g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
@@ -223,17 +223,17 @@ class qtImageViewer(base_widget, ImageViewer ):
                     print(f"apply_filters() not available for {current_image.data.dtype} data type !")
             else:
                 cases = {
-                    'uint8': { 'func': wrap_numpy.apply_filters_scalar_u8_u8, 'name': 'apply_filters_scalar_u8_u8'},
-                    'uint16': { 'func': wrap_numpy.apply_filters_scalar_u16_u8, 'name': 'apply_filters_scalar_u16_u8'},
-                    'uint32': { 'func': wrap_numpy.apply_filters_scalar_u32_u8, 'name': 'apply_filters_scalar_u32_u8'},
-                    'float64': { 'func': wrap_numpy.apply_filters_scalar_f64_u8, 'name': 'apply_filters_scalar_f64_u8'},
+                    'uint8': { 'func': qimview_cpp.apply_filters_scalar_u8_u8, 'name': 'apply_filters_scalar_u8_u8'},
+                    'uint16': { 'func': qimview_cpp.apply_filters_scalar_u16_u8, 'name': 'apply_filters_scalar_u16_u8'},
+                    'uint32': { 'func': qimview_cpp.apply_filters_scalar_u32_u8, 'name': 'apply_filters_scalar_u32_u8'},
+                    'float64': { 'func': qimview_cpp.apply_filters_scalar_f64_u8, 'name': 'apply_filters_scalar_f64_u8'},
                 }
                 if current_image.data.dtype.name.startswith('float'):
                     max_value = 1.0
                 if current_image.data.dtype.name in cases:
                     func = cases[current_image.data.dtype.name]['func']
                     name = cases[current_image.data.dtype.name]['name']
-                    self.print_log(f"wrap_numpy.{name}(current_image, rgb_image, "
+                    self.print_log(f"qimview_cpp.{name}(current_image, rgb_image, "
                           f"black_level={black_level}, white_level={white_level}, "
                           f"max_value={max_value}, max_type={max_type}, gamma={gamma})")
                     ok = func(current_image.data, rgb_image, black_level, white_level, max_value, max_type, gamma)

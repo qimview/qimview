@@ -1,15 +1,15 @@
 #
 # use %load file in ipython to exexute this file
 #
-import wrap_numpy
+import qimview_cpp
 import numpy as np
 
 # if False:
 # 	a = (np.random.rand(2000,2000,3)*100).astype(np.float64)
 # 	b = a.copy()
 # 	%time b += 1
-# 	%time wrap_numpy.increment_3d_omp(b)
-# 	%time wrap_numpy.increment_3d(b)
+# 	%time qimview_cpp.increment_3d_omp(b)
+# 	%time qimview_cpp.increment_3d(b)
 
 
 a = (np.random.rand(2000,2000,4)*4095).astype(np.uint16)
@@ -25,7 +25,7 @@ max_type = 1 # not used
 gamma = 1 # not used
 
 b = np.copy(a)
-wrap_numpy.apply_filters_u16_u8(b, channels, black_level, white_level, g_r_coeff, g_b_coeff, max_value, max_type, gamma)
+qimview_cpp.apply_filters_u16_u8(b, channels, black_level, white_level, g_r_coeff, g_b_coeff, max_value, max_type, gamma)
 
 
 print(a[0,0,:])

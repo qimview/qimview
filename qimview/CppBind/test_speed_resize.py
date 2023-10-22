@@ -1,4 +1,4 @@
-import wrap_numpy
+import qimview_cpp
 import numpy as np
 import cv2
 import timeit 
@@ -13,10 +13,10 @@ a = (np.random.rand(h,w,3)*256).astype(np.uint8)
 b = np.zeros((h2,w2,a.shape[2]), dtype=np.uint8)
 
 
-# %timeit wrap_numpy.image_binning_2x2(a,b)
+# %timeit qimview_cpp.image_binning_2x2(a,b)
 # %timeit c = cv2.resize(a, (w2, h2), interpolation=cv2.INTER_AREA)
 
-wrap_numpy.image_binning_2x2_test1(a,b)
+qimview_cpp.image_binning_2x2_test1(a,b)
 c = cv2.resize(a, (w2, h2), interpolation=cv2.INTER_AREA)
 
 print(f" diff min {np.min(c-b)} max {np.max(c-b)}")
