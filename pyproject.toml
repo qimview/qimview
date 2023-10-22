@@ -1,5 +1,8 @@
 [build-system]
-requires = ["setuptools"]
+requires = [
+  "setuptools", 
+  "pybind11>=2.10.0",
+]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -18,8 +21,8 @@ classifiers = [
 ]
 
 dependencies = [
-    "CppBind>=1.0.3",
-    "cppimport>=20.8.4.2",
+    # "CppBind>=1.0.3",
+    # "cppimport>=20.8.4.2",
     "numpy>=1.23.0",
     "opencv_python>=4.4.0.46",
     "psutil>=5.8.0",
