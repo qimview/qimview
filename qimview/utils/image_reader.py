@@ -241,21 +241,25 @@ def reader_add_plugins():
     import configparser, sys
     config = configparser.ConfigParser()
     # config.read_file(open('default.cfg'))
-    config.read([os.path.expanduser('~/.qimview.cfg')])
-
-    # Add new image format support
-    formats = config['READERS']['Formats'].split(',')
-    for fmt in  formats:
+    res = config.read([os.path.expanduser('~/.qimview.cfg')])
+    # if read fails, found is probably not found
+    if res:
+        # Add new image format support
         try:
-            format_cfg = config[f'READER.{fmt.upper()}']
-            folder, module, ext = format_cfg['Folder'], format_cfg['Module'], format_cfg['Extensions'].split(',')
-            print(f' {fmt} {folder, ext}')
-            # TODO: change this code, avoid sys.path.append()
-            sys.path.append(folder)
-            import importlib
-            fmt_reader = importlib.import_module(f"{module}")
-            image_reader.set_plugin(ext, fmt_reader.read)
+            formats = config['READERS']['Formats'].split(',')
         except Exception as e:
-            print(f" ----- Failed to add support for {fmt}: {e}")
+            print(f" ----- No reader plugin in config file: {e}")
+        for fmt in  formats:
+            try:
+                format_cfg = config[f'READER.{fmt.upper()}']
+                folder, module, ext = format_cfg['Folder'], format_cfg['Module'], format_cfg['Extensions'].split(',')
+                print(f' {fmt} {folder, ext}')
+                # TODO: change this code, avoid sys.path.append()
+                sys.path.append(folder)
+                import importlib
+                fmt_reader = importlib.import_module(f"{module}")
+                image_reader.set_plugin(ext, fmt_reader.read)
+            except Exception as e:
+                print(f" ----- Failed to add support for {fmt}: {e}")
 
 reader_add_plugins()
