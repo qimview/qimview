@@ -240,7 +240,7 @@ def reader_add_plugins():
     print("reader_add_plugins()")
     import configparser, sys
     config = configparser.ConfigParser()
-    config.read_file(open('default.cfg'))
+    # config.read_file(open('default.cfg'))
     config.read([os.path.expanduser('~/.qimview.cfg')])
 
     # Add new image format support
