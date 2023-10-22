@@ -13,9 +13,9 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('images', nargs='+', help='input images')
-    parser.add_argument('-v', '--viewer', type=str, choices={'gl', 'qt', 'shader', 'pyqtgraph'}, default='qt',
+    parser.add_argument('-v', '--viewer', type=str, choices={'gl', 'qt', 'shader'}, default='qt',
                         help="Viewer mode, qt: standard qt display, gl: use opengl,  shader: enable opengl with "
-                             "shaders, pyqtgraph: experimental, use pyqtgraph module if installed")
+                             "shaders")
     parser.add_argument('-l', '--layout', type=str, default='0', help='Set the layout (number of images in comparison on the window), if 0 try to use the number of input images')
 
     args = parser.parse_args()
@@ -30,8 +30,7 @@ if __name__ == '__main__':
     mode = {
         'qt': ViewerType.QT_VIEWER,
         'gl': ViewerType.OPENGL_VIEWER,
-        'shader': ViewerType.OPENGL_SHADERS_VIEWER,
-        'pyqtgraph': ViewerType.PYQTGRAPH_VIEWER
+        'shader': ViewerType.OPENGL_SHADERS_VIEWER
     }[_params['viewer']]
 
     mv = MultiView(viewer_mode=mode)

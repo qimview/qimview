@@ -8,7 +8,6 @@ from qimview.utils.menu_selection import MenuSelection
 from qimview.utils.mvlabel import MVLabel
 
 from qimview.image_viewers.glImageViewer import glImageViewer
-from qimview.image_viewers.pyQtGraphImageViewer import pyQtGraphImageViewer
 from qimview.image_viewers.glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
 from qimview.image_viewers.qtImageViewer import qtImageViewer
 from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
@@ -23,7 +22,6 @@ class ViewerType(Enum):
     QT_VIEWER = 1
     OPENGL_VIEWER = 2
     OPENGL_SHADERS_VIEWER = 3
-    PYQTGRAPH_VIEWER = 4
 
 
 class MultiView(QtWidgets.QWidget):
@@ -36,7 +34,6 @@ class MultiView(QtWidgets.QWidget):
         """
         QtWidgets.QWidget.__init__(self, parent)
 
-        self.use_pyqtgraph = viewer_mode == ViewerType.PYQTGRAPH_VIEWER
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
 
         self.nb_viewers_used = nb_viewers
@@ -45,8 +42,7 @@ class MultiView(QtWidgets.QWidget):
         self.image_viewer_classes = {
             ViewerType.QT_VIEWER:             qtImageViewer,
             ViewerType.OPENGL_VIEWER:         glImageViewer,
-            ViewerType.OPENGL_SHADERS_VIEWER: glImageViewerWithShaders_qglw,
-            ViewerType.PYQTGRAPH_VIEWER:      pyQtGraphImageViewer
+            ViewerType.OPENGL_SHADERS_VIEWER: glImageViewerWithShaders_qglw
         }
         self.image_viewer_class = self.image_viewer_classes[viewer_mode]
 
@@ -415,7 +411,7 @@ class MultiView(QtWidgets.QWidget):
 
         # Read both clean and original images and save them in dict as QPixmaps
         image_filename = self.image_dict[im_string_id]
-        image_transform = pyQtGraphImageViewer.numpy2imageitem if self.use_pyqtgraph else None
+        image_transform = None
         self.print_log(f"MultiView.get_output_image() image_filename:{image_filename}")
 
         image_data, _ = self.cache.get_image(image_filename, self.read_size, verbose=self.show_timing_detailed(),
@@ -456,7 +452,7 @@ class MultiView(QtWidgets.QWidget):
         """
         # print(f"cache_read_images({image_filenames}) ")
         # Read both clean and original images and save them in dict as QPixmaps
-        image_transform = pyQtGraphImageViewer.numpy2imageitem if self.use_pyqtgraph else None
+        image_transform = None
         self.cache.add_images(image_filenames, self.read_size, verbose=False, use_RGB=not self.use_opengl,
                              image_transform=image_transform)
 

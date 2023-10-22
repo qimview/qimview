@@ -63,7 +63,6 @@ def deep_getsizeof(o, ids):
 		return 0
 
 	# print(f' deep_getsizeof() type {type(o)} getsizeof {sys.getsizeof(o)}')
-	# deal with pyqtgraph ImageItem size
 	try:
 		image = o.image
 		if isinstance(image, np.ndarray):
