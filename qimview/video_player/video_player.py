@@ -43,7 +43,7 @@ class VideoPlayer(QtWidgets.QWidget):
     def __init__(self, open_button=False):
         super().__init__()
 
-        self.setWindowTitle("PyQt5 Media Player")
+        self.setWindowTitle("QMediaPlayer")
         self.setGeometry(350, 100, 700, 500)
         self.setWindowIcon(QtGui.QIcon('player.png'))
 
