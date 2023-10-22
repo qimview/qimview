@@ -1,8 +1,8 @@
 from pybind11.setup_helpers import Pybind11Extension
 from setuptools import setup
+import os
 # import distutils
 # distutils.log.set_verbosity(1)
-
 
 
 # from distutils.command.build_ext import build_ext
@@ -29,16 +29,17 @@ from setuptools import setup
 setup_args = dict(
     ext_modules = [
         Pybind11Extension("qimview_cpp",
-            ["qimview/CppBind/qimview_cpp.cpp"]
+            ["qimview/CppBind/qimview_cpp.cpp"],
+            depends = [ 
+                'qimview/CppBind/image_histogram.hpp',
+                'qimview/CppBind/image_resize.hpp',
+                'qimview/CppBind/image_to_rgb.hpp',
+                ],
             # Example: passing in the version to the compiled code
             # define_macros = [('VERSION_INFO', __version__)],
+            include_dirs=['qimview/CppBind']
+            # extra_compile_args=['-O3']            
             ),
-        # Extension(
-        #     'mypackage.mymodule',
-        #     ['lib/mymodule.c', 'lib/mypackage.c', 'lib/myalloc.c'],
-        #     include_dirs = ['lib'],
-        #     py_limited_api = True
-        # )
     ],
     # cmdclass = {'build_ext': build_ext_subclass } 
 )
