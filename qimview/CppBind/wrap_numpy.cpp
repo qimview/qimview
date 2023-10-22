@@ -1,14 +1,14 @@
-// cppimport this line allows to use import directly
-<%
-import sys
-if sys.platform == 'linux':
-    cfg['compiler_args'] = ['-std=c++11', '-fopenmp', '-O3']
-    cfg['linker_args'] = ['-fopenmp']
-else:
-    cfg['compiler_args'] = ['/openmp', '/O2', '/arch:AVX512']
-# cfg['compiler_args'] = ['-std=c++11', '-stdlib=libc++', '-mmacosx-version-min=10.7', '/openmp', '/Ox']
-setup_pybind11(cfg)
-%>
+// // cppimport this line allows to use import directly
+// <%
+// import sys
+// if sys.platform == 'linux':
+//     cfg['compiler_args'] = ['-std=c++11', '-fopenmp', '-O3']
+//     cfg['linker_args'] = ['-fopenmp']
+// else:
+//     cfg['compiler_args'] = ['/openmp', '/O2', '/arch:AVX512']
+// # cfg['compiler_args'] = ['-std=c++11', '-stdlib=libc++', '-mmacosx-version-min=10.7', '/openmp', '/Ox']
+// setup_pybind11(cfg)
+// %>
 
 
 #include "image_resize.hpp"

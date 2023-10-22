@@ -1,5 +1,4 @@
-import cppimport.import_hook
-from qimview.CppBind import wrap_numpy
+import wrap_numpy
 import numpy as np
 import cv2
 import timeit 

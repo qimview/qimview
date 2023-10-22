@@ -1,7 +1,6 @@
 #
 # use %load file in ipython to exexute this file
 #
-import cppimport.import_hook
 import wrap_numpy
 import numpy as np
 
@@ -26,7 +25,7 @@ max_type = 1 # not used
 gamma = 1 # not used
 
 b = np.copy(a)
-wrap_numpy.apply_filters_RAW(b, channels, black_level, white_level, g_r_coeff, g_b_coeff, max_value, max_type, gamma)
+wrap_numpy.apply_filters_u16_u8(b, channels, black_level, white_level, g_r_coeff, g_b_coeff, max_value, max_type, gamma)
 
 
 print(a[0,0,:])

@@ -13,8 +13,7 @@ import inspect
 import numpy as np
 
 try:
-    import cppimport.import_hook
-    from qimview.CppBind import wrap_numpy
+    import wrap_numpy
 except Exception as e:
     has_cppbind = False
     print("Failed to load wrap_numpy: {}".format(e))
