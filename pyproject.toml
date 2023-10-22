@@ -7,7 +7,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qimview"
-version = "1.0.0"
+version = "1.0.1"
 authors = [
   { name="Karl Krissian", email="karl.krissian@gmail.com" },
 ]
@@ -21,8 +21,6 @@ classifiers = [
 ]
 
 dependencies = [
-    # "CppBind>=1.0.3",
-    # "cppimport>=20.8.4.2",
     "numpy>=1.23.0",
     "opencv_python>=4.4.0.46",
     "psutil>=5.8.0",
@@ -40,15 +38,7 @@ dependencies = [
 "Homepage" = "https://github.com/karlkrissian/qimview"
 "Bug Tracker" = "https://github.com/karlkrissian/qimview/issues"
 
-#[build-system]
-#requires = [ "pyyaml!=6.0.0,!=5.4.0,!=5.4.1"]  # PEP 508 specifications.
-
-# [tool.setuptools]
-# py-modules = []
-
 [tool.pytest.ini_options]
-# minversion = "6.0"
-# addopts = "-ra -q"
 testpaths = [
     "qimview/pytests",
 ]

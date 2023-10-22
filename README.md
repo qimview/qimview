@@ -18,19 +18,3 @@ Main features are:
   * saturation
   * white balance
 
-## cppimport
-When displaying images with Qt, C++ code is used to speed-up the processing.
-The code is compiled and bound to Python using pybind11 and the module cppimport.
-However, the first time you use it, it may not be able to compile the code automatically (I don't know why).
-In this case, you can run manually:
-
-  python -m cppimport build ./qimview/CppBind
-
-from the qimview folder. Even of the command ends up with the error 'No module named qimview_cpp', it has probably built the library correctly.
-
-## Installation issue:
-
-PyYAML version 5.4 required by CppBind can create installation errors, I was able to get around this issue by running:
-
-pip3 install wheel -v
-pip3 install "cython<3.0.0" pyyaml==5.4 --no-build-isolation -v
