@@ -9,10 +9,9 @@ from qimview.utils.qt_imports import QtWidgets
 from qimview.image_viewers.MultiView import MultiView
 from qimview.image_viewers.MultiView import ViewerType
 
-if __name__ == '__main__':
-
+def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('images', nargs='+', help='input images')
+    parser.add_argument('images', nargs='*', help='input images')
     parser.add_argument('-v', '--viewer', type=str, choices={'gl', 'qt', 'shader'}, default='qt',
                         help="Viewer mode, qt: standard qt display, gl: use opengl,  shader: enable opengl with "
                              "shaders")
@@ -21,11 +20,17 @@ if __name__ == '__main__':
     args = parser.parse_args()
     _params = vars(args)
 
-    filenames = []
-    for im in _params['images']:
-      filenames.extend(glob.glob(im,recursive=False))
-
     app = QtWidgets.QApplication(sys.argv)
+
+    filenames = []
+    if len(_params['images']) == 0:
+        # Ask for input file
+        selected_files =  QtWidgets.QFileDialog.getOpenFileNames(caption="miview: Select  one or various input images")
+        filenames.extend(selected_files[0])
+    else:
+        for im in _params['images']:
+            filenames.extend(glob.glob(im,recursive=False))
+
 
     mode = {
         'qt': ViewerType.QT_VIEWER,
@@ -57,3 +62,6 @@ if __name__ == '__main__':
         mv.update_image()
         mv.setFocus()
     app.exec()
+
+if __name__ == '__main__':
+    main()

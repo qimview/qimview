@@ -42,3 +42,9 @@ dependencies = [
 testpaths = [
     "qimview/pytests",
 ]
+
+[project.scripts]
+# Single image viewer
+imview = "qimview.imview:main"
+# Mutiple image viewer
+mview  = "qimview.mview:main"
