@@ -98,18 +98,16 @@ class npViewer(Process):
 
 if  __name__ == '__main__':
 
-    app1 = npViewer()
-    app1.start()
-    # app1.join()
-    # print("App 1 returned: " + app1.queue.get())
+    # Example that can be run interactively (like in ipython)
+    import cv2
+    import numpy as np
+    b = (np.random.rand(100,100)*256).astype(np.uint8)
+    images = [ cv2.GaussianBlur(b, (2*k+1,2*k+1), 0) for k in range(1,4)]
+    npViewer(images).start()
 
-    app2 = npViewer()
-    app2.start()
-    # app2.join()
+    # TODO: share memory? : https://stackoverflow.com/questions/14124588/shared-memory-in-multiprocessing
+    # option 2: use qthreads, advantage: memory shared?
+    # option 3: update images using the same temporary files + reload or auto-reload in viewer
 
-# TODO: share memory? : https://stackoverflow.com/questions/14124588/shared-memory-in-multiprocessing
-# option 2: use qthreads, advantage: memory shared?
-# option 3: update images using the same temporary files + reload or auto-reload in viewer
-
-# watch file changes with QFileSystemWatcher, example in https://stackoverflow.com/questions/182197/how-do-i-watch-a-file-for-changes
-# in image cache, get/use file timestamp to decide if reload is needed 
+    # watch file changes with QFileSystemWatcher, example in https://stackoverflow.com/questions/182197/how-do-i-watch-a-file-for-changes
+    # in image cache, get/use file timestamp to decide if reload is needed 
