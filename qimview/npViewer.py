@@ -18,7 +18,26 @@ from qimview.image_viewers.MultiView import ViewerType
 
 from multiprocessing import Queue, Process
 from typing import List
+
 class npViewer(Process):
+    """
+        The purpose of this class is to be able to visualiza and compare several
+        numpy arrays from an interactive python session (debugger or ipython)
+        using the MultiView class.
+
+        For example, in an ipython session:
+            import cv2
+            import numpy as np
+            b = (np.random.rand(100,100)*256).astype(np.uint8)
+            images = [ cv2.GaussianBlur(b, (2*k+1,2*k+1), 0) for k in range(1,4)]
+            npViewer(images).start()
+        and being able to display the images on one side and continue the interactive session
+        on the other side.
+
+
+    Args:
+        Process (_type_): _description_
+    """
     def __init__(self, images: List[str]):
         self.queue = Queue(1)
         self.images = images
