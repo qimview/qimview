@@ -18,7 +18,7 @@ from qimview.utils.image_reader import image_reader
 if __name__ == '__main__':
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('input_image', help='input image')
+    parser.add_argument('input_image', nargs='?', help='input image (if not specified, will open file dialog)')
     parser.add_argument('-p', '--play', help='events json file', default=None)
     parser.add_argument('-r', '--record', help='record events in given json file', default=None)
     parser.add_argument('--timing', action='store_true', help='display timings')
@@ -53,6 +53,10 @@ if __name__ == '__main__':
             if record_file is not None:
                 self.event_recorder.register_widget(id(self.widget), "widget")
 
+            if _params['input_image'] is None:
+                # Ask for input file
+                filename =  QtWidgets.QFileDialog.getOpenFileName()
+                _params['input_image'] = filename[0]
             im = image_reader.read(_params['input_image'])
             self.widget.set_image(im)
             # put the window at the screen position (100, 100)
