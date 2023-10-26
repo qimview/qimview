@@ -12,7 +12,8 @@ from qimview.image_viewers.qtImageViewer import qtImageViewer
 from qimview.image_viewers.glImageViewer import glImageViewer
 from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
 from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
-from qimview.utils.image_reader import image_reader
+
+from qimview.image_readers import image_reader
 
 
 # define a Qt window with an OpenGL widget inside it

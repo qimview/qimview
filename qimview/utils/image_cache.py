@@ -1,8 +1,9 @@
 
 from .utils import get_time, deep_getsizeof
-from .image_reader import image_reader
 from .ThreadPool import ThreadPool
 from .qt_imports import *
+
+from qimview.image_readers import image_reader
 
 from collections import deque
 # import multiprocessing as mp

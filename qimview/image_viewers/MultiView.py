@@ -1,7 +1,6 @@
 
 from qimview.utils.qt_imports import *
 from qimview.utils.utils import get_time
-from qimview.utils.image_reader import image_reader
 from qimview.utils.image_cache import ImageCache
 from qimview.utils.ViewerImage import *
 from qimview.utils.menu_selection import MenuSelection
