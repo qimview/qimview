@@ -8,7 +8,6 @@ build-backend = "setuptools.build_meta"
 
 [project]
 dynamic = ["version"]
-
 name = "qimview"
 authors = [
   { name="Karl Krissian", email="karl.krissian@gmail.com" },
@@ -47,7 +46,6 @@ testpaths = [
 
 [tool.setuptools.dynamic]
 version = {attr = "qimview.__version__"}
-
 
 [project.scripts]
 # Single image viewer
