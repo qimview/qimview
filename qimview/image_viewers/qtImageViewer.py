@@ -225,6 +225,7 @@ class qtImageViewer(base_widget, ImageViewer ):
                 cases = {
                     'uint8': { 'func': qimview_cpp.apply_filters_scalar_u8_u8, 'name': 'apply_filters_scalar_u8_u8'},
                     'uint16': { 'func': qimview_cpp.apply_filters_scalar_u16_u8, 'name': 'apply_filters_scalar_u16_u8'},
+                    'int16': { 'func': qimview_cpp.apply_filters_scalar_s16_u8, 'name': 'apply_filters_scalar_s16_u8'},
                     'uint32': { 'func': qimview_cpp.apply_filters_scalar_u32_u8, 'name': 'apply_filters_scalar_u32_u8'},
                     'float64': { 'func': qimview_cpp.apply_filters_scalar_f64_u8, 'name': 'apply_filters_scalar_f64_u8'},
                 }

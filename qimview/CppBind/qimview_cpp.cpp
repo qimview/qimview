@@ -106,6 +106,15 @@ PYBIND11_MODULE(qimview_cpp, m) {
     py::arg(),
     py::arg()
      );
+    m.def("apply_filters_scalar_s16_u8", &apply_filters_scalar<int16_t, uint8_t>,
+    py::arg().noconvert(),
+    py::arg().noconvert(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg(),
+    py::arg()
+     );
     m.def("apply_filters_scalar_u32_u8", &apply_filters_scalar<uint32_t, uint8_t>,
     py::arg().noconvert(),
     py::arg().noconvert(),
