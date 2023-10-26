@@ -96,13 +96,12 @@ class npViewer(Process):
                 # For the moment, save numpy array as png
                 # in a temporary directory
                 import tempfile
-                import cv2
                 self.temp_dir = tempfile.mkdtemp()
-                image_filename = osp.join(self.temp_dir, f"image_{idx}.png")
+                array_filename = osp.join(self.temp_dir, f"image_{idx}.npy")
                 # not working so well with values > 255
-                cv2.imwrite(image_filename, im)
-                print(f" Written image {image_filename} to disk")
-                images_dict[f"{idx}_image"] = image_filename
+                np.save(array_filename, im)
+                print(f" Written image {array_filename} to disk")
+                images_dict[f"{idx}_image"] = array_filename
         mv.set_images(images_dict)
         mv.update_layout()
         # table_win.resize(3000, 1800)
