@@ -5,9 +5,11 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+
 [project]
+dynamic = ["version"]
+
 name = "qimview"
-version = "1.0.2"
 authors = [
   { name="Karl Krissian", email="karl.krissian@gmail.com" },
 ]
@@ -42,6 +44,10 @@ dependencies = [
 testpaths = [
     "qimview/pytests",
 ]
+
+[tool.setuptools.dynamic]
+version = {attr = "qimview.__version__"}
+
 
 [project.scripts]
 # Single image viewer
