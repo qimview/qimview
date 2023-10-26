@@ -13,7 +13,7 @@ from qimview.image_viewers.glImageViewer import glImageViewer
 from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
 from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
 
-from qimview.image_readers import image_reader
+from qimview.image_readers import gb_image_reader
 
 
 # define a Qt window with an OpenGL widget inside it
@@ -46,7 +46,7 @@ class ImView(QtWidgets.QMainWindow):
             # Ask for input file
             filename =  QtWidgets.QFileDialog.getOpenFileName(caption="imview: Select input image")
             params['input_image'] = filename[0]
-        im = image_reader.read(params['input_image'])
+        im = gb_image_reader.read(params['input_image'])
         self.widget.set_image(im)
         # put the window at the screen position (100, 100)
         self.setGeometry(0, 0, self.widget.width(), self.widget.height())

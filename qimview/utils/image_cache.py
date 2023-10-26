@@ -3,7 +3,7 @@ from .utils import get_time, deep_getsizeof
 from .ThreadPool import ThreadPool
 from .qt_imports import *
 
-from qimview.image_readers import image_reader
+from qimview.image_readers import gb_image_reader
 
 from collections import deque
 # import multiprocessing as mp
@@ -216,7 +216,7 @@ class ImageCache(BaseCache):
             return image_data, True
         else:
             try:
-                image_data = image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose)
+                image_data = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose)
                 if image_transform is not None:
                     image_data = image_transform(image_data)
                 self.append(filename, image_data, check_size=check_size)
