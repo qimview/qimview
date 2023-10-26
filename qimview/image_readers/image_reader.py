@@ -76,7 +76,7 @@ class ImageReader:
             return None
 
 # unique instance of ImageReader for the application
-image_reader = ImageReader()
+gb_image_reader = ImageReader()
 
 
 def reader_add_plugins():
@@ -101,7 +101,7 @@ def reader_add_plugins():
                 sys.path.append(folder)
                 import importlib
                 fmt_reader = importlib.import_module(f"{module}")
-                image_reader.set_plugin(ext, fmt_reader.read)
+                gb_image_reader.set_plugin(ext, fmt_reader.read)
             except Exception as e:
                 print(f" ----- Failed to add support for {fmt}: {e}")
 
