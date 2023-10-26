@@ -85,6 +85,10 @@ class npViewer(Process):
         # images can be a list of image filenames or a list of numpy arrays
         images_dict = {}
         self.temp_dir = None
+        # if only one numpy array as input, convert it to a list
+        if isinstance(images, np.ndarray):
+            images = [ images ]
+        assert type(images) is list, "Input should be a list or a single numpy array"
         for idx,im in enumerate(images):
             if os.path.isfile(im):
                 images_dict[f"{idx}_{get_name(im)}"] = im
@@ -95,6 +99,7 @@ class npViewer(Process):
                 import cv2
                 self.temp_dir = tempfile.mkdtemp()
                 image_filename = osp.join(self.temp_dir, f"image_{idx}.png")
+                # not working so well with values > 255
                 cv2.imwrite(image_filename, im)
                 print(f" Written image {image_filename} to disk")
                 images_dict[f"{idx}_image"] = image_filename
