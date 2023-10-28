@@ -1,7 +1,7 @@
 from qimview.utils.ViewerImage import *
 import os
 from .libraw_reader import libraw_supported_formats, read_libraw
-from .turbojpeg_reader import read_jpeg_turbojpeg
+from .turbojpeg_reader import read_jpeg_turbojpeg, gb_turbo_jpeg
 from .simplejpeg_reader import read_jpeg_simplejpeg
 from .opencv_reader import read_opencv, opencv_supported_formats
 
@@ -11,7 +11,8 @@ def read_jpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verb
     # so turbojpeg > simplejpeg > cv2
     verbose = True
     im1 = im2 = im3 = None
-    im1 = read_jpeg_turbojpeg(image_filename, image_buffer, read_size=read_size, use_RGB=use_RGB, verbose=verbose)
+    if gb_turbo_jpeg:
+        im1 = read_jpeg_turbojpeg(image_filename, image_buffer, read_size=read_size, use_RGB=use_RGB, verbose=verbose)
     if im1 is not None: return im1
     if read_size == 'full':
         im2 = read_jpeg_simplejpeg(image_filename, image_buffer, read_size, use_RGB, verbose)

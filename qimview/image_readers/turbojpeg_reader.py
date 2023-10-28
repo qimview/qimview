@@ -11,7 +11,11 @@ from qimview.utils.utils import get_time
 from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
 
 # Initialize once the TurboJPEG instance, as a global variable
-jpeg = TurboJPEG()
+try:
+    gb_turbo_jpeg = TurboJPEG()
+except Exception as e:
+    print(f"Failed to load TurboJPEG library")
+    gb_turbo_jpeg = None
 
 def read_jpeg_turbojpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     try:
@@ -30,9 +34,9 @@ def read_jpeg_turbojpeg(image_filename, image_buffer, read_size='full', use_RGB=
             with open(image_filename, 'rb') as d:
                 image_buffer = d.read()
         # if verbose:
-        #     im_header = jpeg.decode_header(image_buffer)
+        #     im_header = gb_turbo_jpeg.decode_header(image_buffer)
         #     print(f" header {im_header} {int(get_time() - start1) * 1000} ms")
-        im = jpeg.decode(image_buffer, pixel_format=pixel_format, scaling_factor=scale, flags=flags)
+        im = gb_turbo_jpeg.decode(image_buffer, pixel_format=pixel_format, scaling_factor=scale, flags=flags)
 
         if verbose:
             print(f" turbojpeg read ...{image_filename[-15:]} took {get_time() - start:0.3f} sec.")
