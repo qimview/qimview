@@ -1,7 +1,4 @@
 from qimview.utils.ViewerImage import *
-from qimview.utils.utils import get_time
-import cv2
-import numpy as np
 import os
 from .libraw_reader import libraw_supported_formats, read_libraw
 from .turbojpeg_reader import read_jpeg_turbojpeg
