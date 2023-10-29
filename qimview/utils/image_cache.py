@@ -227,7 +227,8 @@ class ImageCache(BaseCache):
             return image_data, True
         else:
             try:
-                image_data = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose)
+                image_data = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose,
+                                                  check_filecache_size=check_size)
                 if image_transform is not None:
                     image_data = image_transform(image_data)
                 self.append(filename, image_data, check_size=check_size)
@@ -281,6 +282,6 @@ class ImageCache(BaseCache):
             # It seems that the progress bar must be updated outside the threads
             self.check_size_limit(update_progress=True)
             if gb_image_reader.file_cache is not None:
-                gb_image_reader.file_cache.update_progress()
+                gb_image_reader.file_cache.check_size_limit(update_progress=True)
         assert len(self.add_results) == num_workers, "Workers left"
         self.print_log(f" ImageCache.add_images() {num_workers}, {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")

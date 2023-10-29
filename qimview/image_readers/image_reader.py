@@ -55,7 +55,7 @@ class ImageReader:
         for ext in extensions:
             self._plugins[ext.upper()] = callback
 
-    def read(self, filename, buffer=None, read_size='full', use_RGB=True, verbose=False):
+    def read(self, filename, buffer=None, read_size='full', use_RGB=True, verbose=False, check_filecache_size=True):
         extension = os.path.splitext(filename)[1].upper()
         if extension not in self._plugins:
             print(  f"ERROR: ImageRead.read({filename}) extension not supported, "
@@ -65,7 +65,7 @@ class ImageReader:
         try:
             if buffer is None and self.file_cache is not None:
                 # try to get the buffer from the file cache
-                buffer, fromcache = self.file_cache.get_file(filename, check_size=True)
+                buffer, fromcache = self.file_cache.get_file(filename, check_size=check_filecache_size)
                 print(f" got buffer from cache? {fromcache}")
             res = self._plugins[extension](filename, buffer, read_size, use_RGB, verbose)
             return res
