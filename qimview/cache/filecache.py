@@ -4,14 +4,14 @@ from qimview.utils.utils import get_time, deep_getsizeof
 from .basecache import BaseCache
 import os
 import psutil
-# from typing import Optional
+from typing import Optional, Tuple
 
 class FileCache(BaseCache): 
     def __init__(self):
         BaseCache.__init__(self, "FileCache")
         # let use 5% of total memory by default
         total_memory = psutil.virtual_memory().total / self.cache_unit
-        self.max_cache_size = total_memory * 0.05
+        self.max_cache_size = int(total_memory * 0.05)
         self.last_progress = 0
 
     def has_file(self, filename):
@@ -19,7 +19,7 @@ class FileCache(BaseCache):
         filename = os.path.abspath(filename)
         return filename in self.cache_list
 
-    def get_file(self, filename, check_size=True):
+    def get_file(self, filename: str, check_size: bool = True) -> Tuple[Optional[bytes], bool]:
         """
         :param filename:
         :param show_timing:
