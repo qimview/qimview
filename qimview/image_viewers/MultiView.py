@@ -1,10 +1,10 @@
 
 from qimview.utils.qt_imports import *
 from qimview.utils.utils import get_time
-from qimview.utils.image_cache import ImageCache
 from qimview.utils.ViewerImage import *
 from qimview.utils.menu_selection import MenuSelection
 from qimview.utils.mvlabel import MVLabel
+from qimview.cache.image_cache import ImageCache
 
 from qimview.image_viewers.glImageViewer import glImageViewer
 from qimview.image_viewers.glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
