@@ -10,7 +10,7 @@ from collections import deque
 from time import sleep
 import os
 import psutil
-
+from typing import Optional
 
 class BaseCache:
     def __init__(self, name=""):
@@ -24,12 +24,15 @@ class BaseCache:
         self.thread_pool = ThreadPool()
         self.memory_bar = None
         self._name = name
-        self._check_size_mutex = QtCore.QMutex()
+        self._lock = QtCore.QReadWriteLock()
+        self._memory_bar_lock = QtCore.QMutex()
 
     def set_memory_bar(self, progress_bar):
         self.memory_bar = progress_bar
+        self._memory_bar_lock.lock()
         self.memory_bar.setRange(0, self.max_cache_size)
         self.memory_bar.setFormat("%v Mb")
+        self._memory_bar_lock.unlock()
 
     def reset(self):
         self.cache = deque()
@@ -40,13 +43,17 @@ class BaseCache:
         self.max_cache_size = size
         self.check_size_limit()
         if self.memory_bar is not None:
+            self._memory_bar_lock.lock()
             self.memory_bar.setRange(0, self.max_cache_size)
+            self._memory_bar_lock.unlock()
 
     def print_log(self, message):
         if self.verbose:
             print(message)
 
     def search(self, id):
+        res = None
+        self._lock.lockForRead()
         if id in self.cache_list:
             pos = self.cache_list.index(id)
             # print(f"pos {pos} len(cache) {len(self.cache)}")
@@ -56,8 +63,8 @@ class BaseCache:
                 print(f" Error in getting cache data: {e}")
                 self.print_log(f" *** Cache {self._name}: search() cache_list {len(self.cache_list)} cache {len(self.cache)}")
                 res = None
-            return res
-        return None
+        self._lock.unlock()
+        return res
 
     def append(self, id, value, extra=None, check_size=True):
         """
@@ -68,29 +75,42 @@ class BaseCache:
         """
         # update cache
         self.print_log(f"added size {deep_getsizeof([id, value, extra], set())}")
+        self._lock.lockForWrite()
         self.cache.append([id, value, extra])
         self.cache_list.append(id)
+        self._lock.unlock()
         self.print_log(f" *** Cache {self._name}: append() cache_list {len(self.cache_list)} cache {len(self.cache)}")
         if check_size:
             self.check_size_limit()
 
-    def check_size_limit(self):
-        self._check_size_mutex.lock()
-        self.print_log(" *** Cache: check_size_limit()")
-        cache_size = deep_getsizeof(self.cache, set())
-        while cache_size >= self.max_cache_size * self.cache_unit:
-            self.cache.popleft()
-            self.cache_list.pop(0)
-            self.print_log(" *** Cache: pop ")
-            cache_size = deep_getsizeof(self.cache, set())
-        self.print_log(f" *** Cache::append() {self._name} {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
-        self.cache_size = cache_size
+    def get_cache_size(self) -> int:
+        self._lock.lockForRead()
+        size = deep_getsizeof(self.cache, set())
+        self._lock.unlock()
+        return size
+    
+    def update_progress(self):
         if self.memory_bar is not None:
             new_progress_value = int(self.cache_size/self.cache_unit+0.5)
+            self._memory_bar_lock.lock()
             if new_progress_value != self.memory_bar.value():
                 self.memory_bar.setValue(new_progress_value)
-        self._check_size_mutex.unlock()
+            self._memory_bar_lock.unlock()
 
+    def check_size_limit(self, update_progress=False):
+        self.print_log(" *** Cache: check_size_limit()")
+        cache_size = self.get_cache_size()
+        while cache_size >= self.max_cache_size * self.cache_unit:
+            self._lock.lockForWrite()
+            self.cache.popleft()
+            self.cache_list.pop(0)
+            self._lock.unlock()
+            self.print_log(" *** Cache: pop ")
+            cache_size = self.get_cache_size()
+        self.print_log(f" *** Cache::append() {self._name} {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
+        self.cache_size = cache_size
+        if update_progress:
+            self.update_progress()
 
 
 class FileCache(BaseCache): 
@@ -112,14 +132,14 @@ class FileCache(BaseCache):
         :param show_timing:
         :return: pair file_data, boolean (True is coming from cache)
         """
-        print(f'get_file {filename}')
+        # print(f'get_file {filename}')
         start = get_time()
         # Get absolute normalized path
         filename = os.path.abspath(filename)
         # print(f"image cache get_image({filename})")
         file_data = self.search(filename)
         if file_data is not None:
-            print(f'get_file {filename} found end')
+            # print(f'get_file {filename} found end')
             return file_data, True
         else:
             try:
@@ -134,7 +154,7 @@ class FileCache(BaseCache):
                 print("Failed to load image {0}: {1}".format(filename, e))
                 return None, False
             else:
-                print(f'get_file {filename} read end')
+                # print(f'get_file {filename} read end')
                 return file_data, False
 
     def thread_add_files(self, filenames, progress_callback = None):
@@ -181,9 +201,14 @@ class FileCache(BaseCache):
         start = get_time()
         self.add_results = []
         # print(f" start worker with image {f}")
-        self.thread_pool.set_worker(self.thread_add_files, filenames)
-        self.thread_pool.set_worker_callbacks(progress_cb=self.show_progress, finished_cb=self.on_finished)
-        self.thread_pool.start_worker()
+        # This part may be causing issues
+        use_threads = False
+        if use_threads:
+            self.thread_pool.set_worker(self.thread_add_files, filenames)
+            self.thread_pool.set_worker_callbacks(progress_cb=self.show_progress, finished_cb=self.on_finished)
+            self.thread_pool.start_worker()
+        else:
+            self.thread_add_files(filenames, progress_cb=self.show_progress)
         self.print_log(f" FileCache.add_files() {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
 
 
@@ -260,10 +285,16 @@ class ImageCache(BaseCache):
         wait_time = 0
         while len(self.add_results) != num_workers and wait_time < 2:
             # wait 5 ms before checking again
-            sleep(0.002)
+            #sleep(0.002)
+            self.thread_pool.waitForDone(2)
             wait_time += 0.002
         self.print_log(f" ImageCache.add_images() wait_time {wait_time} took {int((get_time()-start)*1000+0.5)} ms;")
         if num_workers>0:
             self.thread_pool.clear()
-            self.check_size_limit()
+            # There could be unfinished thread here?
+            # It seems that the progress bar must be updated outside the threads
+            self.check_size_limit(update_progress=True)
+            if gb_image_reader.file_cache is not None:
+                gb_image_reader.file_cache.update_progress()
+        assert len(self.add_results) == num_workers, "Workers left"
         self.print_log(f" ImageCache.add_images() {num_workers}, {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")

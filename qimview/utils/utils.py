@@ -43,7 +43,7 @@ def get_size(obj, seen=None):
 
 
 # function found at https://code.tutsplus.com/tutorials/understand-how-much-memory-your-python-objects-use--cms-25609
-def deep_getsizeof(o, ids):
+def deep_getsizeof(o, ids) -> int:
 	""" Find the memory footprint of a Python object
 	This is a recursive function that drills down a Python object graph
 	like a dictionary holding nested dictionaries with lists of lists

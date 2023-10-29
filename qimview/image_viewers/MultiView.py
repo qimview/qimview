@@ -60,10 +60,11 @@ class MultiView(QtWidgets.QWidget):
         self.verbosity_TIMING_DETAILED = 1 << 3
         self.verbosity_TRACE = 1 << 4
         self.verbosity_DEBUG = 1 << 5
+        self.verbosity = 0
+
+        # self.set_verbosity(self.verbosity_LIGHT)
         # self.set_verbosity(self.verbosity_TIMING_DETAILED)
         # self.set_verbosity(self.verbosity_TRACE)
-
-        self.verbosity = 0
 
         self.current_image_filename = None
         self.save_image_clipboard = False
@@ -95,7 +96,10 @@ class MultiView(QtWidgets.QWidget):
 
         self.key_up_callback = None
         self.key_down_callback = None
+        self.output_image_label = dict()
 
+        self.output_label_current_image   : str = ''
+        self.output_label_reference_image : str = ''
         self.add_context_menu()
 
     def set_key_up_callback(self, c):
@@ -252,15 +256,17 @@ class MultiView(QtWidgets.QWidget):
             else:
                 self.image_viewers[n].set_image_name(image_names[len(image_names)-1])
 
-    def set_reference_label(self, ref):
+    def set_reference_label(self, ref, update_viewers=False):
         try:
             if ref is not None:
-                self.output_label_reference_image = ref
-                reference_image = self.get_output_image(self.output_label_reference_image)
-                for n in range(self.nb_viewers_used):
-                    viewer = self.image_viewers[n]
-                    # set reference image
-                    viewer.set_image_ref(reference_image)
+                if ref!=self.output_label_reference_image:
+                    self.output_label_reference_image = ref
+                    if update_viewers:
+                        reference_image = self.get_output_image(self.output_label_reference_image)
+                        for n in range(self.nb_viewers_used):
+                            viewer = self.image_viewers[n]
+                            # set reference image
+                            viewer.set_image_ref(reference_image)
         except Exception as e:
             print(f' Failed to set reference label {e}')
 
@@ -289,11 +295,10 @@ class MultiView(QtWidgets.QWidget):
 
         if len(self.image_list)>0:
             self.output_label_current_image = self.image_list[0]
-            self.set_reference_label(self.image_list[0])
+            self.set_reference_label(self.image_list[0], update_viewers=True)
         else:
             self.output_label_current_image = ''
             self.output_label_reference_image = ''
-        self.output_image_label = dict()
 
     def clear_buttons(self):
         if self.button_layout is not None:
@@ -533,6 +538,7 @@ class MultiView(QtWidgets.QWidget):
             print("Error: failed to get image {}: {}".format(self.output_label_current_image, e))
             return
 
+        # print(f"cur {self.output_label_current_image}")
         current_filename = self.output_image_label[self.output_label_current_image]
 
         if self.show_timing_detailed():
@@ -551,7 +557,11 @@ class MultiView(QtWidgets.QWidget):
             print("end save image to clipboard")
             current_viewer.set_clipboard(None, False)
 
-        reference_image = self.get_output_image(self.output_label_reference_image)
+        # print(f"ref {self.output_label_reference_image}")
+        if self.output_label_reference_image==self.output_label_current_image:
+            reference_image = current_image
+        else:
+            reference_image = self.get_output_image(self.output_label_reference_image)
 
         if self.nb_viewers_used >= 2:
             prev_n = first_active_window
@@ -715,7 +725,7 @@ class MultiView(QtWidgets.QWidget):
                     if self.image_list[n] != 'none':
                         if event.key() == QtCore.Qt.Key_0 + n:
                             if self.output_label_current_image != self.image_list[n]:
-                                self.set_reference_label(self.image_list[n])
+                                self.set_reference_label(self.image_list[n], update_viewers=True)
                                 self.update_image()
                                 event.accept()
                                 return
