@@ -1,7 +1,7 @@
 
-from .utils import get_time, deep_getsizeof
-from .ThreadPool import ThreadPool
-from .qt_imports import *
+from qimview.utils.utils import get_time, deep_getsizeof
+from qimview.utils.ThreadPool import ThreadPool
+from qimview.utils.qt_imports import *
 
 from qimview.image_readers import gb_image_reader
 
