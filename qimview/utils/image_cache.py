@@ -14,6 +14,7 @@ from typing import Optional
 
 class BaseCache:
     def __init__(self, name=""):
+        # Python list and deque are thread-safe
         self.cache = deque()
         self.cache_list = []
         self.cache_size = 0
@@ -24,15 +25,12 @@ class BaseCache:
         self.thread_pool = ThreadPool()
         self.memory_bar = None
         self._name = name
-        self._lock = QtCore.QReadWriteLock()
-        self._memory_bar_lock = QtCore.QMutex()
+        # Avoid changing progressbar inside a thread so no need for mutex
 
     def set_memory_bar(self, progress_bar):
         self.memory_bar = progress_bar
-        self._memory_bar_lock.lock()
         self.memory_bar.setRange(0, self.max_cache_size)
         self.memory_bar.setFormat("%v Mb")
-        self._memory_bar_lock.unlock()
 
     def reset(self):
         self.cache = deque()
@@ -43,9 +41,7 @@ class BaseCache:
         self.max_cache_size = size
         self.check_size_limit()
         if self.memory_bar is not None:
-            self._memory_bar_lock.lock()
             self.memory_bar.setRange(0, self.max_cache_size)
-            self._memory_bar_lock.unlock()
 
     def print_log(self, message):
         if self.verbose:
@@ -53,7 +49,6 @@ class BaseCache:
 
     def search(self, id):
         res = None
-        self._lock.lockForRead()
         if id in self.cache_list:
             pos = self.cache_list.index(id)
             # print(f"pos {pos} len(cache) {len(self.cache)}")
@@ -63,7 +58,6 @@ class BaseCache:
                 print(f" Error in getting cache data: {e}")
                 self.print_log(f" *** Cache {self._name}: search() cache_list {len(self.cache_list)} cache {len(self.cache)}")
                 res = None
-        self._lock.unlock()
         return res
 
     def append(self, id, value, extra=None, check_size=True):
@@ -75,36 +69,28 @@ class BaseCache:
         """
         # update cache
         self.print_log(f"added size {deep_getsizeof([id, value, extra], set())}")
-        self._lock.lockForWrite()
         self.cache.append([id, value, extra])
         self.cache_list.append(id)
-        self._lock.unlock()
         self.print_log(f" *** Cache {self._name}: append() cache_list {len(self.cache_list)} cache {len(self.cache)}")
         if check_size:
             self.check_size_limit()
 
     def get_cache_size(self) -> int:
-        self._lock.lockForRead()
         size = deep_getsizeof(self.cache, set())
-        self._lock.unlock()
         return size
     
     def update_progress(self):
         if self.memory_bar is not None:
             new_progress_value = int(self.cache_size/self.cache_unit+0.5)
-            self._memory_bar_lock.lock()
             if new_progress_value != self.memory_bar.value():
                 self.memory_bar.setValue(new_progress_value)
-            self._memory_bar_lock.unlock()
 
     def check_size_limit(self, update_progress=False):
         self.print_log(" *** Cache: check_size_limit()")
         cache_size = self.get_cache_size()
         while cache_size >= self.max_cache_size * self.cache_unit:
-            self._lock.lockForWrite()
             self.cache.popleft()
             self.cache_list.pop(0)
-            self._lock.unlock()
             self.print_log(" *** Cache: pop ")
             cache_size = self.get_cache_size()
         self.print_log(f" *** Cache::append() {self._name} {cache_size/self.cache_unit} Mb; size {len(self.cache)}")
