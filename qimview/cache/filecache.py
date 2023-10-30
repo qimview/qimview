@@ -54,14 +54,14 @@ class FileCache(BaseCache[str,bytes,float]):
         # print(f"image cache get_image({filename})")
         file_data = self.search(filename)
         if file_data is not None:
-            # if file_data[2]>=mtime:
+            if file_data[2]>=mtime:
                 # print(f'get_file {filename} found end')
                 return file_data[1], True
-            # else:
-            #     # Remove element from cache?
-            #     print("Removing outdated cache data from file {filename}")
-            #     self.cache.remove(file_data)
-            #     self.cache_list.remove(filename)
+            else:
+                # Remove element from cache?
+                print("Removing outdated cache data from file {filename}")
+                self.cache.remove(file_data)
+                self.cache_list.remove(filename)
         try:
             # Read file as binary data
             self._print_log(" FileCache::get_file() before read() {0:0.3f} sec.".format(get_time() - start))

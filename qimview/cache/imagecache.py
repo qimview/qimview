@@ -7,7 +7,19 @@ import psutil
 from typing import TYPE_CHECKING
 from qimview.utils.ViewerImage import ViewerImage
 
-class ImageCache(BaseCache[str, ViewerImage, None]): 
+class ImageCache(BaseCache[str, ViewerImage, float]): 
+    """
+        Save output bytes from read() function into a cache indexed by the filename
+        inherits from BaseCache, with
+            id as string: input filename
+            ViewerImage: image object
+            mtime: modification time as float from osp.getmtime(filename)
+        If a file is in the cache but its modification time on disk is more recent,
+        we can enable an automatic reload
+
+    Args:
+        BaseCache (_type_): _description_
+    """    
     def __init__(self):
         BaseCache.__init__(self, "ImageCache")
         # let use 25% of total memory
@@ -32,18 +44,25 @@ class ImageCache(BaseCache[str, ViewerImage, None]):
         filename = os.path.abspath(filename)
         # print(f"image cache get_image({filename})")
         image_data = self.search(filename)
+        mtime = os.path.getmtime(filename)
+
         if image_data is not None:
-            return image_data[1], True
+            if image_data[2] >= mtime:
+                return image_data[1], True
+            else:
+                # Remove outdated cache element
+                self.cache.remove(image_data)
+                self.cache_list.remove(filename)
         
         image = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose,
                                             check_filecache_size=check_size)
         if image is not None:
             if image_transform is not None:
                 image = image_transform(image)
-            self.append(filename, image, extra=None, check_size=check_size)
+            self.append(filename, image, extra=mtime, check_size=check_size)
             self._print_log(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
         else:
-            print("Failed to load image {0}: {1}".format(filename, e))
+            print(f"Failed to load image {filename}")
             return None, False
         return image, False
 
