@@ -4,14 +4,16 @@ from qimview.image_readers import gb_image_reader
 from .basecache import BaseCache
 import os
 import psutil
-# from typing import Optional
+from typing import TYPE_CHECKING
+from qimview.utils.ViewerImage import ViewerImage
 
-class ImageCache(BaseCache): 
+class ImageCache(BaseCache[str, ViewerImage, None]): 
     def __init__(self):
         BaseCache.__init__(self, "ImageCache")
         # let use 25% of total memory
         total_memory = psutil.virtual_memory().total / self.cache_unit
-        self.max_cache_size = total_memory * 0.25
+        self.max_cache_size = int(total_memory * 0.25)
+        self.verbose = True
 
     def has_image(self, filename):
         # is it too slow
@@ -31,20 +33,19 @@ class ImageCache(BaseCache):
         # print(f"image cache get_image({filename})")
         image_data = self.search(filename)
         if image_data is not None:
-            return image_data, True
+            return image_data[1], True
+        
+        image = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose,
+                                            check_filecache_size=check_size)
+        if image is not None:
+            if image_transform is not None:
+                image = image_transform(image)
+            self.append(filename, image, extra=None, check_size=check_size)
+            self._print_log(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
         else:
-            try:
-                image_data = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose,
-                                                  check_filecache_size=check_size)
-                if image_transform is not None:
-                    image_data = image_transform(image_data)
-                self.append(filename, image_data, check_size=check_size)
-                self.print_log(" get_image after read_image took {0:0.3f} sec.".format(get_time() - start))
-            except Exception as e:
-                print("Failed to load image {0}: {1}".format(filename, e))
-                return None, False
-            else:
-                return image_data, False
+            print("Failed to load image {0}: {1}".format(filename, e))
+            return None, False
+        return image, False
 
     def add_image(self, filename, read_size='full', verbose=False, use_RGB=True, image_transform=None,
                     progress_callback = None):
@@ -82,7 +83,7 @@ class ImageCache(BaseCache):
             #sleep(0.002)
             self.thread_pool.waitForDone(2)
             wait_time += 0.002
-        self.print_log(f" ImageCache.add_images() wait_time {wait_time} took {int((get_time()-start)*1000+0.5)} ms;")
+        self._print_log(f" ImageCache.add_images() wait_time {wait_time} took {int((get_time()-start)*1000+0.5)} ms;")
         if num_workers>0:
             self.thread_pool.clear()
             # There could be unfinished thread here?
@@ -91,4 +92,4 @@ class ImageCache(BaseCache):
             if gb_image_reader.file_cache is not None:
                 gb_image_reader.file_cache.check_size_limit(update_progress=True)
         assert len(self.add_results) == num_workers, "Workers left"
-        self.print_log(f" ImageCache.add_images() {num_workers}, {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
+        self._print_log(f" ImageCache.add_images() {num_workers}, {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")

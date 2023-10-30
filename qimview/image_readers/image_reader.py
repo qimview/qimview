@@ -4,7 +4,12 @@ from .libraw_reader import libraw_supported_formats, read_libraw
 from .turbojpeg_reader import read_jpeg_turbojpeg, gb_turbo_jpeg
 from .simplejpeg_reader import read_jpeg_simplejpeg
 from .opencv_reader import read_opencv, opencv_supported_formats
+from typing import Optional, TYPE_CHECKING
 
+# Avoid circular imports
+# Imports specific for type checking
+if TYPE_CHECKING:
+    from qimview.cache import FileCache
 
 def read_jpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     # in terms of speed, it seems that turbojpeg is faster than simplejpeg which is faster than cv2
@@ -36,7 +41,7 @@ class ImageReader:
         for ext in opencv_supported_formats():
             if ext.upper() not in self._plugins:
                 self._plugins[ext.upper()] = read_opencv
-        self.file_cache = None
+        self.file_cache : Optional[FileCache] = None
 
     def extensions(self):
         return list(self._plugins.keys())

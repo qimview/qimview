@@ -407,12 +407,12 @@ class ImageViewer:
             if event.key() == QtCore.Qt.Key_O:
                 self.show_overlay = not self.show_overlay
 
-            # toggle cursor
+            # C: toggle cursor
             key_list.append(QtCore.Qt.Key_C)
             if event.key() == QtCore.Qt.Key_C:
                 self.show_cursor = not self.show_cursor
 
-            # toggle cursor
+            # D: toggle image differences
             key_list.append(QtCore.Qt.Key_D)
             if event.key() == QtCore.Qt.Key_D:
                 self.show_image_differences = not self.show_image_differences

@@ -15,6 +15,7 @@ from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParameters
 from enum import Enum
 
 import types
+from typing import List
 import math
 
 class ViewerType(Enum):
@@ -447,16 +448,20 @@ class MultiView(QtWidgets.QWidget):
         if self.message_cb is not None:
             self.message_cb(mess)
 
-    def cache_read_images(self, image_filenames):
-        """
-        Search for the image with given label in the current row
-        if not in cache reads it and add it to the cache
-        :param im_string_id: string that identifies the image to display
-        :return:
-        """
+    def cache_read_images(self, image_filenames: List[str], reload: bool =False) -> None:
+        """ Read the list of images into the cache, with option to reload them from disk
+
+        Args:
+            image_filenames (List[str]): list of image filenames
+            reload (bool, optional): reload removes first the images from the ImageCache 
+                before adding them. Defaults to False.
+        """        
         # print(f"cache_read_images({image_filenames}) ")
         # Read both clean and original images and save them in dict as QPixmaps
         image_transform = None
+        if reload:
+            for f in image_filenames:
+                self.cache.remove(f)
         self.cache.add_images(image_filenames, self.read_size, verbose=False, use_RGB=not self.use_opengl,
                              image_transform=image_transform)
 
@@ -475,7 +480,7 @@ class MultiView(QtWidgets.QWidget):
                 self.label[im_name].setWordWrap(True)
             # self.label[im_name].setMaximumWidth(160)
 
-    def update_image(self, image_name=None):
+    def update_image(self, image_name=None, reload=False):
         """
         Uses the variable self.output_label_current_image
         :return:
@@ -528,7 +533,7 @@ class MultiView(QtWidgets.QWidget):
         # remove duplicates
         image_filenames = list(set(image_filenames))
         # print(f"image filenames {image_filenames}")
-        self.cache_read_images(image_filenames)
+        self.cache_read_images(image_filenames, reload=reload)
 
         try:
             current_image = self.get_output_image(self.output_label_current_image)
@@ -769,5 +774,12 @@ class MultiView(QtWidgets.QWidget):
                         self.update_image(self.image_list[(n+1)%nb_images])
                         event.accept()
                         return
+
+            # R: reload images
+            if event.key() == QtCore.Qt.Key_R:
+                self.update_image(reload=True)
+                event.accept()
+                return
+                
         else:
             event.ignore()
