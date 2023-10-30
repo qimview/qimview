@@ -26,7 +26,7 @@ class FileCache(BaseCache[str,bytes,float]):
         # let use 5% of total memory by default
         self.max_cache_size : int   = int(total_memory * 0.05)
         self.last_progress = 0
-        self.verbose = True
+        self.verbose : bool = False
 
     def has_file(self, filename):
         # is it too slow

@@ -13,7 +13,7 @@ class ImageCache(BaseCache[str, ViewerImage, None]):
         # let use 25% of total memory
         total_memory = psutil.virtual_memory().total / self.cache_unit
         self.max_cache_size = int(total_memory * 0.25)
-        self.verbose = True
+        self.verbose : bool = False
 
     def has_image(self, filename):
         # is it too slow
