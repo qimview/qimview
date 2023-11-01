@@ -6,8 +6,8 @@ import os
 import glob
 
 from qimview.utils.qt_imports import QtWidgets
-from qimview.image_viewers.MultiView import MultiView
-from qimview.image_viewers.MultiView import ViewerType
+from qimview.image_viewers.multi_view import MultiView
+from qimview.image_viewers.multi_view import ViewerType
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)

@@ -8,10 +8,10 @@ import sys
 from qimview.tests_utils.event_recorder import EventRecorder
 from qimview.tests_utils.event_player   import EventPlayer
 from qimview.tests_utils.qtdump import *
-from qimview.image_viewers.qtImageViewer import qtImageViewer
-from qimview.image_viewers.glImageViewer import glImageViewer
-from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
-from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
+from qimview.image_viewers.qt_image_viewer import qtImageViewer
+from qimview.image_viewers.gl_image_viewer import glImageViewer
+from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
+from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 
 from qimview.image_readers import gb_image_reader
 

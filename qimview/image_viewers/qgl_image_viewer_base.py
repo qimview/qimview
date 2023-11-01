@@ -7,7 +7,7 @@
 
 from qimview.utils.qt_imports import *
 from qimview.utils.ViewerImage import *
-from qimview.image_viewers.ImageViewer import ImageViewer, ReadImage, trace_method
+from qimview.image_viewers.image_viewer import ImageViewer, ReadImage, trace_method
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True

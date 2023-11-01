@@ -19,9 +19,9 @@ else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
-from qimview.image_viewers.ImageViewer import ImageViewer, trace_method
+from qimview.image_viewers.image_viewer import ImageViewer, trace_method
 
-from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
+from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 
 import cv2
 import numpy as np

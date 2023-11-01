@@ -5,8 +5,8 @@
 #
 
 from qimview.utils.qt_imports import QtWidgets
-from .ImageViewer import ReadImage, trace_method, get_time
-from .qglwImageViewerBase import qglImageViewerBase
+from .image_viewer import ReadImage, trace_method, get_time
+from .qgl_image_viewer_base import qglImageViewerBase
 
 from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
                               QOpenGLShaderProgram, QOpenGLTexture)

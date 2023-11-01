@@ -11,7 +11,7 @@ import argparse
 import sys
 from OpenGL.GL import shaders
 import numpy as np
-from qimview.image_viewers.ImageViewer import ImageViewer, ReadImage, trace_method, get_time
+from qimview.image_viewers.image_viewer import ImageViewer, ReadImage, trace_method, get_time
 
 import pygame
 

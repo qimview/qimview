@@ -6,22 +6,22 @@ from qimview.utils.menu_selection import MenuSelection
 from qimview.utils.mvlabel import MVLabel
 from qimview.cache import ImageCache
 
-from qimview.image_viewers.glImageViewer import glImageViewer
-from qimview.image_viewers.glImageViewerWithShaders_qglw import glImageViewerWithShaders_qglw
-from qimview.image_viewers.qtImageViewer import qtImageViewer
-from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
-from qimview.image_viewers.ImageFilterParametersGui import ImageFilterParametersGui
+from qimview.image_viewers.gl_image_viewer import glImageViewer
+from qimview.image_viewers.gl_image_viewer_with_shaders_qglw import glImageViewerWithShaders_qglw
+from qimview.image_viewers.qt_image_viewer import qtImageViewer
+from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
+from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 
-from enum import Enum
+from enum import Enum, auto
 
 import types
 from typing import List
 import math
 
 class ViewerType(Enum):
-    QT_VIEWER = 1
-    OPENGL_VIEWER = 2
-    OPENGL_SHADERS_VIEWER = 3
+    QT_VIEWER             = auto()
+    OPENGL_VIEWER         = auto()
+    OPENGL_SHADERS_VIEWER = auto()
 
 
 class MultiView(QtWidgets.QWidget):

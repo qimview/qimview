@@ -2,7 +2,7 @@
 #
 #
 
-from qimview.image_viewers.ImageFilterParameters import ImageFilterParameters
+from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils import get_time
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
 

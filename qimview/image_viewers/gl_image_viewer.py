@@ -6,8 +6,8 @@
 #
 
 from ..utils.qt_imports import QtWidgets
-from .ImageViewer import ReadImage, trace_method
-from .qglwImageViewerBase import qglImageViewerBase
+from .image_viewer import ReadImage, trace_method
+from .qgl_image_viewer_base import qglImageViewerBase
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
