@@ -7,7 +7,7 @@
 
 from ..utils.qt_imports import QtWidgets
 from .image_viewer import ReadImage, trace_method
-from .qgl_image_viewer_base import qglImageViewerBase
+from .gl_image_viewer_base import glImageViewerBase
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
@@ -17,7 +17,7 @@ import argparse
 import sys
 
 
-class glImageViewer(qglImageViewerBase):
+class glImageViewer(glImageViewerBase):
 
     def __init__(self, parent=None, event_recorder=None):
         self.event_recorder = event_recorder

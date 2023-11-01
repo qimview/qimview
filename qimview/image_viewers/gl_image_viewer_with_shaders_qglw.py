@@ -6,7 +6,7 @@
 
 from qimview.utils.qt_imports import QtWidgets
 from .image_viewer import ReadImage, trace_method, get_time
-from .qgl_image_viewer_base import qglImageViewerBase
+from .gl_image_viewer_base import glImageViewerBase
 
 from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
                               QOpenGLShaderProgram, QOpenGLTexture)
@@ -18,7 +18,7 @@ from OpenGL.GL import shaders
 import numpy as np
 
 
-class glImageViewerWithShaders_qglw(qglImageViewerBase):
+class glImageViewerWithShaders_qglw(glImageViewerBase):
     # vertex shader program
     vertexShader = """
         #version 330 core
@@ -128,7 +128,7 @@ class glImageViewerWithShaders_qglw(qglImageViewerBase):
     """
 
     def __init__(self, parent=None):
-        qglImageViewerBase.__init__(self, parent)
+        glImageViewerBase.__init__(self, parent)
 
         self.setAutoFillBackground(False)
         self.textureID = None
