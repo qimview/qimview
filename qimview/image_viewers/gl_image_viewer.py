@@ -50,6 +50,10 @@ class glImageViewer(glImageViewerBase):
         gl.glBegin(gl.GL_QUADS)
 
         x0, x1, y0, y1 = self.image_centered_position()
+        x0 = int(x0)
+        x1 = int(x1)
+        y0 = int(y0)
+        y1 = int(y1)
         # print("{} {} {} {}".format(x0,x1,y0,y1))
 
         gl.glTexCoord2i(0, 0)
@@ -80,9 +84,11 @@ class glImageViewer(glImageViewerBase):
         return super().event(evt)
 
 if __name__ == '__main__':
+    from qimview.image_readers import gb_image_reader
+
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i', '--input_image', help='input image')
+    parser.add_argument('input_image', help='input image')
     args = parser.parse_args()
     _params = vars(args)
 
@@ -91,16 +97,18 @@ if __name__ == '__main__':
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
-            self.widget = glImageViewer()
-            im = ReadImage(_params['input_image'])
+            self.widget = glImageViewer(self)
+            self.show()
+        def load(self):
+            im = gb_image_reader.read(_params['input_image'])
             self.widget.set_image(im)
             # put the window at the screen position (100, 100)
             self.setGeometry(0, 0, self.widget._width, self.widget._height)
             self.setCentralWidget(self.widget)
-            self.show()
 
     # create the Qt App and window
     app = QtWidgets.QApplication(sys.argv)
     window = TestWindow()
+    window.load()
     window.show()
     app.exec_()

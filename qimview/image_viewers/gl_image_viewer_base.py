@@ -186,7 +186,7 @@ class glImageViewerBase(QOpenGLWidget, ImageViewer):
         self.opengl_error()
         return True
 
-    def myPaintGL():
+    def myPaintGL(self):
         pass 
 
     def paintAll(self):

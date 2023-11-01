@@ -361,9 +361,10 @@ class glImageViewerShaders(glImageViewerBase):
 
 
 if __name__ == '__main__':
+    from qimview.image_readers import gb_image_reader
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i', '--input_image', help='input image')
+    parser.add_argument('input_image', help='input image')
     args = parser.parse_args()
     _params = vars(args)
 
@@ -372,16 +373,18 @@ if __name__ == '__main__':
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
-            self.widget = glImageViewerShaders()
-            im = ReadImage(_params['input_image'])
+            self.widget = glImageViewerShaders(self)
+            self.show()
+        def load(self):
+            im = gb_image_reader.read(_params['input_image'])
             self.widget.set_image(im)
             # put the window at the screen position (100, 100)
             self.setGeometry(0, 0, self.widget._width, self.widget._height)
             self.setCentralWidget(self.widget)
-            self.show()
 
     # create the Qt App and window
     app = QtWidgets.QApplication(sys.argv)
     window = TestWindow()
+    window.load()
     window.show()
     app.exec_()
