@@ -20,7 +20,7 @@ import sys
 import traceback
 
 
-class glImageViewerBase(QOpenGLWidget, ImageViewer):
+class GLImageViewerBase(QOpenGLWidget, ImageViewer):
 
     def __init__(self, parent=None):
         QOpenGLWidget.__init__(self, parent)
@@ -58,7 +58,7 @@ class glImageViewerBase(QOpenGLWidget, ImageViewer):
     def set_image(self, image):
         if self.trace_calls:
             t = trace_method(self.tab)
-        changed = super(glImageViewerBase, self).set_image(image)
+        changed = super(GLImageViewerBase, self).set_image(image)
 
         img_width = self.cv_image.data.shape[1]
         if img_width % 4 != 0:
@@ -77,7 +77,7 @@ class glImageViewerBase(QOpenGLWidget, ImageViewer):
                 print("setTexture() return False")
 
     def synchronize_data(self, other_viewer):
-        super(glImageViewerBase, self).synchronize_data(other_viewer)
+        super(GLImageViewerBase, self).synchronize_data(other_viewer)
         other_viewer.cursor_imx_ratio = self.cursor_imx_ratio
         other_viewer.cursor_imy_ratio = self.cursor_imy_ratio
 
@@ -426,7 +426,7 @@ if __name__ == '__main__':
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
-            self.widget = glImageViewerBase()
+            self.widget = GLImageViewerBase()
             im = ReadImage(_params['input_image'])
             self.widget.set_image(im)
             # put the window at the screen position (100, 100)

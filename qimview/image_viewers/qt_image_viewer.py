@@ -31,7 +31,7 @@ import numpy as np
 use_opengl = False
 base_widget = QOpenGLWidget if use_opengl else QtWidgets.QWidget
 
-class qtImageViewer(base_widget, ImageViewer ):
+class QTImageViewer(base_widget, ImageViewer ):
 
     def __init__(self, parent=None, event_recorder=None):
         self.event_recorder = event_recorder
@@ -73,7 +73,7 @@ class qtImageViewer(base_widget, ImageViewer ):
     #    pass
 
     def set_image(self, image):
-        super(qtImageViewer, self).set_image(image)
+        super(QTImageViewer, self).set_image(image)
 
     def apply_zoom(self, crop):
         (height, width) = self.cv_image.data.shape[:2]

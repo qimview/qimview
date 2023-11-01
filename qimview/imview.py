@@ -8,8 +8,8 @@ import sys
 from qimview.tests_utils.event_recorder import EventRecorder
 from qimview.tests_utils.event_player   import EventPlayer
 from qimview.tests_utils.qtdump import *
-from qimview.image_viewers.qt_image_viewer import qtImageViewer
-from qimview.image_viewers.gl_image_viewer import glImageViewer
+from qimview.image_viewers.qt_image_viewer import QTImageViewer
+from qimview.image_viewers.gl_image_viewer import GLImageViewer
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 
@@ -34,9 +34,9 @@ class ImView(QtWidgets.QMainWindow):
         self.main_widget.setLayout(vertical_layout)
 
         if params['gl']:
-            self.widget = glImageViewer(event_recorder = self.event_recorder)
+            self.widget = GLImageViewer(event_recorder = self.event_recorder)
         else:
-            self.widget = qtImageViewer(event_recorder = self.event_recorder)
+            self.widget = QTImageViewer(event_recorder = self.event_recorder)
         if params['timing']:
             self.widget.display_timing = True
         if record_file is not None:

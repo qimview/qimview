@@ -6,7 +6,7 @@
 
 from qimview.utils.qt_imports import QtWidgets
 from .image_viewer import ReadImage, trace_method, get_time
-from .gl_image_viewer_base import glImageViewerBase
+from .gl_image_viewer_base import GLImageViewerBase
 
 from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
                               QOpenGLShaderProgram, QOpenGLTexture)
@@ -18,7 +18,7 @@ from OpenGL.GL import shaders
 import numpy as np
 
 
-class glImageViewerShaders(glImageViewerBase):
+class GLImageViewerShaders(GLImageViewerBase):
     # vertex shader program
     vertexShader = """
         #version 330 core
@@ -128,7 +128,7 @@ class glImageViewerShaders(glImageViewerBase):
     """
 
     def __init__(self, parent=None):
-        glImageViewerBase.__init__(self, parent)
+        GLImageViewerBase.__init__(self, parent)
 
         self.setAutoFillBackground(False)
         self.textureID = None
@@ -206,7 +206,7 @@ class glImageViewerShaders(glImageViewerBase):
         self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
     def setTexture(self):
-        texture_ok = super(glImageViewerShaders, self).setTexture()
+        texture_ok = super(GLImageViewerShaders, self).setTexture()
         self.setVerticesBufferData()
         return texture_ok
 
@@ -373,7 +373,7 @@ if __name__ == '__main__':
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
-            self.widget = glImageViewerShaders(self)
+            self.widget = GLImageViewerShaders(self)
             self.show()
         def load(self):
             im = gb_image_reader.read(_params['input_image'])

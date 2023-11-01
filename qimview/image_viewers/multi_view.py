@@ -6,9 +6,9 @@ from qimview.utils.menu_selection import MenuSelection
 from qimview.utils.mvlabel import MVLabel
 from qimview.cache import ImageCache
 
-from qimview.image_viewers.gl_image_viewer import glImageViewer
-from qimview.image_viewers.gl_image_viewer_shaders import glImageViewerShaders
-from qimview.image_viewers.qt_image_viewer import qtImageViewer
+from qimview.image_viewers.gl_image_viewer import GLImageViewer
+from qimview.image_viewers.gl_image_viewer_shaders import GLImageViewerShaders
+from qimview.image_viewers.qt_image_viewer import QTImageViewer
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 
@@ -40,9 +40,9 @@ class MultiView(QtWidgets.QWidget):
         self.allocated_image_viewers = []  # keep allocated image viewers here
         self.image_viewers = []
         self.image_viewer_classes = {
-            ViewerType.QT_VIEWER:             qtImageViewer,
-            ViewerType.OPENGL_VIEWER:         glImageViewer,
-            ViewerType.OPENGL_SHADERS_VIEWER: glImageViewerShaders
+            ViewerType.QT_VIEWER:             QTImageViewer,
+            ViewerType.OPENGL_VIEWER:         GLImageViewer,
+            ViewerType.OPENGL_SHADERS_VIEWER: GLImageViewerShaders
         }
         self.image_viewer_class = self.image_viewer_classes[viewer_mode]
 

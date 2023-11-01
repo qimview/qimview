@@ -7,7 +7,7 @@
 
 from ..utils.qt_imports import QtWidgets
 from .image_viewer import ReadImage, trace_method
-from .gl_image_viewer_base import glImageViewerBase
+from .gl_image_viewer_base import GLImageViewerBase
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
@@ -17,7 +17,7 @@ import argparse
 import sys
 
 
-class glImageViewer(glImageViewerBase):
+class GLImageViewer(GLImageViewerBase):
 
     def __init__(self, parent=None, event_recorder=None):
         self.event_recorder = event_recorder
@@ -97,7 +97,7 @@ if __name__ == '__main__':
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
-            self.widget = glImageViewer(self)
+            self.widget = GLImageViewer(self)
             self.show()
         def load(self):
             im = gb_image_reader.read(_params['input_image'])
