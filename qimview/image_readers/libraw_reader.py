@@ -1,7 +1,7 @@
 import rawpy
 import math
 import numpy as np
-from  qimview.utils.ViewerImage import ViewerImage, CH_RGGB
+from  qimview.utils.viewer_image import ViewerImage, CH_RGGB
 
 def read_libraw(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     if image_buffer:

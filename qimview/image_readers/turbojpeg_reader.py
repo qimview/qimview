@@ -6,7 +6,7 @@
 
 """
 
-from qimview.utils.ViewerImage import *
+from qimview.utils.viewer_image import *
 from qimview.utils.utils import get_time
 from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
 

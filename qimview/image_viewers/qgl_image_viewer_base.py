@@ -6,7 +6,7 @@
 #
 
 from qimview.utils.qt_imports import *
-from qimview.utils.ViewerImage import *
+from qimview.utils.viewer_image import *
 from qimview.image_viewers.image_viewer import ImageViewer, ReadImage, trace_method
 
 import OpenGL

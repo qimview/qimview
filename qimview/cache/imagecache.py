@@ -5,7 +5,7 @@ from .basecache import BaseCache
 import os
 import psutil
 from typing import TYPE_CHECKING
-from qimview.utils.ViewerImage import ViewerImage
+from qimview.utils.viewer_image import ViewerImage
 
 class ImageCache(BaseCache[str, ViewerImage, float]): 
     """

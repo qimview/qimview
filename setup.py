@@ -29,15 +29,15 @@ import os
 setup_args = dict(
     ext_modules = [
         Pybind11Extension("qimview_cpp",
-            ["qimview/CppBind/qimview_cpp.cpp"],
+            ["qimview/cpp_bind/qimview_cpp.cpp"],
             depends = [ 
-                'qimview/CppBind/image_histogram.hpp',
-                'qimview/CppBind/image_resize.hpp',
-                'qimview/CppBind/image_to_rgb.hpp',
+                'qimview/cpp_bind/image_histogram.hpp',
+                'qimview/cpp_bind/image_resize.hpp',
+                'qimview/cpp_bind/image_to_rgb.hpp',
                 ],
             # Example: passing in the version to the compiled code
             # define_macros = [('VERSION_INFO', __version__)],
-            include_dirs=['qimview/CppBind']
+            include_dirs=['qimview/cpp_bind']
             # extra_compile_args=['-O3']            
             ),
     ],

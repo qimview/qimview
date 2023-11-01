@@ -1,5 +1,5 @@
 from qimview.utils.utils      import deep_getsizeof
-from qimview.utils.ThreadPool import ThreadPool
+from qimview.utils.thread_pool import ThreadPool
 from qimview.utils.qt_imports import QtWidgets
 
 from collections import deque

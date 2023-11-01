@@ -1,4 +1,4 @@
-from qimview.utils.ViewerImage import *
+from qimview.utils.viewer_image import *
 import os
 from .libraw_reader import libraw_supported_formats, read_libraw
 from .turbojpeg_reader import read_jpeg_turbojpeg, gb_turbo_jpeg

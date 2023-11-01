@@ -1,4 +1,4 @@
-from qimview.utils.ViewerImage import *
+from qimview.utils.viewer_image import *
 from qimview.utils.utils import get_time
 import os
 from typing import Optional

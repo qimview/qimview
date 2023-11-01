@@ -6,7 +6,7 @@
 #
 
 from qimview.utils.qt_imports import *
-from qimview.utils.ViewerImage import *
+from qimview.utils.viewer_image import *
 from qimview.utils.utils import clip_value
 from qimview.utils.utils import get_time
 from qimview.tests_utils.qtdump import *

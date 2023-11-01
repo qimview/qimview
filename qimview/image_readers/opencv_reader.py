@@ -1,4 +1,4 @@
-from qimview.utils.ViewerImage import *
+from qimview.utils.viewer_image import *
 from qimview.utils.utils import get_time
 import cv2
 import numpy as np
