@@ -14,7 +14,8 @@ OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
 import traceback
-
+import numpy as np
+from typing import Optional, Tuple
 
 class GLImageViewerBase(QOpenGLWidget, ImageViewer):
 
@@ -182,8 +183,8 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         self.opengl_error()
         return True
 
-    def myPaintGL(self):
-        pass 
+    # To be defined in children
+    def myPaintGL(self):  pass 
 
     def paintAll(self):
         if self.trace_calls:
@@ -195,11 +196,13 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.beginNativePainting()
-        self.display_message = self.image_name
+        im_pos = None
         try:
             self.updateViewPort()
             self.updateTransforms()
             self.myPaintGL()
+            if self.show_cursor:
+                im_pos = self.gl_draw_cursor()
         except Exception as e:
             self.print_log(" failed paintGL {}".format(e))
             traceback.print_exc()
@@ -208,29 +211,11 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
 
         draw_text = True
         if draw_text:
-            color = QtGui.QColor(55, 50, 250, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
-            # brush = QtGui.QBrush(QtGui.QColor(250, 250, 250, 155))
-            # painter.CompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_DestinationOver)
-            painter.setBackground(QtGui.QColor(250, 250, 250, 155))
-            painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
-            # initial_brush = painter.brush()
-            initial_pen   = painter.pen()
-            # painter.setBrush(brush)
-            painter.setPen(color)
-            painter.setFont(QtGui.QFont('Decorative', 16))
-            painter.drawText(10, self.height() - 10, self.display_message)
-            # Restore initial pen and brush
-            # painter.setBrush(initial_brush)
-            painter.setPen  (initial_pen)
-            self.opengl_error()
+            self.display_text(painter, self.display_message(im_pos))
 
         # draw histogram
         if self.show_histogram:
             current_image = self.cv_image.data
-            # image_data = current_image.data
-            # precision  = current_image.precision
-            # downscale  = current_image.downscale
-            # channels   = current_image.channels
             rect = QtCore.QRect(0, 0, self.width(), self.height())
             histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
             self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
@@ -257,41 +242,31 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         self.cursor_imy_ratio = 1 - (gl_posY - y0) / (y1 - y0)
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
 
-    def gl_draw_cursor(self):
-        if self.show_cursor:
-            x0, x1, y0, y1 = self.image_centered_position()
 
-            im_x = int(self.cursor_imx_ratio*self.tex_width)
-            im_y = int(self.cursor_imy_ratio*self.tex_height)
+    def gl_draw_cursor(self) -> Optional[Tuple[int, int]]:
+        x0, x1, y0, y1 = self.image_centered_position()
 
-            glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.tex_width + x0
-            glpos_from_im_y = (self.tex_height - (im_y+0.5))*(y1-y0)/self.tex_height+y0
+        im_x = int(self.cursor_imx_ratio*self.tex_width)
+        im_y = int(self.cursor_imy_ratio*self.tex_height)
 
-            # self.display_message = "pos {} {} ratio {}".format(pos_x, pos_y, ratio)
-            if im_x>=0 and im_x<self.tex_width and im_y>=0 and im_y<=self.tex_height:
-                values = self.cv_image.data[im_y, im_x, :]
-                self.display_message = " pos {:4}, {:4} I {}".format(im_x, im_y, values)
-            else:
-                self.display_message = "Out of image"
-            # get image coordinates
-            length = 20 # /self.current_scale
-            width = 4
-            gl.glLineWidth(width)
-            gl.glColor3f(0.0, 1.0, 1.0)
-            gl.glBegin(gl.GL_LINES)
-            gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
-            gl.glVertex3f(glpos_from_im_x+length, glpos_from_im_y, -0.001)
-            gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
-            gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
-            gl.glEnd()
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.tex_width + x0
+        glpos_from_im_y = (self.tex_height - (im_y+0.5))*(y1-y0)/self.tex_height+y0
 
-    # def paintEvent(self, event):
-    #     # self.makeCurrent()
-    #     if self.trace_calls:
-    #         t = trace_method(self.tab)
-    #     self.update()
-    #     # self.paintAll()
-    #     # self.opengl_error()
+        # get image coordinates
+        length = 20 # /self.current_scale
+        width = 4
+        gl.glLineWidth(width)
+        gl.glColor3f(0.0, 1.0, 1.0)
+        gl.glBegin(gl.GL_LINES)
+        gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
+        gl.glVertex3f(glpos_from_im_x+length, glpos_from_im_y, -0.001)
+        gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
+        gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
+        gl.glEnd()
+        if im_x>=0 and im_x<self.tex_width and im_y>=0 and im_y<=self.tex_height:
+            return (im_x, im_y) 
+        return None
+
 
     def image_centered_position(self):
         w = self._width

@@ -328,7 +328,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         gl.glDisable(gl.GL_TEXTURE_2D)
 
         shaders.glUseProgram(0)
-        self.gl_draw_cursor()
+
         self.print_timing(force=True)
 
     def updateTransforms(self):

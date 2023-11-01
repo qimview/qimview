@@ -73,7 +73,8 @@ class GLImageViewer(GLImageViewerBase):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
-        self.gl_draw_cursor()
+        if self.show_cursor:
+            self.gl_draw_cursor()
 
         self.print_timing(add_total=True)
         self.opengl_error()

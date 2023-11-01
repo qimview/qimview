@@ -11,7 +11,7 @@ import traceback
 import abc
 import inspect
 import numpy as np
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Tuple
 if TYPE_CHECKING:
     from qimview.utils.viewer_image import ViewerImage
 
@@ -78,7 +78,7 @@ class ImageViewer:
         self.synchronize_viewer = None
         self.tab = ["--"]
         self.trace_calls  = False
-        self.image_name = ""
+        self._image_name = ""
         self.active_window = False
         self.filter_params = ImageFilterParameters()
         self.save_image_clipboard = False
@@ -223,11 +223,13 @@ class ImageViewer:
     def is_active(self):
         return self.active_window
 
-    def set_image_name(self, image_name=''):
-        self.image_name = image_name
+    @property
+    def image_name(self) -> str:
+        return self._image_name
 
-    def get_image_name(self):
-        return self.image_name
+    @image_name.setter
+    def image_name(self, v : str):
+        self._image_name = v
 
     def get_image(self):
         return self.cv_image
@@ -417,6 +419,49 @@ class ImageViewer:
         else:
             event.ignore()
 
+    def display_message(self, im_pos: Optional[Tuple[int,int]]) -> str:
+        text : str = self.image_name
+        text +=  f"\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}"
+        # self.display_message += f"\n ratio {ratio:0.2f}"
+        if self.show_cursor and im_pos:
+            im_x, im_y = im_pos
+            values = self.cv_image.data[im_y, im_x]
+            text += f"\n pos {im_x:4}, {im_y:4} \n rgb {values}"
+
+        if self.show_overlay:
+            text += "\n ref | im " 
+        if self.show_image_differences:
+            text += "\n im - ref" 
+        return text
+
+    def display_text(self, painter: QtGui.QPainter, text: str) -> None:
+        self.start_timing()
+        color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
+        painter.setPen(color)
+        font = QtGui.QFont('Decorative', 12)
+        # font.setBold(True)
+        painter.setFont(font)
+        painter.setBackground(QtGui.QColor(250, 250, 250, int(0.75*255)))
+        painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
+        text_options = \
+            QtCore.Qt.AlignmentFlag.AlignTop  | \
+            QtCore.Qt.AlignmentFlag.AlignLeft | \
+            QtCore.Qt.TextFlag.TextWordWrap
+        area_width = 400
+        area_height = 200
+        # boundingRect is interesting but slow to be called at each display
+        # bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
+        margin_x = 8
+        margin_y = 5
+        painter.drawText(
+            margin_x, 
+            # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
+            margin_y, area_width, area_height,
+            text_options,
+            text
+            )
+        self.print_timing()
+
     def compute_histogram(self, current_image, show_timings=False):
         # print(f"compute_histogram show_timings {show_timings}")
         if show_timings: h_start = get_time()
@@ -493,16 +538,20 @@ class ImageViewer:
         histo_timings = show_timings
         #if histo_timings:
         h_start = get_time()
-        width = int(im_rect.width()/4)
-        height = int(im_rect.height()/6)
-        start_x = self.evt_width - width*id - 10
-        start_y = self.evt_height - 10
-        margin = 3
+        # Histogram: keep constant width/height ratio
+        display_ratio : float = 2.0
+        # print(f'im_rect = {im_rect}')
+        width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+        height  : int = int( width/display_ratio)
+        start_x : int = self.evt_width - width*id - 10
+        start_y : int = self.evt_height - 10
+        margin  : int = 3
 
         if histo_timings: rect_start = get_time()
         rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
         # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
-        painter.fillRect(rect, QtGui.QColor(255, 255, 255, 128+64))
+        # Transparent light grey
+        painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
         if histo_timings: rect_time = get_time()-rect_start
 
         # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")

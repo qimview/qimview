@@ -9,10 +9,12 @@ from qimview.cache import ImageCache
 from qimview.image_viewers import *
 
 from enum import Enum, auto
+import math
 
 import types
-from typing import List
-import math
+from typing import List, TYPE_CHECKING
+if TYPE_CHECKING:
+    from qimview.image_viewers.image_viewer import ImageViewer
 
 class ViewerType(Enum):
     QT_VIEWER             = auto()
@@ -250,9 +252,9 @@ class MultiView(QtWidgets.QWidget):
         image_names = list(self.image_dict.keys())
         for n in range(self.nb_viewers_used):
             if n < len(image_names):
-                self.image_viewers[n].set_image_name(image_names[n])
+                self.image_viewers[n].image_name = image_names[n]
             else:
-                self.image_viewers[n].set_image_name(image_names[len(image_names)-1])
+                self.image_viewers[n].image_name = image_names[len(image_names)-1]
 
     def update_reference(self) -> None:
         reference_image = self.get_output_image(self.output_label_reference_image)
@@ -514,21 +516,21 @@ class MultiView(QtWidgets.QWidget):
         image_filenames = [self.image_dict[self.output_label_current_image]]
         # define image associated to each used viewer and add it to the list of images to get
         for n in range(self.nb_viewers_used):
-            viewer = self.image_viewers[n]
+            viewer : ImageViewer = self.image_viewers[n]
             # Set active only the first active window
             viewer.set_active(n == first_active_window)
             if viewer.get_image() is None:
                 if n < len(self.image_list):
-                    viewer.set_image_name(self.image_list[n])
+                    viewer.image_name = self.image_list[n]
                     image_filenames.append(self.image_dict[self.image_list[n]])
                 else:
-                    viewer.set_image_name(self.output_label_current_image)
+                    viewer.image_name = self.output_label_current_image
             else:
-                # get_image_name() should belong to image_dict
-                if viewer.get_image_name() in self.image_dict:
-                    image_filenames.append(self.image_dict[viewer.get_image_name()])
+                # image_name should belong to image_dict
+                if viewer.image_name in self.image_dict:
+                    image_filenames.append(self.image_dict[viewer.image_name])
                 else:
-                    viewer.set_image_name(self.output_label_current_image)
+                    viewer.image_name = self.output_label_current_image
 
         # remove duplicates
         image_filenames = list(set(image_filenames))
@@ -556,7 +558,7 @@ class MultiView(QtWidgets.QWidget):
             print("set save image to clipboard")
             current_viewer.set_clipboard(self.clip, True)
         current_viewer.set_active(True)
-        current_viewer.set_image_name(self.output_label_current_image)
+        current_viewer.image_name = self.output_label_current_image
         current_viewer.set_image(current_image)
         if self.save_image_clipboard:
             print("end save image to clipboard")
@@ -576,9 +578,9 @@ class MultiView(QtWidgets.QWidget):
                 # viewer image has already been defined
                 # try to update corresponding images in row
                 try:
-                    viewer_image = self.get_output_image(viewer.get_image_name())
+                    viewer_image = self.get_output_image(viewer.image_name)
                 except Exception as e:
-                    print("Error: failed to get image {}: {}".format(viewer.get_image_name(), e))
+                    print("Error: failed to get image {}: {}".format(viewer.image_name, e))
                     viewer.set_image(current_image)
                 else:
                     viewer.set_image(viewer_image)

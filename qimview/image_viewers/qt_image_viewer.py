@@ -24,7 +24,7 @@ from .image_viewer import (ImageViewer, trace_method,)
 
 import cv2
 import numpy as np
-
+from typing import Tuple, Optional
 
 # the opengl version is a bit slow for the moment, due to the texture generation
 # BaseWidget = QOpenGLWidget 
@@ -315,7 +315,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         # Set position at the beginning of the pixel
         pos_from_im_x = int(im_x*rect.width()/width + rect.x())
         # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
-        pen_width = 4
+        pen_width = 2
         color = QtGui.QColor(255, 255, 0 , 128)
         pen = QtGui.QPen()
         pen.setColor(color)
@@ -323,7 +323,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         painter.setPen(pen)
         painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
 
-    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter):
+    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter) -> Optional[Tuple[int, int]]:
         """
         :param cropped_image_shape: dimensions of current crop
         :param crop_xmin: left pixel of current crop
@@ -331,6 +331,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         :param rect: displayed image area
         :param painter:
         :return:
+            tuple: (posx, posy) image pixel position of the cursor, if None cursor is out of image
         """
         # Draw cursor
         if self.display_timing: self.start_timing()
@@ -363,40 +364,11 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             # values = cropped_image[im_y, im_x]
             im_x += crop_xmin
             im_y += crop_ymin
-            values = self.cv_image.data[im_y, im_x]
-            display_message = f"pos {im_x:4}, {im_y:4} \n rgb {values} \n " \
-                              f"{self.cv_image.data.shape} {self.cv_image.data.dtype} {self.cv_image.precision} bits"
+            im_pos = (im_x, im_y)
         else:
-            display_message = "Out of image"
-            # {}  {} {} mouse {} rect {}".format((im_x, im_y),cropped_image.shape,
-            #                                     self.cv_image.shape, (self.mouse_x, self.mouse_y), rect)
+            im_pos = None
         if self.display_timing: self.print_timing()
-        return display_message
-
-    def display_text(self, painter: QtGui.QPainter, text: str) -> None:
-        self.start_timing()
-        color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
-        painter.setPen(color)
-        painter.setFont(QtGui.QFont('Decorative', 16))
-        text_options = \
-            QtCore.Qt.AlignmentFlag.AlignTop  | \
-            QtCore.Qt.AlignmentFlag.AlignLeft | \
-            QtCore.Qt.TextFlag.TextWordWrap
-        area_width = 400
-        area_height = 200
-        # boundingRect is interesting but slow to be called at each display
-        # bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
-        margin_x = 8
-        margin_y = 5
-        painter.drawText(
-            margin_x, 
-            # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
-            margin_y, area_width, area_height,
-            text_options,
-            text
-            )
-        self.print_timing()
-
+        return im_pos
 
     def get_difference_image(self, verbose=True):
 
@@ -724,18 +696,11 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             self.draw_overlay_separation(cropped_image_shape, rect, painter)
 
         # Draw cursor
-        self.display_message : str
+        im_pos = None
         if self.show_cursor:
-            self.display_message = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
-            self.display_message += f"\n ratio {ratio:0.2f}"
-        else:
-            self.display_message = self.image_name
-        if self.show_overlay:
-            self.display_message = "over:" + self.display_message
-        if self.show_image_differences:
-            self.display_message = "diff:" + self.display_message
+            im_pos = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
 
-        self.display_text(painter, self.display_message)
+        self.display_text(painter, self.display_message(im_pos))
 
         # draw histogram
         if self.show_histogram:
