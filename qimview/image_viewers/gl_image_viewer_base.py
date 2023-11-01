@@ -69,7 +69,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         if changed:  # and self.textureID is not None:
             if self.setTexture():
                 self.show()
-                self.paintAll()
+                self.update()
             else:
                 print("setTexture() return False")
 
@@ -183,6 +183,11 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         self.opengl_error()
         return True
 
+    # @abstract_method
+    def viewer_update(self):
+        print("GLImageViewerBase viewer_update")
+        self.update()
+
     # To be defined in children
     def myPaintGL(self):  pass 
 
@@ -197,9 +202,10 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         painter.begin(self)
         painter.beginNativePainting()
         im_pos = None
+        scale  = None
         try:
             self.updateViewPort()
-            self.updateTransforms()
+            scale = self.updateTransforms()
             self.myPaintGL()
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
@@ -211,7 +217,10 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
 
         draw_text = True
         if draw_text:
-            self.display_text(painter, self.display_message(im_pos))
+            # adapt scale depending on the ratio image / viewport
+            print(f"_width = {self._width}")
+            scale *= self._width/self.cv_image.data.shape[1]
+            self.display_text(painter, self.display_message(im_pos, scale))
 
         # draw histogram
         if self.show_histogram:
@@ -222,7 +231,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
 
         painter.end()
         # Seems required here, at least on linux
-        self.update()
+        # self.update()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
         """
@@ -307,7 +316,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             self.print_log(" failed glViewport {}".format(e))
         self.print_timing(add_total=True)
 
-    def updateTransforms(self):
+    def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
@@ -316,6 +325,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         h = self._height
         dx, dy = self.new_translation()
         scale = self.new_scale(self.mouse_zy, self.tex_height)
+        print(f"updateTransforms scale {scale}")
         try:
             # print("current context ", QtOpenGL.QGLContext.currentContext())
             # gl = QtOpenGL.QGLContext.currentContext().functions()
@@ -334,6 +344,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             self.print_log(" setting gl matrices failed {}".format(e))
         self.print_timing(add_total=True)
         self.opengl_error()
+        return scale
 
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
@@ -346,8 +357,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         self._width = width*self.devicePixelRatio()
         self._height = height*self.devicePixelRatio()
         # print("width height ratios {} {}".format(self._width/self.width(), self._height/self.height()))
-        self.paintAll()
-        self.update()
+        self.viewer_update()
 
     def get_mouse_gl_coordinates(self, x, y):
         modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)

@@ -14,7 +14,7 @@ from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 
 from qimview.image_readers import gb_image_reader
-
+from typing import Union
 
 # define a Qt window with an OpenGL widget inside it
 # class TestWindow(QtGui.QMainWindow):
@@ -33,6 +33,8 @@ class ImView(QtWidgets.QMainWindow):
         vertical_layout = QtWidgets.QVBoxLayout()
         self.main_widget.setLayout(vertical_layout)
 
+        self.widget: Union[GLImageViewer, QTImageViewer]
+        
         if params['gl']:
             self.widget = GLImageViewer(event_recorder = self.event_recorder)
         else:
@@ -85,7 +87,7 @@ class ImView(QtWidgets.QMainWindow):
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
         # print(f"parameters {self.filter_params}")
-        self.widget.paintAll()
+        self.widget.viewer_udpate()
 
     def event(self, evt):
         if self.event_recorder is not None:

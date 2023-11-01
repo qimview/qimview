@@ -211,7 +211,7 @@ class ImageViewer:
                     print("[ --- Start sync")
         if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
             self.synchronize_data(self.synchronize_viewer)
-            self.synchronize_viewer.paintAll()
+            self.synchronize_viewer.viewer_update()
             self.synchronize_viewer.synchronize(event_viewer)
         if self==event_viewer:
             if self.display_timing:
@@ -246,8 +246,9 @@ class ImageViewer:
     def check_translation(self):
         return self.new_translation()
 
-    @abc.abstractmethod
-    def paintAll(self):
+    # @abstractmethod
+    def viewer_update(self):
+        print("ImageViewer viewer_update")
         pass
 
     def mouse_press_event(self, event):
@@ -259,11 +260,11 @@ class ImageViewer:
         self.mouse_x = event.x()
         self.mouse_y = event.y()
         if self.show_overlay:
-            self.paintAll()
+            self.viewer_update()
         if event.buttons() & QtCore.Qt.LeftButton:
             self.mouse_dx = event.x() - self.lastPos.x()
             self.mouse_dy = - (event.y() - self.lastPos.y())
-            self.paintAll()
+            self.viewer_update()
             self.synchronize(self)
             event.accept()
         else:
@@ -271,13 +272,13 @@ class ImageViewer:
                 # right button zoom
                 self.mouse_zx = event.x() - self.lastPos.x()
                 self.mouse_zy = - (event.y() - self.lastPos.y())
-                self.paintAll()
+                self.viewer_update()
                 self.synchronize(self)
                 event.accept()
             else:
                 modifiers = QtWidgets.QApplication.keyboardModifiers()
                 if self.show_cursor:
-                    self.paintAll()
+                    self.viewer_update()
                     self.synchronize(self)
 
     def mouse_release_event(self, event):
@@ -297,12 +298,12 @@ class ImageViewer:
     def mouse_double_click_event(self, event):
         self.print_log("double click ")
         self.set_active()
-        self.paintAll()
+        self.viewer_update()
         if self.synchronize_viewer is not None:
             v = self.synchronize_viewer
             while v != self:
                 v.set_active(False)
-                v.paintAll()
+                v.viewer_update()
                 if v.synchronize_viewer is not None:
                     v = v.synchronize_viewer
 
@@ -316,7 +317,7 @@ class ImageViewer:
         coeff = delta/5
         # coeff = 20 if delta > 0 else -20
         self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
-        self.paintAll()
+        self.viewer_update()
         self.synchronize(self)
 
     def key_press_event(self, event, wsize):
@@ -411,7 +412,7 @@ class ImageViewer:
                 self.show_image_differences = not self.show_image_differences
 
             if event.key() in key_list:
-                self.paintAll()
+                self.viewer_update()
                 self.synchronize(self)
                 event.accept()
                 return
@@ -419,11 +420,12 @@ class ImageViewer:
         else:
             event.ignore()
 
-    def display_message(self, im_pos: Optional[Tuple[int,int]]) -> str:
+    def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -> str:
         text : str = self.image_name
-        text +=  f"\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}"
-        # self.display_message += f"\n ratio {ratio:0.2f}"
         if self.show_cursor and im_pos:
+            text +=  f"\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}"
+            if scale is not None:
+                text += f"\n x{scale:0.2f}"
             im_x, im_y = im_pos
             values = self.cv_image.data[im_y, im_x]
             text += f"\n pos {im_x:4}, {im_y:4} \n rgb {values}"

@@ -34,6 +34,10 @@ class GLImageViewer(GLImageViewerBase):
         # self.setTexture()
         pass
 
+    def viewer_update(self):
+        print("GLImageViewer update")
+        self.update()
+
     def paintGL(self):
         """Paint the scene.
         """
@@ -41,7 +45,9 @@ class GLImageViewer(GLImageViewerBase):
             t = trace_method(self.tab)
         self.start_timing()
         if self.textureID is None:
+            print("GLImageViewer paintGL not textureID")
             return
+        self.updateViewPort()
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
@@ -79,6 +85,19 @@ class GLImageViewer(GLImageViewerBase):
         self.print_timing(add_total=True)
         self.opengl_error()
 
+    def resizeGL(self, width, height):
+        """Called upon window resizing: reinitialize the viewport.
+        """
+        print("ResizeGL")
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        # size give for opengl are in pixels, qt uses device independent size otherwise
+        print(f"self.devicePixelRatio() {self.devicePixelRatio()}")
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
+        # print("width height ratios {} {}".format(self._width/self.width(), self._height/self.height()))
+        self.viewer_update()
+
     def event(self, evt):
         if self.event_recorder is not None:
             self.event_recorder.store_event(self, evt)
@@ -112,4 +131,4 @@ if __name__ == '__main__':
     window = TestWindow()
     window.load()
     window.show()
-    app.exec_()
+    app.exec()

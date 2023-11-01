@@ -218,7 +218,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self._width = width*self.devicePixelRatio()
         self._height = height*self.devicePixelRatio()
         self.setVerticesBufferData()
-        self.paintAll()
+        self.update()
 
     def initializeGL(self):
         """
@@ -232,9 +232,11 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         self.setVerticesBufferData()
         self.setBufferData()
-
-        # self.setTexture()
         self.print_timing()
+
+    def viewer_update(self):
+        print("GLImageViewerShaders viewer_update")
+        self.update()
 
     def paintGL(self):
         self.paintAll()
@@ -331,7 +333,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         self.print_timing(force=True)
 
-    def updateTransforms(self):
+    def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         if self.display_timing:
@@ -357,6 +359,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
         if self.display_timing:
             self.print_log('updateTransforms time {:0.1f} ms'.format((get_time()-start_time)*1000))
+        return scale
 
 
 if __name__ == '__main__':

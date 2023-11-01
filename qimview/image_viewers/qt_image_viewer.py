@@ -298,7 +298,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         self.print_timing(title='apply_filters()')
         return rgb_image
 
-    def paintAll(self):
+    def viewer_update(self):
+        print("QtImageViewer viewer_update")
         #if self.cv_image is not None:
         #    self.paint_image()
         if BaseWidget is QOpenGLWidget:
@@ -700,7 +701,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         if self.show_cursor:
             im_pos = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
 
-        self.display_text(painter, self.display_message(im_pos))
+        self.display_text(painter, self.display_message(im_pos, ratio*self.devicePixelRatio()))
 
         # draw histogram
         if self.show_histogram:
