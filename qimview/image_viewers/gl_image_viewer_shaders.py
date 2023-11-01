@@ -18,7 +18,7 @@ from OpenGL.GL import shaders
 import numpy as np
 
 
-class glImageViewerWithShaders_qglw(glImageViewerBase):
+class glImageViewerShaders(glImageViewerBase):
     # vertex shader program
     vertexShader = """
         #version 330 core
@@ -206,7 +206,7 @@ class glImageViewerWithShaders_qglw(glImageViewerBase):
         self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
     def setTexture(self):
-        texture_ok = super(glImageViewerWithShaders_qglw, self).setTexture()
+        texture_ok = super(glImageViewerShaders, self).setTexture()
         self.setVerticesBufferData()
         return texture_ok
 
@@ -372,7 +372,7 @@ if __name__ == '__main__':
     class TestWindow(QtWidgets.QMainWindow):
         def __init__(self):
             super(TestWindow, self).__init__()
-            self.widget = glImageViewerWithShaders_qglw()
+            self.widget = glImageViewerShaders()
             im = ReadImage(_params['input_image'])
             self.widget.set_image(im)
             # put the window at the screen position (100, 100)
