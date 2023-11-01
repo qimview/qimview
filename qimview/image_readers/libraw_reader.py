@@ -1,7 +1,7 @@
 import rawpy
 import math
 import numpy as np
-from  qimview.utils.viewer_image import ViewerImage, CH_RGGB
+from  qimview.utils.viewer_image import ViewerImage, ImageFormat
 
 def read_libraw(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     if image_buffer:
@@ -25,7 +25,7 @@ def read_libraw(image_filename, image_buffer, read_size='full', use_RGB=True, ve
             pos = channel_pos[str(bayer_desc[bayer_pattern[i, j]])]
             im1[:, :, pos] = raw.raw_image[i::2, j::2]
     prec = math.ceil(math.log2(raw.white_level+1))
-    viewer_image = ViewerImage(im1, precision=prec, downscale=1, channels=CH_RGGB)
+    viewer_image = ViewerImage(im1, precision=prec, downscale=1, channels=ImageFormat.CH_RGGB)
     print("viewer_image channels {}".format(viewer_image.channels))
     return viewer_image
 

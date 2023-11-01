@@ -5,8 +5,8 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from qimview.utils.qt_imports import *
-from qimview.utils.viewer_image import *
+from qimview.utils.qt_imports   import *
+from qimview.utils.viewer_image import ImageFormat, ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method
 
 import OpenGL
@@ -140,13 +140,13 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
                         internal_format = gl.GL_RGBA32F
 
         channels2format = {
-            CH_RGB : gl.GL_RGB,
-            CH_BGR : gl.GL_BGR,
-            CH_Y : gl.GL_RED, # not sure about this one
-            CH_RGGB : gl.GL_RGBA, # we save 4 component data
-            CH_GRBG : gl.GL_RGBA,
-            CH_GBRG : gl.GL_RGBA,
-            CH_BGGR : gl.GL_RGBA
+            ImageFormat.CH_RGB  : gl.GL_RGB,
+            ImageFormat.CH_BGR  : gl.GL_BGR,
+            ImageFormat.CH_Y    : gl.GL_RED, # not sure about this one
+            ImageFormat.CH_RGGB : gl.GL_RGBA, # we save 4 component data
+            ImageFormat.CH_GRBG : gl.GL_RGBA,
+            ImageFormat.CH_GBRG : gl.GL_RGBA,
+            ImageFormat.CH_BGGR : gl.GL_RGBA
         }
         texture_pixel_format = channels2format[self.cv_image.channels]
 
@@ -209,13 +209,19 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         draw_text = True
         if draw_text:
             color = QtGui.QColor(55, 50, 250, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
-            brush = QtGui.QBrush(QtGui.QColor(250, 250, 250, 155))
-            painter.CompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_DestinationOver)
-            painter.setBrush(brush)
+            # brush = QtGui.QBrush(QtGui.QColor(250, 250, 250, 155))
+            # painter.CompositionMode(QtGui.QPainter.CompositionMode.CompositionMode_DestinationOver)
+            painter.setBackground(QtGui.QColor(250, 250, 250, 155))
             painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
+            # initial_brush = painter.brush()
+            initial_pen   = painter.pen()
+            # painter.setBrush(brush)
             painter.setPen(color)
             painter.setFont(QtGui.QFont('Decorative', 16))
             painter.drawText(10, self.height() - 10, self.display_message)
+            # Restore initial pen and brush
+            # painter.setBrush(initial_brush)
+            painter.setPen  (initial_pen)
             self.opengl_error()
 
         # draw histogram

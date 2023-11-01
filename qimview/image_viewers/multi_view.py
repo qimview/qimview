@@ -69,7 +69,7 @@ class MultiView(QtWidgets.QWidget):
         self.filter_params = ImageFilterParameters()
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params)
 
-        self.raw_bayer = {'Read': None, 'Bayer0': CH_GBRG, 'Bayer1': CH_BGGR, 'Bayer2': CH_RGGB, 'Bayer3': CH_GRBG}
+        self.raw_bayer = {'Read': None, 'Bayer0': ImageFormat.CH_GBRG, 'Bayer1': ImageFormat.CH_BGGR, 'Bayer2': ImageFormat.CH_RGGB, 'Bayer3': ImageFormat.CH_GRBG}
         self.default_raw_bayer = 'Read'
         self.current_raw_bayer = self.default_raw_bayer
 
@@ -435,7 +435,7 @@ class MultiView(QtWidgets.QWidget):
         # force image bayer information if selected from menu
         res = output_image
         set_bayer = self.raw_bayer[self.current_raw_bayer]
-        if res.channels in [CH_BGGR, CH_GBRG, CH_GRBG, CH_RGGB] and set_bayer is not None:
+        if res.channels in [ImageFormat.CH_BGGR, ImageFormat.CH_GBRG, ImageFormat.CH_GRBG, ImageFormat.CH_RGGB] and set_bayer is not None:
             print(f"Setting bayer {set_bayer}")
             res.channels = set_bayer
 

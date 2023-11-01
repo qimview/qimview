@@ -31,7 +31,7 @@ def read_opencv(image_filename, image_buffer, read_size='full', use_RGB=True, ve
                                                                     last_time - open_cv2_start2),
                 )
     downscale = {'full': 1, '1/2': 2, '1/4': 4, '1/8': 8}[read_size]
-    viewer_image = ViewerImage(im, precision=8, downscale=downscale, channels=CH_RGB if use_RGB else CH_BGR)
+    viewer_image = ViewerImage(im, precision=8, downscale=downscale, channels=ImageFormat.CH_RGB if use_RGB else ImageFormat.CH_BGR)
     return viewer_image
 
 

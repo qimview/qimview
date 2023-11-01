@@ -11,6 +11,9 @@ import traceback
 import abc
 import inspect
 import numpy as np
+from typing import TYPE_CHECKING, Optional
+if TYPE_CHECKING:
+    from qimview.utils.viewer_image import ViewerImage
 
 try:
     import qimview_cpp
@@ -70,7 +73,7 @@ class ImageViewer:
         self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
-        self.cv_image = None
+        self.cv_image : Optional[ViewerImage] = None
         self.cv_image_ref = None
         self.synchronize_viewer = None
         self.tab = ["--"]
@@ -498,7 +501,8 @@ class ImageViewer:
 
         if histo_timings: rect_start = get_time()
         rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
-        painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        painter.fillRect(rect, QtGui.QColor(255, 255, 255, 128+64))
         if histo_timings: rect_time = get_time()-rect_start
 
         # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")

@@ -200,7 +200,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), dtype=np.uint8)
             time1 = get_time()
             ok = False
-            if ch in CH_RAWFORMATS or ch in CH_RGBFORMATS:
+            if ch in ImageFormat.CH_RAWFORMATS() or ch in ImageFormat.CH_RGBFORMATS():
                 cases = {
                     'uint8':  { 'func': qimview_cpp.apply_filters_u8_u8  , 'name': 'apply_filters_u8_u8'},
                     'uint16': { 'func': qimview_cpp.apply_filters_u16_u8, 'name': 'apply_filters_u16_u8'},
@@ -244,17 +244,17 @@ class QTImageViewer(BaseWidget, ImageViewer ):
                 self.print_log("Failed running wrap_num.apply_filters_u16_u8 ...", force=True)
         else:
             # self.print_log("current channels {}".format(ch))
-            if ch in CH_RAWFORMATS:
-                ch_pos = channel_position[current_image.channels]
+            if ch in ImageFormat.CH_RAWFORMATS():
+                channel_pos = channel_position[current_image.channels]
                 self.print_log("Converting to RGB")
                 # convert Bayer to RGB
                 rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
                                         dtype=current_image.data.dtype)
-                rgb_image[:, :, 0] = current_image.data[:, :, ch_pos['r']]
-                rgb_image[:, :, 1] = (current_image.data[:, :, ch_pos['gr']]+current_image.data[:, :, ch_pos['gb']])/2
-                rgb_image[:, :, 2] = current_image.data[:, :, ch_pos['b']]
+                rgb_image[:, :, 0] = current_image.data[:, :, channel_pos['r']]
+                rgb_image[:, :, 1] = (current_image.data[:, :, channel_pos['gr']]+current_image.data[:, :, channel_pos['gb']])/2
+                rgb_image[:, :, 2] = current_image.data[:, :, channel_pos['b']]
             else:
-                if ch == CH_Y:
+                if ch == ImageFormat.CH_Y:
                     # Transform to RGB is it a good idea?
                     rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
                                             dtype=current_image.data.dtype)
@@ -373,12 +373,15 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         if self.display_timing: self.print_timing()
         return display_message
 
-    def display_text(self, painter):
+    def display_text(self, painter: QtGui.QPainter, text: str) -> None:
         self.start_timing()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
         painter.setFont(QtGui.QFont('Decorative', 16))
-        text_options = QtCore.Qt.AlignTop | QtCore.Qt.AlignLeft | QtCore.Qt.TextWordWrap
+        text_options = \
+            QtCore.Qt.AlignmentFlag.AlignTop  | \
+            QtCore.Qt.AlignmentFlag.AlignLeft | \
+            QtCore.Qt.TextFlag.TextWordWrap
         area_width = 400
         area_height = 200
         # boundingRect is interesting but slow to be called at each display
@@ -390,7 +393,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
             margin_y, area_width, area_height,
             text_options,
-            self.display_message
+            text
             )
         self.print_timing()
 
@@ -459,7 +462,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
                 res = (im1!=im2).astype(np.uint8)*255
                 res = ViewerImage(res,  precision=8, 
                                         downscale=self.cv_image.downscale,
-                                        channels=CH_Y)
+                                        channels=ImageFormat.CH_Y)
                 self.diff_image = res
 
         return self.diff_image
@@ -570,7 +573,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
 
             # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
             # if ratio<1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
-            if use_opencv_resize and not resize_applied and channels == CH_RGB:
+            if use_opencv_resize and not resize_applied and channels == ImageFormat.CH_RGB:
 
                 prev_shape = image_data.shape
                 initial_type = image_data.dtype
@@ -696,7 +699,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             self.print_log("exporting to clipboard")
             self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
 
-        painter = QtGui.QPainter()
+        painter : QtGui.QPainter = QtGui.QPainter()
 
         painter.begin(self)
         if BaseWidget is QOpenGLWidget:
@@ -721,6 +724,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             self.draw_overlay_separation(cropped_image_shape, rect, painter)
 
         # Draw cursor
+        self.display_message : str
         if self.show_cursor:
             self.display_message = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
             self.display_message += f"\n ratio {ratio:0.2f}"
@@ -731,7 +735,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         if self.show_image_differences:
             self.display_message = "diff:" + self.display_message
 
-        self.display_text(painter)
+        self.display_text(painter, self.display_message)
 
         # draw histogram
         if self.show_histogram:

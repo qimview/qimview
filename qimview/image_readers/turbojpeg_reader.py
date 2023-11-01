@@ -40,7 +40,7 @@ def read_jpeg_turbojpeg(image_filename, image_buffer, read_size='full', use_RGB=
 
         if verbose:
             print(f" turbojpeg read ...{image_filename[-15:]} took {get_time() - start:0.3f} sec.")
-        viewer_image = ViewerImage(im, precision=8, downscale=downscale, channels=CH_RGB if use_RGB else CH_BGR)
+        viewer_image = ViewerImage(im, precision=8, downscale=downscale, channels=ImageFormat.CH_RGB if use_RGB else ImageFormat.CH_BGR)
         return viewer_image
     except Exception as e:
         print("read_jpeg: Failed to load image with turbojpeg {0}: {1}".format(image_filename, e))

@@ -30,5 +30,5 @@ def read_jpeg_simplejpeg(image_filename, image_buffer, read_size='full', use_RGB
         end_time = get_time()
         print(f" simplejpeg.decode_jpeg() {format} {os.path.basename(image_filename)} "
                 f"took {int((end_time-start_time)*1000+0.5)} ms")
-    viewer_image = ViewerImage(im, precision=8, downscale=1, channels=CH_RGB if use_RGB else CH_BGR)
+    viewer_image = ViewerImage(im, precision=8, downscale=1, channels=ImageFormat.CH_RGB if use_RGB else ImageFormat.CH_BGR)
     return viewer_image

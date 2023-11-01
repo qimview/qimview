@@ -15,7 +15,7 @@ import numpy as np
 a = (np.random.rand(2000,2000,4)*4095).astype(np.uint16)
 
 # try the function
-channels = 4 # CH_RGGB
+channels = 4 #ImageFormat.CH_RGGB
 white_level = 1
 black_level = 0
 g_r_coeff = 1.5
