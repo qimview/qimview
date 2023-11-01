@@ -7,7 +7,7 @@ from qimview.utils.mvlabel import MVLabel
 from qimview.cache import ImageCache
 
 from qimview.image_viewers.gl_image_viewer import glImageViewer
-from qimview.image_viewers.gl_image_viewer_with_shaders_qglw import glImageViewerWithShaders_qglw
+from qimview.image_viewers.gl_image_viewer_shaders import glImageViewerWithShaders_qglw
 from qimview.image_viewers.qt_image_viewer import qtImageViewer
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
