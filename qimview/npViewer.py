@@ -8,7 +8,7 @@ import glob
 import numpy as np
 from typing import List
 
-from qimview.utils.qt_imports import QtWidgets, QApplication
+from qimview.utils.qt_imports import QApplication
 from qimview.image_viewers.MultiView import MultiView
 from qimview.image_viewers.MultiView import ViewerType
 
