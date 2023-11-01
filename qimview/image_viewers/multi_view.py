@@ -229,6 +229,7 @@ class MultiView(QtWidgets.QWidget):
         self.print_log(f"MultiView.set_images() {images}")
         if images.keys() == self.image_dict.keys():
             self.image_dict = images
+            self.update_reference()
         else:
             self.image_dict = images
             self.update_image_buttons()
@@ -253,17 +254,20 @@ class MultiView(QtWidgets.QWidget):
             else:
                 self.image_viewers[n].set_image_name(image_names[len(image_names)-1])
 
-    def set_reference_label(self, ref, update_viewers=False):
+    def update_reference(self) -> None:
+        reference_image = self.get_output_image(self.output_label_reference_image)
+        for n in range(self.nb_viewers_used):
+            viewer = self.image_viewers[n]
+            # set reference image
+            viewer.set_image_ref(reference_image)
+
+    def set_reference_label(self, ref: str, update_viewers=False) -> None:
         try:
             if ref is not None:
                 if ref!=self.output_label_reference_image:
                     self.output_label_reference_image = ref
                     if update_viewers:
-                        reference_image = self.get_output_image(self.output_label_reference_image)
-                        for n in range(self.nb_viewers_used):
-                            viewer = self.image_viewers[n]
-                            # set reference image
-                            viewer.set_image_ref(reference_image)
+                        self.update_reference()
         except Exception as e:
             print(f' Failed to set reference label {e}')
 
