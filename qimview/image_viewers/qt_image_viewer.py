@@ -19,19 +19,18 @@ else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
-from qimview.image_viewers.image_viewer import ImageViewer, trace_method
-
-from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
+from qimview.image_viewers.image_viewer import trace_method
+from qimview.image_viewers import ImageViewer, ImageFilterParameters
 
 import cv2
 import numpy as np
 
 
 # the opengl version is a bit slow for the moment, due to the texture generation
-use_opengl = False
-base_widget = QOpenGLWidget if use_opengl else QtWidgets.QWidget
+# BaseWidget = QOpenGLWidget 
+BaseWidget = QtWidgets.QWidget
 
-class QTImageViewer(base_widget, ImageViewer ):
+class QTImageViewer(BaseWidget, ImageViewer ):
 
     def __init__(self, parent=None, event_recorder=None):
         self.event_recorder = event_recorder
@@ -57,7 +56,7 @@ class QTImageViewer(base_widget, ImageViewer ):
         self.diff_image       = None
 
         # self.display_timing = False
-        if base_widget is QOpenGLWidget:
+        if BaseWidget is QOpenGLWidget:
             self.setAutoFillBackground(True)
 
         # TODO: how can I set the background color to black without impacting display speed?
@@ -302,7 +301,7 @@ class QTImageViewer(base_widget, ImageViewer ):
     def paintAll(self):
         #if self.cv_image is not None:
         #    self.paint_image()
-        if base_widget is QOpenGLWidget:
+        if BaseWidget is QOpenGLWidget:
             self.paint_image()
             self.repaint()
         else:
@@ -631,7 +630,7 @@ class QTImageViewer(base_widget, ImageViewer ):
                 histograms = None
 
             # try to resize anyway with opencv since qt resizing seems too slow
-            if not resize_applied and base_widget is not QOpenGLWidget:
+            if not resize_applied and BaseWidget is not QOpenGLWidget:
                 time1 = get_time()
                 start_0 = get_time()
                 prev_shape = current_image.shape
@@ -700,11 +699,11 @@ class QTImageViewer(base_widget, ImageViewer ):
         painter = QtGui.QPainter()
 
         painter.begin(self)
-        if base_widget is QOpenGLWidget:
+        if BaseWidget is QOpenGLWidget:
             painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
         # TODO: check that this condition is not needed
-        if base_widget is QOpenGLWidget:
+        if BaseWidget is QOpenGLWidget:
             rect = QtCore.QRect(0,0, display_width, display_height)
         else:
             rect = QtCore.QRect(qimage.rect())
@@ -712,7 +711,7 @@ class QTImageViewer(base_widget, ImageViewer ):
         rect.moveCenter(devRect.center())
 
         time1 = get_time()
-        if base_widget is QOpenGLWidget:
+        if BaseWidget is QOpenGLWidget:
             painter.drawImage(rect, qimage)
         else:
             painter.drawImage(rect.topLeft(), qimage)
@@ -746,9 +745,9 @@ class QTImageViewer(base_widget, ImageViewer ):
             print(f" paint_image took {int((get_time()-time0)*1000)} ms")
 
     def show(self):
-        if base_widget==QOpenGLWidget:
+        if BaseWidget==QOpenGLWidget:
             self.update()
-        base_widget.show(self)
+        BaseWidget.show(self)
 
     def paintEvent(self, event):
         # print(f" qtImageViewer.paintEvent() {self.image_name}")
@@ -768,7 +767,7 @@ class QTImageViewer(base_widget, ImageViewer ):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
-        base_widget.resizeEvent(self, event)
+        BaseWidget.resizeEvent(self, event)
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
     def mousePressEvent(self, event):
@@ -789,7 +788,7 @@ class QTImageViewer(base_widget, ImageViewer ):
     def event(self, evt):
         if self.event_recorder is not None:
             self.event_recorder.store_event(self, evt)
-        return base_widget.event(self, evt)
+        return BaseWidget.event(self, evt)
 
     def keyPressEvent(self, event):
         self.key_press_event(event, wsize=self.size())

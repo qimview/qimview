@@ -44,18 +44,6 @@ def get_class_from_frame(fr):
 def get_function_name():
     return traceback.extract_stack(None, 2)[0][2]
 
-
-def ReadImage(filename):
-    print('trying to open', filename)
-    try:
-        cv_image = cv2.imread(filename, cv2.IMREAD_COLOR)
-    except IOError as ex:
-        print('IOError: failed to open texture file {}'.format(ex))
-        return -1
-    print('opened file: ')
-    return cv_image
-
-
 class trace_method():
     def __init__(self, tab):
         self.tab = tab

@@ -7,16 +7,12 @@
 
 from qimview.utils.qt_imports import *
 from qimview.utils.viewer_image import *
-from qimview.image_viewers.image_viewer import ImageViewer, ReadImage, trace_method
+from qimview.image_viewers.image_viewer import ImageViewer, trace_method
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
-
-import argparse
-import sys
-
 import traceback
 
 
@@ -413,29 +409,3 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         QOpenGLWidget.resizeEvent(self, event)
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
-
-if __name__ == '__main__':
-    # import numpy for generating random data points
-    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('-i', '--input_image', help='input image')
-    args = parser.parse_args()
-    _params = vars(args)
-
-    # define a Qt window with an OpenGL widget inside it
-    # class TestWindow(QtGui.QMainWindow):
-    class TestWindow(QtWidgets.QMainWindow):
-        def __init__(self):
-            super(TestWindow, self).__init__()
-            self.widget = GLImageViewerBase()
-            im = ReadImage(_params['input_image'])
-            self.widget.set_image(im)
-            # put the window at the screen position (100, 100)
-            self.setGeometry(0, 0, self.widget._width, self.widget._height)
-            self.setCentralWidget(self.widget)
-            self.show()
-
-    # create the Qt App and window
-    app = QtWidgets.QApplication(sys.argv)
-    window = TestWindow()
-    window.show()
-    app.exec_()
