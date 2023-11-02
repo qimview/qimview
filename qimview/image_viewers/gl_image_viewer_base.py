@@ -218,7 +218,6 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         draw_text = True
         if draw_text:
             # adapt scale depending on the ratio image / viewport
-            print(f"_width = {self._width}")
             scale *= self._width/self.cv_image.data.shape[1]
             self.display_text(painter, self.display_message(im_pos, scale))
 
@@ -349,7 +348,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
         """
-        print("ResizeGL")
+        # print("ResizeGL")
         if self.trace_calls:
             t = trace_method(self.tab)
         # size give for opengl are in pixels, qt uses device independent size otherwise

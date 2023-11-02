@@ -212,7 +212,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
         """
-        print(f"resizeGL {width}x{height}")
+        # print(f"resizeGL {width}x{height}")
         if self.trace_calls:
             t = trace_method(self.tab)
         self._width = width*self.devicePixelRatio()
@@ -235,7 +235,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.print_timing()
 
     def viewer_update(self):
-        print("GLImageViewerShaders viewer_update")
         self.update()
 
     def paintGL(self):
@@ -380,6 +379,7 @@ if __name__ == '__main__':
         def load(self):
             im = gb_image_reader.read(_params['input_image'])
             self.widget.set_image(im)
+            self.widget.image_name = _params['input_image']
             # put the window at the screen position (100, 100)
             self.setGeometry(0, 0, self.widget._width, self.widget._height)
             self.setCentralWidget(self.widget)

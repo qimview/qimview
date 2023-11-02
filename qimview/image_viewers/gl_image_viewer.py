@@ -35,10 +35,12 @@ class GLImageViewer(GLImageViewerBase):
         pass
 
     def viewer_update(self):
-        print("GLImageViewer update")
         self.update()
 
     def paintGL(self):
+        self.paintAll()
+
+    def myPaintGL(self):
         """Paint the scene.
         """
         if self.trace_calls:
@@ -47,7 +49,6 @@ class GLImageViewer(GLImageViewerBase):
         if self.textureID is None:
             print("GLImageViewer paintGL not textureID")
             return
-        self.updateViewPort()
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
@@ -79,16 +80,13 @@ class GLImageViewer(GLImageViewerBase):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
-        if self.show_cursor:
-            self.gl_draw_cursor()
-
         self.print_timing(add_total=True)
         self.opengl_error()
 
     def resizeGL(self, width, height):
         """Called upon window resizing: reinitialize the viewport.
         """
-        print("ResizeGL")
+        # print("ResizeGL")
         if self.trace_calls:
             t = trace_method(self.tab)
         # size give for opengl are in pixels, qt uses device independent size otherwise
@@ -122,6 +120,7 @@ if __name__ == '__main__':
         def load(self):
             im = gb_image_reader.read(_params['input_image'])
             self.widget.set_image(im)
+            self.widget.image_name = _params['input_image']
             # put the window at the screen position (100, 100)
             self.setGeometry(0, 0, self.widget._width, self.widget._height)
             self.setCentralWidget(self.widget)
