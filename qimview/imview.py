@@ -34,7 +34,7 @@ class ImView(QtWidgets.QMainWindow):
         self.main_widget.setLayout(vertical_layout)
 
         self.widget: Union[GLImageViewer, QTImageViewer]
-        
+
         if params['gl']:
             self.widget = GLImageViewer(event_recorder = self.event_recorder)
         else:
@@ -87,7 +87,7 @@ class ImView(QtWidgets.QMainWindow):
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
         # print(f"parameters {self.filter_params}")
-        self.widget.viewer_udpate()
+        self.widget.viewer_update()
 
     def event(self, evt):
         if self.event_recorder is not None:
