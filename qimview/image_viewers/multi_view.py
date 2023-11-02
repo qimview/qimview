@@ -221,7 +221,7 @@ class MultiView(QtWidgets.QWidget):
 
         for n in range(self.nb_viewers_used):
             self.image_viewers[n].filter_params.copy_from(self.filter_params)
-            self.image_viewers[n].paintAll()
+            self.image_viewers[n].update()
 
         if self.show_timing():
             time_spent = get_time() - update_start

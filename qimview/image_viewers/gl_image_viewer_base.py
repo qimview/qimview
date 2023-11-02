@@ -197,7 +197,8 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         if self.textureID is None or not self.isValid() or not self.isVisible():
             print("paintGL()** not ready {} {}".format(self.textureID, self.isValid()))
             return
-        self.makeCurrent()
+        # No need for makeCurrent() since it is called from PaintGL() only
+        # self.makeCurrent()
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.beginNativePainting()
