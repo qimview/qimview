@@ -320,31 +320,57 @@ class ImageViewer:
         self.viewer_update()
         self.synchronize(self)
 
+    def find_in_layout(self, layout: QtWidgets.QLayout) -> Optional[QtWidgets.QLayout]:
+        """ Search Recursivement in Layouts for the current widget
+
+        Args:
+            layout (QtWidgets.QLayout): input layout for search
+
+        Returns:
+            layout containing the current widget or None if not found
+        """
+        if layout.indexOf(self) != -1: return layout
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item.widget() == self: return layout
+            if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
+        return None
+
+    def toggle_fullscreen(self, event):
+        print(f"toggle_fullscreen")
+        # Should be inside a layout
+        if self.before_max_parent is None:
+            if self.parent() is not None and (playout := self.parent().layout()) is not None:
+                if self.find_in_layout(playout):
+                    self.before_max_parent = self.parent()
+                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                    self.replaced_viewer = self
+                    self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    self.setParent(None)
+                    self.showFullScreen()
+                    # self.showMaximized()
+                    event.accept()
+                    return
+        if self.before_max_parent is not None:
+            self.setParent(self.before_max_parent)
+            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.replacing_widget = self.before_max_parent = None
+            # self.resize(self.before_max_size)
+            self.show()
+            self.parent().update()
+            self.setFocus()
+            event.accept()
+            return
+
+    # def mouseDoubleClickEvent(self, event):
+
     def key_press_event(self, event, wsize):
+        print(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             if event.key() == QtCore.Qt.Key_F11:
-                # Should be inside a layout
-                if self.before_max_parent is None:
-                    if self.parent() is not None and self.parent().layout() is not None and \
-                            self.parent().layout().indexOf(self) != -1:
-                        self.before_max_parent = self.parent()
-                        self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                        self.parent().layout().replaceWidget(self, self.replacing_widget)
-                        self.setParent(None)
-                        self.showMaximized()
-                        event.accept()
-                        return
-                if self.before_max_parent is not None:
-                    self.setParent(self.before_max_parent)
-                    self.parent().layout().replaceWidget(self.replacing_widget, self)
-                    self.replacing_widget = self.before_max_parent = None
-                    # self.resize(self.before_max_size)
-                    self.show()
-                    self.parent().update()
-                    self.setFocus()
-                    event.accept()
-                    return
+                self.toggle_fullscreen(event)
+                return
 
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             key_list = []

@@ -5,7 +5,7 @@ import argparse
 import os
 import glob
 
-from qimview.utils.qt_imports import QtWidgets
+from qimview.utils.qt_imports import QtWidgets, QtCore
 from qimview.image_viewers    import MultiView, ViewerType
 
 def main():
@@ -19,6 +19,7 @@ def main():
     args = parser.parse_args()
     _params = vars(args)
 
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
 
     filenames = []
@@ -37,7 +38,15 @@ def main():
         'shader': ViewerType.OPENGL_SHADERS_VIEWER
     }[_params['viewer']]
 
-    mv = MultiView(viewer_mode=mode)
+    # Create a simple widget and layout to put the multiview inside,
+    # so that toggleFullscreen can work
+    main_window = QtWidgets.QMainWindow()
+    main_widget = QtWidgets.QWidget(main_window)
+    main_window.setCentralWidget(main_widget)    
+    multiview_layout = QtWidgets.QVBoxLayout()
+    main_widget.setLayout(multiview_layout)
+    mv = MultiView(parent=main_widget, viewer_mode=mode)
+    multiview_layout.addWidget(mv, 1)
 
     # table_win.setWindowTitle('Image Set Comparison ' + title_string)
     # table_win.set_default_report_file(default_report_file + '.json')
@@ -52,14 +61,17 @@ def main():
     mv.update_layout()
     # table_win.resize(3000, 1800)
 
-    mv.show()
-    mv.resize(1000, 800)
     nb_inputs = len(filenames)
+    mv.show()
     if nb_inputs>=1 and nb_inputs<=9:
         mv.update_viewer_layout(f'{nb_inputs}')
         mv.viewer_grid_layout.update()
         mv.update_image()
         mv.setFocus()
+
+    main_window.show()
+    main_window.resize(1000, 800)
+
     app.exec()
 
 if __name__ == '__main__':

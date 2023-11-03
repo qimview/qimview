@@ -12,7 +12,7 @@ from enum import Enum, auto
 import math
 
 import types
-from typing import List, TYPE_CHECKING
+from typing import List, TYPE_CHECKING, Optional
 if TYPE_CHECKING:
     from qimview.image_viewers.image_viewer import ImageViewer
 
@@ -676,6 +676,54 @@ class MultiView(QtWidgets.QWidget):
             #     except Exception as e:
             #         print(" Error: {}".format(e))
 
+    def find_in_layout(self, layout: QtWidgets.QLayout) -> Optional[QtWidgets.QLayout]:
+        """ Search Recursivement in Layouts for the current widget
+
+        Args:
+            layout (QtWidgets.QLayout): input layout for search
+
+        Returns:
+            layout containing the current widget or None if not found
+        """
+        print("find_in_layout()")
+        if layout.indexOf(self) != -1: return layout
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item.widget() == self: return layout
+            if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
+        print("find_in_layout() return None")
+        return None
+
+    def toggle_fullscreen(self, event):
+        print(f"toggle_fullscreen")
+        # Should be inside a layout
+        if self.before_max_parent is None:
+            print(f"self.parent() is not None {self.parent() is not None}")
+            print(f"self.parent().layout() {self.parent().layout()} ")
+            if self.parent() is not None and (playout := self.parent().layout()) is not None:
+                if self.find_in_layout(playout):
+                    self.before_max_parent = self.parent()
+                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                    self.replaced_viewer = self
+                    self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    self.setParent(None)
+                    self.showFullScreen()
+                    # self.showMaximized()
+                    event.accept()
+                    return
+        if self.before_max_parent is not None:
+            self.setParent(self.before_max_parent)
+            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.replacing_widget = self.before_max_parent = None
+            # self.resize(self.before_max_size)
+            self.show()
+            self.parent().update()
+            self.setFocus()
+            event.accept()
+            return
+
+
+
     def keyPressEvent(self, event):
         if type(event) == QtGui.QKeyEvent:
             # print("key is ", event.key())
@@ -687,29 +735,9 @@ class MultiView(QtWidgets.QWidget):
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             if event.key() == QtCore.Qt.Key_F11:
                 # Should be inside a layout
-                if self.before_max_parent is None:
-                    if self.parent() is not None and self.parent().layout() is not None and \
-                            self.parent().layout().indexOf(self) != -1:
-                        self.before_max_parent = self.parent()
-                        self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-
-                        self.parent().layout().replaceWidget(self, self.replacing_widget)
-                        self.setParent(None)
-                        # Prevent user from closing the window
-                        self.setWindowFlag(QtCore.Qt.WindowCloseButtonHint, False)
-                        self.showMaximized()
-                        event.accept()
-                        return
-                if self.before_max_parent is not None:
-                    self.setParent(self.before_max_parent)
-                    self.parent().layout().replaceWidget(self.replacing_widget, self)
-                    self.replacing_widget = self.before_max_parent = None
-                    # self.resize(self.before_max_size)
-                    self.show()
-                    self.parent().update()
-                    self.setFocus()
-                    event.accept()
-                    return
+                print("MultiView F11 pressed")
+                self.toggle_fullscreen(event)
+                return
 
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             if modifiers & QtCore.Qt.AltModifier:
