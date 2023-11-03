@@ -44,12 +44,12 @@ class ImView(QtWidgets.QMainWindow):
         if record_file is not None:
             self.event_recorder.register_widget(id(self.widget), "widget")
 
-        if params['input_image'] is None:
-            # Ask for input file
-            filename =  QtWidgets.QFileDialog.getOpenFileName(caption="imview: Select input image")
-            params['input_image'] = filename[0]
-        im = gb_image_reader.read(params['input_image'])
-        self.widget.set_image(im)
+        # if params['input_image'] is None:
+        #     # Ask for input file
+        #     filename =  QtWidgets.QFileDialog.getOpenFileName(caption="imview: Select input image")
+        #     params['input_image'] = filename[0]
+        # im = gb_image_reader.read(params['input_image'])
+        # self.widget.set_image(im)
         # put the window at the screen position (100, 100)
         self.setGeometry(0, 0, self.widget.width(), self.widget.height())
         self.setCentralWidget(self.main_widget)
@@ -83,6 +83,14 @@ class ImView(QtWidgets.QMainWindow):
             event_player.register_widget("widget", self.widget)
             self.filter_params_gui.register_event_player(event_player)
             event_player.play_events(event_list=event_list)
+    
+    def set_imagge(self, params):
+        if params['input_image'] is None:
+            # Ask for input file
+            filename =  QtWidgets.QFileDialog.getOpenFileName(caption="imview: Select input image")
+            params['input_image'] = filename[0]
+        im = gb_image_reader.read(params['input_image'])
+        self.widget.set_image(im)
 
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
@@ -116,6 +124,7 @@ def main():
 
 
     # create the Qt App and window
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
     if _params['play'] is not None:
         with open(_params['play']) as json_file:
@@ -124,6 +133,7 @@ def main():
         events = None
 
     window = ImView(events, _params)
+    window.set_imagge( _params)
     window.show()
     app.exec()
 
