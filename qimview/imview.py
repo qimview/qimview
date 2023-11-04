@@ -134,6 +134,7 @@ def main():
     # create the Qt App and window
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationDisplayName('imview ' + ' '.join(sys.argv[1:]))
     if _params['play'] is not None:
         with open(_params['play']) as json_file:
             events = json.load(json_file)
