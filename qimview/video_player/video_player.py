@@ -8,8 +8,8 @@ from ..parameters.numeric_parameter_gui import NumericParameterGui
 import sys
 
 class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.current_scale = 1
 
     def new_scale(self, mouse_zy, height):
@@ -40,11 +40,11 @@ class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
         # event.ignore()
 
 class VideoPlayer(QtWidgets.QWidget):
-    def __init__(self, open_button=False):
-        super().__init__()
+    def __init__(self, parent, open_button=False):
+        super().__init__(parent)
 
         self.setWindowTitle("QMediaPlayer")
-        self.setGeometry(350, 100, 700, 500)
+        # self.setGeometry(350, 100, 700, 500)
         self.setWindowIcon(QtGui.QIcon('player.png'))
 
         p = self.palette()
@@ -62,7 +62,7 @@ class VideoPlayer(QtWidgets.QWidget):
     def init_ui(self):
 
         # create media player objectexamples_qtvlc.py
-        self.mediaPlayer = QtMultimedia.QMediaPlayer(None)
+        self.mediaPlayer = QtMultimedia.QMediaPlayer(self)
         # self.mediaPlayer.setNotifyInterval(20)
 
         # create videowidget object

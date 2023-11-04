@@ -119,8 +119,8 @@ class myVideoWidget(BaseWidget):
 class VLCPlayer(QWidget):
     """A simple Media Player using VLC and Qt
     """
-    def __init__(self):
-        QWidget.__init__(self)
+    def __init__(self, parent):
+        super().__init__(parent)
         self.setWindowTitle("Media Player")
 
         self.play_position = NumericParameter()
