@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>qimview.image_viewers.gl_image_viewer_shaders API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>qimview.image_viewers.gl_image_viewer_shaders</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#
+#
+# started from https://cyrille.rossant.net/2d-graphics-rendering-tutorial-with-pyopengl/
+#
+#
+
+from qimview.utils.qt_imports import QtWidgets
+from .image_viewer            import trace_method, get_time
+from .gl_image_viewer_base    import GLImageViewerBase
+
+from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
+                              QOpenGLShaderProgram, QOpenGLTexture)
+
+import OpenGL.GL as gl
+from OpenGL.GL import shaders
+import argparse
+import sys
+import numpy as np
+
+class GLImageViewerShaders(GLImageViewerBase):
+    # vertex shader program
+    vertexShader = &#34;&#34;&#34;
+        #version 330 core
+
+        attribute vec3 vert;
+        attribute vec2 uV;
+        uniform mat4 mvMatrix;
+        uniform mat4 pMatrix;
+        out vec2 UV;
+
+        void main() {
+          gl_Position = pMatrix * mvMatrix * vec4(vert, 1.0);
+          UV = uV;
+        }
+        &#34;&#34;&#34;
+    # fragment shader program
+    fragmentShader_RGB = &#34;&#34;&#34;
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D backgroundTexture;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        out vec3 colour;
+    
+        void main() {
+          colour = texture(backgroundTexture, UV).rgb;
+
+          // black level
+          colour.rgb = colour.rgb/max_value*max_type;
+          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
+
+          // white balance
+          colour.r = colour.r*g_r_coeff;
+          colour.b = colour.b*g_b_coeff;
+
+          // rescale to white level as saturation level
+          colour.rgb = colour.rgb/(white_level-black_level);
+          
+          // apply gamma
+          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+
+        }
+    &#34;&#34;&#34;
+
+    fragmentShader_RAW = &#34;&#34;&#34;
+        #version 330 core
+        
+        in vec2 UV;
+        uniform sampler2D backgroundTexture;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        out vec3 colour;
+
+        void main() {
+
+           const int CH_RGGB = 4; // phase 0, bayer 2
+           const int CH_GRBG = 5; // phase 1, bayer 3 (Boilers)
+           const int CH_GBRG = 6; // phase 2, bayer 0
+           const int CH_BGGR = 7; // phase 3, bayer 1 (Coconuts)
+
+          vec4 bayer = texture(backgroundTexture, UV);
+          // transform bayer data to RGB
+          int r,gr,gb,b;
+          switch (channels) {
+            case 4:   r = 0; gr = 1; gb = 2; b = 3;  break; // CH_RGGB = 4 phase 0, bayer 2
+            case 5:   r = 1; gr = 0; gb = 3; b = 2;  break; // CH_GRBG = 5 phase 1, bayer 3 (Boilers)
+            case 6:   r = 2; gr = 3; gb = 0; b = 1;  break; // CH_GBRG = 6 phase 2, bayer 0
+            case 7:   r = 3; gr = 2; gb = 1; b = 0;  break; // CH_BGGR = 7 phase 3, bayer 1 (Coconuts)
+            default:        r = 0; gr = 1; gb = 2; b = 3;  break; // this should not happen
+          }
+
+          // first retreive black point to get the coefficients right ...
+          // 5% of dynamics?
+          
+          // bayer 2 rgb
+          colour.r   = bayer[r];
+          colour.g = (bayer[gr]+bayer[gb])/2.0;
+          colour.b = bayer[b];
+
+          // black level
+          colour.rgb = colour.rgb/max_value*max_type;
+          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
+          
+          // white balance
+          colour.r = colour.r*g_r_coeff;
+          colour.b = colour.b*g_b_coeff;
+
+          // rescale to white level as saturation level
+          colour.rgb = colour.rgb/(white_level-black_level);
+          
+          // apply gamma
+          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+        }
+    &#34;&#34;&#34;
+
+    def __init__(self, parent=None):
+        GLImageViewerBase.__init__(self, parent)
+
+        self.setAutoFillBackground(False)
+        self.textureID = None
+        self.tex_width, self.tex_height = 0, 0
+        self.opengl_debug = False
+        self.synchronize_viewer = None
+        self.pMatrix  = np.identity(4, dtype=np.float32)
+        self.mvMatrix = np.identity(4, dtype=np.float32)
+        self.program_RGB = None
+        self.program_RAW = None
+        self.program = None
+        self.vertexBuffer = None
+
+    def set_shaders(self):
+        if self.program_RGB is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_RGB, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_RGB = shaders.compileProgram(vs, fs, validate=False)
+                print(&#34;\n***** self.program_RGB = {} *****\n&#34;.format(self.program_RGB))
+            except Exception as e:
+                print(&#39;failed RGB shaders.compileProgram() {}&#39;.format(e))
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+        if self.program_RAW is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_RAW, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_RAW = shaders.compileProgram(vs, fs, validate=False)
+                print(&#34;\n***** self.program_RAW = {} *****\n&#34;.format(self.program_RAW))
+            except Exception as e:
+                print(&#39;failed RAW shaders.compileProgram() {}&#39;.format(e))
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+    def setVerticesBufferData(self):
+        try:
+            x0, x1, y0, y1 = self.image_centered_position()
+            # print(&#34; x0, x1, y0, y1 {} {} {} {}&#34;.format(x0, x1, y0, y1))
+        except Exception as e:
+            print(&#34; Failed image_centered_position() {}&#34;.format(e))
+            x0, x1, y0, y1 = 0, 100, 0, 100
+            # set background vertices
+        backgroundVertices = [
+            x0, y1, 0.0,
+            x0, y0, 0.0,
+            x1, y1, 0.0,
+            x1, y1, 0.0,
+            x0, y0, 0.0,
+            x1, y0, 0.0]
+        vertexData = np.array(backgroundVertices, np.float32)
+
+        if self.vertexBuffer is not None:
+            self.vertexBuffer.destroy()
+        self.vertexBuffer = QOpenGLBuffer()
+        self.vertexBuffer.create()
+        self.vertexBuffer.bind()
+        self.vertexBuffer.allocate(vertexData, 4 * len(vertexData))
+
+    def setBufferData(self):
+        # set background UV
+        backgroundUV = [
+            0.0, 0.0,
+            0.0, 1.0,
+            1.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0]
+        uvData = np.array(backgroundUV, np.float32)
+
+        self.uvBuffer = QOpenGLBuffer()
+        self.uvBuffer.create()
+        self.uvBuffer.bind()
+        self.uvBuffer.allocate(uvData, 4 * len(uvData))
+
+    def setTexture(self):
+        texture_ok = super(GLImageViewerShaders, self).setTexture()
+        self.setVerticesBufferData()
+        return texture_ok
+
+    def resizeGL(self, width, height):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        # print(f&#34;resizeGL {width}x{height}&#34;)
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
+        self.setVerticesBufferData()
+        self.update()
+
+    def initializeGL(self):
+        &#34;&#34;&#34;
+        Initialize OpenGL, VBOs, upload data on the GPU, etc.
+        &#34;&#34;&#34;
+        self.start_timing()
+
+        time1 = get_time()
+        self.set_shaders()
+        self.add_time(&#39;set_shaders&#39;, time1)
+
+        self.setVerticesBufferData()
+        self.setBufferData()
+        self.print_timing()
+
+    def viewer_update(self):
+        self.update()
+
+    def paintGL(self):
+        self.paintAll()
+
+    def myPaintGL(self):
+        &#34;&#34;&#34;Paint the scene.
+        &#34;&#34;&#34;
+        if self.textureID is None or not self.isValid():
+            print(&#34;paintGL() not ready&#34;)
+            return
+        self.opengl_error()
+        self.start_timing()
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+
+        if self.cv_image.data.shape[2] == 4:
+            self.program = self.program_RAW
+        else:
+            # TODO: check for other types: scalar ...
+            self.program = self.program_RGB
+
+        # Obtain uniforms and attributes
+        self.aVert              = shaders.glGetAttribLocation(self.program, &#34;vert&#34;)
+        self.aUV                = shaders.glGetAttribLocation(self.program, &#34;uV&#34;)
+        self.uPMatrix           = shaders.glGetUniformLocation(self.program, &#39;pMatrix&#39;)
+        self.uMVMatrix          = shaders.glGetUniformLocation(self.program, &#34;mvMatrix&#34;)
+        self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, &#34;backgroundTexture&#34;)
+        self.channels_location    = shaders.glGetUniformLocation(self.program, &#34;channels&#34;)
+        self.black_level_location = shaders.glGetUniformLocation(self.program, &#34;black_level&#34;)
+        self.white_level_location = shaders.glGetUniformLocation(self.program, &#34;white_level&#34;)
+        self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, &#34;g_r_coeff&#34;)
+        self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, &#34;g_b_coeff&#34;)
+        self.max_value_location   = shaders.glGetUniformLocation(self.program, &#34;max_value&#34;)
+        self.max_type_location    = shaders.glGetUniformLocation(self.program, &#34;max_type&#34;)
+        self.gamma_location       = shaders.glGetUniformLocation(self.program, &#34;gamma&#34;)
+
+        # use shader program
+        self.print_log(&#34;self.program = {}&#34;.format(self.program))
+        shaders.glUseProgram(self.program)
+
+        # set uniforms
+        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+        gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
+        gl.glUniform1i(self.uBackgroundTexture, 0)
+
+        gl.glUniform1i( self.channels_location, self.cv_image.channels)
+
+        # set color transformation parameters
+        self.print_log(&#34;levels {} {}&#34;.format(self.filter_params.black_level.value,
+                                             self.filter_params.white_level.value))
+        gl.glUniform1f( self.black_level_location, self.filter_params.black_level.float)
+        gl.glUniform1f( self.white_level_location, self.filter_params.white_level.float)
+
+        # white balance coefficients
+        gl.glUniform1f(self.g_r_coeff_location, self.filter_params.g_r.float)
+        gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
+
+        # Should work for unsigned types for the moment
+        gl.glUniform1f( self.max_value_location, (1 &lt;&lt; self.cv_image.precision)-1)
+        gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.data.dtype).max)
+
+        gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
+
+        # enable attribute arrays
+        gl.glEnableVertexAttribArray(self.aVert)
+        gl.glEnableVertexAttribArray(self.aUV)
+
+        # set vertex and UV buffers
+        # vert_buffers = VertexBuffers()
+        # vert_buffers.vert_pos_buffer = vert_pos_buffer
+        # vert_buffers.normal_buffer = normal_buffer
+        # vert_buffers.tex_coord_buffer = tex_coord_buffer
+        # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
+
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
+        gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
+        gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+
+        # bind background texture
+        # gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+
+        # draw
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+
+        # disable attribute arrays
+        gl.glDisableVertexAttribArray(self.aVert)
+        gl.glDisableVertexAttribArray(self.aUV)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+
+        shaders.glUseProgram(0)
+
+        self.print_timing(force=True)
+
+    def updateTransforms(self) -&gt; float:
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        if self.display_timing:
+            start_time = get_time()
+        self.makeCurrent()
+        w = self._width
+        h = self._height
+        dx, dy = self.new_translation()
+        # scale = max(self.mouse_zx, self.mouse_zy)
+        scale = self.new_scale(self.mouse_zy, self.tex_height)
+        # update the window size
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        translation_unit = min(w, h)/2
+        gl.glScale(scale, scale, scale)
+        gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+        # the window corner OpenGL coordinates are (-+1, -+1)
+        gl.glOrtho(0, w, 0, h, -1, 1)
+        self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
+
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+        self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+        if self.display_timing:
+            self.print_log(&#39;updateTransforms time {:0.1f} ms&#39;.format((get_time()-start_time)*1000))
+        return scale
+
+
+if __name__ == &#39;__main__&#39;:
+    from qimview.image_readers import gb_image_reader
+    # import numpy for generating random data points
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument(&#39;input_image&#39;, help=&#39;input image&#39;)
+    args = parser.parse_args()
+    _params = vars(args)
+
+    # define a Qt window with an OpenGL widget inside it
+    # class TestWindow(QtGui.QMainWindow):
+    class TestWindow(QtWidgets.QMainWindow):
+        def __init__(self):
+            super(TestWindow, self).__init__()
+            self.widget = GLImageViewerShaders(self)
+            self.show()
+        def load(self):
+            im = gb_image_reader.read(_params[&#39;input_image&#39;])
+            self.widget.set_image(im)
+            self.widget.image_name = _params[&#39;input_image&#39;]
+            # put the window at the screen position (100, 100)
+            self.setGeometry(0, 0, self.widget._width, self.widget._height)
+            self.setCentralWidget(self.widget)
+
+    # create the Qt App and window
+    app = QtWidgets.QApplication(sys.argv)
+    window = TestWindow()
+    window.load()
+    window.show()
+    app.exec_()</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders"><code class="flex name class">
+<span>class <span class="ident">GLImageViewerShaders</span></span>
+<span>(</span><span>parent=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>QOpenGLWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
+<p><strong>init</strong>(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
+<p>Initialize self.
+See help(type(self)) for accurate signature.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GLImageViewerShaders(GLImageViewerBase):
+    # vertex shader program
+    vertexShader = &#34;&#34;&#34;
+        #version 330 core
+
+        attribute vec3 vert;
+        attribute vec2 uV;
+        uniform mat4 mvMatrix;
+        uniform mat4 pMatrix;
+        out vec2 UV;
+
+        void main() {
+          gl_Position = pMatrix * mvMatrix * vec4(vert, 1.0);
+          UV = uV;
+        }
+        &#34;&#34;&#34;
+    # fragment shader program
+    fragmentShader_RGB = &#34;&#34;&#34;
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D backgroundTexture;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        out vec3 colour;
+    
+        void main() {
+          colour = texture(backgroundTexture, UV).rgb;
+
+          // black level
+          colour.rgb = colour.rgb/max_value*max_type;
+          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
+
+          // white balance
+          colour.r = colour.r*g_r_coeff;
+          colour.b = colour.b*g_b_coeff;
+
+          // rescale to white level as saturation level
+          colour.rgb = colour.rgb/(white_level-black_level);
+          
+          // apply gamma
+          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+
+        }
+    &#34;&#34;&#34;
+
+    fragmentShader_RAW = &#34;&#34;&#34;
+        #version 330 core
+        
+        in vec2 UV;
+        uniform sampler2D backgroundTexture;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        out vec3 colour;
+
+        void main() {
+
+           const int CH_RGGB = 4; // phase 0, bayer 2
+           const int CH_GRBG = 5; // phase 1, bayer 3 (Boilers)
+           const int CH_GBRG = 6; // phase 2, bayer 0
+           const int CH_BGGR = 7; // phase 3, bayer 1 (Coconuts)
+
+          vec4 bayer = texture(backgroundTexture, UV);
+          // transform bayer data to RGB
+          int r,gr,gb,b;
+          switch (channels) {
+            case 4:   r = 0; gr = 1; gb = 2; b = 3;  break; // CH_RGGB = 4 phase 0, bayer 2
+            case 5:   r = 1; gr = 0; gb = 3; b = 2;  break; // CH_GRBG = 5 phase 1, bayer 3 (Boilers)
+            case 6:   r = 2; gr = 3; gb = 0; b = 1;  break; // CH_GBRG = 6 phase 2, bayer 0
+            case 7:   r = 3; gr = 2; gb = 1; b = 0;  break; // CH_BGGR = 7 phase 3, bayer 1 (Coconuts)
+            default:        r = 0; gr = 1; gb = 2; b = 3;  break; // this should not happen
+          }
+
+          // first retreive black point to get the coefficients right ...
+          // 5% of dynamics?
+          
+          // bayer 2 rgb
+          colour.r   = bayer[r];
+          colour.g = (bayer[gr]+bayer[gb])/2.0;
+          colour.b = bayer[b];
+
+          // black level
+          colour.rgb = colour.rgb/max_value*max_type;
+          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
+          
+          // white balance
+          colour.r = colour.r*g_r_coeff;
+          colour.b = colour.b*g_b_coeff;
+
+          // rescale to white level as saturation level
+          colour.rgb = colour.rgb/(white_level-black_level);
+          
+          // apply gamma
+          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+        }
+    &#34;&#34;&#34;
+
+    def __init__(self, parent=None):
+        GLImageViewerBase.__init__(self, parent)
+
+        self.setAutoFillBackground(False)
+        self.textureID = None
+        self.tex_width, self.tex_height = 0, 0
+        self.opengl_debug = False
+        self.synchronize_viewer = None
+        self.pMatrix  = np.identity(4, dtype=np.float32)
+        self.mvMatrix = np.identity(4, dtype=np.float32)
+        self.program_RGB = None
+        self.program_RAW = None
+        self.program = None
+        self.vertexBuffer = None
+
+    def set_shaders(self):
+        if self.program_RGB is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_RGB, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_RGB = shaders.compileProgram(vs, fs, validate=False)
+                print(&#34;\n***** self.program_RGB = {} *****\n&#34;.format(self.program_RGB))
+            except Exception as e:
+                print(&#39;failed RGB shaders.compileProgram() {}&#39;.format(e))
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+        if self.program_RAW is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_RAW, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_RAW = shaders.compileProgram(vs, fs, validate=False)
+                print(&#34;\n***** self.program_RAW = {} *****\n&#34;.format(self.program_RAW))
+            except Exception as e:
+                print(&#39;failed RAW shaders.compileProgram() {}&#39;.format(e))
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+    def setVerticesBufferData(self):
+        try:
+            x0, x1, y0, y1 = self.image_centered_position()
+            # print(&#34; x0, x1, y0, y1 {} {} {} {}&#34;.format(x0, x1, y0, y1))
+        except Exception as e:
+            print(&#34; Failed image_centered_position() {}&#34;.format(e))
+            x0, x1, y0, y1 = 0, 100, 0, 100
+            # set background vertices
+        backgroundVertices = [
+            x0, y1, 0.0,
+            x0, y0, 0.0,
+            x1, y1, 0.0,
+            x1, y1, 0.0,
+            x0, y0, 0.0,
+            x1, y0, 0.0]
+        vertexData = np.array(backgroundVertices, np.float32)
+
+        if self.vertexBuffer is not None:
+            self.vertexBuffer.destroy()
+        self.vertexBuffer = QOpenGLBuffer()
+        self.vertexBuffer.create()
+        self.vertexBuffer.bind()
+        self.vertexBuffer.allocate(vertexData, 4 * len(vertexData))
+
+    def setBufferData(self):
+        # set background UV
+        backgroundUV = [
+            0.0, 0.0,
+            0.0, 1.0,
+            1.0, 0.0,
+            1.0, 0.0,
+            0.0, 1.0,
+            1.0, 1.0]
+        uvData = np.array(backgroundUV, np.float32)
+
+        self.uvBuffer = QOpenGLBuffer()
+        self.uvBuffer.create()
+        self.uvBuffer.bind()
+        self.uvBuffer.allocate(uvData, 4 * len(uvData))
+
+    def setTexture(self):
+        texture_ok = super(GLImageViewerShaders, self).setTexture()
+        self.setVerticesBufferData()
+        return texture_ok
+
+    def resizeGL(self, width, height):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        # print(f&#34;resizeGL {width}x{height}&#34;)
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
+        self.setVerticesBufferData()
+        self.update()
+
+    def initializeGL(self):
+        &#34;&#34;&#34;
+        Initialize OpenGL, VBOs, upload data on the GPU, etc.
+        &#34;&#34;&#34;
+        self.start_timing()
+
+        time1 = get_time()
+        self.set_shaders()
+        self.add_time(&#39;set_shaders&#39;, time1)
+
+        self.setVerticesBufferData()
+        self.setBufferData()
+        self.print_timing()
+
+    def viewer_update(self):
+        self.update()
+
+    def paintGL(self):
+        self.paintAll()
+
+    def myPaintGL(self):
+        &#34;&#34;&#34;Paint the scene.
+        &#34;&#34;&#34;
+        if self.textureID is None or not self.isValid():
+            print(&#34;paintGL() not ready&#34;)
+            return
+        self.opengl_error()
+        self.start_timing()
+
+        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+
+        if self.cv_image.data.shape[2] == 4:
+            self.program = self.program_RAW
+        else:
+            # TODO: check for other types: scalar ...
+            self.program = self.program_RGB
+
+        # Obtain uniforms and attributes
+        self.aVert              = shaders.glGetAttribLocation(self.program, &#34;vert&#34;)
+        self.aUV                = shaders.glGetAttribLocation(self.program, &#34;uV&#34;)
+        self.uPMatrix           = shaders.glGetUniformLocation(self.program, &#39;pMatrix&#39;)
+        self.uMVMatrix          = shaders.glGetUniformLocation(self.program, &#34;mvMatrix&#34;)
+        self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, &#34;backgroundTexture&#34;)
+        self.channels_location    = shaders.glGetUniformLocation(self.program, &#34;channels&#34;)
+        self.black_level_location = shaders.glGetUniformLocation(self.program, &#34;black_level&#34;)
+        self.white_level_location = shaders.glGetUniformLocation(self.program, &#34;white_level&#34;)
+        self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, &#34;g_r_coeff&#34;)
+        self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, &#34;g_b_coeff&#34;)
+        self.max_value_location   = shaders.glGetUniformLocation(self.program, &#34;max_value&#34;)
+        self.max_type_location    = shaders.glGetUniformLocation(self.program, &#34;max_type&#34;)
+        self.gamma_location       = shaders.glGetUniformLocation(self.program, &#34;gamma&#34;)
+
+        # use shader program
+        self.print_log(&#34;self.program = {}&#34;.format(self.program))
+        shaders.glUseProgram(self.program)
+
+        # set uniforms
+        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+        gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
+        gl.glUniform1i(self.uBackgroundTexture, 0)
+
+        gl.glUniform1i( self.channels_location, self.cv_image.channels)
+
+        # set color transformation parameters
+        self.print_log(&#34;levels {} {}&#34;.format(self.filter_params.black_level.value,
+                                             self.filter_params.white_level.value))
+        gl.glUniform1f( self.black_level_location, self.filter_params.black_level.float)
+        gl.glUniform1f( self.white_level_location, self.filter_params.white_level.float)
+
+        # white balance coefficients
+        gl.glUniform1f(self.g_r_coeff_location, self.filter_params.g_r.float)
+        gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
+
+        # Should work for unsigned types for the moment
+        gl.glUniform1f( self.max_value_location, (1 &lt;&lt; self.cv_image.precision)-1)
+        gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.data.dtype).max)
+
+        gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
+
+        # enable attribute arrays
+        gl.glEnableVertexAttribArray(self.aVert)
+        gl.glEnableVertexAttribArray(self.aUV)
+
+        # set vertex and UV buffers
+        # vert_buffers = VertexBuffers()
+        # vert_buffers.vert_pos_buffer = vert_pos_buffer
+        # vert_buffers.normal_buffer = normal_buffer
+        # vert_buffers.tex_coord_buffer = tex_coord_buffer
+        # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
+
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
+        gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
+        gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+
+        # bind background texture
+        # gl.glActiveTexture(gl.GL_TEXTURE0)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+        gl.glEnable(gl.GL_TEXTURE_2D)
+
+        # draw
+        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+
+        # disable attribute arrays
+        gl.glDisableVertexAttribArray(self.aVert)
+        gl.glDisableVertexAttribArray(self.aUV)
+        gl.glDisable(gl.GL_TEXTURE_2D)
+
+        shaders.glUseProgram(0)
+
+        self.print_timing(force=True)
+
+    def updateTransforms(self) -&gt; float:
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        if self.display_timing:
+            start_time = get_time()
+        self.makeCurrent()
+        w = self._width
+        h = self._height
+        dx, dy = self.new_translation()
+        # scale = max(self.mouse_zx, self.mouse_zy)
+        scale = self.new_scale(self.mouse_zy, self.tex_height)
+        # update the window size
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        translation_unit = min(w, h)/2
+        gl.glScale(scale, scale, scale)
+        gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+        # the window corner OpenGL coordinates are (-+1, -+1)
+        gl.glOrtho(0, w, 0, h, -1, 1)
+        self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
+
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+        self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+        if self.display_timing:
+            self.print_log(&#39;updateTransforms time {:0.1f} ms&#39;.format((get_time()-start_time)*1000))
+        return scale</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase">GLImageViewerBase</a></li>
+<li>PySide6.QtOpenGLWidgets.QOpenGLWidget</li>
+<li>PySide6.QtWidgets.QWidget</li>
+<li>PySide6.QtCore.QObject</li>
+<li>PySide6.QtGui.QPaintDevice</li>
+<li>Shiboken.Object</li>
+<li><a title="qimview.image_viewers.image_viewer.ImageViewer" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer">ImageViewer</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.fragmentShader_RAW"><code class="name">var <span class="ident">fragmentShader_RAW</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.fragmentShader_RGB"><code class="name">var <span class="ident">fragmentShader_RGB</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.staticMetaObject"><code class="name">var <span class="ident">staticMetaObject</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.vertexShader"><code class="name">var <span class="ident">vertexShader</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.initializeGL"><code class="name flex">
+<span>def <span class="ident">initializeGL</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Initialize OpenGL, VBOs, upload data on the GPU, etc.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def initializeGL(self):
+    &#34;&#34;&#34;
+    Initialize OpenGL, VBOs, upload data on the GPU, etc.
+    &#34;&#34;&#34;
+    self.start_timing()
+
+    time1 = get_time()
+    self.set_shaders()
+    self.add_time(&#39;set_shaders&#39;, time1)
+
+    self.setVerticesBufferData()
+    self.setBufferData()
+    self.print_timing()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.myPaintGL"><code class="name flex">
+<span>def <span class="ident">myPaintGL</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Paint the scene.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def myPaintGL(self):
+    &#34;&#34;&#34;Paint the scene.
+    &#34;&#34;&#34;
+    if self.textureID is None or not self.isValid():
+        print(&#34;paintGL() not ready&#34;)
+        return
+    self.opengl_error()
+    self.start_timing()
+
+    gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+
+    if self.cv_image.data.shape[2] == 4:
+        self.program = self.program_RAW
+    else:
+        # TODO: check for other types: scalar ...
+        self.program = self.program_RGB
+
+    # Obtain uniforms and attributes
+    self.aVert              = shaders.glGetAttribLocation(self.program, &#34;vert&#34;)
+    self.aUV                = shaders.glGetAttribLocation(self.program, &#34;uV&#34;)
+    self.uPMatrix           = shaders.glGetUniformLocation(self.program, &#39;pMatrix&#39;)
+    self.uMVMatrix          = shaders.glGetUniformLocation(self.program, &#34;mvMatrix&#34;)
+    self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, &#34;backgroundTexture&#34;)
+    self.channels_location    = shaders.glGetUniformLocation(self.program, &#34;channels&#34;)
+    self.black_level_location = shaders.glGetUniformLocation(self.program, &#34;black_level&#34;)
+    self.white_level_location = shaders.glGetUniformLocation(self.program, &#34;white_level&#34;)
+    self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, &#34;g_r_coeff&#34;)
+    self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, &#34;g_b_coeff&#34;)
+    self.max_value_location   = shaders.glGetUniformLocation(self.program, &#34;max_value&#34;)
+    self.max_type_location    = shaders.glGetUniformLocation(self.program, &#34;max_type&#34;)
+    self.gamma_location       = shaders.glGetUniformLocation(self.program, &#34;gamma&#34;)
+
+    # use shader program
+    self.print_log(&#34;self.program = {}&#34;.format(self.program))
+    shaders.glUseProgram(self.program)
+
+    # set uniforms
+    gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+    gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
+    gl.glUniform1i(self.uBackgroundTexture, 0)
+
+    gl.glUniform1i( self.channels_location, self.cv_image.channels)
+
+    # set color transformation parameters
+    self.print_log(&#34;levels {} {}&#34;.format(self.filter_params.black_level.value,
+                                         self.filter_params.white_level.value))
+    gl.glUniform1f( self.black_level_location, self.filter_params.black_level.float)
+    gl.glUniform1f( self.white_level_location, self.filter_params.white_level.float)
+
+    # white balance coefficients
+    gl.glUniform1f(self.g_r_coeff_location, self.filter_params.g_r.float)
+    gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
+
+    # Should work for unsigned types for the moment
+    gl.glUniform1f( self.max_value_location, (1 &lt;&lt; self.cv_image.precision)-1)
+    gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.data.dtype).max)
+
+    gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
+
+    # enable attribute arrays
+    gl.glEnableVertexAttribArray(self.aVert)
+    gl.glEnableVertexAttribArray(self.aUV)
+
+    # set vertex and UV buffers
+    # vert_buffers = VertexBuffers()
+    # vert_buffers.vert_pos_buffer = vert_pos_buffer
+    # vert_buffers.normal_buffer = normal_buffer
+    # vert_buffers.tex_coord_buffer = tex_coord_buffer
+    # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
+
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
+    gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+    gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
+    gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+
+    # bind background texture
+    # gl.glActiveTexture(gl.GL_TEXTURE0)
+    gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+    gl.glEnable(gl.GL_TEXTURE_2D)
+
+    # draw
+    gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+
+    # disable attribute arrays
+    gl.glDisableVertexAttribArray(self.aVert)
+    gl.glDisableVertexAttribArray(self.aUV)
+    gl.glDisable(gl.GL_TEXTURE_2D)
+
+    shaders.glUseProgram(0)
+
+    self.print_timing(force=True)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.paintGL"><code class="name flex">
+<span>def <span class="ident">paintGL</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>paintGL(self) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def paintGL(self):
+    self.paintAll()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.setBufferData"><code class="name flex">
+<span>def <span class="ident">setBufferData</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setBufferData(self):
+    # set background UV
+    backgroundUV = [
+        0.0, 0.0,
+        0.0, 1.0,
+        1.0, 0.0,
+        1.0, 0.0,
+        0.0, 1.0,
+        1.0, 1.0]
+    uvData = np.array(backgroundUV, np.float32)
+
+    self.uvBuffer = QOpenGLBuffer()
+    self.uvBuffer.create()
+    self.uvBuffer.bind()
+    self.uvBuffer.allocate(uvData, 4 * len(uvData))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.setVerticesBufferData"><code class="name flex">
+<span>def <span class="ident">setVerticesBufferData</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setVerticesBufferData(self):
+    try:
+        x0, x1, y0, y1 = self.image_centered_position()
+        # print(&#34; x0, x1, y0, y1 {} {} {} {}&#34;.format(x0, x1, y0, y1))
+    except Exception as e:
+        print(&#34; Failed image_centered_position() {}&#34;.format(e))
+        x0, x1, y0, y1 = 0, 100, 0, 100
+        # set background vertices
+    backgroundVertices = [
+        x0, y1, 0.0,
+        x0, y0, 0.0,
+        x1, y1, 0.0,
+        x1, y1, 0.0,
+        x0, y0, 0.0,
+        x1, y0, 0.0]
+    vertexData = np.array(backgroundVertices, np.float32)
+
+    if self.vertexBuffer is not None:
+        self.vertexBuffer.destroy()
+    self.vertexBuffer = QOpenGLBuffer()
+    self.vertexBuffer.create()
+    self.vertexBuffer.bind()
+    self.vertexBuffer.allocate(vertexData, 4 * len(vertexData))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.set_shaders"><code class="name flex">
+<span>def <span class="ident">set_shaders</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_shaders(self):
+    if self.program_RGB is None:
+        vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+        fs = shaders.compileShader(self.fragmentShader_RGB, gl.GL_FRAGMENT_SHADER)
+        try:
+            self.program_RGB = shaders.compileProgram(vs, fs, validate=False)
+            print(&#34;\n***** self.program_RGB = {} *****\n&#34;.format(self.program_RGB))
+        except Exception as e:
+            print(&#39;failed RGB shaders.compileProgram() {}&#39;.format(e))
+        shaders.glDeleteShader(vs)
+        shaders.glDeleteShader(fs)
+
+    if self.program_RAW is None:
+        vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+        fs = shaders.compileShader(self.fragmentShader_RAW, gl.GL_FRAGMENT_SHADER)
+        try:
+            self.program_RAW = shaders.compileProgram(vs, fs, validate=False)
+            print(&#34;\n***** self.program_RAW = {} *****\n&#34;.format(self.program_RAW))
+        except Exception as e:
+            print(&#39;failed RAW shaders.compileProgram() {}&#39;.format(e))
+        shaders.glDeleteShader(vs)
+        shaders.glDeleteShader(fs)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.updateTransforms"><code class="name flex">
+<span>def <span class="ident">updateTransforms</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def updateTransforms(self) -&gt; float:
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    if self.display_timing:
+        start_time = get_time()
+    self.makeCurrent()
+    w = self._width
+    h = self._height
+    dx, dy = self.new_translation()
+    # scale = max(self.mouse_zx, self.mouse_zy)
+    scale = self.new_scale(self.mouse_zy, self.tex_height)
+    # update the window size
+    gl.glMatrixMode(gl.GL_PROJECTION)
+    gl.glLoadIdentity()
+    translation_unit = min(w, h)/2
+    gl.glScale(scale, scale, scale)
+    gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+    # the window corner OpenGL coordinates are (-+1, -+1)
+    gl.glOrtho(0, w, 0, h, -1, 1)
+    self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
+
+    gl.glMatrixMode(gl.GL_MODELVIEW)
+    gl.glLoadIdentity()
+    self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+    if self.display_timing:
+        self.print_log(&#39;updateTransforms time {:0.1f} ms&#39;.format((get_time()-start_time)*1000))
+    return scale</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.viewer_update"><code class="name flex">
+<span>def <span class="ident">viewer_update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def viewer_update(self):
+    self.update()</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase">GLImageViewerBase</a></b></code>:
+<ul class="hlist">
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.display_histogram" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.display_histogram">display_histogram</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.find_in_layout" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.find_in_layout">find_in_layout</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.keyPressEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.keyPressEvent">keyPressEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseDoubleClickEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseDoubleClickEvent">mouseDoubleClickEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseMoveEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseMoveEvent">mouseMoveEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mousePressEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mousePressEvent">mousePressEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseReleaseEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseReleaseEvent">mouseReleaseEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeEvent">resizeEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeGL" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeGL">resizeGL</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.setTexture" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.setTexture">setTexture</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_cursor_image_position" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_cursor_image_position">set_cursor_image_position</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.synchronize" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.synchronize">synchronize</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.wheelEvent" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.wheelEvent">wheelEvent</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="qimview.image_viewers" href="index.html">qimview.image_viewers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders">GLImageViewerShaders</a></code></h4>
+<ul class="">
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.fragmentShader_RAW" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.fragmentShader_RAW">fragmentShader_RAW</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.fragmentShader_RGB" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.fragmentShader_RGB">fragmentShader_RGB</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.initializeGL" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.initializeGL">initializeGL</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.myPaintGL" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.myPaintGL">myPaintGL</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.paintGL" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.paintGL">paintGL</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.setBufferData" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.setBufferData">setBufferData</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.setVerticesBufferData" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.setVerticesBufferData">setVerticesBufferData</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.set_shaders" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.set_shaders">set_shaders</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.staticMetaObject" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.staticMetaObject">staticMetaObject</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.updateTransforms" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.updateTransforms">updateTransforms</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.vertexShader" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.vertexShader">vertexShader</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.viewer_update" href="#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders.viewer_update">viewer_update</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

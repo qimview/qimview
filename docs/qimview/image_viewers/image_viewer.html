@@ -1,0 +1,2241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>qimview.image_viewers.image_viewer API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>qimview.image_viewers.image_viewer</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#
+#
+#
+
+from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
+from qimview.utils.utils import get_time
+from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
+
+import cv2
+import traceback
+import abc
+import inspect
+import numpy as np
+from typing import TYPE_CHECKING, Optional, Tuple
+if TYPE_CHECKING:
+    from qimview.utils.viewer_image import ViewerImage
+
+try:
+    import qimview_cpp
+except Exception as e:
+    has_cppbind = False
+    print(&#34;Failed to load qimview_cpp: {}&#34;.format(e))
+else:
+    has_cppbind = True
+print(&#34;Do we have cpp binding ? {}&#34;.format(has_cppbind))
+
+
+# copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
+def get_class_from_frame(fr):
+  args, _, _, value_dict = inspect.getargvalues(fr)
+  # we check the first parameter for the frame function is
+  # named &#39;self&#39;
+  if len(args) and args[0] == &#39;self&#39;:
+    # in that case, &#39;self&#39; will be referenced in value_dict
+    instance = value_dict.get(&#39;self&#39;, None)
+    if instance:
+      # return its class name
+      try:
+          # return getattr(instance, &#39;__class__&#39;, None)
+          return getattr(instance, &#39;__class__&#39;, None).__name__
+      except:
+          return None
+  # return None otherwise
+  return None
+
+
+def get_function_name():
+    return traceback.extract_stack(None, 2)[0][2]
+
+class trace_method():
+    def __init__(self, tab):
+        self.tab = tab
+        method = traceback.extract_stack(None, 2)[0][2]
+        print(self.tab[0] + method)
+        self.tab[0] += &#39;  &#39;
+
+    def __del__(self):
+        self.tab[0] = self.tab[0][:-2]
+
+
+class ImageViewer:
+
+    def __init__(self, parent=None):
+        # super(ImageViewer, self).__init__(parent)
+        self.data = None
+        self._width = 500
+        self._height = 500
+        self.lastPos = None # Last mouse position before mouse click
+        self.mouse_dx = self.mouse_dy = 0
+        self.mouse_zx = 0
+        self.mouse_zy = 0
+        self.mouse_x = 0
+        self.mouse_y = 0
+        self.current_dx = self.current_dy = 0
+        self.current_scale = 1
+        self.cv_image : Optional[ViewerImage] = None
+        self.cv_image_ref = None
+        self.synchronize_viewer = None
+        self.tab = [&#34;--&#34;]
+        self.trace_calls  = False
+        self._image_name = &#34;&#34;
+        self.active_window = False
+        self.filter_params = ImageFilterParameters()
+        self.save_image_clipboard = False
+        self.clipboard = None
+        self._display_timing = False
+        self._verbose = False
+        self.start_time = dict()
+        self.timings = dict()
+        self.replacing_widget = None
+        self.before_max_parent = None
+        self.show_histogram = True
+        self.show_cursor    = False
+        self.show_overlay   = False
+        self.show_image_differences = False
+        self.antialiasing = True
+        # We track an image counter, changed by set_image, to help reducing same calculations
+        self.image_id       = -1
+        self.image_ref_id   = -1
+
+    @property
+    def display_timing(self):
+        return self._display_timing
+
+    @display_timing.setter
+    def display_timing(self, v):
+        self._display_timing = v
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, v):
+        self._verbose = v
+
+    def set_image(self, image):
+        is_different = (self.cv_image is None) or (self.cv_image is not image)
+        if image is not None:
+            self.print_log(&#39;set_image({}): is_different = {}&#39;.format(image.data.shape, is_different))
+        if is_different:
+            self.cv_image = image
+            self.image_id += 1
+        return is_different
+
+    def set_image_ref(self, image_ref=None):
+        is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+        if is_different:
+            self.cv_image_ref = image_ref
+            self.image_ref_id += 1
+
+    def set_clipboard(self, clipboard, save_image):
+        self.clipboard = clipboard
+        self.save_image_clipboard = save_image
+
+    def print_log(self, mess, force=False):
+        if self.verbose or force:
+            caller_name = inspect.stack()[1][3]
+            print(&#34;{}{}: {}&#34;.format(self.tab[0], caller_name, mess))
+
+    def start_timing(self, title=None):
+        if not self.display_timing: return
+        if title is None:
+            # it seems that inspect is slow
+            caller_name = inspect.stack()[1][3]
+            class_name = get_class_from_frame(inspect.stack()[1][0])
+            if class_name is not None:
+                caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+        else:
+            caller_name = title
+        self.start_time[caller_name] = get_time()
+        self.timings[caller_name] = &#39;&#39;
+
+    def add_time(self, mess, current_start, force=False, title=None):
+        if not self.display_timing: return
+        if self.display_timing or force:
+            if title is None:
+                caller_name = inspect.stack()[1][3]
+                class_name = get_class_from_frame(inspect.stack()[1][0])
+                if class_name is not None:
+                    caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+            else:
+                caller_name = title
+            if caller_name in self.start_time:
+                total_start = self.start_time[caller_name]
+                ctime = get_time()
+                mess = &#34;{} {:0.1f} ms, total {:0.1f} ms&#34;.format(mess, (ctime -current_start)*1000, (ctime-total_start)*1000)
+                self.timings[caller_name] += &#34;{}{}: {}\n&#34;.format(self.tab[0], caller_name, mess)
+
+    def print_timing(self, add_total=False, force=False, title=None):
+        if not self.display_timing: return
+        if title is None:
+            caller_name = inspect.stack()[1][3]
+            class_name = get_class_from_frame(inspect.stack()[1][0])
+            if class_name is not None:
+                caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+        else:
+            caller_name = title
+        if add_total:
+            self.add_time(&#34;total&#34;, self.start_time[caller_name], force)
+        if self.timings[caller_name] != &#39;&#39;:
+            print(self.timings[caller_name])
+
+    def set_synchronize(self, viewer):
+        self.synchronize_viewer = viewer
+
+    def synchronize_data(self, other_viewer):
+        other_viewer.current_scale = self.current_scale
+        other_viewer.current_dx = self.current_dx
+        other_viewer.current_dy = self.current_dy
+        other_viewer.mouse_dx = self.mouse_dx
+        other_viewer.mouse_dy = self.mouse_dy
+        other_viewer.mouse_zx = self.mouse_zx
+        other_viewer.mouse_zy = self.mouse_zy
+        other_viewer.mouse_x = self.mouse_x
+        other_viewer.mouse_y = self.mouse_y
+
+        other_viewer.show_histogram = self.show_histogram
+        other_viewer.show_cursor    = self.show_cursor
+
+    def synchronize(self, event_viewer):
+        &#34;&#34;&#34;
+        This method needs to be overloaded with call to self.synchronize_viewer.synchronize()
+        :param event_viewer: the viewer that started the synchronization
+        :return:
+        &#34;&#34;&#34;
+        if self==event_viewer:
+            if self.display_timing:
+                start_time = get_time()
+                if self.display_timing:
+                    print(&#34;[ --- Start sync&#34;)
+        if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
+            self.synchronize_data(self.synchronize_viewer)
+            self.synchronize_viewer.viewer_update()
+            self.synchronize_viewer.synchronize(event_viewer)
+        if self==event_viewer:
+            if self.display_timing:
+                print(&#39;       End sync --- {:0.1f} ms&#39;.format((get_time()-start_time)*1000))
+
+    def set_active(self, active=True):
+        self.active_window = active
+
+    def is_active(self):
+        return self.active_window
+
+    @property
+    def image_name(self) -&gt; str:
+        return self._image_name
+
+    @image_name.setter
+    def image_name(self, v : str):
+        self._image_name = v
+
+    def get_image(self):
+        return self.cv_image
+
+    def new_scale(self, mouse_zy, height):
+        return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
+        # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
+
+    def new_translation(self):
+        dx = self.current_dx + self.mouse_dx/self.current_scale
+        dy = self.current_dy + self.mouse_dy/self.current_scale
+        return dx, dy
+
+    def check_translation(self):
+        return self.new_translation()
+
+    # @abstractmethod
+    def viewer_update(self):
+        print(&#34;ImageViewer viewer_update&#34;)
+        pass
+
+    def mouse_press_event(self, event):
+        self.lastPos = event.pos()
+        if event.buttons() &amp; QtCore.Qt.RightButton:
+            event.accept()
+
+    def mouse_move_event(self, event):
+        self.mouse_x = event.x()
+        self.mouse_y = event.y()
+        if self.show_overlay:
+            self.viewer_update()
+        if event.buttons() &amp; QtCore.Qt.LeftButton:
+            self.mouse_dx = event.x() - self.lastPos.x()
+            self.mouse_dy = - (event.y() - self.lastPos.y())
+            self.viewer_update()
+            self.synchronize(self)
+            event.accept()
+        else:
+            if event.buttons() &amp; QtCore.Qt.RightButton:
+                # right button zoom
+                self.mouse_zx = event.x() - self.lastPos.x()
+                self.mouse_zy = - (event.y() - self.lastPos.y())
+                self.viewer_update()
+                self.synchronize(self)
+                event.accept()
+            else:
+                modifiers = QtWidgets.QApplication.keyboardModifiers()
+                if self.show_cursor:
+                    self.viewer_update()
+                    self.synchronize(self)
+
+    def mouse_release_event(self, event):
+        if event.button() &amp; QtCore.Qt.LeftButton:
+            self.current_dx, self.current_dy = self.check_translation()
+            self.mouse_dy = 0
+            self.mouse_dx = 0
+            event.accept()
+        if event.button() &amp; QtCore.Qt.RightButton:
+            if self.cv_image is not None:
+                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+            self.mouse_zy = 0
+            self.mouse_zx = 0
+            event.accept()
+        self.synchronize(self)
+
+    def mouse_double_click_event(self, event):
+        self.print_log(&#34;double click &#34;)
+        self.set_active()
+        self.viewer_update()
+        if self.synchronize_viewer is not None:
+            v = self.synchronize_viewer
+            while v != self:
+                v.set_active(False)
+                v.viewer_update()
+                if v.synchronize_viewer is not None:
+                    v = v.synchronize_viewer
+
+    def mouse_wheel_event(self,event):
+        # Zoom by applying a factor to the distances to the sides
+        if hasattr(event, &#39;delta&#39;):
+            delta = event.delta()
+        else:
+            delta = event.angleDelta().y()
+        # print(&#34;delta = {}&#34;.format(delta))
+        coeff = delta/5
+        # coeff = 20 if delta &gt; 0 else -20
+        self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
+        self.viewer_update()
+        self.synchronize(self)
+
+    def find_in_layout(self, layout: QtWidgets.QLayout) -&gt; Optional[QtWidgets.QLayout]:
+        &#34;&#34;&#34; Search Recursivement in Layouts for the current widget
+
+        Args:
+            layout (QtWidgets.QLayout): input layout for search
+
+        Returns:
+            layout containing the current widget or None if not found
+        &#34;&#34;&#34;
+        if layout.indexOf(self) != -1: return layout
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item.widget() == self: return layout
+            if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
+        return None
+
+    def toggle_fullscreen(self, event):
+        print(f&#34;toggle_fullscreen&#34;)
+        # Should be inside a layout
+        if self.before_max_parent is None:
+            if self.parent() is not None and (playout := self.parent().layout()) is not None:
+                if self.find_in_layout(playout):
+                    self.before_max_parent = self.parent()
+                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                    self.replaced_viewer = self
+                    self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    self.setParent(None)
+                    self.showFullScreen()
+                    # self.showMaximized()
+                    event.accept()
+                    return
+        if self.before_max_parent is not None:
+            self.setParent(self.before_max_parent)
+            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.replacing_widget = self.before_max_parent = None
+            # self.resize(self.before_max_size)
+            self.show()
+            self.parent().update()
+            self.setFocus()
+            event.accept()
+            return
+
+    # def mouseDoubleClickEvent(self, event):
+
+    def key_press_event(self, event, wsize):
+        print(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
+        if type(event) == QtGui.QKeyEvent:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            if event.key() == QtCore.Qt.Key_F11:
+                self.toggle_fullscreen(event)
+                return
+
+            # allow to switch between images by pressing Alt+&#39;image position&#39; (Alt+0, Alt+1, etc)
+            key_list = []
+
+            # # select upper left crop
+            # key_list.append(QtCore.Qt.Key_A)
+            # if event.key() == QtCore.Qt.Key_A:
+            #     self.current_dx = wsize.width()/4
+            #     self.current_dy = -wsize.height()/4
+            #     self.current_scale = 2
+
+            # select upper left crop
+            key_list.append(QtCore.Qt.Key_B)
+            if event.key() == QtCore.Qt.Key_B:
+                self.current_dx = -wsize.width() / 4
+                self.current_dy = -wsize.height() / 4
+                self.current_scale = 2
+
+            # # select lower left crop
+            # key_list.append(QtCore.Qt.Key_C)
+            # if event.key() == QtCore.Qt.Key_C:
+            #     self.current_dx = wsize.width() / 4
+            #     self.current_dy = wsize.height() / 4
+            #     self.current_scale = 2
+
+            # # select lower right crop
+            # key_list.append(QtCore.Qt.Key_D)
+            # if event.key() == QtCore.Qt.Key_D:
+            #     self.current_dx = -wsize.width() / 4
+            #     self.current_dy = wsize.height() / 4
+            #     self.current_scale = 2
+
+            # select full crop
+            key_list.append(QtCore.Qt.Key_F)
+            if event.key() == QtCore.Qt.Key_F:
+                self.output_crop = (0., 0., 1., 1.)
+                self.current_dx = 0
+                self.current_dy = 0
+                self.current_scale = 1
+
+            # toggle antialiasing
+            key_list.append(QtCore.Qt.Key_A)
+            if event.key() == QtCore.Qt.Key_A:
+                self.antialiasing = not self.antialiasing
+                print(f&#34;antialiasing {self.antialiasing}&#34;)
+
+            # toggle histograph
+            key_list.append(QtCore.Qt.Key_H)
+            if event.key() == QtCore.Qt.Key_H:
+                self.show_histogram = not self.show_histogram
+
+            # toggle overlay
+            key_list.append(QtCore.Qt.Key_O)
+            if event.key() == QtCore.Qt.Key_O:
+                self.show_overlay = not self.show_overlay
+
+            # C: toggle cursor
+            key_list.append(QtCore.Qt.Key_C)
+            if event.key() == QtCore.Qt.Key_C:
+                self.show_cursor = not self.show_cursor
+
+            # D: toggle image differences
+            key_list.append(QtCore.Qt.Key_D)
+            if event.key() == QtCore.Qt.Key_D:
+                self.show_image_differences = not self.show_image_differences
+
+            if event.key() in key_list:
+                self.viewer_update()
+                self.synchronize(self)
+                event.accept()
+                return
+            event.ignore()
+        else:
+            event.ignore()
+
+    def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -&gt; str:
+        text : str = self.image_name
+        if self.show_cursor and im_pos:
+            text +=  f&#34;\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}&#34;
+            if scale is not None:
+                text += f&#34;\n x{scale:0.2f}&#34;
+            im_x, im_y = im_pos
+            values = self.cv_image.data[im_y, im_x]
+            text += f&#34;\n pos {im_x:4}, {im_y:4} \n rgb {values}&#34;
+
+        if self.show_overlay:
+            text += &#34;\n ref | im &#34; 
+        if self.show_image_differences:
+            text += &#34;\n im - ref&#34; 
+        return text
+
+    def display_text(self, painter: QtGui.QPainter, text: str) -&gt; None:
+        self.start_timing()
+        color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
+        painter.setPen(color)
+        font = QtGui.QFont(&#39;Decorative&#39;, 12)
+        # font.setBold(True)
+        painter.setFont(font)
+        painter.setBackground(QtGui.QColor(250, 250, 250, int(0.75*255)))
+        painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
+        text_options = \
+            QtCore.Qt.AlignmentFlag.AlignTop  | \
+            QtCore.Qt.AlignmentFlag.AlignLeft | \
+            QtCore.Qt.TextFlag.TextWordWrap
+        area_width = 400
+        area_height = 200
+        # boundingRect is interesting but slow to be called at each display
+        # bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
+        margin_x = 8
+        margin_y = 5
+        painter.drawText(
+            margin_x, 
+            # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
+            margin_y, area_width, area_height,
+            text_options,
+            text
+            )
+        self.print_timing()
+
+    def compute_histogram(self, current_image, show_timings=False):
+        # print(f&#34;compute_histogram show_timings {show_timings}&#34;)
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        input_image = current_image
+        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
+        # input_image = self.cv_image
+        resized_im = input_image[::hist_y_step, ::hist_x_step, :]
+        resized_im = input_image
+        if self.verbose:
+            print(f&#34;qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} &#34;
+                f&#34;shape {current_image.shape} --&gt; {resized_im.shape}&#34;)
+        if show_timings: resized_time = get_time()-h_start
+
+        calc_hist_time = 0
+
+        # First compute all histograms
+        if show_timings: start_hist = get_time()
+        hist_all = np.empty((3, 256), dtype=np.float32)
+        # print(f&#34;{resized_im[::100,::100,:]}&#34;)
+        for channel, im_ch in enumerate(cv2.split(resized_im)):
+            # hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
+            hist = cv2.calcHist([im_ch], [0], None, [256], [0, 256])
+            # print(f&#34;max diff {np.max(np.abs(hist-hist2))}&#34;)
+            hist_all[channel, :] = hist[:, 0]
+
+        hist_all = hist_all / np.max(hist_all)
+        if show_timings: end_hist = get_time()
+        if show_timings: calc_hist_time += end_hist-start_hist
+        if show_timings: gauss_start = get_time()
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: gauss_time = get_time() - gauss_start
+
+        if show_timings: 
+            print(f&#34;compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#34;&#34;)
+            print(f&#34;from which calchist:{calc_hist_time*1000:0.1f}, &#34;
+              f&#34;resizing:{resized_time*1000:0.1f}, &#34;
+              f&#34;gauss:{gauss_time*1000:0.1f}&#34;)
+
+        return hist_all
+
+    def compute_histogram_Cpp(self, current_image, show_timings=False):
+        # print(f&#34;compute_histogram show_timings {show_timings}&#34;)
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        output_histogram = np.empty((3,256), dtype=np.uint32)
+        qimview_cpp.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
+        if show_timings: t1 = get_time()
+        hist_all = output_histogram.astype(np.float32)
+        hist_all = hist_all / np.max(hist_all)
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: print(f&#34;qimview_cpp.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, &#34;
+                                f&#34;{(get_time()-t1)*1000:0.1f} ms&#34;)
+        return hist_all
+
+    def display_histogram(self, hist_all, id, painter, im_rect, show_timings=False):
+        &#34;&#34;&#34;
+        :param painter:
+        :param rect: displayed image area
+        :return:
+        &#34;&#34;&#34;
+        if hist_all is None:
+            return
+        histo_timings = show_timings
+        #if histo_timings:
+        h_start = get_time()
+        # Histogram: keep constant width/height ratio
+        display_ratio : float = 2.0
+        # print(f&#39;im_rect = {im_rect}&#39;)
+        width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+        height  : int = int( width/display_ratio)
+        start_x : int = self.evt_width - width*id - 10
+        start_y : int = self.evt_height - 10
+        margin  : int = 3
+
+        if histo_timings: rect_start = get_time()
+        rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        # Transparent light grey
+        painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+        if histo_timings: rect_time = get_time()-rect_start
+
+        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
+        # input_image = self.cv_image
+        path_time = 0
+
+        pen = QtGui.QPen()
+        pen.setWidth(2)
+
+        qcolors = {
+            0: QtGui.QColor(255, 50, 50, 255),
+            1: QtGui.QColor(50, 255, 50, 255),
+            2: QtGui.QColor(50, 50, 255, 255)
+        }
+
+        step_x = float(width) / 256
+        step = 2
+        x_range = np.array(range(0, 256, step))
+        x_pos = start_x + x_range*step_x
+
+        for channel in range(3):
+            pen.setColor(qcolors[channel])
+            painter.setPen(pen)
+            # painter.setBrush(color)
+            # print(f&#34;histogram painting 1 took {get_time() - h_start} sec.&#34;)
+
+            # print(f&#34;histogram painting 2 took {get_time() - h_start} sec.&#34;)
+
+            if histo_timings: start_path = get_time()
+
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+
+            y_pos = start_y - hist_all[channel, x_range]*height
+            # polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
+            # path.addPolygon(polygon)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
+            painter.drawPath(path)
+            if histo_timings: path_time += get_time()-start_path
+
+        if histo_timings: 
+            print(f&#34;display_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#39;&#39;)
+            print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="qimview.image_viewers.image_viewer.get_class_from_frame"><code class="name flex">
+<span>def <span class="ident">get_class_from_frame</span></span>(<span>fr)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_class_from_frame(fr):
+  args, _, _, value_dict = inspect.getargvalues(fr)
+  # we check the first parameter for the frame function is
+  # named &#39;self&#39;
+  if len(args) and args[0] == &#39;self&#39;:
+    # in that case, &#39;self&#39; will be referenced in value_dict
+    instance = value_dict.get(&#39;self&#39;, None)
+    if instance:
+      # return its class name
+      try:
+          # return getattr(instance, &#39;__class__&#39;, None)
+          return getattr(instance, &#39;__class__&#39;, None).__name__
+      except:
+          return None
+  # return None otherwise
+  return None</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.get_function_name"><code class="name flex">
+<span>def <span class="ident">get_function_name</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_function_name():
+    return traceback.extract_stack(None, 2)[0][2]</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer"><code class="flex name class">
+<span>class <span class="ident">ImageViewer</span></span>
+<span>(</span><span>parent=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ImageViewer:
+
+    def __init__(self, parent=None):
+        # super(ImageViewer, self).__init__(parent)
+        self.data = None
+        self._width = 500
+        self._height = 500
+        self.lastPos = None # Last mouse position before mouse click
+        self.mouse_dx = self.mouse_dy = 0
+        self.mouse_zx = 0
+        self.mouse_zy = 0
+        self.mouse_x = 0
+        self.mouse_y = 0
+        self.current_dx = self.current_dy = 0
+        self.current_scale = 1
+        self.cv_image : Optional[ViewerImage] = None
+        self.cv_image_ref = None
+        self.synchronize_viewer = None
+        self.tab = [&#34;--&#34;]
+        self.trace_calls  = False
+        self._image_name = &#34;&#34;
+        self.active_window = False
+        self.filter_params = ImageFilterParameters()
+        self.save_image_clipboard = False
+        self.clipboard = None
+        self._display_timing = False
+        self._verbose = False
+        self.start_time = dict()
+        self.timings = dict()
+        self.replacing_widget = None
+        self.before_max_parent = None
+        self.show_histogram = True
+        self.show_cursor    = False
+        self.show_overlay   = False
+        self.show_image_differences = False
+        self.antialiasing = True
+        # We track an image counter, changed by set_image, to help reducing same calculations
+        self.image_id       = -1
+        self.image_ref_id   = -1
+
+    @property
+    def display_timing(self):
+        return self._display_timing
+
+    @display_timing.setter
+    def display_timing(self, v):
+        self._display_timing = v
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, v):
+        self._verbose = v
+
+    def set_image(self, image):
+        is_different = (self.cv_image is None) or (self.cv_image is not image)
+        if image is not None:
+            self.print_log(&#39;set_image({}): is_different = {}&#39;.format(image.data.shape, is_different))
+        if is_different:
+            self.cv_image = image
+            self.image_id += 1
+        return is_different
+
+    def set_image_ref(self, image_ref=None):
+        is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+        if is_different:
+            self.cv_image_ref = image_ref
+            self.image_ref_id += 1
+
+    def set_clipboard(self, clipboard, save_image):
+        self.clipboard = clipboard
+        self.save_image_clipboard = save_image
+
+    def print_log(self, mess, force=False):
+        if self.verbose or force:
+            caller_name = inspect.stack()[1][3]
+            print(&#34;{}{}: {}&#34;.format(self.tab[0], caller_name, mess))
+
+    def start_timing(self, title=None):
+        if not self.display_timing: return
+        if title is None:
+            # it seems that inspect is slow
+            caller_name = inspect.stack()[1][3]
+            class_name = get_class_from_frame(inspect.stack()[1][0])
+            if class_name is not None:
+                caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+        else:
+            caller_name = title
+        self.start_time[caller_name] = get_time()
+        self.timings[caller_name] = &#39;&#39;
+
+    def add_time(self, mess, current_start, force=False, title=None):
+        if not self.display_timing: return
+        if self.display_timing or force:
+            if title is None:
+                caller_name = inspect.stack()[1][3]
+                class_name = get_class_from_frame(inspect.stack()[1][0])
+                if class_name is not None:
+                    caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+            else:
+                caller_name = title
+            if caller_name in self.start_time:
+                total_start = self.start_time[caller_name]
+                ctime = get_time()
+                mess = &#34;{} {:0.1f} ms, total {:0.1f} ms&#34;.format(mess, (ctime -current_start)*1000, (ctime-total_start)*1000)
+                self.timings[caller_name] += &#34;{}{}: {}\n&#34;.format(self.tab[0], caller_name, mess)
+
+    def print_timing(self, add_total=False, force=False, title=None):
+        if not self.display_timing: return
+        if title is None:
+            caller_name = inspect.stack()[1][3]
+            class_name = get_class_from_frame(inspect.stack()[1][0])
+            if class_name is not None:
+                caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+        else:
+            caller_name = title
+        if add_total:
+            self.add_time(&#34;total&#34;, self.start_time[caller_name], force)
+        if self.timings[caller_name] != &#39;&#39;:
+            print(self.timings[caller_name])
+
+    def set_synchronize(self, viewer):
+        self.synchronize_viewer = viewer
+
+    def synchronize_data(self, other_viewer):
+        other_viewer.current_scale = self.current_scale
+        other_viewer.current_dx = self.current_dx
+        other_viewer.current_dy = self.current_dy
+        other_viewer.mouse_dx = self.mouse_dx
+        other_viewer.mouse_dy = self.mouse_dy
+        other_viewer.mouse_zx = self.mouse_zx
+        other_viewer.mouse_zy = self.mouse_zy
+        other_viewer.mouse_x = self.mouse_x
+        other_viewer.mouse_y = self.mouse_y
+
+        other_viewer.show_histogram = self.show_histogram
+        other_viewer.show_cursor    = self.show_cursor
+
+    def synchronize(self, event_viewer):
+        &#34;&#34;&#34;
+        This method needs to be overloaded with call to self.synchronize_viewer.synchronize()
+        :param event_viewer: the viewer that started the synchronization
+        :return:
+        &#34;&#34;&#34;
+        if self==event_viewer:
+            if self.display_timing:
+                start_time = get_time()
+                if self.display_timing:
+                    print(&#34;[ --- Start sync&#34;)
+        if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
+            self.synchronize_data(self.synchronize_viewer)
+            self.synchronize_viewer.viewer_update()
+            self.synchronize_viewer.synchronize(event_viewer)
+        if self==event_viewer:
+            if self.display_timing:
+                print(&#39;       End sync --- {:0.1f} ms&#39;.format((get_time()-start_time)*1000))
+
+    def set_active(self, active=True):
+        self.active_window = active
+
+    def is_active(self):
+        return self.active_window
+
+    @property
+    def image_name(self) -&gt; str:
+        return self._image_name
+
+    @image_name.setter
+    def image_name(self, v : str):
+        self._image_name = v
+
+    def get_image(self):
+        return self.cv_image
+
+    def new_scale(self, mouse_zy, height):
+        return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
+        # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
+
+    def new_translation(self):
+        dx = self.current_dx + self.mouse_dx/self.current_scale
+        dy = self.current_dy + self.mouse_dy/self.current_scale
+        return dx, dy
+
+    def check_translation(self):
+        return self.new_translation()
+
+    # @abstractmethod
+    def viewer_update(self):
+        print(&#34;ImageViewer viewer_update&#34;)
+        pass
+
+    def mouse_press_event(self, event):
+        self.lastPos = event.pos()
+        if event.buttons() &amp; QtCore.Qt.RightButton:
+            event.accept()
+
+    def mouse_move_event(self, event):
+        self.mouse_x = event.x()
+        self.mouse_y = event.y()
+        if self.show_overlay:
+            self.viewer_update()
+        if event.buttons() &amp; QtCore.Qt.LeftButton:
+            self.mouse_dx = event.x() - self.lastPos.x()
+            self.mouse_dy = - (event.y() - self.lastPos.y())
+            self.viewer_update()
+            self.synchronize(self)
+            event.accept()
+        else:
+            if event.buttons() &amp; QtCore.Qt.RightButton:
+                # right button zoom
+                self.mouse_zx = event.x() - self.lastPos.x()
+                self.mouse_zy = - (event.y() - self.lastPos.y())
+                self.viewer_update()
+                self.synchronize(self)
+                event.accept()
+            else:
+                modifiers = QtWidgets.QApplication.keyboardModifiers()
+                if self.show_cursor:
+                    self.viewer_update()
+                    self.synchronize(self)
+
+    def mouse_release_event(self, event):
+        if event.button() &amp; QtCore.Qt.LeftButton:
+            self.current_dx, self.current_dy = self.check_translation()
+            self.mouse_dy = 0
+            self.mouse_dx = 0
+            event.accept()
+        if event.button() &amp; QtCore.Qt.RightButton:
+            if self.cv_image is not None:
+                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+            self.mouse_zy = 0
+            self.mouse_zx = 0
+            event.accept()
+        self.synchronize(self)
+
+    def mouse_double_click_event(self, event):
+        self.print_log(&#34;double click &#34;)
+        self.set_active()
+        self.viewer_update()
+        if self.synchronize_viewer is not None:
+            v = self.synchronize_viewer
+            while v != self:
+                v.set_active(False)
+                v.viewer_update()
+                if v.synchronize_viewer is not None:
+                    v = v.synchronize_viewer
+
+    def mouse_wheel_event(self,event):
+        # Zoom by applying a factor to the distances to the sides
+        if hasattr(event, &#39;delta&#39;):
+            delta = event.delta()
+        else:
+            delta = event.angleDelta().y()
+        # print(&#34;delta = {}&#34;.format(delta))
+        coeff = delta/5
+        # coeff = 20 if delta &gt; 0 else -20
+        self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
+        self.viewer_update()
+        self.synchronize(self)
+
+    def find_in_layout(self, layout: QtWidgets.QLayout) -&gt; Optional[QtWidgets.QLayout]:
+        &#34;&#34;&#34; Search Recursivement in Layouts for the current widget
+
+        Args:
+            layout (QtWidgets.QLayout): input layout for search
+
+        Returns:
+            layout containing the current widget or None if not found
+        &#34;&#34;&#34;
+        if layout.indexOf(self) != -1: return layout
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item.widget() == self: return layout
+            if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
+        return None
+
+    def toggle_fullscreen(self, event):
+        print(f&#34;toggle_fullscreen&#34;)
+        # Should be inside a layout
+        if self.before_max_parent is None:
+            if self.parent() is not None and (playout := self.parent().layout()) is not None:
+                if self.find_in_layout(playout):
+                    self.before_max_parent = self.parent()
+                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                    self.replaced_viewer = self
+                    self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    self.setParent(None)
+                    self.showFullScreen()
+                    # self.showMaximized()
+                    event.accept()
+                    return
+        if self.before_max_parent is not None:
+            self.setParent(self.before_max_parent)
+            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.replacing_widget = self.before_max_parent = None
+            # self.resize(self.before_max_size)
+            self.show()
+            self.parent().update()
+            self.setFocus()
+            event.accept()
+            return
+
+    # def mouseDoubleClickEvent(self, event):
+
+    def key_press_event(self, event, wsize):
+        print(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
+        if type(event) == QtGui.QKeyEvent:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            if event.key() == QtCore.Qt.Key_F11:
+                self.toggle_fullscreen(event)
+                return
+
+            # allow to switch between images by pressing Alt+&#39;image position&#39; (Alt+0, Alt+1, etc)
+            key_list = []
+
+            # # select upper left crop
+            # key_list.append(QtCore.Qt.Key_A)
+            # if event.key() == QtCore.Qt.Key_A:
+            #     self.current_dx = wsize.width()/4
+            #     self.current_dy = -wsize.height()/4
+            #     self.current_scale = 2
+
+            # select upper left crop
+            key_list.append(QtCore.Qt.Key_B)
+            if event.key() == QtCore.Qt.Key_B:
+                self.current_dx = -wsize.width() / 4
+                self.current_dy = -wsize.height() / 4
+                self.current_scale = 2
+
+            # # select lower left crop
+            # key_list.append(QtCore.Qt.Key_C)
+            # if event.key() == QtCore.Qt.Key_C:
+            #     self.current_dx = wsize.width() / 4
+            #     self.current_dy = wsize.height() / 4
+            #     self.current_scale = 2
+
+            # # select lower right crop
+            # key_list.append(QtCore.Qt.Key_D)
+            # if event.key() == QtCore.Qt.Key_D:
+            #     self.current_dx = -wsize.width() / 4
+            #     self.current_dy = wsize.height() / 4
+            #     self.current_scale = 2
+
+            # select full crop
+            key_list.append(QtCore.Qt.Key_F)
+            if event.key() == QtCore.Qt.Key_F:
+                self.output_crop = (0., 0., 1., 1.)
+                self.current_dx = 0
+                self.current_dy = 0
+                self.current_scale = 1
+
+            # toggle antialiasing
+            key_list.append(QtCore.Qt.Key_A)
+            if event.key() == QtCore.Qt.Key_A:
+                self.antialiasing = not self.antialiasing
+                print(f&#34;antialiasing {self.antialiasing}&#34;)
+
+            # toggle histograph
+            key_list.append(QtCore.Qt.Key_H)
+            if event.key() == QtCore.Qt.Key_H:
+                self.show_histogram = not self.show_histogram
+
+            # toggle overlay
+            key_list.append(QtCore.Qt.Key_O)
+            if event.key() == QtCore.Qt.Key_O:
+                self.show_overlay = not self.show_overlay
+
+            # C: toggle cursor
+            key_list.append(QtCore.Qt.Key_C)
+            if event.key() == QtCore.Qt.Key_C:
+                self.show_cursor = not self.show_cursor
+
+            # D: toggle image differences
+            key_list.append(QtCore.Qt.Key_D)
+            if event.key() == QtCore.Qt.Key_D:
+                self.show_image_differences = not self.show_image_differences
+
+            if event.key() in key_list:
+                self.viewer_update()
+                self.synchronize(self)
+                event.accept()
+                return
+            event.ignore()
+        else:
+            event.ignore()
+
+    def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -&gt; str:
+        text : str = self.image_name
+        if self.show_cursor and im_pos:
+            text +=  f&#34;\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}&#34;
+            if scale is not None:
+                text += f&#34;\n x{scale:0.2f}&#34;
+            im_x, im_y = im_pos
+            values = self.cv_image.data[im_y, im_x]
+            text += f&#34;\n pos {im_x:4}, {im_y:4} \n rgb {values}&#34;
+
+        if self.show_overlay:
+            text += &#34;\n ref | im &#34; 
+        if self.show_image_differences:
+            text += &#34;\n im - ref&#34; 
+        return text
+
+    def display_text(self, painter: QtGui.QPainter, text: str) -&gt; None:
+        self.start_timing()
+        color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
+        painter.setPen(color)
+        font = QtGui.QFont(&#39;Decorative&#39;, 12)
+        # font.setBold(True)
+        painter.setFont(font)
+        painter.setBackground(QtGui.QColor(250, 250, 250, int(0.75*255)))
+        painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
+        text_options = \
+            QtCore.Qt.AlignmentFlag.AlignTop  | \
+            QtCore.Qt.AlignmentFlag.AlignLeft | \
+            QtCore.Qt.TextFlag.TextWordWrap
+        area_width = 400
+        area_height = 200
+        # boundingRect is interesting but slow to be called at each display
+        # bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
+        margin_x = 8
+        margin_y = 5
+        painter.drawText(
+            margin_x, 
+            # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
+            margin_y, area_width, area_height,
+            text_options,
+            text
+            )
+        self.print_timing()
+
+    def compute_histogram(self, current_image, show_timings=False):
+        # print(f&#34;compute_histogram show_timings {show_timings}&#34;)
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        input_image = current_image
+        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
+        # input_image = self.cv_image
+        resized_im = input_image[::hist_y_step, ::hist_x_step, :]
+        resized_im = input_image
+        if self.verbose:
+            print(f&#34;qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} &#34;
+                f&#34;shape {current_image.shape} --&gt; {resized_im.shape}&#34;)
+        if show_timings: resized_time = get_time()-h_start
+
+        calc_hist_time = 0
+
+        # First compute all histograms
+        if show_timings: start_hist = get_time()
+        hist_all = np.empty((3, 256), dtype=np.float32)
+        # print(f&#34;{resized_im[::100,::100,:]}&#34;)
+        for channel, im_ch in enumerate(cv2.split(resized_im)):
+            # hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
+            hist = cv2.calcHist([im_ch], [0], None, [256], [0, 256])
+            # print(f&#34;max diff {np.max(np.abs(hist-hist2))}&#34;)
+            hist_all[channel, :] = hist[:, 0]
+
+        hist_all = hist_all / np.max(hist_all)
+        if show_timings: end_hist = get_time()
+        if show_timings: calc_hist_time += end_hist-start_hist
+        if show_timings: gauss_start = get_time()
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: gauss_time = get_time() - gauss_start
+
+        if show_timings: 
+            print(f&#34;compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#34;&#34;)
+            print(f&#34;from which calchist:{calc_hist_time*1000:0.1f}, &#34;
+              f&#34;resizing:{resized_time*1000:0.1f}, &#34;
+              f&#34;gauss:{gauss_time*1000:0.1f}&#34;)
+
+        return hist_all
+
+    def compute_histogram_Cpp(self, current_image, show_timings=False):
+        # print(f&#34;compute_histogram show_timings {show_timings}&#34;)
+        if show_timings: h_start = get_time()
+        # Compute steps based on input image resolution
+        im_w, im_h = current_image.shape[1], current_image.shape[0]
+        target_w = 800
+        target_h = 600
+        hist_x_step = max(1, int(im_w/target_w+0.5))
+        hist_y_step = max(1, int(im_h/target_h+0.5))
+        output_histogram = np.empty((3,256), dtype=np.uint32)
+        qimview_cpp.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
+        if show_timings: t1 = get_time()
+        hist_all = output_histogram.astype(np.float32)
+        hist_all = hist_all / np.max(hist_all)
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: print(f&#34;qimview_cpp.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, &#34;
+                                f&#34;{(get_time()-t1)*1000:0.1f} ms&#34;)
+        return hist_all
+
+    def display_histogram(self, hist_all, id, painter, im_rect, show_timings=False):
+        &#34;&#34;&#34;
+        :param painter:
+        :param rect: displayed image area
+        :return:
+        &#34;&#34;&#34;
+        if hist_all is None:
+            return
+        histo_timings = show_timings
+        #if histo_timings:
+        h_start = get_time()
+        # Histogram: keep constant width/height ratio
+        display_ratio : float = 2.0
+        # print(f&#39;im_rect = {im_rect}&#39;)
+        width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+        height  : int = int( width/display_ratio)
+        start_x : int = self.evt_width - width*id - 10
+        start_y : int = self.evt_height - 10
+        margin  : int = 3
+
+        if histo_timings: rect_start = get_time()
+        rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+        # Transparent light grey
+        painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+        if histo_timings: rect_time = get_time()-rect_start
+
+        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
+        # input_image = self.cv_image
+        path_time = 0
+
+        pen = QtGui.QPen()
+        pen.setWidth(2)
+
+        qcolors = {
+            0: QtGui.QColor(255, 50, 50, 255),
+            1: QtGui.QColor(50, 255, 50, 255),
+            2: QtGui.QColor(50, 50, 255, 255)
+        }
+
+        step_x = float(width) / 256
+        step = 2
+        x_range = np.array(range(0, 256, step))
+        x_pos = start_x + x_range*step_x
+
+        for channel in range(3):
+            pen.setColor(qcolors[channel])
+            painter.setPen(pen)
+            # painter.setBrush(color)
+            # print(f&#34;histogram painting 1 took {get_time() - h_start} sec.&#34;)
+
+            # print(f&#34;histogram painting 2 took {get_time() - h_start} sec.&#34;)
+
+            if histo_timings: start_path = get_time()
+
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+
+            y_pos = start_y - hist_all[channel, x_range]*height
+            # polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
+            # path.addPolygon(polygon)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
+            painter.drawPath(path)
+            if histo_timings: path_time += get_time()-start_path
+
+        if histo_timings: 
+            print(f&#34;display_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#39;&#39;)
+            print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase" href="gl_image_viewer_base.html#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase">GLImageViewerBase</a></li>
+<li><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer" href="qt_image_viewer.html#qimview.image_viewers.qt_image_viewer.QTImageViewer">QTImageViewer</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.display_timing"><code class="name">var <span class="ident">display_timing</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def display_timing(self):
+    return self._display_timing</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.image_name"><code class="name">var <span class="ident">image_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def image_name(self) -&gt; str:
+    return self._image_name</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.verbose"><code class="name">var <span class="ident">verbose</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def verbose(self):
+    return self._verbose</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.add_time"><code class="name flex">
+<span>def <span class="ident">add_time</span></span>(<span>self, mess, current_start, force=False, title=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_time(self, mess, current_start, force=False, title=None):
+    if not self.display_timing: return
+    if self.display_timing or force:
+        if title is None:
+            caller_name = inspect.stack()[1][3]
+            class_name = get_class_from_frame(inspect.stack()[1][0])
+            if class_name is not None:
+                caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+        else:
+            caller_name = title
+        if caller_name in self.start_time:
+            total_start = self.start_time[caller_name]
+            ctime = get_time()
+            mess = &#34;{} {:0.1f} ms, total {:0.1f} ms&#34;.format(mess, (ctime -current_start)*1000, (ctime-total_start)*1000)
+            self.timings[caller_name] += &#34;{}{}: {}\n&#34;.format(self.tab[0], caller_name, mess)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.check_translation"><code class="name flex">
+<span>def <span class="ident">check_translation</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_translation(self):
+    return self.new_translation()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.compute_histogram"><code class="name flex">
+<span>def <span class="ident">compute_histogram</span></span>(<span>self, current_image, show_timings=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_histogram(self, current_image, show_timings=False):
+    # print(f&#34;compute_histogram show_timings {show_timings}&#34;)
+    if show_timings: h_start = get_time()
+    # Compute steps based on input image resolution
+    im_w, im_h = current_image.shape[1], current_image.shape[0]
+    target_w = 800
+    target_h = 600
+    hist_x_step = max(1, int(im_w/target_w+0.5))
+    hist_y_step = max(1, int(im_h/target_h+0.5))
+    input_image = current_image
+    # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
+    # input_image = self.cv_image
+    resized_im = input_image[::hist_y_step, ::hist_x_step, :]
+    resized_im = input_image
+    if self.verbose:
+        print(f&#34;qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} &#34;
+            f&#34;shape {current_image.shape} --&gt; {resized_im.shape}&#34;)
+    if show_timings: resized_time = get_time()-h_start
+
+    calc_hist_time = 0
+
+    # First compute all histograms
+    if show_timings: start_hist = get_time()
+    hist_all = np.empty((3, 256), dtype=np.float32)
+    # print(f&#34;{resized_im[::100,::100,:]}&#34;)
+    for channel, im_ch in enumerate(cv2.split(resized_im)):
+        # hist = cv2.calcHist(resized_im[:, :, channel], [0], None, [256], [0, 256])
+        hist = cv2.calcHist([im_ch], [0], None, [256], [0, 256])
+        # print(f&#34;max diff {np.max(np.abs(hist-hist2))}&#34;)
+        hist_all[channel, :] = hist[:, 0]
+
+    hist_all = hist_all / np.max(hist_all)
+    if show_timings: end_hist = get_time()
+    if show_timings: calc_hist_time += end_hist-start_hist
+    if show_timings: gauss_start = get_time()
+    hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+    if show_timings: gauss_time = get_time() - gauss_start
+
+    if show_timings: 
+        print(f&#34;compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#34;&#34;)
+        print(f&#34;from which calchist:{calc_hist_time*1000:0.1f}, &#34;
+          f&#34;resizing:{resized_time*1000:0.1f}, &#34;
+          f&#34;gauss:{gauss_time*1000:0.1f}&#34;)
+
+    return hist_all</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.compute_histogram_Cpp"><code class="name flex">
+<span>def <span class="ident">compute_histogram_Cpp</span></span>(<span>self, current_image, show_timings=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_histogram_Cpp(self, current_image, show_timings=False):
+    # print(f&#34;compute_histogram show_timings {show_timings}&#34;)
+    if show_timings: h_start = get_time()
+    # Compute steps based on input image resolution
+    im_w, im_h = current_image.shape[1], current_image.shape[0]
+    target_w = 800
+    target_h = 600
+    hist_x_step = max(1, int(im_w/target_w+0.5))
+    hist_y_step = max(1, int(im_h/target_h+0.5))
+    output_histogram = np.empty((3,256), dtype=np.uint32)
+    qimview_cpp.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
+    if show_timings: t1 = get_time()
+    hist_all = output_histogram.astype(np.float32)
+    hist_all = hist_all / np.max(hist_all)
+    hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+    if show_timings: print(f&#34;qimview_cpp.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, &#34;
+                            f&#34;{(get_time()-t1)*1000:0.1f} ms&#34;)
+    return hist_all</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.display_histogram"><code class="name flex">
+<span>def <span class="ident">display_histogram</span></span>(<span>self, hist_all, id, painter, im_rect, show_timings=False)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>:param painter:
+:param rect: displayed image area
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def display_histogram(self, hist_all, id, painter, im_rect, show_timings=False):
+    &#34;&#34;&#34;
+    :param painter:
+    :param rect: displayed image area
+    :return:
+    &#34;&#34;&#34;
+    if hist_all is None:
+        return
+    histo_timings = show_timings
+    #if histo_timings:
+    h_start = get_time()
+    # Histogram: keep constant width/height ratio
+    display_ratio : float = 2.0
+    # print(f&#39;im_rect = {im_rect}&#39;)
+    width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+    height  : int = int( width/display_ratio)
+    start_x : int = self.evt_width - width*id - 10
+    start_y : int = self.evt_height - 10
+    margin  : int = 3
+
+    if histo_timings: rect_start = get_time()
+    rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+    # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
+    # Transparent light grey
+    painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+    if histo_timings: rect_time = get_time()-rect_start
+
+    # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
+    # input_image = self.cv_image
+    path_time = 0
+
+    pen = QtGui.QPen()
+    pen.setWidth(2)
+
+    qcolors = {
+        0: QtGui.QColor(255, 50, 50, 255),
+        1: QtGui.QColor(50, 255, 50, 255),
+        2: QtGui.QColor(50, 50, 255, 255)
+    }
+
+    step_x = float(width) / 256
+    step = 2
+    x_range = np.array(range(0, 256, step))
+    x_pos = start_x + x_range*step_x
+
+    for channel in range(3):
+        pen.setColor(qcolors[channel])
+        painter.setPen(pen)
+        # painter.setBrush(color)
+        # print(f&#34;histogram painting 1 took {get_time() - h_start} sec.&#34;)
+
+        # print(f&#34;histogram painting 2 took {get_time() - h_start} sec.&#34;)
+
+        if histo_timings: start_path = get_time()
+
+        # apply a small Gaussian filtering to histogram curve
+        path = QtGui.QPainterPath()
+
+        y_pos = start_y - hist_all[channel, x_range]*height
+        # polygon = QtGui.QPolygonF([QtCore.QPointF(x_pos[n], y_pos[n]) for n in range(len(x_range))])
+        # path.addPolygon(polygon)
+        path.moveTo(x_pos[0], y_pos[0])
+        for n in range(1,len(x_range)):
+            path.lineTo(x_pos[n], y_pos[n])
+        painter.drawPath(path)
+        if histo_timings: path_time += get_time()-start_path
+
+    if histo_timings: 
+        print(f&#34;display_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#39;&#39;)
+        print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.display_message"><code class="name flex">
+<span>def <span class="ident">display_message</span></span>(<span>self, im_pos: Optional[Tuple[int, int]], scale=None) ‑> str</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -&gt; str:
+    text : str = self.image_name
+    if self.show_cursor and im_pos:
+        text +=  f&#34;\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}&#34;
+        if scale is not None:
+            text += f&#34;\n x{scale:0.2f}&#34;
+        im_x, im_y = im_pos
+        values = self.cv_image.data[im_y, im_x]
+        text += f&#34;\n pos {im_x:4}, {im_y:4} \n rgb {values}&#34;
+
+    if self.show_overlay:
+        text += &#34;\n ref | im &#34; 
+    if self.show_image_differences:
+        text += &#34;\n im - ref&#34; 
+    return text</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.display_text"><code class="name flex">
+<span>def <span class="ident">display_text</span></span>(<span>self, painter: PySide6.QtGui.QPainter, text: str) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def display_text(self, painter: QtGui.QPainter, text: str) -&gt; None:
+    self.start_timing()
+    color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
+    painter.setPen(color)
+    font = QtGui.QFont(&#39;Decorative&#39;, 12)
+    # font.setBold(True)
+    painter.setFont(font)
+    painter.setBackground(QtGui.QColor(250, 250, 250, int(0.75*255)))
+    painter.setBackgroundMode(QtGui.Qt.BGMode.OpaqueMode)
+    text_options = \
+        QtCore.Qt.AlignmentFlag.AlignTop  | \
+        QtCore.Qt.AlignmentFlag.AlignLeft | \
+        QtCore.Qt.TextFlag.TextWordWrap
+    area_width = 400
+    area_height = 200
+    # boundingRect is interesting but slow to be called at each display
+    # bounding_rect = painter.boundingRect(0, 0, area_width, area_height, text_options, self.display_message)
+    margin_x = 8
+    margin_y = 5
+    painter.drawText(
+        margin_x, 
+        # self.evt_height-margin_y-bounding_rect.height(), area_width, area_height,
+        margin_y, area_width, area_height,
+        text_options,
+        text
+        )
+    self.print_timing()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.find_in_layout"><code class="name flex">
+<span>def <span class="ident">find_in_layout</span></span>(<span>self, layout: PySide6.QtWidgets.QLayout) ‑> Optional[PySide6.QtWidgets.QLayout]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Search Recursivement in Layouts for the current widget</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>layout</code></strong> :&ensp;<code>QtWidgets.QLayout</code></dt>
+<dd>input layout for search</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>layout containing the current widget or None if not found</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_in_layout(self, layout: QtWidgets.QLayout) -&gt; Optional[QtWidgets.QLayout]:
+    &#34;&#34;&#34; Search Recursivement in Layouts for the current widget
+
+    Args:
+        layout (QtWidgets.QLayout): input layout for search
+
+    Returns:
+        layout containing the current widget or None if not found
+    &#34;&#34;&#34;
+    if layout.indexOf(self) != -1: return layout
+    for i in range(layout.count()):
+        item = layout.itemAt(i)
+        if item.widget() == self: return layout
+        if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
+    return None</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.get_image"><code class="name flex">
+<span>def <span class="ident">get_image</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_image(self):
+    return self.cv_image</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.is_active"><code class="name flex">
+<span>def <span class="ident">is_active</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_active(self):
+    return self.active_window</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.key_press_event"><code class="name flex">
+<span>def <span class="ident">key_press_event</span></span>(<span>self, event, wsize)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def key_press_event(self, event, wsize):
+    print(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
+    if type(event) == QtGui.QKeyEvent:
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        if event.key() == QtCore.Qt.Key_F11:
+            self.toggle_fullscreen(event)
+            return
+
+        # allow to switch between images by pressing Alt+&#39;image position&#39; (Alt+0, Alt+1, etc)
+        key_list = []
+
+        # # select upper left crop
+        # key_list.append(QtCore.Qt.Key_A)
+        # if event.key() == QtCore.Qt.Key_A:
+        #     self.current_dx = wsize.width()/4
+        #     self.current_dy = -wsize.height()/4
+        #     self.current_scale = 2
+
+        # select upper left crop
+        key_list.append(QtCore.Qt.Key_B)
+        if event.key() == QtCore.Qt.Key_B:
+            self.current_dx = -wsize.width() / 4
+            self.current_dy = -wsize.height() / 4
+            self.current_scale = 2
+
+        # # select lower left crop
+        # key_list.append(QtCore.Qt.Key_C)
+        # if event.key() == QtCore.Qt.Key_C:
+        #     self.current_dx = wsize.width() / 4
+        #     self.current_dy = wsize.height() / 4
+        #     self.current_scale = 2
+
+        # # select lower right crop
+        # key_list.append(QtCore.Qt.Key_D)
+        # if event.key() == QtCore.Qt.Key_D:
+        #     self.current_dx = -wsize.width() / 4
+        #     self.current_dy = wsize.height() / 4
+        #     self.current_scale = 2
+
+        # select full crop
+        key_list.append(QtCore.Qt.Key_F)
+        if event.key() == QtCore.Qt.Key_F:
+            self.output_crop = (0., 0., 1., 1.)
+            self.current_dx = 0
+            self.current_dy = 0
+            self.current_scale = 1
+
+        # toggle antialiasing
+        key_list.append(QtCore.Qt.Key_A)
+        if event.key() == QtCore.Qt.Key_A:
+            self.antialiasing = not self.antialiasing
+            print(f&#34;antialiasing {self.antialiasing}&#34;)
+
+        # toggle histograph
+        key_list.append(QtCore.Qt.Key_H)
+        if event.key() == QtCore.Qt.Key_H:
+            self.show_histogram = not self.show_histogram
+
+        # toggle overlay
+        key_list.append(QtCore.Qt.Key_O)
+        if event.key() == QtCore.Qt.Key_O:
+            self.show_overlay = not self.show_overlay
+
+        # C: toggle cursor
+        key_list.append(QtCore.Qt.Key_C)
+        if event.key() == QtCore.Qt.Key_C:
+            self.show_cursor = not self.show_cursor
+
+        # D: toggle image differences
+        key_list.append(QtCore.Qt.Key_D)
+        if event.key() == QtCore.Qt.Key_D:
+            self.show_image_differences = not self.show_image_differences
+
+        if event.key() in key_list:
+            self.viewer_update()
+            self.synchronize(self)
+            event.accept()
+            return
+        event.ignore()
+    else:
+        event.ignore()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.mouse_double_click_event"><code class="name flex">
+<span>def <span class="ident">mouse_double_click_event</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouse_double_click_event(self, event):
+    self.print_log(&#34;double click &#34;)
+    self.set_active()
+    self.viewer_update()
+    if self.synchronize_viewer is not None:
+        v = self.synchronize_viewer
+        while v != self:
+            v.set_active(False)
+            v.viewer_update()
+            if v.synchronize_viewer is not None:
+                v = v.synchronize_viewer</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.mouse_move_event"><code class="name flex">
+<span>def <span class="ident">mouse_move_event</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouse_move_event(self, event):
+    self.mouse_x = event.x()
+    self.mouse_y = event.y()
+    if self.show_overlay:
+        self.viewer_update()
+    if event.buttons() &amp; QtCore.Qt.LeftButton:
+        self.mouse_dx = event.x() - self.lastPos.x()
+        self.mouse_dy = - (event.y() - self.lastPos.y())
+        self.viewer_update()
+        self.synchronize(self)
+        event.accept()
+    else:
+        if event.buttons() &amp; QtCore.Qt.RightButton:
+            # right button zoom
+            self.mouse_zx = event.x() - self.lastPos.x()
+            self.mouse_zy = - (event.y() - self.lastPos.y())
+            self.viewer_update()
+            self.synchronize(self)
+            event.accept()
+        else:
+            modifiers = QtWidgets.QApplication.keyboardModifiers()
+            if self.show_cursor:
+                self.viewer_update()
+                self.synchronize(self)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.mouse_press_event"><code class="name flex">
+<span>def <span class="ident">mouse_press_event</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouse_press_event(self, event):
+    self.lastPos = event.pos()
+    if event.buttons() &amp; QtCore.Qt.RightButton:
+        event.accept()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.mouse_release_event"><code class="name flex">
+<span>def <span class="ident">mouse_release_event</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouse_release_event(self, event):
+    if event.button() &amp; QtCore.Qt.LeftButton:
+        self.current_dx, self.current_dy = self.check_translation()
+        self.mouse_dy = 0
+        self.mouse_dx = 0
+        event.accept()
+    if event.button() &amp; QtCore.Qt.RightButton:
+        if self.cv_image is not None:
+            self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+        self.mouse_zy = 0
+        self.mouse_zx = 0
+        event.accept()
+    self.synchronize(self)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.mouse_wheel_event"><code class="name flex">
+<span>def <span class="ident">mouse_wheel_event</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouse_wheel_event(self,event):
+    # Zoom by applying a factor to the distances to the sides
+    if hasattr(event, &#39;delta&#39;):
+        delta = event.delta()
+    else:
+        delta = event.angleDelta().y()
+    # print(&#34;delta = {}&#34;.format(delta))
+    coeff = delta/5
+    # coeff = 20 if delta &gt; 0 else -20
+    self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
+    self.viewer_update()
+    self.synchronize(self)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.new_scale"><code class="name flex">
+<span>def <span class="ident">new_scale</span></span>(<span>self, mouse_zy, height)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def new_scale(self, mouse_zy, height):
+    return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
+    # return max(1, self.current_scale  + mouse_zy * 5.0 / height)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.new_translation"><code class="name flex">
+<span>def <span class="ident">new_translation</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def new_translation(self):
+    dx = self.current_dx + self.mouse_dx/self.current_scale
+    dy = self.current_dy + self.mouse_dy/self.current_scale
+    return dx, dy</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.print_log"><code class="name flex">
+<span>def <span class="ident">print_log</span></span>(<span>self, mess, force=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_log(self, mess, force=False):
+    if self.verbose or force:
+        caller_name = inspect.stack()[1][3]
+        print(&#34;{}{}: {}&#34;.format(self.tab[0], caller_name, mess))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.print_timing"><code class="name flex">
+<span>def <span class="ident">print_timing</span></span>(<span>self, add_total=False, force=False, title=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_timing(self, add_total=False, force=False, title=None):
+    if not self.display_timing: return
+    if title is None:
+        caller_name = inspect.stack()[1][3]
+        class_name = get_class_from_frame(inspect.stack()[1][0])
+        if class_name is not None:
+            caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+    else:
+        caller_name = title
+    if add_total:
+        self.add_time(&#34;total&#34;, self.start_time[caller_name], force)
+    if self.timings[caller_name] != &#39;&#39;:
+        print(self.timings[caller_name])</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.set_active"><code class="name flex">
+<span>def <span class="ident">set_active</span></span>(<span>self, active=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_active(self, active=True):
+    self.active_window = active</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.set_clipboard"><code class="name flex">
+<span>def <span class="ident">set_clipboard</span></span>(<span>self, clipboard, save_image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_clipboard(self, clipboard, save_image):
+    self.clipboard = clipboard
+    self.save_image_clipboard = save_image</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.set_image"><code class="name flex">
+<span>def <span class="ident">set_image</span></span>(<span>self, image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_image(self, image):
+    is_different = (self.cv_image is None) or (self.cv_image is not image)
+    if image is not None:
+        self.print_log(&#39;set_image({}): is_different = {}&#39;.format(image.data.shape, is_different))
+    if is_different:
+        self.cv_image = image
+        self.image_id += 1
+    return is_different</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.set_image_ref"><code class="name flex">
+<span>def <span class="ident">set_image_ref</span></span>(<span>self, image_ref=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_image_ref(self, image_ref=None):
+    is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+    if is_different:
+        self.cv_image_ref = image_ref
+        self.image_ref_id += 1</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.set_synchronize"><code class="name flex">
+<span>def <span class="ident">set_synchronize</span></span>(<span>self, viewer)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_synchronize(self, viewer):
+    self.synchronize_viewer = viewer</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.start_timing"><code class="name flex">
+<span>def <span class="ident">start_timing</span></span>(<span>self, title=None)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def start_timing(self, title=None):
+    if not self.display_timing: return
+    if title is None:
+        # it seems that inspect is slow
+        caller_name = inspect.stack()[1][3]
+        class_name = get_class_from_frame(inspect.stack()[1][0])
+        if class_name is not None:
+            caller_name = &#34;{}.{}&#34;.format(class_name, caller_name)
+    else:
+        caller_name = title
+    self.start_time[caller_name] = get_time()
+    self.timings[caller_name] = &#39;&#39;</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.synchronize"><code class="name flex">
+<span>def <span class="ident">synchronize</span></span>(<span>self, event_viewer)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This method needs to be overloaded with call to self.synchronize_viewer.synchronize()
+:param event_viewer: the viewer that started the synchronization
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def synchronize(self, event_viewer):
+    &#34;&#34;&#34;
+    This method needs to be overloaded with call to self.synchronize_viewer.synchronize()
+    :param event_viewer: the viewer that started the synchronization
+    :return:
+    &#34;&#34;&#34;
+    if self==event_viewer:
+        if self.display_timing:
+            start_time = get_time()
+            if self.display_timing:
+                print(&#34;[ --- Start sync&#34;)
+    if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
+        self.synchronize_data(self.synchronize_viewer)
+        self.synchronize_viewer.viewer_update()
+        self.synchronize_viewer.synchronize(event_viewer)
+    if self==event_viewer:
+        if self.display_timing:
+            print(&#39;       End sync --- {:0.1f} ms&#39;.format((get_time()-start_time)*1000))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.synchronize_data"><code class="name flex">
+<span>def <span class="ident">synchronize_data</span></span>(<span>self, other_viewer)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def synchronize_data(self, other_viewer):
+    other_viewer.current_scale = self.current_scale
+    other_viewer.current_dx = self.current_dx
+    other_viewer.current_dy = self.current_dy
+    other_viewer.mouse_dx = self.mouse_dx
+    other_viewer.mouse_dy = self.mouse_dy
+    other_viewer.mouse_zx = self.mouse_zx
+    other_viewer.mouse_zy = self.mouse_zy
+    other_viewer.mouse_x = self.mouse_x
+    other_viewer.mouse_y = self.mouse_y
+
+    other_viewer.show_histogram = self.show_histogram
+    other_viewer.show_cursor    = self.show_cursor</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.toggle_fullscreen"><code class="name flex">
+<span>def <span class="ident">toggle_fullscreen</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def toggle_fullscreen(self, event):
+    print(f&#34;toggle_fullscreen&#34;)
+    # Should be inside a layout
+    if self.before_max_parent is None:
+        if self.parent() is not None and (playout := self.parent().layout()) is not None:
+            if self.find_in_layout(playout):
+                self.before_max_parent = self.parent()
+                self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
+                self.replaced_viewer = self
+                self.parent().layout().replaceWidget(self, self.replacing_widget)
+                self.setParent(None)
+                self.showFullScreen()
+                # self.showMaximized()
+                event.accept()
+                return
+    if self.before_max_parent is not None:
+        self.setParent(self.before_max_parent)
+        self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+        self.replacing_widget = self.before_max_parent = None
+        # self.resize(self.before_max_size)
+        self.show()
+        self.parent().update()
+        self.setFocus()
+        event.accept()
+        return</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.viewer_update"><code class="name flex">
+<span>def <span class="ident">viewer_update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def viewer_update(self):
+    print(&#34;ImageViewer viewer_update&#34;)
+    pass</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="qimview.image_viewers.image_viewer.trace_method"><code class="flex name class">
+<span>class <span class="ident">trace_method</span></span>
+<span>(</span><span>tab)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class trace_method():
+    def __init__(self, tab):
+        self.tab = tab
+        method = traceback.extract_stack(None, 2)[0][2]
+        print(self.tab[0] + method)
+        self.tab[0] += &#39;  &#39;
+
+    def __del__(self):
+        self.tab[0] = self.tab[0][:-2]</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="qimview.image_viewers" href="index.html">qimview.image_viewers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="qimview.image_viewers.image_viewer.get_class_from_frame" href="#qimview.image_viewers.image_viewer.get_class_from_frame">get_class_from_frame</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.get_function_name" href="#qimview.image_viewers.image_viewer.get_function_name">get_function_name</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="qimview.image_viewers.image_viewer.ImageViewer" href="#qimview.image_viewers.image_viewer.ImageViewer">ImageViewer</a></code></h4>
+<ul class="">
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.add_time" href="#qimview.image_viewers.image_viewer.ImageViewer.add_time">add_time</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.check_translation" href="#qimview.image_viewers.image_viewer.ImageViewer.check_translation">check_translation</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.compute_histogram" href="#qimview.image_viewers.image_viewer.ImageViewer.compute_histogram">compute_histogram</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.compute_histogram_Cpp" href="#qimview.image_viewers.image_viewer.ImageViewer.compute_histogram_Cpp">compute_histogram_Cpp</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_histogram" href="#qimview.image_viewers.image_viewer.ImageViewer.display_histogram">display_histogram</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_message" href="#qimview.image_viewers.image_viewer.ImageViewer.display_message">display_message</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_text" href="#qimview.image_viewers.image_viewer.ImageViewer.display_text">display_text</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_timing" href="#qimview.image_viewers.image_viewer.ImageViewer.display_timing">display_timing</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.find_in_layout" href="#qimview.image_viewers.image_viewer.ImageViewer.find_in_layout">find_in_layout</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.get_image" href="#qimview.image_viewers.image_viewer.ImageViewer.get_image">get_image</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.image_name" href="#qimview.image_viewers.image_viewer.ImageViewer.image_name">image_name</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.is_active" href="#qimview.image_viewers.image_viewer.ImageViewer.is_active">is_active</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.key_press_event" href="#qimview.image_viewers.image_viewer.ImageViewer.key_press_event">key_press_event</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.mouse_double_click_event" href="#qimview.image_viewers.image_viewer.ImageViewer.mouse_double_click_event">mouse_double_click_event</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.mouse_move_event" href="#qimview.image_viewers.image_viewer.ImageViewer.mouse_move_event">mouse_move_event</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.mouse_press_event" href="#qimview.image_viewers.image_viewer.ImageViewer.mouse_press_event">mouse_press_event</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.mouse_release_event" href="#qimview.image_viewers.image_viewer.ImageViewer.mouse_release_event">mouse_release_event</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.mouse_wheel_event" href="#qimview.image_viewers.image_viewer.ImageViewer.mouse_wheel_event">mouse_wheel_event</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.new_scale" href="#qimview.image_viewers.image_viewer.ImageViewer.new_scale">new_scale</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.new_translation" href="#qimview.image_viewers.image_viewer.ImageViewer.new_translation">new_translation</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.print_log" href="#qimview.image_viewers.image_viewer.ImageViewer.print_log">print_log</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.print_timing" href="#qimview.image_viewers.image_viewer.ImageViewer.print_timing">print_timing</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.set_active" href="#qimview.image_viewers.image_viewer.ImageViewer.set_active">set_active</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.set_clipboard" href="#qimview.image_viewers.image_viewer.ImageViewer.set_clipboard">set_clipboard</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.set_image" href="#qimview.image_viewers.image_viewer.ImageViewer.set_image">set_image</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.set_image_ref" href="#qimview.image_viewers.image_viewer.ImageViewer.set_image_ref">set_image_ref</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.set_synchronize" href="#qimview.image_viewers.image_viewer.ImageViewer.set_synchronize">set_synchronize</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.start_timing" href="#qimview.image_viewers.image_viewer.ImageViewer.start_timing">start_timing</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.synchronize" href="#qimview.image_viewers.image_viewer.ImageViewer.synchronize">synchronize</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.synchronize_data" href="#qimview.image_viewers.image_viewer.ImageViewer.synchronize_data">synchronize_data</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.toggle_fullscreen" href="#qimview.image_viewers.image_viewer.ImageViewer.toggle_fullscreen">toggle_fullscreen</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.verbose" href="#qimview.image_viewers.image_viewer.ImageViewer.verbose">verbose</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.viewer_update" href="#qimview.image_viewers.image_viewer.ImageViewer.viewer_update">viewer_update</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="qimview.image_viewers.image_viewer.trace_method" href="#qimview.image_viewers.image_viewer.trace_method">trace_method</a></code></h4>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

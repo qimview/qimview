@@ -1,0 +1,1479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>qimview.image_viewers.gl_image_viewer_base API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>qimview.image_viewers.gl_image_viewer_base</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#
+#
+# started from https://cyrille.rossant.net/2d-graphics-rendering-tutorial-with-pyopengl/
+#
+# check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
+#
+
+from qimview.utils.qt_imports   import *
+from qimview.utils.viewer_image import ImageFormat, ViewerImage
+from qimview.image_viewers.image_viewer import ImageViewer, trace_method
+
+import OpenGL
+OpenGL.ERROR_ON_COPY = True
+import OpenGL.GL as gl
+import OpenGL.GLU as glu
+import traceback
+import numpy as np
+from typing import Optional, Tuple
+
+class GLImageViewerBase(QOpenGLWidget, ImageViewer):
+
+    def __init__(self, parent=None):
+        QOpenGLWidget.__init__(self, parent)
+        ImageViewer.__init__(self, parent)
+        self.setAutoFillBackground(False)
+
+        _format = QtGui.QSurfaceFormat()
+        print(&#39;profile is {}&#39;.format(_format.profile()))
+        print(&#39;version is {}&#39;.format(_format.version()))
+        # _format.setDepthBufferSize(24)
+        # _format.setVersion(4,0)
+        # _format.setProfile(PySide2.QtGui.QSurfaceFormat.CoreProfile)
+        _format.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
+        self.setFormat(_format)
+
+        # self.setFormat()
+        self.textureID  = None
+        self.tex_width, self.tex_height = 0, 0
+        self.opengl_debug = True
+        self.current_text = None
+        self.cursor_imx_ratio = 0.5
+        self.cursor_imy_ratio = 0.5
+        self.trace_calls = False
+        self.setMouseTracking(True)
+
+        if &#39;ClickFocus&#39; in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+    # def __del__(self):
+    #     if self.textureID is not None:
+    #         gl.glDeleteTextures(np.array([self.textureID]))
+
+    def set_image(self, image):
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        changed = super(GLImageViewerBase, self).set_image(image)
+
+        img_width = self.cv_image.data.shape[1]
+        if img_width % 4 != 0:
+            print(&#34;Image is resized to a multiple of 4 dimension in X&#34;)
+            img_width = ((img_width &gt;&gt; 4) &lt;&lt; 4)
+            im = np.ascontiguousarray(self.cv_image.data[:,:img_width, :])
+            self.cv_image = ViewerImage(im, precision = self.cv_image.precision, downscale = 1,
+                                        channels = self.cv_image.channels)
+            print(self.cv_image.data.shape)
+
+        if changed:  # and self.textureID is not None:
+            if self.setTexture():
+                self.show()
+                self.update()
+            else:
+                print(&#34;setTexture() return False&#34;)
+
+    def synchronize_data(self, other_viewer):
+        super(GLImageViewerBase, self).synchronize_data(other_viewer)
+        other_viewer.cursor_imx_ratio = self.cursor_imx_ratio
+        other_viewer.cursor_imy_ratio = self.cursor_imy_ratio
+
+    def opengl_error(self, force=False):
+        if self.opengl_debug or force:
+            status = gl.glGetError()
+            if status != gl.GL_NO_ERROR:
+                print(self.tab[0]+&#39;gl error %s&#39; % status)
+
+    def setTexture(self):
+        &#34;&#34;&#34;
+        :return: set opengl texture based on input numpy array image
+        &#34;&#34;&#34;
+        # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
+
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.start_timing()
+        self.makeCurrent()
+
+        # Replace texture only if required
+        if self.cv_image is None:
+            print(&#34;self.cv_image is None&#34;)
+            return False
+
+        img_height, img_width = self.cv_image.data.shape[:2]
+
+        # default type
+        gl_types = {
+            &#39;int8&#39;   : gl.GL_BYTE,
+            &#39;uint8&#39;  : gl.GL_UNSIGNED_BYTE,
+            &#39;int16&#39;  : gl.GL_SHORT,
+            &#39;uint16&#39; : gl.GL_UNSIGNED_SHORT,
+            &#39;int32&#39;  : gl.GL_INT,
+            &#39;uint32&#39; : gl.GL_UNSIGNED_INT,
+            &#39;float32&#39;: gl.GL_FLOAT,
+            &#39;float64&#39;: gl.GL_DOUBLE
+        }
+        gl_type = gl_types[self.cv_image.data.dtype.name]
+
+        # It seems that the dimension in X should be even
+
+        # Not sure what is the right parameter for internal format of 2D texture based
+        # on the input data type uint8, uint16, ...
+        # need to test with different DXR images
+        internal_format = gl.GL_RGB
+        if self.cv_image.data.shape[2] == 3:
+            if self.cv_image.precision == 8:
+                internal_format = gl.GL_RGB
+            if self.cv_image.precision == 10:
+                internal_format = gl.GL_RGB10
+            if self.cv_image.precision == 12:
+                internal_format = gl.GL_RGB12
+        if self.cv_image.data.shape[2] == 4:
+            if self.cv_image.precision == 8:
+                internal_format = gl.GL_RGBA
+            else:
+                if self.cv_image.precision &lt;= 12:
+                    internal_format = gl.GL_RGBA12
+                else:
+                    if self.cv_image.precision &lt;= 16:
+                        internal_format = gl.GL_RGBA16
+                    else:
+                        internal_format = gl.GL_RGBA32F
+
+        channels2format = {
+            ImageFormat.CH_RGB  : gl.GL_RGB,
+            ImageFormat.CH_BGR  : gl.GL_BGR,
+            ImageFormat.CH_Y    : gl.GL_RED, # not sure about this one
+            ImageFormat.CH_RGGB : gl.GL_RGBA, # we save 4 component data
+            ImageFormat.CH_GRBG : gl.GL_RGBA,
+            ImageFormat.CH_GBRG : gl.GL_RGBA,
+            ImageFormat.CH_BGGR : gl.GL_RGBA
+        }
+        texture_pixel_format = channels2format[self.cv_image.channels]
+
+        if (self.tex_width,self.tex_height) != (img_width,img_height):
+            if self.textureID is not None:
+                gl.glDeleteTextures(np.array([self.textureID]))
+            self.textureID = gl.glGenTextures(1)
+            gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
+                            internal_format,
+                            img_width, img_height,
+                         0, texture_pixel_format, gl_type, self.cv_image.data)
+            # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+            self.tex_width, self.tex_height = img_width, img_height
+        else:
+            try:
+                gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
+                             texture_pixel_format, gl_type, self.cv_image.data)
+                # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+            except Exception as e:
+                print(&#34;setTexture failed shape={}: {}&#34;.format(self.cv_image.data.shape, e))
+                return False
+
+        self.print_timing(add_total=True)
+        self.opengl_error()
+        return True
+
+    # @abstract_method
+    def viewer_update(self):
+        print(&#34;GLImageViewerBase viewer_update&#34;)
+        self.update()
+
+    # To be defined in children
+    def myPaintGL(self):  pass 
+
+    def paintAll(self):
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        if self.textureID is None or not self.isValid() or not self.isVisible():
+            print(&#34;paintGL()** not ready {} {}&#34;.format(self.textureID, self.isValid()))
+            return
+        # No need for makeCurrent() since it is called from PaintGL() only
+        # self.makeCurrent()
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.beginNativePainting()
+        im_pos = None
+        scale  = None
+        try:
+            self.updateViewPort()
+            scale = self.updateTransforms()
+            self.myPaintGL()
+            if self.show_cursor:
+                im_pos = self.gl_draw_cursor()
+        except Exception as e:
+            self.print_log(&#34; failed paintGL {}&#34;.format(e))
+            traceback.print_exc()
+        painter.endNativePainting()
+        # status = gl.glGetError()
+
+        draw_text = True
+        if draw_text:
+            # adapt scale depending on the ratio image / viewport
+            scale *= self._width/self.cv_image.data.shape[1]
+            self.display_text(painter, self.display_message(im_pos, scale))
+
+        # draw histogram
+        if self.show_histogram:
+            current_image = self.cv_image.data
+            rect = QtCore.QRect(0, 0, self.width(), self.height())
+            histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+
+        painter.end()
+        # Seems required here, at least on linux
+        # self.update()
+
+    def set_cursor_image_position(self, cursor_x, cursor_y):
+        &#34;&#34;&#34;
+        Sets the image position from the cursor in proportion of the image dimension
+        :return:
+        &#34;&#34;&#34;
+        self.updateTransforms()
+        ratio = self.screen().devicePixelRatio()
+        self.print_log(&#34;ratio {}&#34;.format(ratio))
+        pos_x = cursor_x * ratio
+        pos_y = (self.height() - cursor_y) * ratio
+        self.print_log(&#34;pos {} {}&#34;.format(pos_x, pos_y))
+        x0, x1, y0, y1 = self.image_centered_position()
+
+        gl_posX, gl_posY = self.get_mouse_gl_coordinates(pos_x, pos_y)
+        self.cursor_imx_ratio = (gl_posX - x0) / (x1 - x0)
+        self.cursor_imy_ratio = 1 - (gl_posY - y0) / (y1 - y0)
+        self.print_log(&#34;cursor ratio {} {}&#34;.format(self.cursor_imx_ratio, self.cursor_imy_ratio))
+
+
+    def gl_draw_cursor(self) -&gt; Optional[Tuple[int, int]]:
+        x0, x1, y0, y1 = self.image_centered_position()
+
+        im_x = int(self.cursor_imx_ratio*self.tex_width)
+        im_y = int(self.cursor_imy_ratio*self.tex_height)
+
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.tex_width + x0
+        glpos_from_im_y = (self.tex_height - (im_y+0.5))*(y1-y0)/self.tex_height+y0
+
+        # get image coordinates
+        length = 20 # /self.current_scale
+        width = 4
+        gl.glLineWidth(width)
+        gl.glColor3f(0.0, 1.0, 1.0)
+        gl.glBegin(gl.GL_LINES)
+        gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
+        gl.glVertex3f(glpos_from_im_x+length, glpos_from_im_y, -0.001)
+        gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
+        gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
+        gl.glEnd()
+        if im_x&gt;=0 and im_x&lt;self.tex_width and im_y&gt;=0 and im_y&lt;=self.tex_height:
+            return (im_x, im_y) 
+        return None
+
+
+    def image_centered_position(self):
+        w = self._width
+        h = self._height
+        self.print_log(f&#39;self width height {self._width} {self._height} tex {self.tex_width} {self.tex_height}&#39;)
+        if self.tex_width == 0 or self.tex_height == 0:
+            return 0, w, 0, h
+        # self.print_log(&#39; {}x{}&#39;.format(w, h))
+        image_ratio = float(self.tex_width)/float(self.tex_height)
+        if h*image_ratio &lt; w:
+            view_width  = int(h*image_ratio+0.5)
+            view_height = h
+            start_x = int((w - view_width) / 2 + 0.5)
+            start_y = 0
+        else:
+            view_width  = w
+            view_height = int(w/image_ratio+0.5)
+            start_x = 0
+            start_y = int((h - view_height) / 2 + 0.5)
+
+        x0 = start_x
+        x1 = start_x+view_width
+        y0 = start_y
+        y1 = start_y+view_height
+        return x0, x1, y0, y1
+
+    def updateViewPort(self):
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.start_timing()
+        # keep image proportions
+        w = self._width
+        h = self._height
+        # print(f&#34; w, h {w, h}&#34;)
+        try:
+            gl.glViewport(0,0,w,h) # keep everything in viewport
+        except Exception as e:
+            self.print_log(&#34; failed glViewport {}&#34;.format(e))
+        self.print_timing(add_total=True)
+
+    def updateTransforms(self) -&gt; float:
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.start_timing()
+        self.makeCurrent()
+        w = self._width
+        h = self._height
+        dx, dy = self.new_translation()
+        scale = self.new_scale(self.mouse_zy, self.tex_height)
+        print(f&#34;updateTransforms scale {scale}&#34;)
+        try:
+            # print(&#34;current context &#34;, QtOpenGL.QGLContext.currentContext())
+            # gl = QtOpenGL.QGLContext.currentContext().functions()
+            # update the window size
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadIdentity()
+            translation_unit = min(w, h)/2
+            # self.print_log(&#34;scale {}&#34;.format(scale))
+            gl.glScale(scale, scale, scale)
+            gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+            # the window corner OpenGL coordinates are (-+1, -+1)
+            gl.glOrtho(0, w, 0, h, -1, 1)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+        except Exception as e:
+            self.print_log(&#34; setting gl matrices failed {}&#34;.format(e))
+        self.print_timing(add_total=True)
+        self.opengl_error()
+        return scale
+
+    def resizeGL(self, width, height):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        # print(&#34;ResizeGL&#34;)
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        # size give for opengl are in pixels, qt uses device independent size otherwise
+        print(f&#34;self.devicePixelRatio() {self.devicePixelRatio()}&#34;)
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
+        # print(&#34;width height ratios {} {}&#34;.format(self._width/self.width(), self._height/self.height()))
+        self.viewer_update()
+
+    def get_mouse_gl_coordinates(self, x, y):
+        modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
+        projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
+        viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
+        posX, posY, posZ = glu.gluUnProject(x, y, 0, modelview, projection, viewport)
+        return posX, posY
+
+    def mousePressEvent(self, event):
+        self.mouse_press_event(event)
+
+    def mouseMoveEvent(self, event):
+        if self.show_cursor:
+            self.set_cursor_image_position(event.x(), event.y())
+        self.mouse_move_event(event)
+
+    def mouseReleaseEvent(self, event):
+        self.mouse_release_event(event)
+
+    def mouseDoubleClickEvent(self, event):
+        self.mouse_double_click_event(event)
+
+    def wheelEvent(self, event):
+        self.mouse_wheel_event(event)
+
+    def keyPressEvent(self, event):
+        # TODO: Fix the correct parameters for selecting image zoom/pan
+        x0, x1, y0, y1 = self.image_centered_position()
+        print(f&#34;image centered position {x1-x0} x {y1-y0}&#34;)
+        self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
+
+    def resizeEvent(self, event):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+        self.evt_width = event.size().width()
+        self.evt_height = event.size().height()
+        QOpenGLWidget.resizeEvent(self, event)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase"><code class="flex name class">
+<span>class <span class="ident">GLImageViewerBase</span></span>
+<span>(</span><span>parent=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>QOpenGLWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
+<p><strong>init</strong>(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
+<p>Initialize self.
+See help(type(self)) for accurate signature.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GLImageViewerBase(QOpenGLWidget, ImageViewer):
+
+    def __init__(self, parent=None):
+        QOpenGLWidget.__init__(self, parent)
+        ImageViewer.__init__(self, parent)
+        self.setAutoFillBackground(False)
+
+        _format = QtGui.QSurfaceFormat()
+        print(&#39;profile is {}&#39;.format(_format.profile()))
+        print(&#39;version is {}&#39;.format(_format.version()))
+        # _format.setDepthBufferSize(24)
+        # _format.setVersion(4,0)
+        # _format.setProfile(PySide2.QtGui.QSurfaceFormat.CoreProfile)
+        _format.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
+        self.setFormat(_format)
+
+        # self.setFormat()
+        self.textureID  = None
+        self.tex_width, self.tex_height = 0, 0
+        self.opengl_debug = True
+        self.current_text = None
+        self.cursor_imx_ratio = 0.5
+        self.cursor_imy_ratio = 0.5
+        self.trace_calls = False
+        self.setMouseTracking(True)
+
+        if &#39;ClickFocus&#39; in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+    # def __del__(self):
+    #     if self.textureID is not None:
+    #         gl.glDeleteTextures(np.array([self.textureID]))
+
+    def set_image(self, image):
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        changed = super(GLImageViewerBase, self).set_image(image)
+
+        img_width = self.cv_image.data.shape[1]
+        if img_width % 4 != 0:
+            print(&#34;Image is resized to a multiple of 4 dimension in X&#34;)
+            img_width = ((img_width &gt;&gt; 4) &lt;&lt; 4)
+            im = np.ascontiguousarray(self.cv_image.data[:,:img_width, :])
+            self.cv_image = ViewerImage(im, precision = self.cv_image.precision, downscale = 1,
+                                        channels = self.cv_image.channels)
+            print(self.cv_image.data.shape)
+
+        if changed:  # and self.textureID is not None:
+            if self.setTexture():
+                self.show()
+                self.update()
+            else:
+                print(&#34;setTexture() return False&#34;)
+
+    def synchronize_data(self, other_viewer):
+        super(GLImageViewerBase, self).synchronize_data(other_viewer)
+        other_viewer.cursor_imx_ratio = self.cursor_imx_ratio
+        other_viewer.cursor_imy_ratio = self.cursor_imy_ratio
+
+    def opengl_error(self, force=False):
+        if self.opengl_debug or force:
+            status = gl.glGetError()
+            if status != gl.GL_NO_ERROR:
+                print(self.tab[0]+&#39;gl error %s&#39; % status)
+
+    def setTexture(self):
+        &#34;&#34;&#34;
+        :return: set opengl texture based on input numpy array image
+        &#34;&#34;&#34;
+        # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
+
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.start_timing()
+        self.makeCurrent()
+
+        # Replace texture only if required
+        if self.cv_image is None:
+            print(&#34;self.cv_image is None&#34;)
+            return False
+
+        img_height, img_width = self.cv_image.data.shape[:2]
+
+        # default type
+        gl_types = {
+            &#39;int8&#39;   : gl.GL_BYTE,
+            &#39;uint8&#39;  : gl.GL_UNSIGNED_BYTE,
+            &#39;int16&#39;  : gl.GL_SHORT,
+            &#39;uint16&#39; : gl.GL_UNSIGNED_SHORT,
+            &#39;int32&#39;  : gl.GL_INT,
+            &#39;uint32&#39; : gl.GL_UNSIGNED_INT,
+            &#39;float32&#39;: gl.GL_FLOAT,
+            &#39;float64&#39;: gl.GL_DOUBLE
+        }
+        gl_type = gl_types[self.cv_image.data.dtype.name]
+
+        # It seems that the dimension in X should be even
+
+        # Not sure what is the right parameter for internal format of 2D texture based
+        # on the input data type uint8, uint16, ...
+        # need to test with different DXR images
+        internal_format = gl.GL_RGB
+        if self.cv_image.data.shape[2] == 3:
+            if self.cv_image.precision == 8:
+                internal_format = gl.GL_RGB
+            if self.cv_image.precision == 10:
+                internal_format = gl.GL_RGB10
+            if self.cv_image.precision == 12:
+                internal_format = gl.GL_RGB12
+        if self.cv_image.data.shape[2] == 4:
+            if self.cv_image.precision == 8:
+                internal_format = gl.GL_RGBA
+            else:
+                if self.cv_image.precision &lt;= 12:
+                    internal_format = gl.GL_RGBA12
+                else:
+                    if self.cv_image.precision &lt;= 16:
+                        internal_format = gl.GL_RGBA16
+                    else:
+                        internal_format = gl.GL_RGBA32F
+
+        channels2format = {
+            ImageFormat.CH_RGB  : gl.GL_RGB,
+            ImageFormat.CH_BGR  : gl.GL_BGR,
+            ImageFormat.CH_Y    : gl.GL_RED, # not sure about this one
+            ImageFormat.CH_RGGB : gl.GL_RGBA, # we save 4 component data
+            ImageFormat.CH_GRBG : gl.GL_RGBA,
+            ImageFormat.CH_GBRG : gl.GL_RGBA,
+            ImageFormat.CH_BGGR : gl.GL_RGBA
+        }
+        texture_pixel_format = channels2format[self.cv_image.channels]
+
+        if (self.tex_width,self.tex_height) != (img_width,img_height):
+            if self.textureID is not None:
+                gl.glDeleteTextures(np.array([self.textureID]))
+            self.textureID = gl.glGenTextures(1)
+            gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
+                            internal_format,
+                            img_width, img_height,
+                         0, texture_pixel_format, gl_type, self.cv_image.data)
+            # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+            self.tex_width, self.tex_height = img_width, img_height
+        else:
+            try:
+                gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
+                             texture_pixel_format, gl_type, self.cv_image.data)
+                # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+            except Exception as e:
+                print(&#34;setTexture failed shape={}: {}&#34;.format(self.cv_image.data.shape, e))
+                return False
+
+        self.print_timing(add_total=True)
+        self.opengl_error()
+        return True
+
+    # @abstract_method
+    def viewer_update(self):
+        print(&#34;GLImageViewerBase viewer_update&#34;)
+        self.update()
+
+    # To be defined in children
+    def myPaintGL(self):  pass 
+
+    def paintAll(self):
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        if self.textureID is None or not self.isValid() or not self.isVisible():
+            print(&#34;paintGL()** not ready {} {}&#34;.format(self.textureID, self.isValid()))
+            return
+        # No need for makeCurrent() since it is called from PaintGL() only
+        # self.makeCurrent()
+        painter = QtGui.QPainter()
+        painter.begin(self)
+        painter.beginNativePainting()
+        im_pos = None
+        scale  = None
+        try:
+            self.updateViewPort()
+            scale = self.updateTransforms()
+            self.myPaintGL()
+            if self.show_cursor:
+                im_pos = self.gl_draw_cursor()
+        except Exception as e:
+            self.print_log(&#34; failed paintGL {}&#34;.format(e))
+            traceback.print_exc()
+        painter.endNativePainting()
+        # status = gl.glGetError()
+
+        draw_text = True
+        if draw_text:
+            # adapt scale depending on the ratio image / viewport
+            scale *= self._width/self.cv_image.data.shape[1]
+            self.display_text(painter, self.display_message(im_pos, scale))
+
+        # draw histogram
+        if self.show_histogram:
+            current_image = self.cv_image.data
+            rect = QtCore.QRect(0, 0, self.width(), self.height())
+            histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+
+        painter.end()
+        # Seems required here, at least on linux
+        # self.update()
+
+    def set_cursor_image_position(self, cursor_x, cursor_y):
+        &#34;&#34;&#34;
+        Sets the image position from the cursor in proportion of the image dimension
+        :return:
+        &#34;&#34;&#34;
+        self.updateTransforms()
+        ratio = self.screen().devicePixelRatio()
+        self.print_log(&#34;ratio {}&#34;.format(ratio))
+        pos_x = cursor_x * ratio
+        pos_y = (self.height() - cursor_y) * ratio
+        self.print_log(&#34;pos {} {}&#34;.format(pos_x, pos_y))
+        x0, x1, y0, y1 = self.image_centered_position()
+
+        gl_posX, gl_posY = self.get_mouse_gl_coordinates(pos_x, pos_y)
+        self.cursor_imx_ratio = (gl_posX - x0) / (x1 - x0)
+        self.cursor_imy_ratio = 1 - (gl_posY - y0) / (y1 - y0)
+        self.print_log(&#34;cursor ratio {} {}&#34;.format(self.cursor_imx_ratio, self.cursor_imy_ratio))
+
+
+    def gl_draw_cursor(self) -&gt; Optional[Tuple[int, int]]:
+        x0, x1, y0, y1 = self.image_centered_position()
+
+        im_x = int(self.cursor_imx_ratio*self.tex_width)
+        im_y = int(self.cursor_imy_ratio*self.tex_height)
+
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.tex_width + x0
+        glpos_from_im_y = (self.tex_height - (im_y+0.5))*(y1-y0)/self.tex_height+y0
+
+        # get image coordinates
+        length = 20 # /self.current_scale
+        width = 4
+        gl.glLineWidth(width)
+        gl.glColor3f(0.0, 1.0, 1.0)
+        gl.glBegin(gl.GL_LINES)
+        gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
+        gl.glVertex3f(glpos_from_im_x+length, glpos_from_im_y, -0.001)
+        gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
+        gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
+        gl.glEnd()
+        if im_x&gt;=0 and im_x&lt;self.tex_width and im_y&gt;=0 and im_y&lt;=self.tex_height:
+            return (im_x, im_y) 
+        return None
+
+
+    def image_centered_position(self):
+        w = self._width
+        h = self._height
+        self.print_log(f&#39;self width height {self._width} {self._height} tex {self.tex_width} {self.tex_height}&#39;)
+        if self.tex_width == 0 or self.tex_height == 0:
+            return 0, w, 0, h
+        # self.print_log(&#39; {}x{}&#39;.format(w, h))
+        image_ratio = float(self.tex_width)/float(self.tex_height)
+        if h*image_ratio &lt; w:
+            view_width  = int(h*image_ratio+0.5)
+            view_height = h
+            start_x = int((w - view_width) / 2 + 0.5)
+            start_y = 0
+        else:
+            view_width  = w
+            view_height = int(w/image_ratio+0.5)
+            start_x = 0
+            start_y = int((h - view_height) / 2 + 0.5)
+
+        x0 = start_x
+        x1 = start_x+view_width
+        y0 = start_y
+        y1 = start_y+view_height
+        return x0, x1, y0, y1
+
+    def updateViewPort(self):
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.start_timing()
+        # keep image proportions
+        w = self._width
+        h = self._height
+        # print(f&#34; w, h {w, h}&#34;)
+        try:
+            gl.glViewport(0,0,w,h) # keep everything in viewport
+        except Exception as e:
+            self.print_log(&#34; failed glViewport {}&#34;.format(e))
+        self.print_timing(add_total=True)
+
+    def updateTransforms(self) -&gt; float:
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.start_timing()
+        self.makeCurrent()
+        w = self._width
+        h = self._height
+        dx, dy = self.new_translation()
+        scale = self.new_scale(self.mouse_zy, self.tex_height)
+        print(f&#34;updateTransforms scale {scale}&#34;)
+        try:
+            # print(&#34;current context &#34;, QtOpenGL.QGLContext.currentContext())
+            # gl = QtOpenGL.QGLContext.currentContext().functions()
+            # update the window size
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadIdentity()
+            translation_unit = min(w, h)/2
+            # self.print_log(&#34;scale {}&#34;.format(scale))
+            gl.glScale(scale, scale, scale)
+            gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+            # the window corner OpenGL coordinates are (-+1, -+1)
+            gl.glOrtho(0, w, 0, h, -1, 1)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+        except Exception as e:
+            self.print_log(&#34; setting gl matrices failed {}&#34;.format(e))
+        self.print_timing(add_total=True)
+        self.opengl_error()
+        return scale
+
+    def resizeGL(self, width, height):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        # print(&#34;ResizeGL&#34;)
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        # size give for opengl are in pixels, qt uses device independent size otherwise
+        print(f&#34;self.devicePixelRatio() {self.devicePixelRatio()}&#34;)
+        self._width = width*self.devicePixelRatio()
+        self._height = height*self.devicePixelRatio()
+        # print(&#34;width height ratios {} {}&#34;.format(self._width/self.width(), self._height/self.height()))
+        self.viewer_update()
+
+    def get_mouse_gl_coordinates(self, x, y):
+        modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
+        projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
+        viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
+        posX, posY, posZ = glu.gluUnProject(x, y, 0, modelview, projection, viewport)
+        return posX, posY
+
+    def mousePressEvent(self, event):
+        self.mouse_press_event(event)
+
+    def mouseMoveEvent(self, event):
+        if self.show_cursor:
+            self.set_cursor_image_position(event.x(), event.y())
+        self.mouse_move_event(event)
+
+    def mouseReleaseEvent(self, event):
+        self.mouse_release_event(event)
+
+    def mouseDoubleClickEvent(self, event):
+        self.mouse_double_click_event(event)
+
+    def wheelEvent(self, event):
+        self.mouse_wheel_event(event)
+
+    def keyPressEvent(self, event):
+        # TODO: Fix the correct parameters for selecting image zoom/pan
+        x0, x1, y0, y1 = self.image_centered_position()
+        print(f&#34;image centered position {x1-x0} x {y1-y0}&#34;)
+        self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
+
+    def resizeEvent(self, event):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+        self.evt_width = event.size().width()
+        self.evt_height = event.size().height()
+        QOpenGLWidget.resizeEvent(self, event)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>PySide6.QtOpenGLWidgets.QOpenGLWidget</li>
+<li>PySide6.QtWidgets.QWidget</li>
+<li>PySide6.QtCore.QObject</li>
+<li>PySide6.QtGui.QPaintDevice</li>
+<li>Shiboken.Object</li>
+<li><a title="qimview.image_viewers.image_viewer.ImageViewer" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer">ImageViewer</a></li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="qimview.image_viewers.gl_image_viewer.GLImageViewer" href="gl_image_viewer.html#qimview.image_viewers.gl_image_viewer.GLImageViewer">GLImageViewer</a></li>
+<li><a title="qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders" href="gl_image_viewer_shaders.html#qimview.image_viewers.gl_image_viewer_shaders.GLImageViewerShaders">GLImageViewerShaders</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.staticMetaObject"><code class="name">var <span class="ident">staticMetaObject</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.get_mouse_gl_coordinates"><code class="name flex">
+<span>def <span class="ident">get_mouse_gl_coordinates</span></span>(<span>self, x, y)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_mouse_gl_coordinates(self, x, y):
+    modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
+    projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
+    viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
+    posX, posY, posZ = glu.gluUnProject(x, y, 0, modelview, projection, viewport)
+    return posX, posY</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.gl_draw_cursor"><code class="name flex">
+<span>def <span class="ident">gl_draw_cursor</span></span>(<span>self) ‑> Optional[Tuple[int, int]]</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def gl_draw_cursor(self) -&gt; Optional[Tuple[int, int]]:
+    x0, x1, y0, y1 = self.image_centered_position()
+
+    im_x = int(self.cursor_imx_ratio*self.tex_width)
+    im_y = int(self.cursor_imy_ratio*self.tex_height)
+
+    glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.tex_width + x0
+    glpos_from_im_y = (self.tex_height - (im_y+0.5))*(y1-y0)/self.tex_height+y0
+
+    # get image coordinates
+    length = 20 # /self.current_scale
+    width = 4
+    gl.glLineWidth(width)
+    gl.glColor3f(0.0, 1.0, 1.0)
+    gl.glBegin(gl.GL_LINES)
+    gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
+    gl.glVertex3f(glpos_from_im_x+length, glpos_from_im_y, -0.001)
+    gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
+    gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
+    gl.glEnd()
+    if im_x&gt;=0 and im_x&lt;self.tex_width and im_y&gt;=0 and im_y&lt;=self.tex_height:
+        return (im_x, im_y) 
+    return None</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.image_centered_position"><code class="name flex">
+<span>def <span class="ident">image_centered_position</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def image_centered_position(self):
+    w = self._width
+    h = self._height
+    self.print_log(f&#39;self width height {self._width} {self._height} tex {self.tex_width} {self.tex_height}&#39;)
+    if self.tex_width == 0 or self.tex_height == 0:
+        return 0, w, 0, h
+    # self.print_log(&#39; {}x{}&#39;.format(w, h))
+    image_ratio = float(self.tex_width)/float(self.tex_height)
+    if h*image_ratio &lt; w:
+        view_width  = int(h*image_ratio+0.5)
+        view_height = h
+        start_x = int((w - view_width) / 2 + 0.5)
+        start_y = 0
+    else:
+        view_width  = w
+        view_height = int(w/image_ratio+0.5)
+        start_x = 0
+        start_y = int((h - view_height) / 2 + 0.5)
+
+    x0 = start_x
+    x1 = start_x+view_width
+    y0 = start_y
+    y1 = start_y+view_height
+    return x0, x1, y0, y1</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.keyPressEvent"><code class="name flex">
+<span>def <span class="ident">keyPressEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def keyPressEvent(self, event):
+    # TODO: Fix the correct parameters for selecting image zoom/pan
+    x0, x1, y0, y1 = self.image_centered_position()
+    print(f&#34;image centered position {x1-x0} x {y1-y0}&#34;)
+    self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseDoubleClickEvent"><code class="name flex">
+<span>def <span class="ident">mouseDoubleClickEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mouseDoubleClickEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouseDoubleClickEvent(self, event):
+    self.mouse_double_click_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseMoveEvent"><code class="name flex">
+<span>def <span class="ident">mouseMoveEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mouseMoveEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouseMoveEvent(self, event):
+    if self.show_cursor:
+        self.set_cursor_image_position(event.x(), event.y())
+    self.mouse_move_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mousePressEvent"><code class="name flex">
+<span>def <span class="ident">mousePressEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mousePressEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mousePressEvent(self, event):
+    self.mouse_press_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseReleaseEvent"><code class="name flex">
+<span>def <span class="ident">mouseReleaseEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mouseReleaseEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouseReleaseEvent(self, event):
+    self.mouse_release_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.myPaintGL"><code class="name flex">
+<span>def <span class="ident">myPaintGL</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def myPaintGL(self):  pass </code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.opengl_error"><code class="name flex">
+<span>def <span class="ident">opengl_error</span></span>(<span>self, force=False)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def opengl_error(self, force=False):
+    if self.opengl_debug or force:
+        status = gl.glGetError()
+        if status != gl.GL_NO_ERROR:
+            print(self.tab[0]+&#39;gl error %s&#39; % status)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.paintAll"><code class="name flex">
+<span>def <span class="ident">paintAll</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def paintAll(self):
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    if self.textureID is None or not self.isValid() or not self.isVisible():
+        print(&#34;paintGL()** not ready {} {}&#34;.format(self.textureID, self.isValid()))
+        return
+    # No need for makeCurrent() since it is called from PaintGL() only
+    # self.makeCurrent()
+    painter = QtGui.QPainter()
+    painter.begin(self)
+    painter.beginNativePainting()
+    im_pos = None
+    scale  = None
+    try:
+        self.updateViewPort()
+        scale = self.updateTransforms()
+        self.myPaintGL()
+        if self.show_cursor:
+            im_pos = self.gl_draw_cursor()
+    except Exception as e:
+        self.print_log(&#34; failed paintGL {}&#34;.format(e))
+        traceback.print_exc()
+    painter.endNativePainting()
+    # status = gl.glGetError()
+
+    draw_text = True
+    if draw_text:
+        # adapt scale depending on the ratio image / viewport
+        scale *= self._width/self.cv_image.data.shape[1]
+        self.display_text(painter, self.display_message(im_pos, scale))
+
+    # draw histogram
+    if self.show_histogram:
+        current_image = self.cv_image.data
+        rect = QtCore.QRect(0, 0, self.width(), self.height())
+        histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+        self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+
+    painter.end()
+    # Seems required here, at least on linux
+    # self.update()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeEvent"><code class="name flex">
+<span>def <span class="ident">resizeEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Called upon window resizing: reinitialize the viewport.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resizeEvent(self, event):
+    &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+    &#34;&#34;&#34;
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+    self.evt_width = event.size().width()
+    self.evt_height = event.size().height()
+    QOpenGLWidget.resizeEvent(self, event)
+    self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeGL"><code class="name flex">
+<span>def <span class="ident">resizeGL</span></span>(<span>self, width, height)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Called upon window resizing: reinitialize the viewport.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resizeGL(self, width, height):
+    &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+    &#34;&#34;&#34;
+    # print(&#34;ResizeGL&#34;)
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    # size give for opengl are in pixels, qt uses device independent size otherwise
+    print(f&#34;self.devicePixelRatio() {self.devicePixelRatio()}&#34;)
+    self._width = width*self.devicePixelRatio()
+    self._height = height*self.devicePixelRatio()
+    # print(&#34;width height ratios {} {}&#34;.format(self._width/self.width(), self._height/self.height()))
+    self.viewer_update()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.setTexture"><code class="name flex">
+<span>def <span class="ident">setTexture</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>:return: set opengl texture based on input numpy array image</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def setTexture(self):
+    &#34;&#34;&#34;
+    :return: set opengl texture based on input numpy array image
+    &#34;&#34;&#34;
+    # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
+
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    self.start_timing()
+    self.makeCurrent()
+
+    # Replace texture only if required
+    if self.cv_image is None:
+        print(&#34;self.cv_image is None&#34;)
+        return False
+
+    img_height, img_width = self.cv_image.data.shape[:2]
+
+    # default type
+    gl_types = {
+        &#39;int8&#39;   : gl.GL_BYTE,
+        &#39;uint8&#39;  : gl.GL_UNSIGNED_BYTE,
+        &#39;int16&#39;  : gl.GL_SHORT,
+        &#39;uint16&#39; : gl.GL_UNSIGNED_SHORT,
+        &#39;int32&#39;  : gl.GL_INT,
+        &#39;uint32&#39; : gl.GL_UNSIGNED_INT,
+        &#39;float32&#39;: gl.GL_FLOAT,
+        &#39;float64&#39;: gl.GL_DOUBLE
+    }
+    gl_type = gl_types[self.cv_image.data.dtype.name]
+
+    # It seems that the dimension in X should be even
+
+    # Not sure what is the right parameter for internal format of 2D texture based
+    # on the input data type uint8, uint16, ...
+    # need to test with different DXR images
+    internal_format = gl.GL_RGB
+    if self.cv_image.data.shape[2] == 3:
+        if self.cv_image.precision == 8:
+            internal_format = gl.GL_RGB
+        if self.cv_image.precision == 10:
+            internal_format = gl.GL_RGB10
+        if self.cv_image.precision == 12:
+            internal_format = gl.GL_RGB12
+    if self.cv_image.data.shape[2] == 4:
+        if self.cv_image.precision == 8:
+            internal_format = gl.GL_RGBA
+        else:
+            if self.cv_image.precision &lt;= 12:
+                internal_format = gl.GL_RGBA12
+            else:
+                if self.cv_image.precision &lt;= 16:
+                    internal_format = gl.GL_RGBA16
+                else:
+                    internal_format = gl.GL_RGBA32F
+
+    channels2format = {
+        ImageFormat.CH_RGB  : gl.GL_RGB,
+        ImageFormat.CH_BGR  : gl.GL_BGR,
+        ImageFormat.CH_Y    : gl.GL_RED, # not sure about this one
+        ImageFormat.CH_RGGB : gl.GL_RGBA, # we save 4 component data
+        ImageFormat.CH_GRBG : gl.GL_RGBA,
+        ImageFormat.CH_GBRG : gl.GL_RGBA,
+        ImageFormat.CH_BGGR : gl.GL_RGBA
+    }
+    texture_pixel_format = channels2format[self.cv_image.channels]
+
+    if (self.tex_width,self.tex_height) != (img_width,img_height):
+        if self.textureID is not None:
+            gl.glDeleteTextures(np.array([self.textureID]))
+        self.textureID = gl.glGenTextures(1)
+        gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+        # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+        # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
+                        internal_format,
+                        img_width, img_height,
+                     0, texture_pixel_format, gl_type, self.cv_image.data)
+        # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+        self.tex_width, self.tex_height = img_width, img_height
+    else:
+        try:
+            gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
+                         texture_pixel_format, gl_type, self.cv_image.data)
+            # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+        except Exception as e:
+            print(&#34;setTexture failed shape={}: {}&#34;.format(self.cv_image.data.shape, e))
+            return False
+
+    self.print_timing(add_total=True)
+    self.opengl_error()
+    return True</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_cursor_image_position"><code class="name flex">
+<span>def <span class="ident">set_cursor_image_position</span></span>(<span>self, cursor_x, cursor_y)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Sets the image position from the cursor in proportion of the image dimension
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_cursor_image_position(self, cursor_x, cursor_y):
+    &#34;&#34;&#34;
+    Sets the image position from the cursor in proportion of the image dimension
+    :return:
+    &#34;&#34;&#34;
+    self.updateTransforms()
+    ratio = self.screen().devicePixelRatio()
+    self.print_log(&#34;ratio {}&#34;.format(ratio))
+    pos_x = cursor_x * ratio
+    pos_y = (self.height() - cursor_y) * ratio
+    self.print_log(&#34;pos {} {}&#34;.format(pos_x, pos_y))
+    x0, x1, y0, y1 = self.image_centered_position()
+
+    gl_posX, gl_posY = self.get_mouse_gl_coordinates(pos_x, pos_y)
+    self.cursor_imx_ratio = (gl_posX - x0) / (x1 - x0)
+    self.cursor_imy_ratio = 1 - (gl_posY - y0) / (y1 - y0)
+    self.print_log(&#34;cursor ratio {} {}&#34;.format(self.cursor_imx_ratio, self.cursor_imy_ratio))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_image"><code class="name flex">
+<span>def <span class="ident">set_image</span></span>(<span>self, image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_image(self, image):
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    changed = super(GLImageViewerBase, self).set_image(image)
+
+    img_width = self.cv_image.data.shape[1]
+    if img_width % 4 != 0:
+        print(&#34;Image is resized to a multiple of 4 dimension in X&#34;)
+        img_width = ((img_width &gt;&gt; 4) &lt;&lt; 4)
+        im = np.ascontiguousarray(self.cv_image.data[:,:img_width, :])
+        self.cv_image = ViewerImage(im, precision = self.cv_image.precision, downscale = 1,
+                                    channels = self.cv_image.channels)
+        print(self.cv_image.data.shape)
+
+    if changed:  # and self.textureID is not None:
+        if self.setTexture():
+            self.show()
+            self.update()
+        else:
+            print(&#34;setTexture() return False&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.synchronize_data"><code class="name flex">
+<span>def <span class="ident">synchronize_data</span></span>(<span>self, other_viewer)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def synchronize_data(self, other_viewer):
+    super(GLImageViewerBase, self).synchronize_data(other_viewer)
+    other_viewer.cursor_imx_ratio = self.cursor_imx_ratio
+    other_viewer.cursor_imy_ratio = self.cursor_imy_ratio</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.updateTransforms"><code class="name flex">
+<span>def <span class="ident">updateTransforms</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def updateTransforms(self) -&gt; float:
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    self.start_timing()
+    self.makeCurrent()
+    w = self._width
+    h = self._height
+    dx, dy = self.new_translation()
+    scale = self.new_scale(self.mouse_zy, self.tex_height)
+    print(f&#34;updateTransforms scale {scale}&#34;)
+    try:
+        # print(&#34;current context &#34;, QtOpenGL.QGLContext.currentContext())
+        # gl = QtOpenGL.QGLContext.currentContext().functions()
+        # update the window size
+        gl.glMatrixMode(gl.GL_PROJECTION)
+        gl.glLoadIdentity()
+        translation_unit = min(w, h)/2
+        # self.print_log(&#34;scale {}&#34;.format(scale))
+        gl.glScale(scale, scale, scale)
+        gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+        # the window corner OpenGL coordinates are (-+1, -+1)
+        gl.glOrtho(0, w, 0, h, -1, 1)
+        gl.glMatrixMode(gl.GL_MODELVIEW)
+        gl.glLoadIdentity()
+    except Exception as e:
+        self.print_log(&#34; setting gl matrices failed {}&#34;.format(e))
+    self.print_timing(add_total=True)
+    self.opengl_error()
+    return scale</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.updateViewPort"><code class="name flex">
+<span>def <span class="ident">updateViewPort</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def updateViewPort(self):
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    self.start_timing()
+    # keep image proportions
+    w = self._width
+    h = self._height
+    # print(f&#34; w, h {w, h}&#34;)
+    try:
+        gl.glViewport(0,0,w,h) # keep everything in viewport
+    except Exception as e:
+        self.print_log(&#34; failed glViewport {}&#34;.format(e))
+    self.print_timing(add_total=True)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.viewer_update"><code class="name flex">
+<span>def <span class="ident">viewer_update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def viewer_update(self):
+    print(&#34;GLImageViewerBase viewer_update&#34;)
+    self.update()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.wheelEvent"><code class="name flex">
+<span>def <span class="ident">wheelEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>wheelEvent(self, event: PySide6.QtGui.QWheelEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wheelEvent(self, event):
+    self.mouse_wheel_event(event)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="qimview.image_viewers.image_viewer.ImageViewer" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer">ImageViewer</a></b></code>:
+<ul class="hlist">
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_histogram" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.display_histogram">display_histogram</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.find_in_layout" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.find_in_layout">find_in_layout</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.synchronize" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.synchronize">synchronize</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="qimview.image_viewers" href="index.html">qimview.image_viewers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase">GLImageViewerBase</a></code></h4>
+<ul class="">
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.get_mouse_gl_coordinates" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.get_mouse_gl_coordinates">get_mouse_gl_coordinates</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.gl_draw_cursor" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.gl_draw_cursor">gl_draw_cursor</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.image_centered_position" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.image_centered_position">image_centered_position</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.keyPressEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.keyPressEvent">keyPressEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseDoubleClickEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseDoubleClickEvent">mouseDoubleClickEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseMoveEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseMoveEvent">mouseMoveEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mousePressEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mousePressEvent">mousePressEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseReleaseEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.mouseReleaseEvent">mouseReleaseEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.myPaintGL" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.myPaintGL">myPaintGL</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.opengl_error" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.opengl_error">opengl_error</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.paintAll" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.paintAll">paintAll</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeEvent">resizeEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeGL" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.resizeGL">resizeGL</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.setTexture" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.setTexture">setTexture</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_cursor_image_position" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_cursor_image_position">set_cursor_image_position</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_image" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.set_image">set_image</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.staticMetaObject" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.staticMetaObject">staticMetaObject</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.synchronize_data" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.synchronize_data">synchronize_data</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.updateTransforms" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.updateTransforms">updateTransforms</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.updateViewPort" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.updateViewPort">updateViewPort</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.viewer_update" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.viewer_update">viewer_update</a></code></li>
+<li><code><a title="qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.wheelEvent" href="#qimview.image_viewers.gl_image_viewer_base.GLImageViewerBase.wheelEvent">wheelEvent</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

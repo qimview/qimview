@@ -1,0 +1,2572 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>qimview.image_viewers.qt_image_viewer API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>qimview.image_viewers.qt_image_viewer</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#
+#
+# started from https://cyrille.rossant.net/2d-graphics-rendering-tutorial-with-pyopengl/
+#
+# check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
+#
+
+from qimview.utils.qt_imports import *
+from qimview.utils.viewer_image import *
+from qimview.utils.utils import clip_value
+from qimview.utils.utils import get_time
+from qimview.tests_utils.qtdump import *
+try:
+    import qimview_cpp
+except Exception as e:
+    has_cppbind = False
+    print(&#34;Failed to load qimview_cpp: {}&#34;.format(e))
+else:
+    has_cppbind = True
+print(&#34;Do we have cpp binding ? {}&#34;.format(has_cppbind))
+
+from qimview.image_viewers import ImageFilterParameters
+from .image_viewer import (ImageViewer, trace_method,)
+
+import cv2
+import numpy as np
+from typing import Tuple, Optional
+
+# the opengl version is a bit slow for the moment, due to the texture generation
+# BaseWidget = QOpenGLWidget 
+BaseWidget = QtWidgets.QWidget
+
+class QTImageViewer(BaseWidget, ImageViewer ):
+
+    def __init__(self, parent=None, event_recorder=None):
+        self.event_recorder = event_recorder
+        super().__init__(parent)
+        self.setMouseTracking(True)
+        self.anti_aliasing = True
+        size_policy = QtWidgets.QSizePolicy()
+        size_policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Ignored)
+        size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.Ignored)
+        self.setSizePolicy(size_policy)
+        # self.setAlignment(QtCore.Qt.AlignCenter )
+        self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float32)
+        self.zoom_center = np.array([0.5, 0.5, 0.5, 0.5])
+
+
+        if &#39;ClickFocus&#39; in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+        self.paint_cache      = None
+        self.paint_diff_cache = None
+        self.diff_image       = None
+
+        # self.display_timing = False
+        if BaseWidget is QOpenGLWidget:
+            self.setAutoFillBackground(True)
+
+        # TODO: how can I set the background color to black without impacting display speed?
+        # p = self.palette()
+        # p.setColor(self.backgroundRole(), QtCore.Qt.black) 
+        # self.setPalette(p)
+        # self.setAutoFillBackground(True)
+
+        self.verbose = False
+        # self.trace_calls = True
+
+    #def __del__(self):
+    #    pass
+
+    def set_image(self, image):
+        super(QTImageViewer, self).set_image(image)
+
+    def apply_zoom(self, crop):
+        (height, width) = self.cv_image.data.shape[:2]
+        # print(f&#34;height, width = {height, width}&#34;)
+        # Apply zoom
+        coeff = 1.0/self.new_scale(self.mouse_zy, height)
+        # zoom from the center of the image
+        center = self.zoom_center
+        new_crop = center + (crop - center) * coeff
+
+        # print(&#34;new crop zoom 1 {}&#34;.format(new_crop))
+
+        # allow crop increase based on the available space
+        label_width = self.width()
+        # print(f&#34;label_width {label_width}&#34;)
+        label_height = self.height()
+
+        new_width = width * coeff
+        new_height = height * coeff
+
+        ratio_width = float(label_width) / new_width
+        ratio_height = float(label_height) / new_height
+
+        # print(f&#34; ratio_width {ratio_width} ratio_height {ratio_height}&#34;)
+        ratio = min(ratio_width, ratio_height)
+
+        if ratio_width&lt;ratio_height:
+            # margin to increase height
+            margin_pixels = label_height/ratio - new_height
+            margin_height = margin_pixels/height
+            new_crop[1] -= margin_height/2
+            new_crop[3] += margin_height/2
+        else:
+            # margin to increase width
+            margin_pixels = label_width/ratio - new_width
+            margin_width = margin_pixels/width
+            new_crop[0] -= margin_width/2
+            new_crop[2] += margin_width/2
+        # print(&#34;new crop zoom 2 {}&#34;.format(new_crop))
+
+        return new_crop
+
+    def apply_translation(self, crop):
+        &#34;&#34;&#34;
+        :param crop:
+        :return: the new crop
+        &#34;&#34;&#34;
+        # Apply translation
+        diff_x, diff_y = self.new_translation()
+        diff_y = - diff_y
+        # print(&#34; new translation {} {}&#34;.format(diff_x, diff_y))
+        # apply the maximal allowed translation
+        tr_x = float(diff_x) / self.width()
+        tr_y = float(diff_y) / self.height()
+        tr_x = clip_value(tr_x, crop[2]-1, crop[0])
+        tr_y = clip_value(tr_y, crop[3]-1, crop[1])
+        # normalized position relative to the full image
+        crop[0] -= tr_x
+        crop[1] -= tr_y
+        crop[2] -= tr_x
+        crop[3] -= tr_y
+
+    def check_translation(self):
+        &#34;&#34;&#34;
+        This method computes the translation really applied based on the current requested translation
+        :return:
+        &#34;&#34;&#34;
+        # Apply zoom
+        crop = self.apply_zoom(self.output_crop)
+
+        # Compute the translation that is really applied after applying the constraints
+        diff_x, diff_y = self.new_translation()
+        diff_y = - diff_y
+        # print(&#34; new translation {} {}&#34;.format(diff_x, diff_y))
+        # apply the maximal allowed translation
+        w, h = self.width(), self.height()
+        diff_x = clip_value(diff_x, w*(crop[2]-1), w*(crop[0]))
+        diff_y = - clip_value(diff_y, h*(crop[3]-1), h*(crop[1]))
+        # normalized position relative to the full image
+        return diff_x, diff_y
+
+    def update_crop(self):
+        # Apply zoom
+        new_crop = self.apply_zoom(self.output_crop)
+        # print(f&#34;update_crop {self.output_crop} --&gt; {new_crop}&#34;)
+        # Apply translation
+        self.apply_translation(new_crop)
+        new_crop = np.clip(new_crop, 0, 1)
+        # print(&#34;move new crop {}&#34;.format(new_crop))
+        # print(f&#34;output_crop {self.output_crop} new crop {new_crop}&#34;)
+        return new_crop
+
+    def update_crop_new(self):
+        # 1. transform crop to display coordinates
+        
+        # Apply zoom
+        new_crop = self.apply_zoom(self.output_crop)
+        # print(f&#34;update_crop {self.output_crop} --&gt; {new_crop}&#34;)
+        # Apply translation
+        self.apply_translation(new_crop)
+        new_crop = np.clip(new_crop, 0, 1)
+        # print(&#34;move new crop {}&#34;.format(new_crop))
+        # print(f&#34;output_crop {self.output_crop} new crop {new_crop}&#34;)
+        return new_crop
+
+    def apply_filters(self, current_image):
+        self.print_log(f&#34;current_image.data.shape {current_image.data.shape}&#34;)
+        # return current_image
+
+        self.start_timing(title=&#39;apply_filters()&#39;)
+
+        # Output RGB from input
+        ch = self.cv_image.channels
+        if has_cppbind:
+            channels = current_image.channels
+            black_level = self.filter_params.black_level.float
+            white_level = self.filter_params.white_level.float
+            g_r_coeff = self.filter_params.g_r.float
+            g_b_coeff = self.filter_params.g_b.float
+            saturation = self.filter_params.saturation.float
+            max_value = ((1&lt;&lt;current_image.precision)-1)
+            max_type = 1  # not used
+            gamma = self.filter_params.gamma.float  # not used
+
+            rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), dtype=np.uint8)
+            time1 = get_time()
+            ok = False
+            if ch in ImageFormat.CH_RAWFORMATS() or ch in ImageFormat.CH_RGBFORMATS():
+                cases = {
+                    &#39;uint8&#39;:  { &#39;func&#39;: qimview_cpp.apply_filters_u8_u8  , &#39;name&#39;: &#39;apply_filters_u8_u8&#39;},
+                    &#39;uint16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_u16_u8, &#39;name&#39;: &#39;apply_filters_u16_u8&#39;},
+                    &#39;uint32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_u32_u8, &#39;name&#39;: &#39;apply_filters_u32_u8&#39;},
+                    &#39;int16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_s16_u8, &#39;name&#39;: &#39;apply_filters_s16_u8&#39;},
+                    &#39;int32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_s32_u8, &#39;name&#39;: &#39;apply_filters_s32_u8&#39;}
+                }
+                if current_image.data.dtype.name in cases:
+                    func = cases[current_image.data.dtype.name][&#39;func&#39;]
+                    name = cases[current_image.data.dtype.name][&#39;name&#39;]
+                    self.print_log(f&#34;qimview_cpp.{name}(current_image, rgb_image, channels, &#34;
+                          f&#34;black_level={black_level}, white_level={white_level}, &#34;
+                          f&#34;g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, &#34;
+                          f&#34;max_value={max_value}, max_type={max_type}, gamma={gamma})&#34;)
+                    ok = func(current_image.data, rgb_image, channels, black_level, white_level, g_r_coeff,
+                                g_b_coeff, max_value, max_type, gamma, saturation)
+                    self.add_time(f&#39;{name}()&#39;,time1, force=True, title=&#39;apply_filters()&#39;)
+                else:
+                    print(f&#34;apply_filters() not available for {current_image.data.dtype} data type !&#34;)
+            else:
+                cases = {
+                    &#39;uint8&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u8_u8, &#39;name&#39;: &#39;apply_filters_scalar_u8_u8&#39;},
+                    &#39;uint16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u16_u8, &#39;name&#39;: &#39;apply_filters_scalar_u16_u8&#39;},
+                    &#39;int16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_s16_u8, &#39;name&#39;: &#39;apply_filters_scalar_s16_u8&#39;},
+                    &#39;uint32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u32_u8, &#39;name&#39;: &#39;apply_filters_scalar_u32_u8&#39;},
+                    &#39;float64&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_f64_u8, &#39;name&#39;: &#39;apply_filters_scalar_f64_u8&#39;},
+                }
+                if current_image.data.dtype.name.startswith(&#39;float&#39;):
+                    max_value = 1.0
+                if current_image.data.dtype.name in cases:
+                    func = cases[current_image.data.dtype.name][&#39;func&#39;]
+                    name = cases[current_image.data.dtype.name][&#39;name&#39;]
+                    self.print_log(f&#34;qimview_cpp.{name}(current_image, rgb_image, &#34;
+                          f&#34;black_level={black_level}, white_level={white_level}, &#34;
+                          f&#34;max_value={max_value}, max_type={max_type}, gamma={gamma})&#34;)
+                    ok = func(current_image.data, rgb_image, black_level, white_level, max_value, max_type, gamma)
+                    self.add_time(f&#39;{name}()&#39;, time1, force=True, title=&#39;apply_filters()&#39;)
+                else:
+                    print(f&#34;apply_filters_scalar() not available for {current_image.data.dtype} data type !&#34;)
+            if not ok:
+                self.print_log(&#34;Failed running wrap_num.apply_filters_u16_u8 ...&#34;, force=True)
+        else:
+            # self.print_log(&#34;current channels {}&#34;.format(ch))
+            if ch in ImageFormat.CH_RAWFORMATS():
+                channel_pos = channel_position[current_image.channels]
+                self.print_log(&#34;Converting to RGB&#34;)
+                # convert Bayer to RGB
+                rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                        dtype=current_image.data.dtype)
+                rgb_image[:, :, 0] = current_image.data[:, :, channel_pos[&#39;r&#39;]]
+                rgb_image[:, :, 1] = (current_image.data[:, :, channel_pos[&#39;gr&#39;]]+current_image.data[:, :, channel_pos[&#39;gb&#39;]])/2
+                rgb_image[:, :, 2] = current_image.data[:, :, channel_pos[&#39;b&#39;]]
+            else:
+                if ch == ImageFormat.CH_Y:
+                    # Transform to RGB is it a good idea?
+                    rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                            dtype=current_image.data.dtype)
+                    rgb_image[:, :, 0] = current_image.data
+                    rgb_image[:, :, 1] = current_image.data
+                    rgb_image[:, :, 2] = current_image.data
+                else:
+                    rgb_image = current_image.data
+
+            # Use cv2.convertScaleAbs(I,a,b) function for fast processing
+            # res = sat(|I*a+b|)
+            # if current_image is not in 8 bits, we need to rescale
+            min_val = self.filter_params.black_level.float
+            max_val = self.filter_params.white_level.float
+
+            if min_val != 0 or max_val != 1 or current_image.precision!=8:
+                min_val = self.filter_params.black_level.float
+                max_val = self.filter_params.white_level.float
+                # adjust levels to precision
+                precision = current_image.precision
+                min_val = min_val*((1 &lt;&lt; precision)-1)
+                max_val = max_val*((1 &lt;&lt; precision)-1)
+                if rgb_image.dtype == np.uint32:
+                    # Formula a bit complicated, we need to be careful with unsigned processing
+                    rgb_image =np.clip(((np.clip(rgb_image, min_val, None) - min_val)*(255/(max_val-min_val)))+0.5,
+                                       None, 255).astype(np.uint8)
+                else:
+                    # to rescale: add min_val and multiply by (max_val-min_val)/255
+                    if min_val != 0:
+                        rgb_image = cv2.add(rgb_image, (-min_val, -min_val, -min_val, 0))
+                    rgb_image = cv2.convertScaleAbs(rgb_image, alpha=255. / float(max_val - min_val), beta=0)
+
+            # # if gamma changed
+            # if self.filter_params.gamma.value != self.filter_params.gamma.default_value and work_image.dtype == np.uint8:
+            #     gamma_coeff = self.filter_params.gamma.float
+            #     # self.gamma_label.setText(&#34;Gamma  {}&#34;.format(gamma_coeff))
+            #     invGamma = 1.0 / gamma_coeff
+            #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype(&#34;uint8&#34;)
+            #     work_image = cv2.LUT(work_image, table)
+
+        self.print_timing(title=&#39;apply_filters()&#39;)
+        return rgb_image
+
+    def viewer_update(self):
+        print(&#34;QtImageViewer viewer_update&#34;)
+        #if self.cv_image is not None:
+        #    self.paint_image()
+        if BaseWidget is QOpenGLWidget:
+            self.paint_image()
+            self.repaint()
+        else:
+            self.update()
+
+    def draw_overlay_separation(self, cropped_image_shape, rect, painter):
+        (height, width) = cropped_image_shape[:2]
+        im_x = int((self.mouse_x - rect.x())/rect.width()*width)
+        im_x = max(0, min(width - 1, im_x))
+        # im_y = int((self.mouse_y - rect.y())/rect.height()*height)
+        # Set position at the beginning of the pixel
+        pos_from_im_x = int(im_x*rect.width()/width + rect.x())
+        # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
+        pen_width = 2
+        color = QtGui.QColor(255, 255, 0 , 128)
+        pen = QtGui.QPen()
+        pen.setColor(color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
+
+    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter) -&gt; Optional[Tuple[int, int]]:
+        &#34;&#34;&#34;
+        :param cropped_image_shape: dimensions of current crop
+        :param crop_xmin: left pixel of current crop
+        :param crop_ymin: top pixel of current crop
+        :param rect: displayed image area
+        :param painter:
+        :return:
+            tuple: (posx, posy) image pixel position of the cursor, if None cursor is out of image
+        &#34;&#34;&#34;
+        # Draw cursor
+        if self.display_timing: self.start_timing()
+        # get image position
+        (height, width) = cropped_image_shape[:2]
+        im_x = int((self.mouse_x -rect.x())/rect.width()*width)
+        im_y = int((self.mouse_y -rect.y())/rect.height()*height)
+
+        pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
+        pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
+
+        # ratio = self.screen().devicePixelRatio()
+        # print(&#34;ratio = {}&#34;.format(ratio))
+        pos_x = pos_from_im_x  # *ratio
+        pos_y = pos_from_im_y  # *ratio
+        length_percent = 0.04
+        # use percentage of the displayed image dimensions
+        length = int(max(self.width(),self.height())*length_percent)
+        pen_width = 4
+        color = QtGui.QColor(0, 255, 255, 200)
+        pen = QtGui.QPen()
+        pen.setColor(color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
+        painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
+
+        # Update text
+        if im_x&gt;=0 and im_x&lt;cropped_image_shape[1] and im_y&gt;=0 and im_y&lt;cropped_image_shape[0]:
+            # values = cropped_image[im_y, im_x]
+            im_x += crop_xmin
+            im_y += crop_ymin
+            im_pos = (im_x, im_y)
+        else:
+            im_pos = None
+        if self.display_timing: self.print_timing()
+        return im_pos
+
+    def get_difference_image(self, verbose=True):
+
+        factor = self.filter_params.imdiff_factor.float
+        if self.paint_diff_cache is not None:
+            use_cache = self.paint_diff_cache[&#39;imid&#39;] == self.image_id and \
+                        self.paint_diff_cache[&#39;imrefid&#39;] == self.image_ref_id and \
+                        self.paint_diff_cache[&#39;factor&#39;] == factor
+        else:
+            use_cache = False
+
+        if not use_cache:
+            im1 = self.cv_image.data
+            im2 = self.cv_image_ref.data
+            # TODO: get factor from parameters ...
+            # factor = int(self.diff_color_slider.value())
+            print(f&#39;factor = {factor}&#39;)
+            print(f&#39; im1.dtype {im1.dtype} im2.dtype {im2.dtype}&#39;)
+            # Fast OpenCV code
+            start = get_time()
+            # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
+            try:
+                if im1.dtype.name == &#39;uint8&#39; and im2.dtype.name == &#39;uint8&#39;:
+                    diff_plus = cv2.subtract(im1, im2)
+                    diff_minus = cv2.subtract(im2, im1)
+                    res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+                    if verbose:
+                        print(f&#34; qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms&#34;)
+                        vmin = np.min(res)
+                        vmax = np.max(res)
+                        print(f&#34;min-max diff = {vmin} - {vmax}&#34;)
+                        histo,_ = np.histogram(res, bins=int(vmax-vmin+0.5), range=(vmin, vmax))
+                        sum = 0
+                        for v in range(vmin,vmax):
+                            if v!=127:
+                                nb = histo[v-vmin]
+                                if nb &gt;0:
+                                    print(f&#34;{v-127}:{nb} &#34;,end=&#39;&#39;)
+                                    sum += nb
+                        print(&#39;&#39;)
+                        print(f&#39;nb pixel diff  {sum}&#39;)
+                    res = ViewerImage(res,  precision=self.cv_image.precision, 
+                                            downscale=self.cv_image.downscale,
+                                            channels=self.cv_image.channels)
+                    self.paint_diff_cache = {  &#39;imid&#39;: self.image_id, &#39;imrefid&#39;: self.image_ref_id, 
+                        &#39;factor&#39;: self.filter_params.imdiff_factor.float
+                    }
+                    self.diff_image = res
+                else:
+                    d = (im1.astype(np.float32)-im2.astype(np.float32))*factor
+                    d[d&lt;-127] = -127
+                    d[d&gt;128] = 128
+                    d = (d+127).astype(np.uint8)*255
+                    res = ViewerImage(d,  precision=8, 
+                                            downscale=self.cv_image.downscale,
+                                            channels=self.cv_image.channels)
+                    self.paint_diff_cache = {  &#39;imid&#39;: self.image_id, &#39;imrefid&#39;: self.image_ref_id, 
+                        &#39;factor&#39;: self.filter_params.imdiff_factor.float
+                    }
+                    self.diff_image = res
+            except Exception as e:
+                print(f&#34;Error {e}&#34;)
+                res = (im1!=im2).astype(np.uint8)*255
+                res = ViewerImage(res,  precision=8, 
+                                        downscale=self.cv_image.downscale,
+                                        channels=ImageFormat.CH_Y)
+                self.diff_image = res
+
+        return self.diff_image
+
+    def paint_image(self):
+        # print(f&#34;paint_image display_timing {self.display_timing}&#34;)
+        if self.trace_calls: t = trace_method(self.tab)
+        self.start_timing()
+        time0 = time1 = get_time()
+
+        label_width = self.size().width()
+        label_height = self.size().height()
+
+        show_diff = self.show_image_differences and self.cv_image is not self.cv_image_ref and \
+                    self.cv_image_ref is not None and self.cv_image.data.shape == self.cv_image_ref.data.shape
+
+        c = self.update_crop()
+        # check paint_cache
+        if self.paint_cache is not None:
+            use_cache = self.paint_cache[&#39;imid&#39;] == self.image_id and \
+                        np.array_equal(self.paint_cache[&#39;crop&#39;],c) and \
+                        self.paint_cache[&#39;labelw&#39;] == label_width and \
+                        self.paint_cache[&#39;labelh&#39;] == label_height and \
+                        self.paint_cache[&#39;filterp&#39;].is_equal(self.filter_params) and \
+                        (self.paint_cache[&#39;showhist&#39;] == self.show_histogram or not self.show_histogram) and \
+                        self.paint_cache[&#39;show_diff&#39;] == show_diff and \
+                        self.paint_cache[&#39;antialiasing&#39;] == self.antialiasing and \
+                        not self.show_overlay
+        else:
+            use_cache = False
+
+        # if show_diff, compute the image difference (put it in cache??)
+        if show_diff:
+            # Cache does not work well with differences
+            use_cache = False
+            # don&#39;t save the difference
+            current_image = self.get_difference_image()
+        else:
+            current_image = self.cv_image
+
+        precision  = current_image.precision
+        downscale  = current_image.downscale
+        channels   = current_image.channels
+
+        # TODO: get data based on the display ratio?
+        image_data = current_image.data
+
+        # could_use_cache = use_cache
+        # if could_use_cache:
+        #     print(&#34; Could use cache here ... !!!&#34;)
+        # use_cache = False
+
+        do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
+        h, w  = image_data.shape[:2]
+        if do_crop:
+            crop_xmin = int(np.round(c[0] * w))
+            crop_xmax = int(np.round(c[2] * w))
+            crop_ymin = int(np.round(c[1] * h))
+            crop_ymax = int(np.round(c[3] * h))
+            image_data = image_data[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+        else:
+            crop_xmin = crop_ymin = 0
+            crop_xmax = w
+            crop_ymax = h
+
+        cropped_image_shape = image_data.shape
+        self.add_time(&#39;crop&#39;, time1)
+
+        # time1 = get_time()
+        image_height, image_width  = image_data.shape[:2]
+        ratio_width = float(label_width) / image_width
+        ratio_height = float(label_height) / image_height
+        ratio = min(ratio_width, ratio_height)
+        display_width = int(round(image_width * ratio))
+        display_height = int(round(image_height * ratio))
+
+        if self.show_overlay and self.cv_image_ref is not self.cv_image and self.cv_image_ref and \
+            self.cv_image.data.shape == self.cv_image_ref.data.shape:
+            # to create the overlay rapidly, we will mix the two images based on the current cursor position
+            # 1. convert cursor position to image position
+            (height, width) = cropped_image_shape[:2]
+            # compute rect
+            rect = QtCore.QRect(0, 0, display_width, display_height)
+            devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+            rect.moveCenter(devRect.center())
+            im_x = int((self.mouse_x - rect.x()) / rect.width() * width)
+            im_x = max(0,min(width-1, im_x))
+            # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
+            # We need to have a copy here .. slow, better option???
+            image_data = np.copy(image_data)
+            image_data[:, :im_x] = self.cv_image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+
+        resize_applied = False
+        if not use_cache:
+            anti_aliasing = ratio &lt; 1
+            #self.print_log(&#34;ratio is {:0.2f}&#34;.format(ratio))
+            use_opencv_resize = anti_aliasing
+            # enable this as optional?
+            # opencv_downscale_interpolation = opencv_fast_interpolation
+            opencv_fast_interpolation = cv2.INTER_NEAREST
+            if self.antialiasing:
+                opencv_downscale_interpolation = cv2.INTER_AREA
+            else:
+                opencv_downscale_interpolation = cv2.INTER_NEAREST
+            # opencv_upscale_interpolation   = cv2.INTER_LINEAR
+            opencv_upscale_interpolation   = opencv_fast_interpolation
+            # self.print_time(&#39;several settings&#39;, time1, start_time)
+
+            # self.print_log(&#34;use_opencv_resize {} channels {}&#34;.format(use_opencv_resize, current_image.channels))
+            # if ratio&lt;1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
+            if use_opencv_resize and not resize_applied and channels == ImageFormat.CH_RGB:
+
+                prev_shape = image_data.shape
+                initial_type = image_data.dtype
+                if image_data.dtype != np.uint8:
+                    print(f&#34;image_data type {type(image_data)} {image_data.dtype}&#34;)
+                    image_data = image_data.astype(np.float32)
+
+                # if ratio is &gt;2, start with integer downsize which is much faster
+                # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
+                if ratio&lt;=0.5:
+                    if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
+                        # clip image to multiple of 2 dimension
+                        image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
+                    start_0 = get_time()
+                    resized_image = cv2.resize(image_data, (image_width&gt;&gt;1, image_height&gt;&gt;1),
+                                            interpolation=opencv_downscale_interpolation)
+                    if self.display_timing:
+                        print(f&#39; === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from &#39;
+                            f&#39;{current_image.data.shape} to &#39;
+                            f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                    image_data = resized_image
+                    if ratio&lt;=0.25:
+                        if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
+                            # clip image to multiple of 2 dimension
+                            image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
+                        start_0 = get_time()
+                        resized_image = cv2.resize(image_data, (image_width&gt;&gt;2, image_height&gt;&gt;2),
+                                                interpolation=opencv_downscale_interpolation)
+                        if self.display_timing:
+                            print(f&#39; === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from &#39;
+                                f&#39;{current_image.data.shape} to &#39;
+                                f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                        image_data = resized_image
+
+                time1 = get_time()
+                start_0 = get_time()
+                resized_image = cv2.resize(image_data, (display_width, display_height),
+                                        interpolation=opencv_downscale_interpolation)
+                if self.display_timing:
+                    print(f&#39; === qtImageViewer: paint_image() OpenCV resize from {image_data.shape} to &#39;
+                        f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+
+                image_data = resized_image.astype(initial_type)
+                resize_applied = True
+                self.add_time(&#39;cv2.resize&#39;,time1)
+
+            current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
+            current_image = self.apply_filters(current_image)
+
+            # Compute the histogram here, with the smallest image!!!
+            if self.show_histogram:
+                # previous version only python with its modules
+                # histograms  = self.compute_histogram    (current_image, show_timings=self.display_timing)
+                # new version with bound C++ code and openMP: much faster
+                histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+            else:
+                histograms = None
+
+            # try to resize anyway with opencv since qt resizing seems too slow
+            if not resize_applied and BaseWidget is not QOpenGLWidget:
+                time1 = get_time()
+                start_0 = get_time()
+                prev_shape = current_image.shape
+                current_image = cv2.resize(current_image, (display_width, display_height),
+                                           interpolation=opencv_upscale_interpolation)
+                if self.display_timing:
+                    print(f&#39; === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to &#39;
+                        f&#39;{(display_height, display_width)} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                    self.add_time(&#39;cv2.resize&#39;,time1)
+
+            # no need for more resizing
+            resize_applied = True
+
+            # Conversion from numpy array to QImage
+            # version 1: goes through PIL image
+            # version 2: use QImage constructor directly, faster
+            # time1 = get_time()
+
+        else:
+            resize_applied = True
+            current_image = self.paint_cache[&#39;current_image&#39;]
+            histograms = self.paint_cache[&#39;histograms&#39;]
+            # histograms2 = self.paint_cache[&#39;histograms2&#39;]
+
+        # if could_use_cache:
+        #     print(f&#34; ======= current_image equal ? {np.array_equal(self.paint_cache[&#39;current_image&#39;],current_image)}&#34;)
+
+        if not use_cache and not self.show_overlay:
+            # cache_time = get_time()
+            fp = ImageFilterParameters()
+            fp.copy_from(self.filter_params)
+            self.paint_cache = {
+                &#39;imid&#39;: self.image_id,
+                &#39;imrefid&#39;: self.image_ref_id,
+                &#39;crop&#39;: c, &#39;labelw&#39;: label_width, &#39;labelh&#39;: label_height,
+                &#39;filterp&#39;: fp, &#39;showhist&#39;: self.show_histogram,
+                &#39;histograms&#39;: histograms, 
+                # &#39;histograms2&#39;: histograms2, 
+                &#39;current_image&#39;: current_image,
+                &#39;show_diff&#39; : show_diff,
+                &#39;antialiasing&#39;: self.antialiasing
+                }
+            # print(f&#34;create cache data took {int((get_time() - cache_time) * 1000)} ms&#34;)
+
+        if not current_image.flags[&#39;C_CONTIGUOUS&#39;]:
+            current_image = np.require(current_image, np.uint8, &#39;C&#39;)
+        qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
+                                    current_image.strides[0], QtGui.QImage.Format_RGB888)
+        # self.add_time(&#39;QtGui.QPixmap&#39;,time1)
+
+        assert resize_applied, &#34;Image resized should be applied at this point&#34;
+        # if not resize_applied:
+        #     printf(&#34;*** We should never get here ***&#34;)
+        #     time1 = get_time()
+        #     if anti_aliasing:
+        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        #     else:
+        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
+        #     self.add_time(&#39;qimage.scaled&#39;, time1)
+        #     resize_applied = True
+
+        if self.save_image_clipboard:
+            self.print_log(&#34;exporting to clipboard&#34;)
+            self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
+
+        painter : QtGui.QPainter = QtGui.QPainter()
+
+        painter.begin(self)
+        if BaseWidget is QOpenGLWidget:
+            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        # TODO: check that this condition is not needed
+        if BaseWidget is QOpenGLWidget:
+            rect = QtCore.QRect(0,0, display_width, display_height)
+        else:
+            rect = QtCore.QRect(qimage.rect())
+        devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+        rect.moveCenter(devRect.center())
+
+        time1 = get_time()
+        if BaseWidget is QOpenGLWidget:
+            painter.drawImage(rect, qimage)
+        else:
+            painter.drawImage(rect.topLeft(), qimage)
+        self.add_time(&#39;painter.drawImage&#39;,time1)
+
+        if self.show_overlay:
+            self.draw_overlay_separation(cropped_image_shape, rect, painter)
+
+        # Draw cursor
+        im_pos = None
+        if self.show_cursor:
+            im_pos = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
+
+        self.display_text(painter, self.display_message(im_pos, ratio*self.devicePixelRatio()))
+
+        # draw histogram
+        if self.show_histogram:
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+            # self.display_histogram(histograms2, 2, painter, rect, show_timings=self.display_timing)
+
+        painter.end()
+        self.print_timing()
+
+        if self.display_timing:
+            print(f&#34; paint_image took {int((get_time()-time0)*1000)} ms&#34;)
+
+    def show(self):
+        if BaseWidget==QOpenGLWidget:
+            self.update()
+        BaseWidget.show(self)
+
+    def paintEvent(self, event):
+        # print(f&#34; qtImageViewer.paintEvent() {self.image_name}&#34;)
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        # try:
+        if self.cv_image is not None:
+            self.paint_image()
+        # except Exception as e:
+        #     print(f&#34;Failed paint_image() {e}&#34;)
+
+    def resizeEvent(self, event):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+        self.evt_width = event.size().width()
+        self.evt_height = event.size().height()
+        BaseWidget.resizeEvent(self, event)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+
+    def mousePressEvent(self, event):
+        self.mouse_press_event(event)
+
+    def mouseMoveEvent(self, event):
+        self.mouse_move_event(event)
+
+    def mouseReleaseEvent(self, event):
+        self.mouse_release_event(event)
+
+    def mouseDoubleClickEvent(self, event):
+        self.mouse_double_click_event(event)
+
+    def wheelEvent(self, event):
+        self.mouse_wheel_event(event)
+
+    def event(self, evt):
+        if self.event_recorder is not None:
+            self.event_recorder.store_event(self, evt)
+        return BaseWidget.event(self, evt)
+
+    def keyPressEvent(self, event):
+        self.key_press_event(event, wsize=self.size())
+
+    def keyReleaseEvent(self, evt):
+        self.print_log(f&#34;evt {evt.type()}&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer"><code class="flex name class">
+<span>class <span class="ident">QTImageViewer</span></span>
+<span>(</span><span>parent=None, event_recorder=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>QWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
+<p><strong>init</strong>(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
+<p>Initialize self.
+See help(type(self)) for accurate signature.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class QTImageViewer(BaseWidget, ImageViewer ):
+
+    def __init__(self, parent=None, event_recorder=None):
+        self.event_recorder = event_recorder
+        super().__init__(parent)
+        self.setMouseTracking(True)
+        self.anti_aliasing = True
+        size_policy = QtWidgets.QSizePolicy()
+        size_policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Ignored)
+        size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.Ignored)
+        self.setSizePolicy(size_policy)
+        # self.setAlignment(QtCore.Qt.AlignCenter )
+        self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float32)
+        self.zoom_center = np.array([0.5, 0.5, 0.5, 0.5])
+
+
+        if &#39;ClickFocus&#39; in QtCore.Qt.FocusPolicy.__dict__:
+            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        else:
+            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+
+        self.paint_cache      = None
+        self.paint_diff_cache = None
+        self.diff_image       = None
+
+        # self.display_timing = False
+        if BaseWidget is QOpenGLWidget:
+            self.setAutoFillBackground(True)
+
+        # TODO: how can I set the background color to black without impacting display speed?
+        # p = self.palette()
+        # p.setColor(self.backgroundRole(), QtCore.Qt.black) 
+        # self.setPalette(p)
+        # self.setAutoFillBackground(True)
+
+        self.verbose = False
+        # self.trace_calls = True
+
+    #def __del__(self):
+    #    pass
+
+    def set_image(self, image):
+        super(QTImageViewer, self).set_image(image)
+
+    def apply_zoom(self, crop):
+        (height, width) = self.cv_image.data.shape[:2]
+        # print(f&#34;height, width = {height, width}&#34;)
+        # Apply zoom
+        coeff = 1.0/self.new_scale(self.mouse_zy, height)
+        # zoom from the center of the image
+        center = self.zoom_center
+        new_crop = center + (crop - center) * coeff
+
+        # print(&#34;new crop zoom 1 {}&#34;.format(new_crop))
+
+        # allow crop increase based on the available space
+        label_width = self.width()
+        # print(f&#34;label_width {label_width}&#34;)
+        label_height = self.height()
+
+        new_width = width * coeff
+        new_height = height * coeff
+
+        ratio_width = float(label_width) / new_width
+        ratio_height = float(label_height) / new_height
+
+        # print(f&#34; ratio_width {ratio_width} ratio_height {ratio_height}&#34;)
+        ratio = min(ratio_width, ratio_height)
+
+        if ratio_width&lt;ratio_height:
+            # margin to increase height
+            margin_pixels = label_height/ratio - new_height
+            margin_height = margin_pixels/height
+            new_crop[1] -= margin_height/2
+            new_crop[3] += margin_height/2
+        else:
+            # margin to increase width
+            margin_pixels = label_width/ratio - new_width
+            margin_width = margin_pixels/width
+            new_crop[0] -= margin_width/2
+            new_crop[2] += margin_width/2
+        # print(&#34;new crop zoom 2 {}&#34;.format(new_crop))
+
+        return new_crop
+
+    def apply_translation(self, crop):
+        &#34;&#34;&#34;
+        :param crop:
+        :return: the new crop
+        &#34;&#34;&#34;
+        # Apply translation
+        diff_x, diff_y = self.new_translation()
+        diff_y = - diff_y
+        # print(&#34; new translation {} {}&#34;.format(diff_x, diff_y))
+        # apply the maximal allowed translation
+        tr_x = float(diff_x) / self.width()
+        tr_y = float(diff_y) / self.height()
+        tr_x = clip_value(tr_x, crop[2]-1, crop[0])
+        tr_y = clip_value(tr_y, crop[3]-1, crop[1])
+        # normalized position relative to the full image
+        crop[0] -= tr_x
+        crop[1] -= tr_y
+        crop[2] -= tr_x
+        crop[3] -= tr_y
+
+    def check_translation(self):
+        &#34;&#34;&#34;
+        This method computes the translation really applied based on the current requested translation
+        :return:
+        &#34;&#34;&#34;
+        # Apply zoom
+        crop = self.apply_zoom(self.output_crop)
+
+        # Compute the translation that is really applied after applying the constraints
+        diff_x, diff_y = self.new_translation()
+        diff_y = - diff_y
+        # print(&#34; new translation {} {}&#34;.format(diff_x, diff_y))
+        # apply the maximal allowed translation
+        w, h = self.width(), self.height()
+        diff_x = clip_value(diff_x, w*(crop[2]-1), w*(crop[0]))
+        diff_y = - clip_value(diff_y, h*(crop[3]-1), h*(crop[1]))
+        # normalized position relative to the full image
+        return diff_x, diff_y
+
+    def update_crop(self):
+        # Apply zoom
+        new_crop = self.apply_zoom(self.output_crop)
+        # print(f&#34;update_crop {self.output_crop} --&gt; {new_crop}&#34;)
+        # Apply translation
+        self.apply_translation(new_crop)
+        new_crop = np.clip(new_crop, 0, 1)
+        # print(&#34;move new crop {}&#34;.format(new_crop))
+        # print(f&#34;output_crop {self.output_crop} new crop {new_crop}&#34;)
+        return new_crop
+
+    def update_crop_new(self):
+        # 1. transform crop to display coordinates
+        
+        # Apply zoom
+        new_crop = self.apply_zoom(self.output_crop)
+        # print(f&#34;update_crop {self.output_crop} --&gt; {new_crop}&#34;)
+        # Apply translation
+        self.apply_translation(new_crop)
+        new_crop = np.clip(new_crop, 0, 1)
+        # print(&#34;move new crop {}&#34;.format(new_crop))
+        # print(f&#34;output_crop {self.output_crop} new crop {new_crop}&#34;)
+        return new_crop
+
+    def apply_filters(self, current_image):
+        self.print_log(f&#34;current_image.data.shape {current_image.data.shape}&#34;)
+        # return current_image
+
+        self.start_timing(title=&#39;apply_filters()&#39;)
+
+        # Output RGB from input
+        ch = self.cv_image.channels
+        if has_cppbind:
+            channels = current_image.channels
+            black_level = self.filter_params.black_level.float
+            white_level = self.filter_params.white_level.float
+            g_r_coeff = self.filter_params.g_r.float
+            g_b_coeff = self.filter_params.g_b.float
+            saturation = self.filter_params.saturation.float
+            max_value = ((1&lt;&lt;current_image.precision)-1)
+            max_type = 1  # not used
+            gamma = self.filter_params.gamma.float  # not used
+
+            rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), dtype=np.uint8)
+            time1 = get_time()
+            ok = False
+            if ch in ImageFormat.CH_RAWFORMATS() or ch in ImageFormat.CH_RGBFORMATS():
+                cases = {
+                    &#39;uint8&#39;:  { &#39;func&#39;: qimview_cpp.apply_filters_u8_u8  , &#39;name&#39;: &#39;apply_filters_u8_u8&#39;},
+                    &#39;uint16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_u16_u8, &#39;name&#39;: &#39;apply_filters_u16_u8&#39;},
+                    &#39;uint32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_u32_u8, &#39;name&#39;: &#39;apply_filters_u32_u8&#39;},
+                    &#39;int16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_s16_u8, &#39;name&#39;: &#39;apply_filters_s16_u8&#39;},
+                    &#39;int32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_s32_u8, &#39;name&#39;: &#39;apply_filters_s32_u8&#39;}
+                }
+                if current_image.data.dtype.name in cases:
+                    func = cases[current_image.data.dtype.name][&#39;func&#39;]
+                    name = cases[current_image.data.dtype.name][&#39;name&#39;]
+                    self.print_log(f&#34;qimview_cpp.{name}(current_image, rgb_image, channels, &#34;
+                          f&#34;black_level={black_level}, white_level={white_level}, &#34;
+                          f&#34;g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, &#34;
+                          f&#34;max_value={max_value}, max_type={max_type}, gamma={gamma})&#34;)
+                    ok = func(current_image.data, rgb_image, channels, black_level, white_level, g_r_coeff,
+                                g_b_coeff, max_value, max_type, gamma, saturation)
+                    self.add_time(f&#39;{name}()&#39;,time1, force=True, title=&#39;apply_filters()&#39;)
+                else:
+                    print(f&#34;apply_filters() not available for {current_image.data.dtype} data type !&#34;)
+            else:
+                cases = {
+                    &#39;uint8&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u8_u8, &#39;name&#39;: &#39;apply_filters_scalar_u8_u8&#39;},
+                    &#39;uint16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u16_u8, &#39;name&#39;: &#39;apply_filters_scalar_u16_u8&#39;},
+                    &#39;int16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_s16_u8, &#39;name&#39;: &#39;apply_filters_scalar_s16_u8&#39;},
+                    &#39;uint32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u32_u8, &#39;name&#39;: &#39;apply_filters_scalar_u32_u8&#39;},
+                    &#39;float64&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_f64_u8, &#39;name&#39;: &#39;apply_filters_scalar_f64_u8&#39;},
+                }
+                if current_image.data.dtype.name.startswith(&#39;float&#39;):
+                    max_value = 1.0
+                if current_image.data.dtype.name in cases:
+                    func = cases[current_image.data.dtype.name][&#39;func&#39;]
+                    name = cases[current_image.data.dtype.name][&#39;name&#39;]
+                    self.print_log(f&#34;qimview_cpp.{name}(current_image, rgb_image, &#34;
+                          f&#34;black_level={black_level}, white_level={white_level}, &#34;
+                          f&#34;max_value={max_value}, max_type={max_type}, gamma={gamma})&#34;)
+                    ok = func(current_image.data, rgb_image, black_level, white_level, max_value, max_type, gamma)
+                    self.add_time(f&#39;{name}()&#39;, time1, force=True, title=&#39;apply_filters()&#39;)
+                else:
+                    print(f&#34;apply_filters_scalar() not available for {current_image.data.dtype} data type !&#34;)
+            if not ok:
+                self.print_log(&#34;Failed running wrap_num.apply_filters_u16_u8 ...&#34;, force=True)
+        else:
+            # self.print_log(&#34;current channels {}&#34;.format(ch))
+            if ch in ImageFormat.CH_RAWFORMATS():
+                channel_pos = channel_position[current_image.channels]
+                self.print_log(&#34;Converting to RGB&#34;)
+                # convert Bayer to RGB
+                rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                        dtype=current_image.data.dtype)
+                rgb_image[:, :, 0] = current_image.data[:, :, channel_pos[&#39;r&#39;]]
+                rgb_image[:, :, 1] = (current_image.data[:, :, channel_pos[&#39;gr&#39;]]+current_image.data[:, :, channel_pos[&#39;gb&#39;]])/2
+                rgb_image[:, :, 2] = current_image.data[:, :, channel_pos[&#39;b&#39;]]
+            else:
+                if ch == ImageFormat.CH_Y:
+                    # Transform to RGB is it a good idea?
+                    rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                            dtype=current_image.data.dtype)
+                    rgb_image[:, :, 0] = current_image.data
+                    rgb_image[:, :, 1] = current_image.data
+                    rgb_image[:, :, 2] = current_image.data
+                else:
+                    rgb_image = current_image.data
+
+            # Use cv2.convertScaleAbs(I,a,b) function for fast processing
+            # res = sat(|I*a+b|)
+            # if current_image is not in 8 bits, we need to rescale
+            min_val = self.filter_params.black_level.float
+            max_val = self.filter_params.white_level.float
+
+            if min_val != 0 or max_val != 1 or current_image.precision!=8:
+                min_val = self.filter_params.black_level.float
+                max_val = self.filter_params.white_level.float
+                # adjust levels to precision
+                precision = current_image.precision
+                min_val = min_val*((1 &lt;&lt; precision)-1)
+                max_val = max_val*((1 &lt;&lt; precision)-1)
+                if rgb_image.dtype == np.uint32:
+                    # Formula a bit complicated, we need to be careful with unsigned processing
+                    rgb_image =np.clip(((np.clip(rgb_image, min_val, None) - min_val)*(255/(max_val-min_val)))+0.5,
+                                       None, 255).astype(np.uint8)
+                else:
+                    # to rescale: add min_val and multiply by (max_val-min_val)/255
+                    if min_val != 0:
+                        rgb_image = cv2.add(rgb_image, (-min_val, -min_val, -min_val, 0))
+                    rgb_image = cv2.convertScaleAbs(rgb_image, alpha=255. / float(max_val - min_val), beta=0)
+
+            # # if gamma changed
+            # if self.filter_params.gamma.value != self.filter_params.gamma.default_value and work_image.dtype == np.uint8:
+            #     gamma_coeff = self.filter_params.gamma.float
+            #     # self.gamma_label.setText(&#34;Gamma  {}&#34;.format(gamma_coeff))
+            #     invGamma = 1.0 / gamma_coeff
+            #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype(&#34;uint8&#34;)
+            #     work_image = cv2.LUT(work_image, table)
+
+        self.print_timing(title=&#39;apply_filters()&#39;)
+        return rgb_image
+
+    def viewer_update(self):
+        print(&#34;QtImageViewer viewer_update&#34;)
+        #if self.cv_image is not None:
+        #    self.paint_image()
+        if BaseWidget is QOpenGLWidget:
+            self.paint_image()
+            self.repaint()
+        else:
+            self.update()
+
+    def draw_overlay_separation(self, cropped_image_shape, rect, painter):
+        (height, width) = cropped_image_shape[:2]
+        im_x = int((self.mouse_x - rect.x())/rect.width()*width)
+        im_x = max(0, min(width - 1, im_x))
+        # im_y = int((self.mouse_y - rect.y())/rect.height()*height)
+        # Set position at the beginning of the pixel
+        pos_from_im_x = int(im_x*rect.width()/width + rect.x())
+        # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
+        pen_width = 2
+        color = QtGui.QColor(255, 255, 0 , 128)
+        pen = QtGui.QPen()
+        pen.setColor(color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
+
+    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter) -&gt; Optional[Tuple[int, int]]:
+        &#34;&#34;&#34;
+        :param cropped_image_shape: dimensions of current crop
+        :param crop_xmin: left pixel of current crop
+        :param crop_ymin: top pixel of current crop
+        :param rect: displayed image area
+        :param painter:
+        :return:
+            tuple: (posx, posy) image pixel position of the cursor, if None cursor is out of image
+        &#34;&#34;&#34;
+        # Draw cursor
+        if self.display_timing: self.start_timing()
+        # get image position
+        (height, width) = cropped_image_shape[:2]
+        im_x = int((self.mouse_x -rect.x())/rect.width()*width)
+        im_y = int((self.mouse_y -rect.y())/rect.height()*height)
+
+        pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
+        pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
+
+        # ratio = self.screen().devicePixelRatio()
+        # print(&#34;ratio = {}&#34;.format(ratio))
+        pos_x = pos_from_im_x  # *ratio
+        pos_y = pos_from_im_y  # *ratio
+        length_percent = 0.04
+        # use percentage of the displayed image dimensions
+        length = int(max(self.width(),self.height())*length_percent)
+        pen_width = 4
+        color = QtGui.QColor(0, 255, 255, 200)
+        pen = QtGui.QPen()
+        pen.setColor(color)
+        pen.setWidth(pen_width)
+        painter.setPen(pen)
+        painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
+        painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
+
+        # Update text
+        if im_x&gt;=0 and im_x&lt;cropped_image_shape[1] and im_y&gt;=0 and im_y&lt;cropped_image_shape[0]:
+            # values = cropped_image[im_y, im_x]
+            im_x += crop_xmin
+            im_y += crop_ymin
+            im_pos = (im_x, im_y)
+        else:
+            im_pos = None
+        if self.display_timing: self.print_timing()
+        return im_pos
+
+    def get_difference_image(self, verbose=True):
+
+        factor = self.filter_params.imdiff_factor.float
+        if self.paint_diff_cache is not None:
+            use_cache = self.paint_diff_cache[&#39;imid&#39;] == self.image_id and \
+                        self.paint_diff_cache[&#39;imrefid&#39;] == self.image_ref_id and \
+                        self.paint_diff_cache[&#39;factor&#39;] == factor
+        else:
+            use_cache = False
+
+        if not use_cache:
+            im1 = self.cv_image.data
+            im2 = self.cv_image_ref.data
+            # TODO: get factor from parameters ...
+            # factor = int(self.diff_color_slider.value())
+            print(f&#39;factor = {factor}&#39;)
+            print(f&#39; im1.dtype {im1.dtype} im2.dtype {im2.dtype}&#39;)
+            # Fast OpenCV code
+            start = get_time()
+            # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
+            try:
+                if im1.dtype.name == &#39;uint8&#39; and im2.dtype.name == &#39;uint8&#39;:
+                    diff_plus = cv2.subtract(im1, im2)
+                    diff_minus = cv2.subtract(im2, im1)
+                    res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+                    if verbose:
+                        print(f&#34; qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms&#34;)
+                        vmin = np.min(res)
+                        vmax = np.max(res)
+                        print(f&#34;min-max diff = {vmin} - {vmax}&#34;)
+                        histo,_ = np.histogram(res, bins=int(vmax-vmin+0.5), range=(vmin, vmax))
+                        sum = 0
+                        for v in range(vmin,vmax):
+                            if v!=127:
+                                nb = histo[v-vmin]
+                                if nb &gt;0:
+                                    print(f&#34;{v-127}:{nb} &#34;,end=&#39;&#39;)
+                                    sum += nb
+                        print(&#39;&#39;)
+                        print(f&#39;nb pixel diff  {sum}&#39;)
+                    res = ViewerImage(res,  precision=self.cv_image.precision, 
+                                            downscale=self.cv_image.downscale,
+                                            channels=self.cv_image.channels)
+                    self.paint_diff_cache = {  &#39;imid&#39;: self.image_id, &#39;imrefid&#39;: self.image_ref_id, 
+                        &#39;factor&#39;: self.filter_params.imdiff_factor.float
+                    }
+                    self.diff_image = res
+                else:
+                    d = (im1.astype(np.float32)-im2.astype(np.float32))*factor
+                    d[d&lt;-127] = -127
+                    d[d&gt;128] = 128
+                    d = (d+127).astype(np.uint8)*255
+                    res = ViewerImage(d,  precision=8, 
+                                            downscale=self.cv_image.downscale,
+                                            channels=self.cv_image.channels)
+                    self.paint_diff_cache = {  &#39;imid&#39;: self.image_id, &#39;imrefid&#39;: self.image_ref_id, 
+                        &#39;factor&#39;: self.filter_params.imdiff_factor.float
+                    }
+                    self.diff_image = res
+            except Exception as e:
+                print(f&#34;Error {e}&#34;)
+                res = (im1!=im2).astype(np.uint8)*255
+                res = ViewerImage(res,  precision=8, 
+                                        downscale=self.cv_image.downscale,
+                                        channels=ImageFormat.CH_Y)
+                self.diff_image = res
+
+        return self.diff_image
+
+    def paint_image(self):
+        # print(f&#34;paint_image display_timing {self.display_timing}&#34;)
+        if self.trace_calls: t = trace_method(self.tab)
+        self.start_timing()
+        time0 = time1 = get_time()
+
+        label_width = self.size().width()
+        label_height = self.size().height()
+
+        show_diff = self.show_image_differences and self.cv_image is not self.cv_image_ref and \
+                    self.cv_image_ref is not None and self.cv_image.data.shape == self.cv_image_ref.data.shape
+
+        c = self.update_crop()
+        # check paint_cache
+        if self.paint_cache is not None:
+            use_cache = self.paint_cache[&#39;imid&#39;] == self.image_id and \
+                        np.array_equal(self.paint_cache[&#39;crop&#39;],c) and \
+                        self.paint_cache[&#39;labelw&#39;] == label_width and \
+                        self.paint_cache[&#39;labelh&#39;] == label_height and \
+                        self.paint_cache[&#39;filterp&#39;].is_equal(self.filter_params) and \
+                        (self.paint_cache[&#39;showhist&#39;] == self.show_histogram or not self.show_histogram) and \
+                        self.paint_cache[&#39;show_diff&#39;] == show_diff and \
+                        self.paint_cache[&#39;antialiasing&#39;] == self.antialiasing and \
+                        not self.show_overlay
+        else:
+            use_cache = False
+
+        # if show_diff, compute the image difference (put it in cache??)
+        if show_diff:
+            # Cache does not work well with differences
+            use_cache = False
+            # don&#39;t save the difference
+            current_image = self.get_difference_image()
+        else:
+            current_image = self.cv_image
+
+        precision  = current_image.precision
+        downscale  = current_image.downscale
+        channels   = current_image.channels
+
+        # TODO: get data based on the display ratio?
+        image_data = current_image.data
+
+        # could_use_cache = use_cache
+        # if could_use_cache:
+        #     print(&#34; Could use cache here ... !!!&#34;)
+        # use_cache = False
+
+        do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
+        h, w  = image_data.shape[:2]
+        if do_crop:
+            crop_xmin = int(np.round(c[0] * w))
+            crop_xmax = int(np.round(c[2] * w))
+            crop_ymin = int(np.round(c[1] * h))
+            crop_ymax = int(np.round(c[3] * h))
+            image_data = image_data[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+        else:
+            crop_xmin = crop_ymin = 0
+            crop_xmax = w
+            crop_ymax = h
+
+        cropped_image_shape = image_data.shape
+        self.add_time(&#39;crop&#39;, time1)
+
+        # time1 = get_time()
+        image_height, image_width  = image_data.shape[:2]
+        ratio_width = float(label_width) / image_width
+        ratio_height = float(label_height) / image_height
+        ratio = min(ratio_width, ratio_height)
+        display_width = int(round(image_width * ratio))
+        display_height = int(round(image_height * ratio))
+
+        if self.show_overlay and self.cv_image_ref is not self.cv_image and self.cv_image_ref and \
+            self.cv_image.data.shape == self.cv_image_ref.data.shape:
+            # to create the overlay rapidly, we will mix the two images based on the current cursor position
+            # 1. convert cursor position to image position
+            (height, width) = cropped_image_shape[:2]
+            # compute rect
+            rect = QtCore.QRect(0, 0, display_width, display_height)
+            devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+            rect.moveCenter(devRect.center())
+            im_x = int((self.mouse_x - rect.x()) / rect.width() * width)
+            im_x = max(0,min(width-1, im_x))
+            # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
+            # We need to have a copy here .. slow, better option???
+            image_data = np.copy(image_data)
+            image_data[:, :im_x] = self.cv_image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+
+        resize_applied = False
+        if not use_cache:
+            anti_aliasing = ratio &lt; 1
+            #self.print_log(&#34;ratio is {:0.2f}&#34;.format(ratio))
+            use_opencv_resize = anti_aliasing
+            # enable this as optional?
+            # opencv_downscale_interpolation = opencv_fast_interpolation
+            opencv_fast_interpolation = cv2.INTER_NEAREST
+            if self.antialiasing:
+                opencv_downscale_interpolation = cv2.INTER_AREA
+            else:
+                opencv_downscale_interpolation = cv2.INTER_NEAREST
+            # opencv_upscale_interpolation   = cv2.INTER_LINEAR
+            opencv_upscale_interpolation   = opencv_fast_interpolation
+            # self.print_time(&#39;several settings&#39;, time1, start_time)
+
+            # self.print_log(&#34;use_opencv_resize {} channels {}&#34;.format(use_opencv_resize, current_image.channels))
+            # if ratio&lt;1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
+            if use_opencv_resize and not resize_applied and channels == ImageFormat.CH_RGB:
+
+                prev_shape = image_data.shape
+                initial_type = image_data.dtype
+                if image_data.dtype != np.uint8:
+                    print(f&#34;image_data type {type(image_data)} {image_data.dtype}&#34;)
+                    image_data = image_data.astype(np.float32)
+
+                # if ratio is &gt;2, start with integer downsize which is much faster
+                # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
+                if ratio&lt;=0.5:
+                    if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
+                        # clip image to multiple of 2 dimension
+                        image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
+                    start_0 = get_time()
+                    resized_image = cv2.resize(image_data, (image_width&gt;&gt;1, image_height&gt;&gt;1),
+                                            interpolation=opencv_downscale_interpolation)
+                    if self.display_timing:
+                        print(f&#39; === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from &#39;
+                            f&#39;{current_image.data.shape} to &#39;
+                            f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                    image_data = resized_image
+                    if ratio&lt;=0.25:
+                        if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
+                            # clip image to multiple of 2 dimension
+                            image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
+                        start_0 = get_time()
+                        resized_image = cv2.resize(image_data, (image_width&gt;&gt;2, image_height&gt;&gt;2),
+                                                interpolation=opencv_downscale_interpolation)
+                        if self.display_timing:
+                            print(f&#39; === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from &#39;
+                                f&#39;{current_image.data.shape} to &#39;
+                                f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                        image_data = resized_image
+
+                time1 = get_time()
+                start_0 = get_time()
+                resized_image = cv2.resize(image_data, (display_width, display_height),
+                                        interpolation=opencv_downscale_interpolation)
+                if self.display_timing:
+                    print(f&#39; === qtImageViewer: paint_image() OpenCV resize from {image_data.shape} to &#39;
+                        f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+
+                image_data = resized_image.astype(initial_type)
+                resize_applied = True
+                self.add_time(&#39;cv2.resize&#39;,time1)
+
+            current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
+            current_image = self.apply_filters(current_image)
+
+            # Compute the histogram here, with the smallest image!!!
+            if self.show_histogram:
+                # previous version only python with its modules
+                # histograms  = self.compute_histogram    (current_image, show_timings=self.display_timing)
+                # new version with bound C++ code and openMP: much faster
+                histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+            else:
+                histograms = None
+
+            # try to resize anyway with opencv since qt resizing seems too slow
+            if not resize_applied and BaseWidget is not QOpenGLWidget:
+                time1 = get_time()
+                start_0 = get_time()
+                prev_shape = current_image.shape
+                current_image = cv2.resize(current_image, (display_width, display_height),
+                                           interpolation=opencv_upscale_interpolation)
+                if self.display_timing:
+                    print(f&#39; === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to &#39;
+                        f&#39;{(display_height, display_width)} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                    self.add_time(&#39;cv2.resize&#39;,time1)
+
+            # no need for more resizing
+            resize_applied = True
+
+            # Conversion from numpy array to QImage
+            # version 1: goes through PIL image
+            # version 2: use QImage constructor directly, faster
+            # time1 = get_time()
+
+        else:
+            resize_applied = True
+            current_image = self.paint_cache[&#39;current_image&#39;]
+            histograms = self.paint_cache[&#39;histograms&#39;]
+            # histograms2 = self.paint_cache[&#39;histograms2&#39;]
+
+        # if could_use_cache:
+        #     print(f&#34; ======= current_image equal ? {np.array_equal(self.paint_cache[&#39;current_image&#39;],current_image)}&#34;)
+
+        if not use_cache and not self.show_overlay:
+            # cache_time = get_time()
+            fp = ImageFilterParameters()
+            fp.copy_from(self.filter_params)
+            self.paint_cache = {
+                &#39;imid&#39;: self.image_id,
+                &#39;imrefid&#39;: self.image_ref_id,
+                &#39;crop&#39;: c, &#39;labelw&#39;: label_width, &#39;labelh&#39;: label_height,
+                &#39;filterp&#39;: fp, &#39;showhist&#39;: self.show_histogram,
+                &#39;histograms&#39;: histograms, 
+                # &#39;histograms2&#39;: histograms2, 
+                &#39;current_image&#39;: current_image,
+                &#39;show_diff&#39; : show_diff,
+                &#39;antialiasing&#39;: self.antialiasing
+                }
+            # print(f&#34;create cache data took {int((get_time() - cache_time) * 1000)} ms&#34;)
+
+        if not current_image.flags[&#39;C_CONTIGUOUS&#39;]:
+            current_image = np.require(current_image, np.uint8, &#39;C&#39;)
+        qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
+                                    current_image.strides[0], QtGui.QImage.Format_RGB888)
+        # self.add_time(&#39;QtGui.QPixmap&#39;,time1)
+
+        assert resize_applied, &#34;Image resized should be applied at this point&#34;
+        # if not resize_applied:
+        #     printf(&#34;*** We should never get here ***&#34;)
+        #     time1 = get_time()
+        #     if anti_aliasing:
+        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        #     else:
+        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
+        #     self.add_time(&#39;qimage.scaled&#39;, time1)
+        #     resize_applied = True
+
+        if self.save_image_clipboard:
+            self.print_log(&#34;exporting to clipboard&#34;)
+            self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
+
+        painter : QtGui.QPainter = QtGui.QPainter()
+
+        painter.begin(self)
+        if BaseWidget is QOpenGLWidget:
+            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+        # TODO: check that this condition is not needed
+        if BaseWidget is QOpenGLWidget:
+            rect = QtCore.QRect(0,0, display_width, display_height)
+        else:
+            rect = QtCore.QRect(qimage.rect())
+        devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+        rect.moveCenter(devRect.center())
+
+        time1 = get_time()
+        if BaseWidget is QOpenGLWidget:
+            painter.drawImage(rect, qimage)
+        else:
+            painter.drawImage(rect.topLeft(), qimage)
+        self.add_time(&#39;painter.drawImage&#39;,time1)
+
+        if self.show_overlay:
+            self.draw_overlay_separation(cropped_image_shape, rect, painter)
+
+        # Draw cursor
+        im_pos = None
+        if self.show_cursor:
+            im_pos = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
+
+        self.display_text(painter, self.display_message(im_pos, ratio*self.devicePixelRatio()))
+
+        # draw histogram
+        if self.show_histogram:
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+            # self.display_histogram(histograms2, 2, painter, rect, show_timings=self.display_timing)
+
+        painter.end()
+        self.print_timing()
+
+        if self.display_timing:
+            print(f&#34; paint_image took {int((get_time()-time0)*1000)} ms&#34;)
+
+    def show(self):
+        if BaseWidget==QOpenGLWidget:
+            self.update()
+        BaseWidget.show(self)
+
+    def paintEvent(self, event):
+        # print(f&#34; qtImageViewer.paintEvent() {self.image_name}&#34;)
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        # try:
+        if self.cv_image is not None:
+            self.paint_image()
+        # except Exception as e:
+        #     print(f&#34;Failed paint_image() {e}&#34;)
+
+    def resizeEvent(self, event):
+        &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+        &#34;&#34;&#34;
+        if self.trace_calls:
+            t = trace_method(self.tab)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+        self.evt_width = event.size().width()
+        self.evt_height = event.size().height()
+        BaseWidget.resizeEvent(self, event)
+        self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+
+    def mousePressEvent(self, event):
+        self.mouse_press_event(event)
+
+    def mouseMoveEvent(self, event):
+        self.mouse_move_event(event)
+
+    def mouseReleaseEvent(self, event):
+        self.mouse_release_event(event)
+
+    def mouseDoubleClickEvent(self, event):
+        self.mouse_double_click_event(event)
+
+    def wheelEvent(self, event):
+        self.mouse_wheel_event(event)
+
+    def event(self, evt):
+        if self.event_recorder is not None:
+            self.event_recorder.store_event(self, evt)
+        return BaseWidget.event(self, evt)
+
+    def keyPressEvent(self, event):
+        self.key_press_event(event, wsize=self.size())
+
+    def keyReleaseEvent(self, evt):
+        self.print_log(f&#34;evt {evt.type()}&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>PySide6.QtWidgets.QWidget</li>
+<li>PySide6.QtCore.QObject</li>
+<li>PySide6.QtGui.QPaintDevice</li>
+<li>Shiboken.Object</li>
+<li><a title="qimview.image_viewers.image_viewer.ImageViewer" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer">ImageViewer</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.staticMetaObject"><code class="name">var <span class="ident">staticMetaObject</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_filters"><code class="name flex">
+<span>def <span class="ident">apply_filters</span></span>(<span>self, current_image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_filters(self, current_image):
+    self.print_log(f&#34;current_image.data.shape {current_image.data.shape}&#34;)
+    # return current_image
+
+    self.start_timing(title=&#39;apply_filters()&#39;)
+
+    # Output RGB from input
+    ch = self.cv_image.channels
+    if has_cppbind:
+        channels = current_image.channels
+        black_level = self.filter_params.black_level.float
+        white_level = self.filter_params.white_level.float
+        g_r_coeff = self.filter_params.g_r.float
+        g_b_coeff = self.filter_params.g_b.float
+        saturation = self.filter_params.saturation.float
+        max_value = ((1&lt;&lt;current_image.precision)-1)
+        max_type = 1  # not used
+        gamma = self.filter_params.gamma.float  # not used
+
+        rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), dtype=np.uint8)
+        time1 = get_time()
+        ok = False
+        if ch in ImageFormat.CH_RAWFORMATS() or ch in ImageFormat.CH_RGBFORMATS():
+            cases = {
+                &#39;uint8&#39;:  { &#39;func&#39;: qimview_cpp.apply_filters_u8_u8  , &#39;name&#39;: &#39;apply_filters_u8_u8&#39;},
+                &#39;uint16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_u16_u8, &#39;name&#39;: &#39;apply_filters_u16_u8&#39;},
+                &#39;uint32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_u32_u8, &#39;name&#39;: &#39;apply_filters_u32_u8&#39;},
+                &#39;int16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_s16_u8, &#39;name&#39;: &#39;apply_filters_s16_u8&#39;},
+                &#39;int32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_s32_u8, &#39;name&#39;: &#39;apply_filters_s32_u8&#39;}
+            }
+            if current_image.data.dtype.name in cases:
+                func = cases[current_image.data.dtype.name][&#39;func&#39;]
+                name = cases[current_image.data.dtype.name][&#39;name&#39;]
+                self.print_log(f&#34;qimview_cpp.{name}(current_image, rgb_image, channels, &#34;
+                      f&#34;black_level={black_level}, white_level={white_level}, &#34;
+                      f&#34;g_r_coeff={g_r_coeff}, g_b_coeff={g_b_coeff}, &#34;
+                      f&#34;max_value={max_value}, max_type={max_type}, gamma={gamma})&#34;)
+                ok = func(current_image.data, rgb_image, channels, black_level, white_level, g_r_coeff,
+                            g_b_coeff, max_value, max_type, gamma, saturation)
+                self.add_time(f&#39;{name}()&#39;,time1, force=True, title=&#39;apply_filters()&#39;)
+            else:
+                print(f&#34;apply_filters() not available for {current_image.data.dtype} data type !&#34;)
+        else:
+            cases = {
+                &#39;uint8&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u8_u8, &#39;name&#39;: &#39;apply_filters_scalar_u8_u8&#39;},
+                &#39;uint16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u16_u8, &#39;name&#39;: &#39;apply_filters_scalar_u16_u8&#39;},
+                &#39;int16&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_s16_u8, &#39;name&#39;: &#39;apply_filters_scalar_s16_u8&#39;},
+                &#39;uint32&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_u32_u8, &#39;name&#39;: &#39;apply_filters_scalar_u32_u8&#39;},
+                &#39;float64&#39;: { &#39;func&#39;: qimview_cpp.apply_filters_scalar_f64_u8, &#39;name&#39;: &#39;apply_filters_scalar_f64_u8&#39;},
+            }
+            if current_image.data.dtype.name.startswith(&#39;float&#39;):
+                max_value = 1.0
+            if current_image.data.dtype.name in cases:
+                func = cases[current_image.data.dtype.name][&#39;func&#39;]
+                name = cases[current_image.data.dtype.name][&#39;name&#39;]
+                self.print_log(f&#34;qimview_cpp.{name}(current_image, rgb_image, &#34;
+                      f&#34;black_level={black_level}, white_level={white_level}, &#34;
+                      f&#34;max_value={max_value}, max_type={max_type}, gamma={gamma})&#34;)
+                ok = func(current_image.data, rgb_image, black_level, white_level, max_value, max_type, gamma)
+                self.add_time(f&#39;{name}()&#39;, time1, force=True, title=&#39;apply_filters()&#39;)
+            else:
+                print(f&#34;apply_filters_scalar() not available for {current_image.data.dtype} data type !&#34;)
+        if not ok:
+            self.print_log(&#34;Failed running wrap_num.apply_filters_u16_u8 ...&#34;, force=True)
+    else:
+        # self.print_log(&#34;current channels {}&#34;.format(ch))
+        if ch in ImageFormat.CH_RAWFORMATS():
+            channel_pos = channel_position[current_image.channels]
+            self.print_log(&#34;Converting to RGB&#34;)
+            # convert Bayer to RGB
+            rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                    dtype=current_image.data.dtype)
+            rgb_image[:, :, 0] = current_image.data[:, :, channel_pos[&#39;r&#39;]]
+            rgb_image[:, :, 1] = (current_image.data[:, :, channel_pos[&#39;gr&#39;]]+current_image.data[:, :, channel_pos[&#39;gb&#39;]])/2
+            rgb_image[:, :, 2] = current_image.data[:, :, channel_pos[&#39;b&#39;]]
+        else:
+            if ch == ImageFormat.CH_Y:
+                # Transform to RGB is it a good idea?
+                rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                                        dtype=current_image.data.dtype)
+                rgb_image[:, :, 0] = current_image.data
+                rgb_image[:, :, 1] = current_image.data
+                rgb_image[:, :, 2] = current_image.data
+            else:
+                rgb_image = current_image.data
+
+        # Use cv2.convertScaleAbs(I,a,b) function for fast processing
+        # res = sat(|I*a+b|)
+        # if current_image is not in 8 bits, we need to rescale
+        min_val = self.filter_params.black_level.float
+        max_val = self.filter_params.white_level.float
+
+        if min_val != 0 or max_val != 1 or current_image.precision!=8:
+            min_val = self.filter_params.black_level.float
+            max_val = self.filter_params.white_level.float
+            # adjust levels to precision
+            precision = current_image.precision
+            min_val = min_val*((1 &lt;&lt; precision)-1)
+            max_val = max_val*((1 &lt;&lt; precision)-1)
+            if rgb_image.dtype == np.uint32:
+                # Formula a bit complicated, we need to be careful with unsigned processing
+                rgb_image =np.clip(((np.clip(rgb_image, min_val, None) - min_val)*(255/(max_val-min_val)))+0.5,
+                                   None, 255).astype(np.uint8)
+            else:
+                # to rescale: add min_val and multiply by (max_val-min_val)/255
+                if min_val != 0:
+                    rgb_image = cv2.add(rgb_image, (-min_val, -min_val, -min_val, 0))
+                rgb_image = cv2.convertScaleAbs(rgb_image, alpha=255. / float(max_val - min_val), beta=0)
+
+        # # if gamma changed
+        # if self.filter_params.gamma.value != self.filter_params.gamma.default_value and work_image.dtype == np.uint8:
+        #     gamma_coeff = self.filter_params.gamma.float
+        #     # self.gamma_label.setText(&#34;Gamma  {}&#34;.format(gamma_coeff))
+        #     invGamma = 1.0 / gamma_coeff
+        #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype(&#34;uint8&#34;)
+        #     work_image = cv2.LUT(work_image, table)
+
+    self.print_timing(title=&#39;apply_filters()&#39;)
+    return rgb_image</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_translation"><code class="name flex">
+<span>def <span class="ident">apply_translation</span></span>(<span>self, crop)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>:param crop:
+:return: the new crop</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_translation(self, crop):
+    &#34;&#34;&#34;
+    :param crop:
+    :return: the new crop
+    &#34;&#34;&#34;
+    # Apply translation
+    diff_x, diff_y = self.new_translation()
+    diff_y = - diff_y
+    # print(&#34; new translation {} {}&#34;.format(diff_x, diff_y))
+    # apply the maximal allowed translation
+    tr_x = float(diff_x) / self.width()
+    tr_y = float(diff_y) / self.height()
+    tr_x = clip_value(tr_x, crop[2]-1, crop[0])
+    tr_y = clip_value(tr_y, crop[3]-1, crop[1])
+    # normalized position relative to the full image
+    crop[0] -= tr_x
+    crop[1] -= tr_y
+    crop[2] -= tr_x
+    crop[3] -= tr_y</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_zoom"><code class="name flex">
+<span>def <span class="ident">apply_zoom</span></span>(<span>self, crop)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_zoom(self, crop):
+    (height, width) = self.cv_image.data.shape[:2]
+    # print(f&#34;height, width = {height, width}&#34;)
+    # Apply zoom
+    coeff = 1.0/self.new_scale(self.mouse_zy, height)
+    # zoom from the center of the image
+    center = self.zoom_center
+    new_crop = center + (crop - center) * coeff
+
+    # print(&#34;new crop zoom 1 {}&#34;.format(new_crop))
+
+    # allow crop increase based on the available space
+    label_width = self.width()
+    # print(f&#34;label_width {label_width}&#34;)
+    label_height = self.height()
+
+    new_width = width * coeff
+    new_height = height * coeff
+
+    ratio_width = float(label_width) / new_width
+    ratio_height = float(label_height) / new_height
+
+    # print(f&#34; ratio_width {ratio_width} ratio_height {ratio_height}&#34;)
+    ratio = min(ratio_width, ratio_height)
+
+    if ratio_width&lt;ratio_height:
+        # margin to increase height
+        margin_pixels = label_height/ratio - new_height
+        margin_height = margin_pixels/height
+        new_crop[1] -= margin_height/2
+        new_crop[3] += margin_height/2
+    else:
+        # margin to increase width
+        margin_pixels = label_width/ratio - new_width
+        margin_width = margin_pixels/width
+        new_crop[0] -= margin_width/2
+        new_crop[2] += margin_width/2
+    # print(&#34;new crop zoom 2 {}&#34;.format(new_crop))
+
+    return new_crop</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.check_translation"><code class="name flex">
+<span>def <span class="ident">check_translation</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>This method computes the translation really applied based on the current requested translation
+:return:</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_translation(self):
+    &#34;&#34;&#34;
+    This method computes the translation really applied based on the current requested translation
+    :return:
+    &#34;&#34;&#34;
+    # Apply zoom
+    crop = self.apply_zoom(self.output_crop)
+
+    # Compute the translation that is really applied after applying the constraints
+    diff_x, diff_y = self.new_translation()
+    diff_y = - diff_y
+    # print(&#34; new translation {} {}&#34;.format(diff_x, diff_y))
+    # apply the maximal allowed translation
+    w, h = self.width(), self.height()
+    diff_x = clip_value(diff_x, w*(crop[2]-1), w*(crop[0]))
+    diff_y = - clip_value(diff_y, h*(crop[3]-1), h*(crop[1]))
+    # normalized position relative to the full image
+    return diff_x, diff_y</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.draw_cursor"><code class="name flex">
+<span>def <span class="ident">draw_cursor</span></span>(<span>self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter) ‑> Optional[Tuple[int, int]]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>:param cropped_image_shape: dimensions of current crop
+:param crop_xmin: left pixel of current crop
+:param crop_ymin: top pixel of current crop
+:param rect: displayed image area
+:param painter:
+:return:
+tuple: (posx, posy) image pixel position of the cursor, if None cursor is out of image</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter) -&gt; Optional[Tuple[int, int]]:
+    &#34;&#34;&#34;
+    :param cropped_image_shape: dimensions of current crop
+    :param crop_xmin: left pixel of current crop
+    :param crop_ymin: top pixel of current crop
+    :param rect: displayed image area
+    :param painter:
+    :return:
+        tuple: (posx, posy) image pixel position of the cursor, if None cursor is out of image
+    &#34;&#34;&#34;
+    # Draw cursor
+    if self.display_timing: self.start_timing()
+    # get image position
+    (height, width) = cropped_image_shape[:2]
+    im_x = int((self.mouse_x -rect.x())/rect.width()*width)
+    im_y = int((self.mouse_y -rect.y())/rect.height()*height)
+
+    pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
+    pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
+
+    # ratio = self.screen().devicePixelRatio()
+    # print(&#34;ratio = {}&#34;.format(ratio))
+    pos_x = pos_from_im_x  # *ratio
+    pos_y = pos_from_im_y  # *ratio
+    length_percent = 0.04
+    # use percentage of the displayed image dimensions
+    length = int(max(self.width(),self.height())*length_percent)
+    pen_width = 4
+    color = QtGui.QColor(0, 255, 255, 200)
+    pen = QtGui.QPen()
+    pen.setColor(color)
+    pen.setWidth(pen_width)
+    painter.setPen(pen)
+    painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
+    painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
+
+    # Update text
+    if im_x&gt;=0 and im_x&lt;cropped_image_shape[1] and im_y&gt;=0 and im_y&lt;cropped_image_shape[0]:
+        # values = cropped_image[im_y, im_x]
+        im_x += crop_xmin
+        im_y += crop_ymin
+        im_pos = (im_x, im_y)
+    else:
+        im_pos = None
+    if self.display_timing: self.print_timing()
+    return im_pos</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.draw_overlay_separation"><code class="name flex">
+<span>def <span class="ident">draw_overlay_separation</span></span>(<span>self, cropped_image_shape, rect, painter)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def draw_overlay_separation(self, cropped_image_shape, rect, painter):
+    (height, width) = cropped_image_shape[:2]
+    im_x = int((self.mouse_x - rect.x())/rect.width()*width)
+    im_x = max(0, min(width - 1, im_x))
+    # im_y = int((self.mouse_y - rect.y())/rect.height()*height)
+    # Set position at the beginning of the pixel
+    pos_from_im_x = int(im_x*rect.width()/width + rect.x())
+    # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
+    pen_width = 2
+    color = QtGui.QColor(255, 255, 0 , 128)
+    pen = QtGui.QPen()
+    pen.setColor(color)
+    pen.setWidth(pen_width)
+    painter.setPen(pen)
+    painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.event"><code class="name flex">
+<span>def <span class="ident">event</span></span>(<span>self, evt)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>event(self, event: PySide6.QtCore.QEvent) -&gt; bool</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def event(self, evt):
+    if self.event_recorder is not None:
+        self.event_recorder.store_event(self, evt)
+    return BaseWidget.event(self, evt)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.get_difference_image"><code class="name flex">
+<span>def <span class="ident">get_difference_image</span></span>(<span>self, verbose=True)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_difference_image(self, verbose=True):
+
+    factor = self.filter_params.imdiff_factor.float
+    if self.paint_diff_cache is not None:
+        use_cache = self.paint_diff_cache[&#39;imid&#39;] == self.image_id and \
+                    self.paint_diff_cache[&#39;imrefid&#39;] == self.image_ref_id and \
+                    self.paint_diff_cache[&#39;factor&#39;] == factor
+    else:
+        use_cache = False
+
+    if not use_cache:
+        im1 = self.cv_image.data
+        im2 = self.cv_image_ref.data
+        # TODO: get factor from parameters ...
+        # factor = int(self.diff_color_slider.value())
+        print(f&#39;factor = {factor}&#39;)
+        print(f&#39; im1.dtype {im1.dtype} im2.dtype {im2.dtype}&#39;)
+        # Fast OpenCV code
+        start = get_time()
+        # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
+        try:
+            if im1.dtype.name == &#39;uint8&#39; and im2.dtype.name == &#39;uint8&#39;:
+                diff_plus = cv2.subtract(im1, im2)
+                diff_minus = cv2.subtract(im2, im1)
+                res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+                if verbose:
+                    print(f&#34; qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms&#34;)
+                    vmin = np.min(res)
+                    vmax = np.max(res)
+                    print(f&#34;min-max diff = {vmin} - {vmax}&#34;)
+                    histo,_ = np.histogram(res, bins=int(vmax-vmin+0.5), range=(vmin, vmax))
+                    sum = 0
+                    for v in range(vmin,vmax):
+                        if v!=127:
+                            nb = histo[v-vmin]
+                            if nb &gt;0:
+                                print(f&#34;{v-127}:{nb} &#34;,end=&#39;&#39;)
+                                sum += nb
+                    print(&#39;&#39;)
+                    print(f&#39;nb pixel diff  {sum}&#39;)
+                res = ViewerImage(res,  precision=self.cv_image.precision, 
+                                        downscale=self.cv_image.downscale,
+                                        channels=self.cv_image.channels)
+                self.paint_diff_cache = {  &#39;imid&#39;: self.image_id, &#39;imrefid&#39;: self.image_ref_id, 
+                    &#39;factor&#39;: self.filter_params.imdiff_factor.float
+                }
+                self.diff_image = res
+            else:
+                d = (im1.astype(np.float32)-im2.astype(np.float32))*factor
+                d[d&lt;-127] = -127
+                d[d&gt;128] = 128
+                d = (d+127).astype(np.uint8)*255
+                res = ViewerImage(d,  precision=8, 
+                                        downscale=self.cv_image.downscale,
+                                        channels=self.cv_image.channels)
+                self.paint_diff_cache = {  &#39;imid&#39;: self.image_id, &#39;imrefid&#39;: self.image_ref_id, 
+                    &#39;factor&#39;: self.filter_params.imdiff_factor.float
+                }
+                self.diff_image = res
+        except Exception as e:
+            print(f&#34;Error {e}&#34;)
+            res = (im1!=im2).astype(np.uint8)*255
+            res = ViewerImage(res,  precision=8, 
+                                    downscale=self.cv_image.downscale,
+                                    channels=ImageFormat.CH_Y)
+            self.diff_image = res
+
+    return self.diff_image</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.keyPressEvent"><code class="name flex">
+<span>def <span class="ident">keyPressEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>keyPressEvent(self, event: PySide6.QtGui.QKeyEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def keyPressEvent(self, event):
+    self.key_press_event(event, wsize=self.size())</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.keyReleaseEvent"><code class="name flex">
+<span>def <span class="ident">keyReleaseEvent</span></span>(<span>self, evt)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>keyReleaseEvent(self, event: PySide6.QtGui.QKeyEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def keyReleaseEvent(self, evt):
+    self.print_log(f&#34;evt {evt.type()}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseDoubleClickEvent"><code class="name flex">
+<span>def <span class="ident">mouseDoubleClickEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mouseDoubleClickEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouseDoubleClickEvent(self, event):
+    self.mouse_double_click_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseMoveEvent"><code class="name flex">
+<span>def <span class="ident">mouseMoveEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mouseMoveEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouseMoveEvent(self, event):
+    self.mouse_move_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.mousePressEvent"><code class="name flex">
+<span>def <span class="ident">mousePressEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mousePressEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mousePressEvent(self, event):
+    self.mouse_press_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseReleaseEvent"><code class="name flex">
+<span>def <span class="ident">mouseReleaseEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>mouseReleaseEvent(self, event: PySide6.QtGui.QMouseEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mouseReleaseEvent(self, event):
+    self.mouse_release_event(event)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.paintEvent"><code class="name flex">
+<span>def <span class="ident">paintEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>paintEvent(self, event: PySide6.QtGui.QPaintEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def paintEvent(self, event):
+    # print(f&#34; qtImageViewer.paintEvent() {self.image_name}&#34;)
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    # try:
+    if self.cv_image is not None:
+        self.paint_image()
+    # except Exception as e:
+    #     print(f&#34;Failed paint_image() {e}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.paint_image"><code class="name flex">
+<span>def <span class="ident">paint_image</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def paint_image(self):
+    # print(f&#34;paint_image display_timing {self.display_timing}&#34;)
+    if self.trace_calls: t = trace_method(self.tab)
+    self.start_timing()
+    time0 = time1 = get_time()
+
+    label_width = self.size().width()
+    label_height = self.size().height()
+
+    show_diff = self.show_image_differences and self.cv_image is not self.cv_image_ref and \
+                self.cv_image_ref is not None and self.cv_image.data.shape == self.cv_image_ref.data.shape
+
+    c = self.update_crop()
+    # check paint_cache
+    if self.paint_cache is not None:
+        use_cache = self.paint_cache[&#39;imid&#39;] == self.image_id and \
+                    np.array_equal(self.paint_cache[&#39;crop&#39;],c) and \
+                    self.paint_cache[&#39;labelw&#39;] == label_width and \
+                    self.paint_cache[&#39;labelh&#39;] == label_height and \
+                    self.paint_cache[&#39;filterp&#39;].is_equal(self.filter_params) and \
+                    (self.paint_cache[&#39;showhist&#39;] == self.show_histogram or not self.show_histogram) and \
+                    self.paint_cache[&#39;show_diff&#39;] == show_diff and \
+                    self.paint_cache[&#39;antialiasing&#39;] == self.antialiasing and \
+                    not self.show_overlay
+    else:
+        use_cache = False
+
+    # if show_diff, compute the image difference (put it in cache??)
+    if show_diff:
+        # Cache does not work well with differences
+        use_cache = False
+        # don&#39;t save the difference
+        current_image = self.get_difference_image()
+    else:
+        current_image = self.cv_image
+
+    precision  = current_image.precision
+    downscale  = current_image.downscale
+    channels   = current_image.channels
+
+    # TODO: get data based on the display ratio?
+    image_data = current_image.data
+
+    # could_use_cache = use_cache
+    # if could_use_cache:
+    #     print(&#34; Could use cache here ... !!!&#34;)
+    # use_cache = False
+
+    do_crop = (c[2] - c[0] != 1) or (c[3] - c[1] != 1)
+    h, w  = image_data.shape[:2]
+    if do_crop:
+        crop_xmin = int(np.round(c[0] * w))
+        crop_xmax = int(np.round(c[2] * w))
+        crop_ymin = int(np.round(c[1] * h))
+        crop_ymax = int(np.round(c[3] * h))
+        image_data = image_data[crop_ymin:crop_ymax, crop_xmin:crop_xmax]
+    else:
+        crop_xmin = crop_ymin = 0
+        crop_xmax = w
+        crop_ymax = h
+
+    cropped_image_shape = image_data.shape
+    self.add_time(&#39;crop&#39;, time1)
+
+    # time1 = get_time()
+    image_height, image_width  = image_data.shape[:2]
+    ratio_width = float(label_width) / image_width
+    ratio_height = float(label_height) / image_height
+    ratio = min(ratio_width, ratio_height)
+    display_width = int(round(image_width * ratio))
+    display_height = int(round(image_height * ratio))
+
+    if self.show_overlay and self.cv_image_ref is not self.cv_image and self.cv_image_ref and \
+        self.cv_image.data.shape == self.cv_image_ref.data.shape:
+        # to create the overlay rapidly, we will mix the two images based on the current cursor position
+        # 1. convert cursor position to image position
+        (height, width) = cropped_image_shape[:2]
+        # compute rect
+        rect = QtCore.QRect(0, 0, display_width, display_height)
+        devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+        rect.moveCenter(devRect.center())
+        im_x = int((self.mouse_x - rect.x()) / rect.width() * width)
+        im_x = max(0,min(width-1, im_x))
+        # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
+        # We need to have a copy here .. slow, better option???
+        image_data = np.copy(image_data)
+        image_data[:, :im_x] = self.cv_image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+
+    resize_applied = False
+    if not use_cache:
+        anti_aliasing = ratio &lt; 1
+        #self.print_log(&#34;ratio is {:0.2f}&#34;.format(ratio))
+        use_opencv_resize = anti_aliasing
+        # enable this as optional?
+        # opencv_downscale_interpolation = opencv_fast_interpolation
+        opencv_fast_interpolation = cv2.INTER_NEAREST
+        if self.antialiasing:
+            opencv_downscale_interpolation = cv2.INTER_AREA
+        else:
+            opencv_downscale_interpolation = cv2.INTER_NEAREST
+        # opencv_upscale_interpolation   = cv2.INTER_LINEAR
+        opencv_upscale_interpolation   = opencv_fast_interpolation
+        # self.print_time(&#39;several settings&#39;, time1, start_time)
+
+        # self.print_log(&#34;use_opencv_resize {} channels {}&#34;.format(use_opencv_resize, current_image.channels))
+        # if ratio&lt;1 we want anti aliasing and we want to resize as soon as possible to reduce computation time
+        if use_opencv_resize and not resize_applied and channels == ImageFormat.CH_RGB:
+
+            prev_shape = image_data.shape
+            initial_type = image_data.dtype
+            if image_data.dtype != np.uint8:
+                print(f&#34;image_data type {type(image_data)} {image_data.dtype}&#34;)
+                image_data = image_data.astype(np.float32)
+
+            # if ratio is &gt;2, start with integer downsize which is much faster
+            # we could add this condition opencv_downscale_interpolation==cv2.INTER_AREA
+            if ratio&lt;=0.5:
+                if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
+                    # clip image to multiple of 2 dimension
+                    image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
+                start_0 = get_time()
+                resized_image = cv2.resize(image_data, (image_width&gt;&gt;1, image_height&gt;&gt;1),
+                                        interpolation=opencv_downscale_interpolation)
+                if self.display_timing:
+                    print(f&#39; === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from &#39;
+                        f&#39;{current_image.data.shape} to &#39;
+                        f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                image_data = resized_image
+                if ratio&lt;=0.25:
+                    if image_data.shape[0]%2!=0 or image_data.shape[1]%2 !=0:
+                        # clip image to multiple of 2 dimension
+                        image_data = image_data[:2*(image_data.shape[0]//2),:2*(image_data.shape[1]//2)]
+                    start_0 = get_time()
+                    resized_image = cv2.resize(image_data, (image_width&gt;&gt;2, image_height&gt;&gt;2),
+                                            interpolation=opencv_downscale_interpolation)
+                    if self.display_timing:
+                        print(f&#39; === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from &#39;
+                            f&#39;{current_image.data.shape} to &#39;
+                            f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                    image_data = resized_image
+
+            time1 = get_time()
+            start_0 = get_time()
+            resized_image = cv2.resize(image_data, (display_width, display_height),
+                                    interpolation=opencv_downscale_interpolation)
+            if self.display_timing:
+                print(f&#39; === qtImageViewer: paint_image() OpenCV resize from {image_data.shape} to &#39;
+                    f&#39;{resized_image.shape} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+
+            image_data = resized_image.astype(initial_type)
+            resize_applied = True
+            self.add_time(&#39;cv2.resize&#39;,time1)
+
+        current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
+        current_image = self.apply_filters(current_image)
+
+        # Compute the histogram here, with the smallest image!!!
+        if self.show_histogram:
+            # previous version only python with its modules
+            # histograms  = self.compute_histogram    (current_image, show_timings=self.display_timing)
+            # new version with bound C++ code and openMP: much faster
+            histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
+        else:
+            histograms = None
+
+        # try to resize anyway with opencv since qt resizing seems too slow
+        if not resize_applied and BaseWidget is not QOpenGLWidget:
+            time1 = get_time()
+            start_0 = get_time()
+            prev_shape = current_image.shape
+            current_image = cv2.resize(current_image, (display_width, display_height),
+                                       interpolation=opencv_upscale_interpolation)
+            if self.display_timing:
+                print(f&#39; === qtImageViewer: paint_image() OpenCV resize from {prev_shape} to &#39;
+                    f&#39;{(display_height, display_width)} --&gt; {int((get_time()-start_0)*1000)} ms&#39;)
+                self.add_time(&#39;cv2.resize&#39;,time1)
+
+        # no need for more resizing
+        resize_applied = True
+
+        # Conversion from numpy array to QImage
+        # version 1: goes through PIL image
+        # version 2: use QImage constructor directly, faster
+        # time1 = get_time()
+
+    else:
+        resize_applied = True
+        current_image = self.paint_cache[&#39;current_image&#39;]
+        histograms = self.paint_cache[&#39;histograms&#39;]
+        # histograms2 = self.paint_cache[&#39;histograms2&#39;]
+
+    # if could_use_cache:
+    #     print(f&#34; ======= current_image equal ? {np.array_equal(self.paint_cache[&#39;current_image&#39;],current_image)}&#34;)
+
+    if not use_cache and not self.show_overlay:
+        # cache_time = get_time()
+        fp = ImageFilterParameters()
+        fp.copy_from(self.filter_params)
+        self.paint_cache = {
+            &#39;imid&#39;: self.image_id,
+            &#39;imrefid&#39;: self.image_ref_id,
+            &#39;crop&#39;: c, &#39;labelw&#39;: label_width, &#39;labelh&#39;: label_height,
+            &#39;filterp&#39;: fp, &#39;showhist&#39;: self.show_histogram,
+            &#39;histograms&#39;: histograms, 
+            # &#39;histograms2&#39;: histograms2, 
+            &#39;current_image&#39;: current_image,
+            &#39;show_diff&#39; : show_diff,
+            &#39;antialiasing&#39;: self.antialiasing
+            }
+        # print(f&#34;create cache data took {int((get_time() - cache_time) * 1000)} ms&#34;)
+
+    if not current_image.flags[&#39;C_CONTIGUOUS&#39;]:
+        current_image = np.require(current_image, np.uint8, &#39;C&#39;)
+    qimage = QtGui.QImage(current_image.data, current_image.shape[1], current_image.shape[0],
+                                current_image.strides[0], QtGui.QImage.Format_RGB888)
+    # self.add_time(&#39;QtGui.QPixmap&#39;,time1)
+
+    assert resize_applied, &#34;Image resized should be applied at this point&#34;
+    # if not resize_applied:
+    #     printf(&#34;*** We should never get here ***&#34;)
+    #     time1 = get_time()
+    #     if anti_aliasing:
+    #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+    #     else:
+    #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
+    #     self.add_time(&#39;qimage.scaled&#39;, time1)
+    #     resize_applied = True
+
+    if self.save_image_clipboard:
+        self.print_log(&#34;exporting to clipboard&#34;)
+        self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
+
+    painter : QtGui.QPainter = QtGui.QPainter()
+
+    painter.begin(self)
+    if BaseWidget is QOpenGLWidget:
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
+    # TODO: check that this condition is not needed
+    if BaseWidget is QOpenGLWidget:
+        rect = QtCore.QRect(0,0, display_width, display_height)
+    else:
+        rect = QtCore.QRect(qimage.rect())
+    devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+    rect.moveCenter(devRect.center())
+
+    time1 = get_time()
+    if BaseWidget is QOpenGLWidget:
+        painter.drawImage(rect, qimage)
+    else:
+        painter.drawImage(rect.topLeft(), qimage)
+    self.add_time(&#39;painter.drawImage&#39;,time1)
+
+    if self.show_overlay:
+        self.draw_overlay_separation(cropped_image_shape, rect, painter)
+
+    # Draw cursor
+    im_pos = None
+    if self.show_cursor:
+        im_pos = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
+
+    self.display_text(painter, self.display_message(im_pos, ratio*self.devicePixelRatio()))
+
+    # draw histogram
+    if self.show_histogram:
+        self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+        # self.display_histogram(histograms2, 2, painter, rect, show_timings=self.display_timing)
+
+    painter.end()
+    self.print_timing()
+
+    if self.display_timing:
+        print(f&#34; paint_image took {int((get_time()-time0)*1000)} ms&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.resizeEvent"><code class="name flex">
+<span>def <span class="ident">resizeEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Called upon window resizing: reinitialize the viewport.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def resizeEvent(self, event):
+    &#34;&#34;&#34;Called upon window resizing: reinitialize the viewport.
+    &#34;&#34;&#34;
+    if self.trace_calls:
+        t = trace_method(self.tab)
+    self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)
+    self.evt_width = event.size().width()
+    self.evt_height = event.size().height()
+    BaseWidget.resizeEvent(self, event)
+    self.print_log(f&#34;resize {event.size()}  self {self.width()} {self.height()}&#34;)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.set_image"><code class="name flex">
+<span>def <span class="ident">set_image</span></span>(<span>self, image)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_image(self, image):
+    super(QTImageViewer, self).set_image(image)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.show"><code class="name flex">
+<span>def <span class="ident">show</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>show(self) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def show(self):
+    if BaseWidget==QOpenGLWidget:
+        self.update()
+    BaseWidget.show(self)</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.update_crop"><code class="name flex">
+<span>def <span class="ident">update_crop</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_crop(self):
+    # Apply zoom
+    new_crop = self.apply_zoom(self.output_crop)
+    # print(f&#34;update_crop {self.output_crop} --&gt; {new_crop}&#34;)
+    # Apply translation
+    self.apply_translation(new_crop)
+    new_crop = np.clip(new_crop, 0, 1)
+    # print(&#34;move new crop {}&#34;.format(new_crop))
+    # print(f&#34;output_crop {self.output_crop} new crop {new_crop}&#34;)
+    return new_crop</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.update_crop_new"><code class="name flex">
+<span>def <span class="ident">update_crop_new</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_crop_new(self):
+    # 1. transform crop to display coordinates
+    
+    # Apply zoom
+    new_crop = self.apply_zoom(self.output_crop)
+    # print(f&#34;update_crop {self.output_crop} --&gt; {new_crop}&#34;)
+    # Apply translation
+    self.apply_translation(new_crop)
+    new_crop = np.clip(new_crop, 0, 1)
+    # print(&#34;move new crop {}&#34;.format(new_crop))
+    # print(f&#34;output_crop {self.output_crop} new crop {new_crop}&#34;)
+    return new_crop</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.viewer_update"><code class="name flex">
+<span>def <span class="ident">viewer_update</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def viewer_update(self):
+    print(&#34;QtImageViewer viewer_update&#34;)
+    #if self.cv_image is not None:
+    #    self.paint_image()
+    if BaseWidget is QOpenGLWidget:
+        self.paint_image()
+        self.repaint()
+    else:
+        self.update()</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.qt_image_viewer.QTImageViewer.wheelEvent"><code class="name flex">
+<span>def <span class="ident">wheelEvent</span></span>(<span>self, event)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>wheelEvent(self, event: PySide6.QtGui.QWheelEvent) -&gt; None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def wheelEvent(self, event):
+    self.mouse_wheel_event(event)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="qimview.image_viewers.image_viewer.ImageViewer" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer">ImageViewer</a></b></code>:
+<ul class="hlist">
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_histogram" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.display_histogram">display_histogram</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.find_in_layout" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.find_in_layout">find_in_layout</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.synchronize" href="image_viewer.html#qimview.image_viewers.image_viewer.ImageViewer.synchronize">synchronize</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="qimview.image_viewers" href="index.html">qimview.image_viewers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer">QTImageViewer</a></code></h4>
+<ul class="">
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_filters" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_filters">apply_filters</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_translation" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_translation">apply_translation</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_zoom" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.apply_zoom">apply_zoom</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.check_translation" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.check_translation">check_translation</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.draw_cursor" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.draw_cursor">draw_cursor</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.draw_overlay_separation" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.draw_overlay_separation">draw_overlay_separation</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.event" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.event">event</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.get_difference_image" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.get_difference_image">get_difference_image</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.keyPressEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.keyPressEvent">keyPressEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.keyReleaseEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.keyReleaseEvent">keyReleaseEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseDoubleClickEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseDoubleClickEvent">mouseDoubleClickEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseMoveEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseMoveEvent">mouseMoveEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.mousePressEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.mousePressEvent">mousePressEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseReleaseEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.mouseReleaseEvent">mouseReleaseEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.paintEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.paintEvent">paintEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.paint_image" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.paint_image">paint_image</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.resizeEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.resizeEvent">resizeEvent</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.set_image" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.set_image">set_image</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.show" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.show">show</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.staticMetaObject" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.staticMetaObject">staticMetaObject</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.update_crop" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.update_crop">update_crop</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.update_crop_new" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.update_crop_new">update_crop_new</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.viewer_update" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.viewer_update">viewer_update</a></code></li>
+<li><code><a title="qimview.image_viewers.qt_image_viewer.QTImageViewer.wheelEvent" href="#qimview.image_viewers.qt_image_viewer.QTImageViewer.wheelEvent">wheelEvent</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>
