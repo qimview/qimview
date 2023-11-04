@@ -13,9 +13,9 @@ class ImageFormat(IntEnum):
     CH_BGR  = 2
     CH_Y    = 3
     CH_RGGB = 4  # phase 0, bayer 2
-    CH_GRBG = 5  # phase 1, bayer 3 (Boilers)
+    CH_GRBG = 5  # phase 1, bayer 3 
     CH_GBRG = 6  # phase 2, bayer 0
-    CH_BGGR = 7  # phase 3, bayer 1 (Coconuts)
+    CH_BGGR = 7  # phase 3, bayer 1 
 
     @staticmethod
     def CH_RAWFORMATS() -> Tuple[ImageFormat, ...]:
