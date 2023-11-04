@@ -416,7 +416,6 @@ class MultiView(QtWidgets.QWidget):
         # print(f"get_output_image({im_string_id}) ")
         start = get_time()
 
-        # Read both clean and original images and save them in dict as QPixmaps
         image_filename = self.image_dict[im_string_id]
         image_transform = None
         self.print_log(f"MultiView.get_output_image() image_filename:{image_filename}")
@@ -459,7 +458,6 @@ class MultiView(QtWidgets.QWidget):
                 before adding them. Defaults to False.
         """        
         # print(f"cache_read_images({image_filenames}) ")
-        # Read both clean and original images and save them in dict as QPixmaps
         image_transform = None
         if reload:
             for f in image_filenames:
