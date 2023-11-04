@@ -84,13 +84,20 @@ class ImView(QtWidgets.QMainWindow):
             self.filter_params_gui.register_event_player(event_player)
             event_player.play_events(event_list=event_list)
     
-    def set_imagge(self, params):
+    def set_image(self, params):
         if params['input_image'] is None:
             # Ask for input file
             filename =  QtWidgets.QFileDialog.getOpenFileName(caption="imview: Select input image")
             params['input_image'] = filename[0]
         im = gb_image_reader.read(params['input_image'])
         self.widget.set_image(im)
+        self.widget.image_name = params['input_image']
+
+        if params['ref'] is not None:
+            im = gb_image_reader.read(params['ref'])
+            print(f"im ref {im}")
+            if im:
+                self.widget.set_image_ref(im)
 
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
@@ -114,6 +121,7 @@ def main():
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_image', nargs='?', help='input image (if not specified, will open file dialog)')
+    parser.add_argument('-ref', default=None,  help='reference image')
     parser.add_argument('-p', '--play', help='events json file', default=None)
     parser.add_argument('-r', '--record', help='record events in given json file', default=None)
     parser.add_argument('--timing', action='store_true', help='display timings')
@@ -133,7 +141,7 @@ def main():
         events = None
 
     window = ImView(events, _params)
-    window.set_imagge( _params)
+    window.set_image(_params)
     window.show()
     app.exec()
 

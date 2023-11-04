@@ -72,7 +72,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
     #    pass
 
     def set_image(self, image):
-        super(QTImageViewer, self).set_image(image)
+        super().set_image(image)
 
     def apply_zoom(self, crop):
         (height, width) = self.cv_image.data.shape[:2]
@@ -299,7 +299,6 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         return rgb_image
 
     def viewer_update(self):
-        print("QtImageViewer viewer_update")
         #if self.cv_image is not None:
         #    self.paint_image()
         if BaseWidget is QOpenGLWidget:

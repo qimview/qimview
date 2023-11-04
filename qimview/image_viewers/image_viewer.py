@@ -248,7 +248,6 @@ class ImageViewer:
 
     # @abstractmethod
     def viewer_update(self):
-        print("ImageViewer viewer_update")
         pass
 
     def mouse_press_event(self, event):
@@ -365,7 +364,7 @@ class ImageViewer:
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
-        print(f"ImageViewer: key_press_event {event.key()}")
+        self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             if event.key() == QtCore.Qt.Key_F11:

@@ -185,7 +185,6 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
 
     # @abstract_method
     def viewer_update(self):
-        print("GLImageViewerBase viewer_update")
         self.update()
 
     # To be defined in children
