@@ -1,1 +1,1 @@
-pdoc3 qimview -o doc_html --html --skip-errors
+pdoc3 qimview -o docs --html --skip-errors

@@ -36,13 +36,20 @@ from enum import Enum, IntEnum
 from typing import Tuple
 
 class ImageFormat(IntEnum):
-    CH_RGB  = 1
-    CH_BGR  = 2
-    CH_Y    = 3
-    CH_RGGB = 4  # phase 0, bayer 2
-    CH_GRBG = 5  # phase 1, bayer 3 
-    CH_GBRG = 6  # phase 2, bayer 0
-    CH_BGGR = 7  # phase 3, bayer 1 
+    CH_RGB  = 1 
+    &#34;&#34;&#34;RGB colour image&#34;&#34;&#34;
+    CH_BGR  = 2 
+    &#34;RBG with inverted order&#34;
+    CH_Y    = 3 
+    &#34;One channel greyscale image&#34;
+    CH_RGGB = 4 
+    &#34;phase 0, bayer 2&#34;
+    CH_GRBG = 5 
+    &#34;phase 1, bayer 3&#34; 
+    CH_GBRG = 6 
+    &#34;phase 2, bayer 0&#34;
+    CH_BGGR = 7 
+    &#34;phase 3, bayer 1&#34;
 
     @staticmethod
     def CH_RAWFORMATS() -&gt; Tuple[ImageFormat, ...]:
@@ -161,13 +168,20 @@ class ViewerImage:
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class ImageFormat(IntEnum):
-    CH_RGB  = 1
-    CH_BGR  = 2
-    CH_Y    = 3
-    CH_RGGB = 4  # phase 0, bayer 2
-    CH_GRBG = 5  # phase 1, bayer 3 
-    CH_GBRG = 6  # phase 2, bayer 0
-    CH_BGGR = 7  # phase 3, bayer 1 
+    CH_RGB  = 1 
+    &#34;&#34;&#34;RGB colour image&#34;&#34;&#34;
+    CH_BGR  = 2 
+    &#34;RBG with inverted order&#34;
+    CH_Y    = 3 
+    &#34;One channel greyscale image&#34;
+    CH_RGGB = 4 
+    &#34;phase 0, bayer 2&#34;
+    CH_GRBG = 5 
+    &#34;phase 1, bayer 3&#34; 
+    CH_GBRG = 6 
+    &#34;phase 2, bayer 0&#34;
+    CH_BGGR = 7 
+    &#34;phase 3, bayer 1&#34;
 
     @staticmethod
     def CH_RAWFORMATS() -&gt; Tuple[ImageFormat, ...]:
@@ -191,31 +205,31 @@ class ViewerImage:
 <dl>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_BGGR"><code class="name">var <span class="ident">CH_BGGR</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>phase 3, bayer 1</p></div>
 </dd>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_BGR"><code class="name">var <span class="ident">CH_BGR</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>RBG with inverted order</p></div>
 </dd>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_GBRG"><code class="name">var <span class="ident">CH_GBRG</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>phase 2, bayer 0</p></div>
 </dd>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_GRBG"><code class="name">var <span class="ident">CH_GRBG</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>phase 1, bayer 3</p></div>
 </dd>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_RGB"><code class="name">var <span class="ident">CH_RGB</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>RGB colour image</p></div>
 </dd>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_RGGB"><code class="name">var <span class="ident">CH_RGGB</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>phase 0, bayer 2</p></div>
 </dd>
 <dt id="qimview.utils.viewer_image.ImageFormat.CH_Y"><code class="name">var <span class="ident">CH_Y</span></code></dt>
 <dd>
-<div class="desc"></div>
+<div class="desc"><p>One channel greyscale image</p></div>
 </dd>
 </dl>
 <h3>Static methods</h3>
