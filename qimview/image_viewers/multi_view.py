@@ -24,7 +24,7 @@ class ViewerType(Enum):
 
 class MultiView(QtWidgets.QWidget):
 
-    def __init__(self, parent=None, viewer_mode=ViewerType.QT_VIEWER, nb_viewers=1):
+    def __init__(self, parent=None, viewer_mode: ViewerType =ViewerType.QT_VIEWER, nb_viewers: int =1) -> None:
         """
         :param parent:
         :param viewer_mode:
@@ -34,7 +34,7 @@ class MultiView(QtWidgets.QWidget):
 
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
 
-        self.nb_viewers_used = nb_viewers
+        self.nb_viewers_used : int = nb_viewers
         self.allocated_image_viewers = []  # keep allocated image viewers here
         self.image_viewers = []
         self.image_viewer_classes = {
@@ -75,8 +75,8 @@ class MultiView(QtWidgets.QWidget):
         self.default_raw_bayer = 'Read'
         self.current_raw_bayer = self.default_raw_bayer
 
-        self.viewer_layouts = ['1', '2', '3', '2+2', '3+2', '3+3', '4+3', '4+4', '3+3+3']
-        self.default_viewer_layout = '1'
+        # Number of viewers currently displayed
+        self.nb_viewers_used : int = 0
 
         # save images of last visited row
         self.cache = ImageCache()
@@ -133,7 +133,7 @@ class MultiView(QtWidgets.QWidget):
             viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
-        self.update_viewer_layout(self.current_viewer_layout)
+        self.set_number_of_viewers(self.nb_viewers_used)
         self.viewer_grid_layout.update()
         self.update_image()
 
@@ -242,7 +242,6 @@ class MultiView(QtWidgets.QWidget):
         :return:
         """
         # if set_viewers, we force the viewer layout and images based on the list
-        self.nb_viewers_used = eval(self.current_viewer_layout)
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
@@ -387,7 +386,7 @@ class MultiView(QtWidgets.QWidget):
         self.viewer_grid_layout = QtWidgets.QGridLayout()
         self.viewer_grid_layout.setHorizontalSpacing(1)
         self.viewer_grid_layout.setVerticalSpacing(1)
-        self.update_viewer_layout('1')
+        self.set_number_of_viewers(1)
         vertical_layout.addLayout(self.viewer_grid_layout, 1)
 
         self.figures_widget = QtWidgets.QWidget()
@@ -610,27 +609,23 @@ class MultiView(QtWidgets.QWidget):
         # if self.show_timing():
         print(f" Update image took {(get_time() - update_image_start)*1000:0.0f} ms")
 
-    def update_viewer_layout(self, layout_name='1'):
-        self.print_log("*** update_viewer_layout()")
-        # # Action from menu ...
-        # menu = self.option_viewer_layout
-        # for action in menu.actions():
-        #     if action.text() == self.current_viewer_layout:
-        #         action.setChecked(False)
-        # for action in menu.actions():
-        #     if action.isChecked():
-        #         self.current_viewer_layout = action.text()
+    def set_number_of_viewers(self, nb_viewers: int = 1, max_columns : int = 0) -> None:
+        self.print_log("*** set_number_of_viewers()")
 
-        self.current_viewer_layout = layout_name
         # 1. remove current viewers from grid layout
         # self.viewer_grid_layout.hide()
         for v in self.image_viewers:
             v.hide()
             self.viewer_grid_layout.removeWidget(v)
 
-        self.nb_viewers_used = eval(self.current_viewer_layout)
-        col_length = int(math.sqrt(self.nb_viewers_used))
-        row_length = int(math.ceil(self.nb_viewers_used / col_length))
+        self.nb_viewers_used = nb_viewers
+        print(f"max_columns = {max_columns}")
+        if max_columns>0:
+            row_length = min(self.nb_viewers_used, max_columns)
+            col_length = int(math.ceil(self.nb_viewers_used / row_length))
+        else:
+            col_length = int(math.sqrt(self.nb_viewers_used))
+            row_length = int(math.ceil(self.nb_viewers_used / col_length))
         self.print_log('col_length = {} row_length = {}'.format(col_length, row_length))
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
@@ -639,24 +634,16 @@ class MultiView(QtWidgets.QWidget):
             self.allocated_image_viewers.append(viewer)
 
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
-        # self.image_viewers = []
-        # for n in range(self.nb_viewers_used):
-        #     self.image_viewers.append(self.allocated_image_viewers[n])
 
         for n in range(self.nb_viewers_used):
             self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
             self.image_viewers[n].hide()
 
-        # for n in range(row_length):
-        # 	self.viewer_grid_layout.setColumnStretch(n, 1)
-        # for n in range(col_length):
-        # 	self.viewer_grid_layout.setRowStretch(n, 1)
-
         # for n in range(self.nb_viewers_used):
         #     print("Viewer {} size {}".format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
 
-    def update_viewer_layout_callback(self):
-        self.update_viewer_layout()
+    def set_number_of_viewers_callback(self):
+        self.set_number_of_viewers()
         self.viewer_grid_layout.update()
         self.update_image()
 
@@ -717,7 +704,7 @@ class MultiView(QtWidgets.QWidget):
                     return
         if self.before_max_parent is not None:
             self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.parent().layout().replaceWidget(self.replacing_widget, self)
             self.replacing_widget = self.before_max_parent = None
             # self.resize(self.before_max_size)
             self.show()
@@ -771,9 +758,9 @@ class MultiView(QtWidgets.QWidget):
                 return
             # print(f"event.modifiers {event.modifiers()}")
             # if not event.modifiers():
-            for n in range(len(self.viewer_layouts)):
-                if event.key() == QtCore.Qt.Key_0 + (n+1):
-                    self.update_viewer_layout(self.viewer_layouts[n])
+            for n in range(1, 10):
+                if event.key() == QtCore.Qt.Key_0 + n:
+                    self.set_number_of_viewers(n)
                     self.viewer_grid_layout.update()
                     self.update_image()
                     self.setFocus()

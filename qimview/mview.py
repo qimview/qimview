@@ -64,7 +64,7 @@ def main():
     nb_inputs = len(filenames)
     mv.show()
     if nb_inputs>=1 and nb_inputs<=9:
-        mv.update_viewer_layout(f'{nb_inputs}')
+        mv.set_number_of_viewers(nb_inputs)
         mv.viewer_grid_layout.update()
         mv.update_image()
         mv.setFocus()
