@@ -694,6 +694,9 @@ class MultiView(QtWidgets.QWidget):
 
     def toggle_fullscreen(self, event):
         print(f"toggle_fullscreen")
+        if not issubclass(self.__class__,QtWidgets.QWidget):
+            print(f"Cannot use toggle_fullscreen on a class that is not a QWidget")
+            return
         # Should be inside a layout
         if self.before_max_parent is None:
             print(f"self.parent() is not None {self.parent() is not None}")
@@ -702,11 +705,14 @@ class MultiView(QtWidgets.QWidget):
                 if self.find_in_layout(playout):
                     self.before_max_parent = self.parent()
                     self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.replaced_viewer = self
                     self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    # We need to go up from the parent widget to the main window to get its geometry
+                    # so that the fullscreen is display on the same monitor
+                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                     self.setParent(None)
+                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                     self.showFullScreen()
-                    # self.showMaximized()
                     event.accept()
                     return
         if self.before_max_parent is not None:
