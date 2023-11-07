@@ -15,11 +15,25 @@ except:
     has_turbojpeg = False
 else:
     has_turbojpeg = True
-from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
+import configparser
+import os
+
+config = configparser.ConfigParser()
+config_file = os.path.expanduser('~/.qimview.cfg')
+lib_path = None
+if os.path.isfile(config_file): 
+    config.read([os.path.expanduser('~/.qimview.cfg')])
+    try:
+        lib_path = config['READER.TURBOJPEG']['LibPath']
+    except Exception as e:
+        pass
 
 # Initialize once the TurboJPEG instance, as a global variable
 try:
-    gb_turbo_jpeg = TurboJPEG()
+    if lib_path:
+        gb_turbo_jpeg = TurboJPEG(lib_path)
+    else:
+        gb_turbo_jpeg = TurboJPEG()
 except Exception as e:
     print(f"Failed to load TurboJPEG library")
     gb_turbo_jpeg = None
