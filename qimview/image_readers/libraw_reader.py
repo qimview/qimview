@@ -1,4 +1,10 @@
-import rawpy
+
+try:
+  import rawpy
+except:
+  has_rawpy = False
+else:
+  has_rawpy = True
 import math
 import numpy as np
 from  qimview.utils.viewer_image import ViewerImage, ImageFormat

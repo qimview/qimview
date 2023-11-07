@@ -8,6 +8,13 @@
 
 from qimview.utils.viewer_image import *
 from qimview.utils.utils import get_time
+
+try:
+    from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
+except:
+    has_turbojpeg = False
+else:
+    has_turbojpeg = True
 from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
 
 # Initialize once the TurboJPEG instance, as a global variable

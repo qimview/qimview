@@ -2,8 +2,12 @@ from qimview.utils.viewer_image import *
 from qimview.utils.utils import get_time
 import os
 from typing import Optional
-import simplejpeg
-
+try:
+    import simplejpeg
+except:
+    has_simplejpeg = False
+else:
+    has_simplejpeg = True
 
 def read_jpeg_simplejpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False) -> Optional[ViewerImage]:
     # print(f"read_jpeg_simplejpeg use_RGB {use_RGB} running ...")

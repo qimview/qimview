@@ -1,8 +1,8 @@
 from qimview.utils.viewer_image import *
 import os
-from .libraw_reader import libraw_supported_formats, read_libraw
-from .turbojpeg_reader import read_jpeg_turbojpeg, gb_turbo_jpeg
-from .simplejpeg_reader import read_jpeg_simplejpeg
+from .libraw_reader import libraw_supported_formats, read_libraw, has_rawpy
+from .turbojpeg_reader import read_jpeg_turbojpeg, gb_turbo_jpeg, has_turbojpeg
+from .simplejpeg_reader import read_jpeg_simplejpeg, has_simplejpeg
 from .opencv_reader import read_opencv, opencv_supported_formats
 from typing import Optional, TYPE_CHECKING
 
@@ -16,10 +16,10 @@ def read_jpeg(image_filename, image_buffer, read_size='full', use_RGB=True, verb
     # so turbojpeg > simplejpeg > cv2
     verbose = True
     im1 = im2 = im3 = None
-    if gb_turbo_jpeg:
+    if gb_turbo_jpeg and has_turbojpeg:
         im1 = read_jpeg_turbojpeg(image_filename, image_buffer, read_size=read_size, use_RGB=use_RGB, verbose=verbose)
     if im1 is not None: return im1
-    if read_size == 'full':
+    if read_size == 'full' and has_simplejpeg:
         im2 = read_jpeg_simplejpeg(image_filename, image_buffer, read_size, use_RGB, verbose)
     if im2 is not None: return im2
     im3 = read_opencv(image_filename, image_buffer, read_size, use_RGB, verbose)
@@ -34,9 +34,10 @@ class ImageReader:
             ".JPEG":read_jpeg,
         }
         # add libraw supported extensions
-        for ext in libraw_supported_formats():
-            if ext.upper() not in self._plugins:
-                self._plugins[ext.upper()] = read_libraw
+        if has_rawpy:
+            for ext in libraw_supported_formats():
+                if ext.upper() not in self._plugins:
+                    self._plugins[ext.upper()] = read_libraw
         # add all opencv supposedly supported extensions
         for ext in opencv_supported_formats():
             if ext.upper() not in self._plugins:
