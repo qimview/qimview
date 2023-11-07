@@ -92,6 +92,7 @@ class ImageViewer:
         self.show_histogram = True
         self.show_cursor    = False
         self.show_overlay   = False
+        self.show_stats     = False
         self.show_image_differences = False
         self.antialiasing = True
         # We track an image counter, changed by set_image, to help reducing same calculations
@@ -441,6 +442,11 @@ class ImageViewer:
             key_list.append(QtCore.Qt.Key_D)
             if event.key() == QtCore.Qt.Key_D:
                 self.show_image_differences = not self.show_image_differences
+
+            # S: display stats on currrent image
+            key_list.append(QtCore.Qt.Key_S)
+            if event.key() == QtCore.Qt.Key_S:
+                self.show_stats = not self.show_stats
 
             if event.key() in key_list:
                 self.viewer_update()

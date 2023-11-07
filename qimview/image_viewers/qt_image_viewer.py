@@ -593,6 +593,15 @@ class QTImageViewer(BaseWidget, ImageViewer ):
                 self.add_time('cv2.resize',time1)
 
             current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
+            if self.show_stats:
+                # Output RGB from input
+                ch = self.cv_image.channels
+                data_shape = current_image.data.shape
+                if len(data_shape)==2:
+                    print(f"input average {np.average(current_image.data)}")
+                if len(data_shape)==3:
+                    for c in range(data_shape[2]):
+                        print(f"input average ch {c} {np.average(current_image.data[:,:,c])}")
             current_image = self.apply_filters(current_image)
 
             # Compute the histogram here, with the smallest image!!!
