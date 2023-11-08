@@ -29,10 +29,14 @@ dependencies = [
     "PySide6>=6.5.2",
     "PySide6_Addons>=6.5.1.1",
     "PySide6_Essentials>=6.5.1.1",
+    "simplejpeg>=1.4.0",
+]
+
+[project.optional-dependencies]
+extra = [
+    "rawpy>=0.16.0",
     "python_vlc>=3.0.11115",
     "PyTurboJPEG>=1.4.1",
-    "rawpy>=0.16.0",
-    "simplejpeg>=1.4.0"
 ]
 
 [project.urls]
