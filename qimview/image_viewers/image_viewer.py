@@ -97,6 +97,15 @@ class ImageViewer:
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
+        # Rectangle in which the histogram is displayed
+        self._histo_rect : Optional[QtCore.QRect] = None
+        # Histogram displayed scale
+        self._histo_scale : int = 1
+        # Widget dimensions to be defined in child resize event
+        self.evt_width : int
+        self.evt_height : int
+       
+        
 
     @property
     def display_timing(self):
@@ -197,6 +206,7 @@ class ImageViewer:
 
         other_viewer.show_histogram = self.show_histogram
         other_viewer.show_cursor    = self.show_cursor
+        other_viewer._histo_scale   = self._histo_scale
 
     def synchronize(self, event_viewer):
         """
@@ -296,6 +306,14 @@ class ImageViewer:
 
     def mouse_double_click_event(self, event):
         self.print_log("double click ")
+        # Check if double click is on histogram, if so, toggle histogram size
+        if self._histo_rect and self._histo_rect.contains(event.x(), event.y()):
+            # scale loops from 1 to 3 
+            self._histo_scale = (self._histo_scale % 3) + 1 
+            self.viewer_update()
+            event.accept()
+            return
+        # Else set current viewer active
         self.set_active()
         self.viewer_update()
         if self.synchronize_viewer is not None:
@@ -574,14 +592,16 @@ class ImageViewer:
         # Histogram: keep constant width/height ratio
         display_ratio : float = 2.0
         # print(f'im_rect = {im_rect}')
-        width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+        w, h = self.evt_width, self.evt_height
+        width   : int = int( min(w/4*self._histo_scale, h/3*self._histo_scale))
         height  : int = int( width/display_ratio)
-        start_x : int = self.evt_width - width*id - 10
-        start_y : int = self.evt_height - 10
+        start_x : int = w - width*id - 10
+        start_y : int = h - 10
         margin  : int = 3
 
         if histo_timings: rect_start = get_time()
         rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        self._histo_rect = rect
         # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
         # Transparent light grey
         painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
