@@ -21,6 +21,7 @@ def main():
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationDisplayName('mview ' + ' '.join(sys.argv[1:]))
 
     filenames = []
     if len(_params['images']) == 0:
