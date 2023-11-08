@@ -100,6 +100,10 @@ class MultiView(QtWidgets.QWidget):
         self.output_label_current_image   : str = ''
         self.output_label_reference_image : str = ''
         self.add_context_menu()
+        
+        # Parameter to set the number of columns in the viewer grid layout
+        # if 0: computed automatically
+        self.max_columns : int = 0 
 
     def set_key_up_callback(self, c):
         self.key_up_callback = c
@@ -618,12 +622,13 @@ class MultiView(QtWidgets.QWidget):
             v.hide()
             self.viewer_grid_layout.removeWidget(v)
 
-        self.nb_viewers_used = nb_viewers
+        self.nb_viewers_used : int = nb_viewers
         print(f"max_columns = {max_columns}")
         if max_columns>0:
             row_length = min(self.nb_viewers_used, max_columns)
             col_length = int(math.ceil(self.nb_viewers_used / row_length))
         else:
+            # Find best configuration to fill the space based on image size and widget size?
             col_length = int(math.sqrt(self.nb_viewers_used))
             row_length = int(math.ceil(self.nb_viewers_used / col_length))
         self.print_log('col_length = {} row_length = {}'.format(col_length, row_length))
@@ -802,5 +807,13 @@ class MultiView(QtWidgets.QWidget):
                 event.accept()
                 return
                 
+            # G: display number of columns
+            if event.key() == QtCore.Qt.Key_G:
+                self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
+                self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
+                self.update_image(reload=True)
+                event.accept()
+                return
+
         else:
             event.ignore()
