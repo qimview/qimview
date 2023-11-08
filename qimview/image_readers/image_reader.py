@@ -100,6 +100,7 @@ def reader_add_plugins():
             try:
                 format_cfg = config[f'READER.{fmt.upper()}']
                 folder, module, ext = format_cfg['Folder'], format_cfg['Module'], format_cfg['Extensions'].split(',')
+                folder = os.path.expanduser(folder)
                 print(f' {fmt} {folder, ext}')
                 # TODO: change this code, avoid sys.path.append()
                 sys.path.append(folder)
