@@ -7,11 +7,12 @@ else:
   has_rawpy = True
 import math
 import numpy as np
-from  qimview.utils.viewer_image import ViewerImage, ImageFormat
+from qimview.utils.viewer_image import ViewerImage, ImageFormat
+from io import BytesIO
 
 def read_libraw(image_filename, image_buffer, read_size='full', use_RGB=True, verbose=False):
     if image_buffer:
-        raw = rawpy.imread(image_buffer)
+        raw = rawpy.imread(BytesIO(image_buffer))
     else:
         raw = rawpy.imread(image_filename)
     height, width = raw.raw_image.shape
@@ -38,5 +39,5 @@ def read_libraw(image_filename, image_buffer, read_size='full', use_RGB=True, ve
 
 def libraw_supported_formats():
     # Need to find the complete list of supported formats
-    return [".ARW", ".GPR"]
+    return [".ARW", ".GPR", ".DNG" ]
 
