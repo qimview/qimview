@@ -5,6 +5,8 @@
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils import get_time
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
+QtKeys  = QtCore.Qt.Key
+QtMouse = QtCore.Qt.MouseButton
 
 import cv2
 import traceback
@@ -263,7 +265,7 @@ class ImageViewer:
 
     def mouse_press_event(self, event):
         self.lastPos = event.pos()
-        if event.buttons() & QtCore.Qt.RightButton:
+        if event.buttons() & QtMouse.RightButton:
             event.accept()
 
     def mouse_move_event(self, event):
@@ -271,14 +273,14 @@ class ImageViewer:
         self.mouse_y = event.y()
         if self.show_overlay:
             self.viewer_update()
-        if event.buttons() & QtCore.Qt.LeftButton:
+        if event.buttons() & QtMouse.LeftButton:
             self.mouse_dx = event.x() - self.lastPos.x()
             self.mouse_dy = - (event.y() - self.lastPos.y())
             self.viewer_update()
             self.synchronize(self)
             event.accept()
         else:
-            if event.buttons() & QtCore.Qt.RightButton:
+            if event.buttons() & QtMouse.RightButton:
                 # right button zoom
                 self.mouse_zx = event.x() - self.lastPos.x()
                 self.mouse_zy = - (event.y() - self.lastPos.y())
@@ -292,14 +294,14 @@ class ImageViewer:
                     self.synchronize(self)
 
     def mouse_release_event(self, event):
-        if event.button() & QtCore.Qt.LeftButton:
+        if event.button() & QtMouse.LeftButton:
             self.current_dx, self.current_dy = self.check_translation()
             self.mouse_dy = 0
             self.mouse_dx = 0
             event.accept()
-        if event.button() & QtCore.Qt.RightButton:
-            if self.cv_image is not None:
-                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+        if event.button() & QtMouse.RightButton:
+            if self._image is not None:
+                self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
             self.mouse_zy = 0
             self.mouse_zx = 0
             event.accept()
@@ -391,8 +393,7 @@ class ImageViewer:
     def key_press_event(self, event, wsize):
         self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-            if event.key() == QtCore.Qt.Key_F11:
+            if event.key() == QtKeys.Key_F11:
                 self.toggle_fullscreen(event)
                 return
 
@@ -407,8 +408,8 @@ class ImageViewer:
             #     self.current_scale = 2
 
             # select upper left crop
-            key_list.append(QtCore.Qt.Key_B)
-            if event.key() == QtCore.Qt.Key_B:
+            key_list.append(QtKeys.Key_B)
+            if event.key() == QtKeys.Key_B:
                 self.current_dx = -wsize.width() / 4
                 self.current_dy = -wsize.height() / 4
                 self.current_scale = 2
@@ -428,42 +429,42 @@ class ImageViewer:
             #     self.current_scale = 2
 
             # select full crop
-            key_list.append(QtCore.Qt.Key_F)
-            if event.key() == QtCore.Qt.Key_F:
+            key_list.append(QtKeys.Key_F)
+            if event.key() == QtKeys.Key_F:
                 self.output_crop = (0., 0., 1., 1.)
                 self.current_dx = 0
                 self.current_dy = 0
                 self.current_scale = 1
 
             # toggle antialiasing
-            key_list.append(QtCore.Qt.Key_A)
-            if event.key() == QtCore.Qt.Key_A:
+            key_list.append(QtKeys.Key_A)
+            if event.key() == QtKeys.Key_A:
                 self.antialiasing = not self.antialiasing
                 print(f"antialiasing {self.antialiasing}")
 
             # toggle histograph
-            key_list.append(QtCore.Qt.Key_H)
-            if event.key() == QtCore.Qt.Key_H:
+            key_list.append(QtKeys.Key_H)
+            if event.key() == QtKeys.Key_H:
                 self.show_histogram = not self.show_histogram
 
             # toggle overlay
-            key_list.append(QtCore.Qt.Key_O)
-            if event.key() == QtCore.Qt.Key_O:
+            key_list.append(QtKeys.Key_O)
+            if event.key() == QtKeys.Key_O:
                 self.show_overlay = not self.show_overlay
 
             # C: toggle cursor
-            key_list.append(QtCore.Qt.Key_C)
-            if event.key() == QtCore.Qt.Key_C:
+            key_list.append(QtKeys.Key_C)
+            if event.key() == QtKeys.Key_C:
                 self.show_cursor = not self.show_cursor
 
             # D: toggle image differences
-            key_list.append(QtCore.Qt.Key_D)
-            if event.key() == QtCore.Qt.Key_D:
+            key_list.append(QtKeys.Key_D)
+            if event.key() == QtKeys.Key_D:
                 self.show_image_differences = not self.show_image_differences
 
             # S: display stats on currrent image
-            key_list.append(QtCore.Qt.Key_S)
-            if event.key() == QtCore.Qt.Key_S:
+            key_list.append(QtKeys.Key_S)
+            if event.key() == QtKeys.Key_S:
                 self.show_stats = not self.show_stats
 
             if event.key() in key_list:
