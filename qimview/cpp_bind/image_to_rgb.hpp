@@ -233,7 +233,7 @@ bool apply_filters(
     }
 
     bool use_saturation = saturation != 1.0f;
-    printf("saturation = %f %d \n", saturation, use_saturation);
+    // printf("saturation = %f %d \n", saturation, use_saturation);
 
     if (use_saturation)
     {
