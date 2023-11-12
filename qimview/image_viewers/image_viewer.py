@@ -405,6 +405,7 @@ class ImageViewer:
                     "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
                 mb.exec()
                 event.accept()
+                return
 
             if event.key() == QtKeys.Key_F11:
                 self.toggle_fullscreen(event)
