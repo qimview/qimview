@@ -33,6 +33,8 @@
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils import get_time
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
+QtKeys  = QtCore.Qt.Key
+QtMouse = QtCore.Qt.MouseButton
 
 import cv2
 import traceback
@@ -40,8 +42,9 @@ import abc
 import inspect
 import numpy as np
 from typing import TYPE_CHECKING, Optional, Tuple
-if TYPE_CHECKING:
-    from qimview.utils.viewer_image import ViewerImage
+# if TYPE_CHECKING:
+from qimview.utils.viewer_image import ViewerImage, ImageFormat
+from abc import abstractmethod
 
 try:
     import qimview_cpp
@@ -89,7 +92,6 @@ class trace_method():
 class ImageViewer:
 
     def __init__(self, parent=None):
-        # super(ImageViewer, self).__init__(parent)
         self.data = None
         self._width = 500
         self._height = 500
@@ -101,8 +103,8 @@ class ImageViewer:
         self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
-        self.cv_image : Optional[ViewerImage] = None
-        self.cv_image_ref = None
+        self._image     : Optional[ViewerImage] = None
+        self._image_ref : Optional[ViewerImage] = None
         self.synchronize_viewer = None
         self.tab = [&#34;--&#34;]
         self.trace_calls  = False
@@ -117,14 +119,23 @@ class ImageViewer:
         self.timings = dict()
         self.replacing_widget = None
         self.before_max_parent = None
-        self.show_histogram = True
-        self.show_cursor    = False
-        self.show_overlay   = False
-        self.show_image_differences = False
-        self.antialiasing = True
+        self.show_histogram         : bool = True
+        self.show_cursor            : bool = False
+        self.show_overlay           : bool = False
+        self.show_stats             : bool = False
+        self.show_image_differences : bool = False
+        self.show_intensity_line    : bool = False
+        self.antialiasing           : bool = True
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
+        # Rectangle in which the histogram is displayed
+        self._histo_rect : Optional[QtCore.QRect] = None
+        # Histogram displayed scale
+        self._histo_scale : int = 1
+        # Widget dimensions to be defined in child resize event
+        self.evt_width : int
+        self.evt_height : int
 
     @property
     def display_timing(self):
@@ -142,19 +153,19 @@ class ImageViewer:
     def verbose(self, v):
         self._verbose = v
 
-    def set_image(self, image):
-        is_different = (self.cv_image is None) or (self.cv_image is not image)
+    def set_image(self, image : Optional[ViewerImage]):
+        is_different = (self._image is None) or (self._image is not image)
         if image is not None:
             self.print_log(&#39;set_image({}): is_different = {}&#39;.format(image.data.shape, is_different))
         if is_different:
-            self.cv_image = image
+            self._image = image
             self.image_id += 1
         return is_different
 
-    def set_image_ref(self, image_ref=None):
-        is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+    def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
+        is_different = (self._image_ref is None) or (self._image_ref is not image_ref)
         if is_different:
-            self.cv_image_ref = image_ref
+            self._image_ref = image_ref
             self.image_ref_id += 1
 
     def set_clipboard(self, clipboard, save_image):
@@ -216,15 +227,17 @@ class ImageViewer:
         other_viewer.current_scale = self.current_scale
         other_viewer.current_dx = self.current_dx
         other_viewer.current_dy = self.current_dy
-        other_viewer.mouse_dx = self.mouse_dx
-        other_viewer.mouse_dy = self.mouse_dy
-        other_viewer.mouse_zx = self.mouse_zx
-        other_viewer.mouse_zy = self.mouse_zy
-        other_viewer.mouse_x = self.mouse_x
-        other_viewer.mouse_y = self.mouse_y
+        other_viewer.mouse_dx   = self.mouse_dx
+        other_viewer.mouse_dy   = self.mouse_dy
+        other_viewer.mouse_zx   = self.mouse_zx
+        other_viewer.mouse_zy   = self.mouse_zy
+        other_viewer.mouse_x    = self.mouse_x
+        other_viewer.mouse_y    = self.mouse_y
 
-        other_viewer.show_histogram = self.show_histogram
-        other_viewer.show_cursor    = self.show_cursor
+        other_viewer.show_histogram      = self.show_histogram
+        other_viewer.show_cursor         = self.show_cursor
+        other_viewer.show_intensity_line = self.show_intensity_line
+        other_viewer._histo_scale        = self._histo_scale
 
     def synchronize(self, event_viewer):
         &#34;&#34;&#34;
@@ -260,7 +273,7 @@ class ImageViewer:
         self._image_name = v
 
     def get_image(self):
-        return self.cv_image
+        return self._image
 
     def new_scale(self, mouse_zy, height):
         return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
@@ -274,14 +287,13 @@ class ImageViewer:
     def check_translation(self):
         return self.new_translation()
 
-    # @abstractmethod
+    @abstractmethod
     def viewer_update(self):
-        print(&#34;ImageViewer viewer_update&#34;)
         pass
 
     def mouse_press_event(self, event):
         self.lastPos = event.pos()
-        if event.buttons() &amp; QtCore.Qt.RightButton:
+        if event.buttons() &amp; QtMouse.RightButton:
             event.accept()
 
     def mouse_move_event(self, event):
@@ -289,14 +301,14 @@ class ImageViewer:
         self.mouse_y = event.y()
         if self.show_overlay:
             self.viewer_update()
-        if event.buttons() &amp; QtCore.Qt.LeftButton:
+        if event.buttons() &amp; QtMouse.LeftButton:
             self.mouse_dx = event.x() - self.lastPos.x()
             self.mouse_dy = - (event.y() - self.lastPos.y())
             self.viewer_update()
             self.synchronize(self)
             event.accept()
         else:
-            if event.buttons() &amp; QtCore.Qt.RightButton:
+            if event.buttons() &amp; QtMouse.RightButton:
                 # right button zoom
                 self.mouse_zx = event.x() - self.lastPos.x()
                 self.mouse_zy = - (event.y() - self.lastPos.y())
@@ -310,14 +322,14 @@ class ImageViewer:
                     self.synchronize(self)
 
     def mouse_release_event(self, event):
-        if event.button() &amp; QtCore.Qt.LeftButton:
+        if event.button() &amp; QtMouse.LeftButton:
             self.current_dx, self.current_dy = self.check_translation()
             self.mouse_dy = 0
             self.mouse_dx = 0
             event.accept()
-        if event.button() &amp; QtCore.Qt.RightButton:
-            if self.cv_image is not None:
-                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+        if event.button() &amp; QtMouse.RightButton:
+            if self._image is not None:
+                self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
             self.mouse_zy = 0
             self.mouse_zx = 0
             event.accept()
@@ -325,6 +337,14 @@ class ImageViewer:
 
     def mouse_double_click_event(self, event):
         self.print_log(&#34;double click &#34;)
+        # Check if double click is on histogram, if so, toggle histogram size
+        if self._histo_rect and self._histo_rect.contains(event.x(), event.y()):
+            # scale loops from 1 to 3 
+            self._histo_scale = (self._histo_scale % 3) + 1 
+            self.viewer_update()
+            event.accept()
+            return
+        # Else set current viewer active
         self.set_active()
         self.viewer_update()
         if self.synchronize_viewer is not None:
@@ -344,9 +364,10 @@ class ImageViewer:
         # print(&#34;delta = {}&#34;.format(delta))
         coeff = delta/5
         # coeff = 20 if delta &gt; 0 else -20
-        self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
-        self.viewer_update()
-        self.synchronize(self)
+        if self._image:
+            self.current_scale = self.new_scale(coeff, self._image.data.shape[0])
+            self.viewer_update()
+            self.synchronize(self)
 
     def find_in_layout(self, layout: QtWidgets.QLayout) -&gt; Optional[QtWidgets.QLayout]:
         &#34;&#34;&#34; Search Recursivement in Layouts for the current widget
@@ -366,22 +387,28 @@ class ImageViewer:
 
     def toggle_fullscreen(self, event):
         print(f&#34;toggle_fullscreen&#34;)
+        if not issubclass(self.__class__,QtWidgets.QWidget):
+            print(f&#34;Cannot use toggle_fullscreen on a class that is not a QWidget&#34;)
+            return
         # Should be inside a layout
         if self.before_max_parent is None:
             if self.parent() is not None and (playout := self.parent().layout()) is not None:
                 if self.find_in_layout(playout):
                     self.before_max_parent = self.parent()
                     self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.replaced_viewer = self
                     self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    # We need to go up from the parent widget to the main window to get its geometry
+                    # so that the fullscreen is display on the same monitor
+                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                     self.setParent(None)
+                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                     self.showFullScreen()
-                    # self.showMaximized()
                     event.accept()
                     return
         if self.before_max_parent is not None:
             self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.parent().layout().replaceWidget(self.replacing_widget, self)
             self.replacing_widget = self.before_max_parent = None
             # self.resize(self.before_max_size)
             self.show()
@@ -393,10 +420,22 @@ class ImageViewer:
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
-        print(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
+        self.print_log(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
         if type(event) == QtGui.QKeyEvent:
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-            if event.key() == QtCore.Qt.Key_F11:
+
+            if event.key() == QtKeys.Key_F1:
+                import qimview
+                mb = QtWidgets.QMessageBox(self)
+                mb.setWindowTitle(f&#34;qimview {qimview.__version__}: MultiView help&#34;)
+                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+                mb.setText(
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki&#39;&gt;qimview&lt;/a&gt;&lt;br&gt;&#34;
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/3.-Image-Viewers&#39;&gt;Image Viewer&lt;/a&gt;&#34;)
+                mb.exec()
+                event.accept()
+                return
+
+            if event.key() == QtKeys.Key_F11:
                 self.toggle_fullscreen(event)
                 return
 
@@ -411,8 +450,8 @@ class ImageViewer:
             #     self.current_scale = 2
 
             # select upper left crop
-            key_list.append(QtCore.Qt.Key_B)
-            if event.key() == QtCore.Qt.Key_B:
+            key_list.append(QtKeys.Key_B)
+            if event.key() == QtKeys.Key_B:
                 self.current_dx = -wsize.width() / 4
                 self.current_dy = -wsize.height() / 4
                 self.current_scale = 2
@@ -432,38 +471,48 @@ class ImageViewer:
             #     self.current_scale = 2
 
             # select full crop
-            key_list.append(QtCore.Qt.Key_F)
-            if event.key() == QtCore.Qt.Key_F:
+            key_list.append(QtKeys.Key_F)
+            if event.key() == QtKeys.Key_F:
                 self.output_crop = (0., 0., 1., 1.)
                 self.current_dx = 0
                 self.current_dy = 0
                 self.current_scale = 1
 
             # toggle antialiasing
-            key_list.append(QtCore.Qt.Key_A)
-            if event.key() == QtCore.Qt.Key_A:
+            key_list.append(QtKeys.Key_A)
+            if event.key() == QtKeys.Key_A:
                 self.antialiasing = not self.antialiasing
                 print(f&#34;antialiasing {self.antialiasing}&#34;)
 
             # toggle histograph
-            key_list.append(QtCore.Qt.Key_H)
-            if event.key() == QtCore.Qt.Key_H:
+            key_list.append(QtKeys.Key_H)
+            if event.key() == QtKeys.Key_H:
                 self.show_histogram = not self.show_histogram
 
             # toggle overlay
-            key_list.append(QtCore.Qt.Key_O)
-            if event.key() == QtCore.Qt.Key_O:
+            key_list.append(QtKeys.Key_O)
+            if event.key() == QtKeys.Key_O:
                 self.show_overlay = not self.show_overlay
 
             # C: toggle cursor
-            key_list.append(QtCore.Qt.Key_C)
-            if event.key() == QtCore.Qt.Key_C:
+            key_list.append(QtKeys.Key_C)
+            if event.key() == QtKeys.Key_C:
                 self.show_cursor = not self.show_cursor
 
             # D: toggle image differences
-            key_list.append(QtCore.Qt.Key_D)
-            if event.key() == QtCore.Qt.Key_D:
+            key_list.append(QtKeys.Key_D)
+            if event.key() == QtKeys.Key_D:
                 self.show_image_differences = not self.show_image_differences
+
+            # S: display stats on currrent image
+            key_list.append(QtKeys.Key_S)
+            if event.key() == QtKeys.Key_S:
+                self.show_stats = not self.show_stats
+
+            # I: display intensity line
+            key_list.append(QtKeys.Key_I)
+            if event.key() == QtKeys.Key_I:
+                self.show_intensity_line = not self.show_intensity_line
 
             if event.key() in key_list:
                 self.viewer_update()
@@ -477,11 +526,11 @@ class ImageViewer:
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -&gt; str:
         text : str = self.image_name
         if self.show_cursor and im_pos:
-            text +=  f&#34;\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}&#34;
+            text +=  f&#34;\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}&#34;
             if scale is not None:
                 text += f&#34;\n x{scale:0.2f}&#34;
             im_x, im_y = im_pos
-            values = self.cv_image.data[im_y, im_x]
+            values = self._image.data[im_y, im_x]
             text += f&#34;\n pos {im_x:4}, {im_y:4} \n rgb {values}&#34;
 
         if self.show_overlay:
@@ -528,8 +577,8 @@ class ImageViewer:
         hist_x_step = max(1, int(im_w/target_w+0.5))
         hist_y_step = max(1, int(im_h/target_h+0.5))
         input_image = current_image
-        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
-        # input_image = self.cv_image
+        # print(f&#34;current_image {current_image.shape} _image {self._image.shape}&#34;)
+        # input_image = self._image
         resized_im = input_image[::hist_y_step, ::hist_x_step, :]
         resized_im = input_image
         if self.verbose:
@@ -597,21 +646,23 @@ class ImageViewer:
         # Histogram: keep constant width/height ratio
         display_ratio : float = 2.0
         # print(f&#39;im_rect = {im_rect}&#39;)
-        width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+        w, h = self.evt_width, self.evt_height
+        width   : int = int( min(w/4*self._histo_scale, h/3*self._histo_scale))
         height  : int = int( width/display_ratio)
-        start_x : int = self.evt_width - width*id - 10
-        start_y : int = self.evt_height - 10
+        start_x : int = w - width*id - 10
+        start_y : int = h - 10
         margin  : int = 3
 
         if histo_timings: rect_start = get_time()
         rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        self._histo_rect = rect
         # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
         # Transparent light grey
         painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
         if histo_timings: rect_time = get_time()-rect_start
 
-        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
-        # input_image = self.cv_image
+        # print(f&#34;current_image {current_image.shape} _image {self._image.shape}&#34;)
+        # input_image = self._image
         path_time = 0
 
         pen = QtGui.QPen()
@@ -652,7 +703,71 @@ class ImageViewer:
 
         if histo_timings: 
             print(f&#34;display_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#39;&#39;)
-            print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)</code></pre>
+            print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)
+
+
+    def display_intensity_line(self, 
+                               painter: QtGui.QPainter, 
+                               im_rect: QtCore.QRect, 
+                               line: np.ndarray,
+                               channels : ImageFormat,
+                                ) -&gt; None:
+        #if histo_timings:
+        h_start = get_time()
+        # print(f&#39;im_rect = {im_rect}&#39;)
+        w, h = self.evt_width, self.evt_height
+        width    : int = im_rect.width()
+        height   : int = int( h/5)
+        start_x  : int = im_rect.x()
+        margin_y : int = 2
+        start_y  : int = h-margin_y
+
+        rect = QtCore.QRect(start_x, start_y-height, width, height)
+        self._line_rect = rect
+        painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+
+        pen = QtGui.QPen()
+        pen.setWidth(1)
+
+        # Adapt for Bayer, Y, etc ...
+        qcolors = {
+            &#39;R&#39; : QtGui.QColor(240,  30,  30, 255),
+            &#39;G&#39; : QtGui.QColor( 30, 240,  30, 255),
+            &#39;Gr&#39;: QtGui.QColor(130, 240,  30, 255),
+            &#39;Gb&#39;: QtGui.QColor( 30, 240, 130, 255),
+            &#39;B&#39; : QtGui.QColor( 30,  30, 240, 255),
+            &#39;Y&#39; : QtGui.QColor( 30,  30,  30, 255),
+        }
+        colors = {
+            ImageFormat.CH_RGB  : [&#39;R&#39;,&#39;G&#39;,&#39;B&#39;],
+            ImageFormat.CH_BGR  : [&#39;B&#39;,&#39;G&#39;,&#39;R&#39;],
+            ImageFormat.CH_RGGB : [&#39;R&#39;,&#39;Gr&#39;,&#39;Gb&#39;,&#39;B&#39;],
+            ImageFormat.CH_GRBG : [&#39;Gr&#39;,&#39;R&#39;,&#39;B&#39;,&#39;Gb&#39;],
+            ImageFormat.CH_GBRG : [&#39;Gb&#39;,&#39;B&#39;,&#39;R&#39;,&#39;Gr&#39;],
+            ImageFormat.CH_BGGR : [&#39;B&#39;,&#39;Gb&#39;,&#39;Gr&#39;,&#39;R&#39;],
+        }[channels]
+        assert line.shape[1] == len(colors), f&#34;Error: Mismatch between imageformat and number of channels&#34;
+
+        nb_values = line.shape[0]
+        step_x = float(width) / nb_values
+        x_range = np.array(range(0, nb_values))
+        x_pos = start_x + (x_range+0.5)*step_x
+
+        max_val = np.max(line)
+        line = line.astype(np.float32)
+        in_margin = 2
+        in_start_y = start_y - in_margin
+        in_height  = height - 2*in_margin
+        for channel in range(len(colors)):
+            pen.setColor(qcolors[colors[channel]])
+            painter.setPen(pen)
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+            y_pos = (in_start_y - line[:,channel]*(in_height/max_val)+0.5).astype(np.uint32)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
+            painter.drawPath(path)</code></pre>
 </details>
 </section>
 <section>
@@ -720,7 +835,6 @@ class ImageViewer:
 <pre><code class="python">class ImageViewer:
 
     def __init__(self, parent=None):
-        # super(ImageViewer, self).__init__(parent)
         self.data = None
         self._width = 500
         self._height = 500
@@ -732,8 +846,8 @@ class ImageViewer:
         self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
-        self.cv_image : Optional[ViewerImage] = None
-        self.cv_image_ref = None
+        self._image     : Optional[ViewerImage] = None
+        self._image_ref : Optional[ViewerImage] = None
         self.synchronize_viewer = None
         self.tab = [&#34;--&#34;]
         self.trace_calls  = False
@@ -748,14 +862,23 @@ class ImageViewer:
         self.timings = dict()
         self.replacing_widget = None
         self.before_max_parent = None
-        self.show_histogram = True
-        self.show_cursor    = False
-        self.show_overlay   = False
-        self.show_image_differences = False
-        self.antialiasing = True
+        self.show_histogram         : bool = True
+        self.show_cursor            : bool = False
+        self.show_overlay           : bool = False
+        self.show_stats             : bool = False
+        self.show_image_differences : bool = False
+        self.show_intensity_line    : bool = False
+        self.antialiasing           : bool = True
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
+        # Rectangle in which the histogram is displayed
+        self._histo_rect : Optional[QtCore.QRect] = None
+        # Histogram displayed scale
+        self._histo_scale : int = 1
+        # Widget dimensions to be defined in child resize event
+        self.evt_width : int
+        self.evt_height : int
 
     @property
     def display_timing(self):
@@ -773,19 +896,19 @@ class ImageViewer:
     def verbose(self, v):
         self._verbose = v
 
-    def set_image(self, image):
-        is_different = (self.cv_image is None) or (self.cv_image is not image)
+    def set_image(self, image : Optional[ViewerImage]):
+        is_different = (self._image is None) or (self._image is not image)
         if image is not None:
             self.print_log(&#39;set_image({}): is_different = {}&#39;.format(image.data.shape, is_different))
         if is_different:
-            self.cv_image = image
+            self._image = image
             self.image_id += 1
         return is_different
 
-    def set_image_ref(self, image_ref=None):
-        is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+    def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
+        is_different = (self._image_ref is None) or (self._image_ref is not image_ref)
         if is_different:
-            self.cv_image_ref = image_ref
+            self._image_ref = image_ref
             self.image_ref_id += 1
 
     def set_clipboard(self, clipboard, save_image):
@@ -847,15 +970,17 @@ class ImageViewer:
         other_viewer.current_scale = self.current_scale
         other_viewer.current_dx = self.current_dx
         other_viewer.current_dy = self.current_dy
-        other_viewer.mouse_dx = self.mouse_dx
-        other_viewer.mouse_dy = self.mouse_dy
-        other_viewer.mouse_zx = self.mouse_zx
-        other_viewer.mouse_zy = self.mouse_zy
-        other_viewer.mouse_x = self.mouse_x
-        other_viewer.mouse_y = self.mouse_y
+        other_viewer.mouse_dx   = self.mouse_dx
+        other_viewer.mouse_dy   = self.mouse_dy
+        other_viewer.mouse_zx   = self.mouse_zx
+        other_viewer.mouse_zy   = self.mouse_zy
+        other_viewer.mouse_x    = self.mouse_x
+        other_viewer.mouse_y    = self.mouse_y
 
-        other_viewer.show_histogram = self.show_histogram
-        other_viewer.show_cursor    = self.show_cursor
+        other_viewer.show_histogram      = self.show_histogram
+        other_viewer.show_cursor         = self.show_cursor
+        other_viewer.show_intensity_line = self.show_intensity_line
+        other_viewer._histo_scale        = self._histo_scale
 
     def synchronize(self, event_viewer):
         &#34;&#34;&#34;
@@ -891,7 +1016,7 @@ class ImageViewer:
         self._image_name = v
 
     def get_image(self):
-        return self.cv_image
+        return self._image
 
     def new_scale(self, mouse_zy, height):
         return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
@@ -905,14 +1030,13 @@ class ImageViewer:
     def check_translation(self):
         return self.new_translation()
 
-    # @abstractmethod
+    @abstractmethod
     def viewer_update(self):
-        print(&#34;ImageViewer viewer_update&#34;)
         pass
 
     def mouse_press_event(self, event):
         self.lastPos = event.pos()
-        if event.buttons() &amp; QtCore.Qt.RightButton:
+        if event.buttons() &amp; QtMouse.RightButton:
             event.accept()
 
     def mouse_move_event(self, event):
@@ -920,14 +1044,14 @@ class ImageViewer:
         self.mouse_y = event.y()
         if self.show_overlay:
             self.viewer_update()
-        if event.buttons() &amp; QtCore.Qt.LeftButton:
+        if event.buttons() &amp; QtMouse.LeftButton:
             self.mouse_dx = event.x() - self.lastPos.x()
             self.mouse_dy = - (event.y() - self.lastPos.y())
             self.viewer_update()
             self.synchronize(self)
             event.accept()
         else:
-            if event.buttons() &amp; QtCore.Qt.RightButton:
+            if event.buttons() &amp; QtMouse.RightButton:
                 # right button zoom
                 self.mouse_zx = event.x() - self.lastPos.x()
                 self.mouse_zy = - (event.y() - self.lastPos.y())
@@ -941,14 +1065,14 @@ class ImageViewer:
                     self.synchronize(self)
 
     def mouse_release_event(self, event):
-        if event.button() &amp; QtCore.Qt.LeftButton:
+        if event.button() &amp; QtMouse.LeftButton:
             self.current_dx, self.current_dy = self.check_translation()
             self.mouse_dy = 0
             self.mouse_dx = 0
             event.accept()
-        if event.button() &amp; QtCore.Qt.RightButton:
-            if self.cv_image is not None:
-                self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+        if event.button() &amp; QtMouse.RightButton:
+            if self._image is not None:
+                self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
             self.mouse_zy = 0
             self.mouse_zx = 0
             event.accept()
@@ -956,6 +1080,14 @@ class ImageViewer:
 
     def mouse_double_click_event(self, event):
         self.print_log(&#34;double click &#34;)
+        # Check if double click is on histogram, if so, toggle histogram size
+        if self._histo_rect and self._histo_rect.contains(event.x(), event.y()):
+            # scale loops from 1 to 3 
+            self._histo_scale = (self._histo_scale % 3) + 1 
+            self.viewer_update()
+            event.accept()
+            return
+        # Else set current viewer active
         self.set_active()
         self.viewer_update()
         if self.synchronize_viewer is not None:
@@ -975,9 +1107,10 @@ class ImageViewer:
         # print(&#34;delta = {}&#34;.format(delta))
         coeff = delta/5
         # coeff = 20 if delta &gt; 0 else -20
-        self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
-        self.viewer_update()
-        self.synchronize(self)
+        if self._image:
+            self.current_scale = self.new_scale(coeff, self._image.data.shape[0])
+            self.viewer_update()
+            self.synchronize(self)
 
     def find_in_layout(self, layout: QtWidgets.QLayout) -&gt; Optional[QtWidgets.QLayout]:
         &#34;&#34;&#34; Search Recursivement in Layouts for the current widget
@@ -997,22 +1130,28 @@ class ImageViewer:
 
     def toggle_fullscreen(self, event):
         print(f&#34;toggle_fullscreen&#34;)
+        if not issubclass(self.__class__,QtWidgets.QWidget):
+            print(f&#34;Cannot use toggle_fullscreen on a class that is not a QWidget&#34;)
+            return
         # Should be inside a layout
         if self.before_max_parent is None:
             if self.parent() is not None and (playout := self.parent().layout()) is not None:
                 if self.find_in_layout(playout):
                     self.before_max_parent = self.parent()
                     self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.replaced_viewer = self
                     self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    # We need to go up from the parent widget to the main window to get its geometry
+                    # so that the fullscreen is display on the same monitor
+                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                     self.setParent(None)
+                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                     self.showFullScreen()
-                    # self.showMaximized()
                     event.accept()
                     return
         if self.before_max_parent is not None:
             self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.parent().layout().replaceWidget(self.replacing_widget, self)
             self.replacing_widget = self.before_max_parent = None
             # self.resize(self.before_max_size)
             self.show()
@@ -1024,10 +1163,22 @@ class ImageViewer:
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
-        print(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
+        self.print_log(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
         if type(event) == QtGui.QKeyEvent:
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-            if event.key() == QtCore.Qt.Key_F11:
+
+            if event.key() == QtKeys.Key_F1:
+                import qimview
+                mb = QtWidgets.QMessageBox(self)
+                mb.setWindowTitle(f&#34;qimview {qimview.__version__}: MultiView help&#34;)
+                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+                mb.setText(
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki&#39;&gt;qimview&lt;/a&gt;&lt;br&gt;&#34;
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/3.-Image-Viewers&#39;&gt;Image Viewer&lt;/a&gt;&#34;)
+                mb.exec()
+                event.accept()
+                return
+
+            if event.key() == QtKeys.Key_F11:
                 self.toggle_fullscreen(event)
                 return
 
@@ -1042,8 +1193,8 @@ class ImageViewer:
             #     self.current_scale = 2
 
             # select upper left crop
-            key_list.append(QtCore.Qt.Key_B)
-            if event.key() == QtCore.Qt.Key_B:
+            key_list.append(QtKeys.Key_B)
+            if event.key() == QtKeys.Key_B:
                 self.current_dx = -wsize.width() / 4
                 self.current_dy = -wsize.height() / 4
                 self.current_scale = 2
@@ -1063,38 +1214,48 @@ class ImageViewer:
             #     self.current_scale = 2
 
             # select full crop
-            key_list.append(QtCore.Qt.Key_F)
-            if event.key() == QtCore.Qt.Key_F:
+            key_list.append(QtKeys.Key_F)
+            if event.key() == QtKeys.Key_F:
                 self.output_crop = (0., 0., 1., 1.)
                 self.current_dx = 0
                 self.current_dy = 0
                 self.current_scale = 1
 
             # toggle antialiasing
-            key_list.append(QtCore.Qt.Key_A)
-            if event.key() == QtCore.Qt.Key_A:
+            key_list.append(QtKeys.Key_A)
+            if event.key() == QtKeys.Key_A:
                 self.antialiasing = not self.antialiasing
                 print(f&#34;antialiasing {self.antialiasing}&#34;)
 
             # toggle histograph
-            key_list.append(QtCore.Qt.Key_H)
-            if event.key() == QtCore.Qt.Key_H:
+            key_list.append(QtKeys.Key_H)
+            if event.key() == QtKeys.Key_H:
                 self.show_histogram = not self.show_histogram
 
             # toggle overlay
-            key_list.append(QtCore.Qt.Key_O)
-            if event.key() == QtCore.Qt.Key_O:
+            key_list.append(QtKeys.Key_O)
+            if event.key() == QtKeys.Key_O:
                 self.show_overlay = not self.show_overlay
 
             # C: toggle cursor
-            key_list.append(QtCore.Qt.Key_C)
-            if event.key() == QtCore.Qt.Key_C:
+            key_list.append(QtKeys.Key_C)
+            if event.key() == QtKeys.Key_C:
                 self.show_cursor = not self.show_cursor
 
             # D: toggle image differences
-            key_list.append(QtCore.Qt.Key_D)
-            if event.key() == QtCore.Qt.Key_D:
+            key_list.append(QtKeys.Key_D)
+            if event.key() == QtKeys.Key_D:
                 self.show_image_differences = not self.show_image_differences
+
+            # S: display stats on currrent image
+            key_list.append(QtKeys.Key_S)
+            if event.key() == QtKeys.Key_S:
+                self.show_stats = not self.show_stats
+
+            # I: display intensity line
+            key_list.append(QtKeys.Key_I)
+            if event.key() == QtKeys.Key_I:
+                self.show_intensity_line = not self.show_intensity_line
 
             if event.key() in key_list:
                 self.viewer_update()
@@ -1108,11 +1269,11 @@ class ImageViewer:
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -&gt; str:
         text : str = self.image_name
         if self.show_cursor and im_pos:
-            text +=  f&#34;\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}&#34;
+            text +=  f&#34;\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}&#34;
             if scale is not None:
                 text += f&#34;\n x{scale:0.2f}&#34;
             im_x, im_y = im_pos
-            values = self.cv_image.data[im_y, im_x]
+            values = self._image.data[im_y, im_x]
             text += f&#34;\n pos {im_x:4}, {im_y:4} \n rgb {values}&#34;
 
         if self.show_overlay:
@@ -1159,8 +1320,8 @@ class ImageViewer:
         hist_x_step = max(1, int(im_w/target_w+0.5))
         hist_y_step = max(1, int(im_h/target_h+0.5))
         input_image = current_image
-        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
-        # input_image = self.cv_image
+        # print(f&#34;current_image {current_image.shape} _image {self._image.shape}&#34;)
+        # input_image = self._image
         resized_im = input_image[::hist_y_step, ::hist_x_step, :]
         resized_im = input_image
         if self.verbose:
@@ -1228,21 +1389,23 @@ class ImageViewer:
         # Histogram: keep constant width/height ratio
         display_ratio : float = 2.0
         # print(f&#39;im_rect = {im_rect}&#39;)
-        width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+        w, h = self.evt_width, self.evt_height
+        width   : int = int( min(w/4*self._histo_scale, h/3*self._histo_scale))
         height  : int = int( width/display_ratio)
-        start_x : int = self.evt_width - width*id - 10
-        start_y : int = self.evt_height - 10
+        start_x : int = w - width*id - 10
+        start_y : int = h - 10
         margin  : int = 3
 
         if histo_timings: rect_start = get_time()
         rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+        self._histo_rect = rect
         # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
         # Transparent light grey
         painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
         if histo_timings: rect_time = get_time()-rect_start
 
-        # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
-        # input_image = self.cv_image
+        # print(f&#34;current_image {current_image.shape} _image {self._image.shape}&#34;)
+        # input_image = self._image
         path_time = 0
 
         pen = QtGui.QPen()
@@ -1283,7 +1446,71 @@ class ImageViewer:
 
         if histo_timings: 
             print(f&#34;display_histogram took {(get_time()-h_start)*1000:0.1f} msec. &#34;, end=&#39;&#39;)
-            print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)</code></pre>
+            print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)
+
+
+    def display_intensity_line(self, 
+                               painter: QtGui.QPainter, 
+                               im_rect: QtCore.QRect, 
+                               line: np.ndarray,
+                               channels : ImageFormat,
+                                ) -&gt; None:
+        #if histo_timings:
+        h_start = get_time()
+        # print(f&#39;im_rect = {im_rect}&#39;)
+        w, h = self.evt_width, self.evt_height
+        width    : int = im_rect.width()
+        height   : int = int( h/5)
+        start_x  : int = im_rect.x()
+        margin_y : int = 2
+        start_y  : int = h-margin_y
+
+        rect = QtCore.QRect(start_x, start_y-height, width, height)
+        self._line_rect = rect
+        painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+
+        pen = QtGui.QPen()
+        pen.setWidth(1)
+
+        # Adapt for Bayer, Y, etc ...
+        qcolors = {
+            &#39;R&#39; : QtGui.QColor(240,  30,  30, 255),
+            &#39;G&#39; : QtGui.QColor( 30, 240,  30, 255),
+            &#39;Gr&#39;: QtGui.QColor(130, 240,  30, 255),
+            &#39;Gb&#39;: QtGui.QColor( 30, 240, 130, 255),
+            &#39;B&#39; : QtGui.QColor( 30,  30, 240, 255),
+            &#39;Y&#39; : QtGui.QColor( 30,  30,  30, 255),
+        }
+        colors = {
+            ImageFormat.CH_RGB  : [&#39;R&#39;,&#39;G&#39;,&#39;B&#39;],
+            ImageFormat.CH_BGR  : [&#39;B&#39;,&#39;G&#39;,&#39;R&#39;],
+            ImageFormat.CH_RGGB : [&#39;R&#39;,&#39;Gr&#39;,&#39;Gb&#39;,&#39;B&#39;],
+            ImageFormat.CH_GRBG : [&#39;Gr&#39;,&#39;R&#39;,&#39;B&#39;,&#39;Gb&#39;],
+            ImageFormat.CH_GBRG : [&#39;Gb&#39;,&#39;B&#39;,&#39;R&#39;,&#39;Gr&#39;],
+            ImageFormat.CH_BGGR : [&#39;B&#39;,&#39;Gb&#39;,&#39;Gr&#39;,&#39;R&#39;],
+        }[channels]
+        assert line.shape[1] == len(colors), f&#34;Error: Mismatch between imageformat and number of channels&#34;
+
+        nb_values = line.shape[0]
+        step_x = float(width) / nb_values
+        x_range = np.array(range(0, nb_values))
+        x_pos = start_x + (x_range+0.5)*step_x
+
+        max_val = np.max(line)
+        line = line.astype(np.float32)
+        in_margin = 2
+        in_start_y = start_y - in_margin
+        in_height  = height - 2*in_margin
+        for channel in range(len(colors)):
+            pen.setColor(qcolors[colors[channel]])
+            painter.setPen(pen)
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+            y_pos = (in_start_y - line[:,channel]*(in_height/max_val)+0.5).astype(np.uint32)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
+            painter.drawPath(path)</code></pre>
 </details>
 <h3>Subclasses</h3>
 <ul class="hlist">
@@ -1389,8 +1616,8 @@ def verbose(self):
     hist_x_step = max(1, int(im_w/target_w+0.5))
     hist_y_step = max(1, int(im_h/target_h+0.5))
     input_image = current_image
-    # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
-    # input_image = self.cv_image
+    # print(f&#34;current_image {current_image.shape} _image {self._image.shape}&#34;)
+    # input_image = self._image
     resized_im = input_image[::hist_y_step, ::hist_x_step, :]
     resized_im = input_image
     if self.verbose:
@@ -1480,21 +1707,23 @@ def verbose(self):
     # Histogram: keep constant width/height ratio
     display_ratio : float = 2.0
     # print(f&#39;im_rect = {im_rect}&#39;)
-    width   : int = int( min(im_rect.width()/4, im_rect.height()/3))
+    w, h = self.evt_width, self.evt_height
+    width   : int = int( min(w/4*self._histo_scale, h/3*self._histo_scale))
     height  : int = int( width/display_ratio)
-    start_x : int = self.evt_width - width*id - 10
-    start_y : int = self.evt_height - 10
+    start_x : int = w - width*id - 10
+    start_y : int = h - 10
     margin  : int = 3
 
     if histo_timings: rect_start = get_time()
     rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
+    self._histo_rect = rect
     # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
     # Transparent light grey
     painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
     if histo_timings: rect_time = get_time()-rect_start
 
-    # print(f&#34;current_image {current_image.shape} cv_image {self.cv_image.shape}&#34;)
-    # input_image = self.cv_image
+    # print(f&#34;current_image {current_image.shape} _image {self._image.shape}&#34;)
+    # input_image = self._image
     path_time = 0
 
     pen = QtGui.QPen()
@@ -1538,6 +1767,79 @@ def verbose(self):
         print(f&#34;from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}&#34;)</code></pre>
 </details>
 </dd>
+<dt id="qimview.image_viewers.image_viewer.ImageViewer.display_intensity_line"><code class="name flex">
+<span>def <span class="ident">display_intensity_line</span></span>(<span>self, painter: PySide6.QtGui.QPainter, im_rect: PySide6.QtCore.QRect, line: numpy.ndarray, channels: <a title="qimview.utils.viewer_image.ImageFormat" href="../utils/viewer_image.html#qimview.utils.viewer_image.ImageFormat">ImageFormat</a>) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def display_intensity_line(self, 
+                           painter: QtGui.QPainter, 
+                           im_rect: QtCore.QRect, 
+                           line: np.ndarray,
+                           channels : ImageFormat,
+                            ) -&gt; None:
+    #if histo_timings:
+    h_start = get_time()
+    # print(f&#39;im_rect = {im_rect}&#39;)
+    w, h = self.evt_width, self.evt_height
+    width    : int = im_rect.width()
+    height   : int = int( h/5)
+    start_x  : int = im_rect.x()
+    margin_y : int = 2
+    start_y  : int = h-margin_y
+
+    rect = QtCore.QRect(start_x, start_y-height, width, height)
+    self._line_rect = rect
+    painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+
+    pen = QtGui.QPen()
+    pen.setWidth(1)
+
+    # Adapt for Bayer, Y, etc ...
+    qcolors = {
+        &#39;R&#39; : QtGui.QColor(240,  30,  30, 255),
+        &#39;G&#39; : QtGui.QColor( 30, 240,  30, 255),
+        &#39;Gr&#39;: QtGui.QColor(130, 240,  30, 255),
+        &#39;Gb&#39;: QtGui.QColor( 30, 240, 130, 255),
+        &#39;B&#39; : QtGui.QColor( 30,  30, 240, 255),
+        &#39;Y&#39; : QtGui.QColor( 30,  30,  30, 255),
+    }
+    colors = {
+        ImageFormat.CH_RGB  : [&#39;R&#39;,&#39;G&#39;,&#39;B&#39;],
+        ImageFormat.CH_BGR  : [&#39;B&#39;,&#39;G&#39;,&#39;R&#39;],
+        ImageFormat.CH_RGGB : [&#39;R&#39;,&#39;Gr&#39;,&#39;Gb&#39;,&#39;B&#39;],
+        ImageFormat.CH_GRBG : [&#39;Gr&#39;,&#39;R&#39;,&#39;B&#39;,&#39;Gb&#39;],
+        ImageFormat.CH_GBRG : [&#39;Gb&#39;,&#39;B&#39;,&#39;R&#39;,&#39;Gr&#39;],
+        ImageFormat.CH_BGGR : [&#39;B&#39;,&#39;Gb&#39;,&#39;Gr&#39;,&#39;R&#39;],
+    }[channels]
+    assert line.shape[1] == len(colors), f&#34;Error: Mismatch between imageformat and number of channels&#34;
+
+    nb_values = line.shape[0]
+    step_x = float(width) / nb_values
+    x_range = np.array(range(0, nb_values))
+    x_pos = start_x + (x_range+0.5)*step_x
+
+    max_val = np.max(line)
+    line = line.astype(np.float32)
+    in_margin = 2
+    in_start_y = start_y - in_margin
+    in_height  = height - 2*in_margin
+    for channel in range(len(colors)):
+        pen.setColor(qcolors[colors[channel]])
+        painter.setPen(pen)
+        # apply a small Gaussian filtering to histogram curve
+        path = QtGui.QPainterPath()
+        y_pos = (in_start_y - line[:,channel]*(in_height/max_val)+0.5).astype(np.uint32)
+        path.moveTo(x_pos[0], y_pos[0])
+        for n in range(1,len(x_range)):
+            path.lineTo(x_pos[n], y_pos[n])
+        painter.drawPath(path)</code></pre>
+</details>
+</dd>
 <dt id="qimview.image_viewers.image_viewer.ImageViewer.display_message"><code class="name flex">
 <span>def <span class="ident">display_message</span></span>(<span>self, im_pos: Optional[Tuple[int, int]], scale=None) ‑> str</span>
 </code></dt>
@@ -1550,11 +1852,11 @@ def verbose(self):
 <pre><code class="python">def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -&gt; str:
     text : str = self.image_name
     if self.show_cursor and im_pos:
-        text +=  f&#34;\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}&#34;
+        text +=  f&#34;\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}&#34;
         if scale is not None:
             text += f&#34;\n x{scale:0.2f}&#34;
         im_x, im_y = im_pos
-        values = self.cv_image.data[im_y, im_x]
+        values = self._image.data[im_y, im_x]
         text += f&#34;\n pos {im_x:4}, {im_y:4} \n rgb {values}&#34;
 
     if self.show_overlay:
@@ -1645,7 +1947,7 @@ def verbose(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def get_image(self):
-    return self.cv_image</code></pre>
+    return self._image</code></pre>
 </details>
 </dd>
 <dt id="qimview.image_viewers.image_viewer.ImageViewer.is_active"><code class="name flex">
@@ -1671,10 +1973,22 @@ def verbose(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def key_press_event(self, event, wsize):
-    print(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
+    self.print_log(f&#34;ImageViewer: key_press_event {event.key()}&#34;)
     if type(event) == QtGui.QKeyEvent:
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        if event.key() == QtCore.Qt.Key_F11:
+
+        if event.key() == QtKeys.Key_F1:
+            import qimview
+            mb = QtWidgets.QMessageBox(self)
+            mb.setWindowTitle(f&#34;qimview {qimview.__version__}: MultiView help&#34;)
+            mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+            mb.setText(
+                &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki&#39;&gt;qimview&lt;/a&gt;&lt;br&gt;&#34;
+                &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/3.-Image-Viewers&#39;&gt;Image Viewer&lt;/a&gt;&#34;)
+            mb.exec()
+            event.accept()
+            return
+
+        if event.key() == QtKeys.Key_F11:
             self.toggle_fullscreen(event)
             return
 
@@ -1689,8 +2003,8 @@ def verbose(self):
         #     self.current_scale = 2
 
         # select upper left crop
-        key_list.append(QtCore.Qt.Key_B)
-        if event.key() == QtCore.Qt.Key_B:
+        key_list.append(QtKeys.Key_B)
+        if event.key() == QtKeys.Key_B:
             self.current_dx = -wsize.width() / 4
             self.current_dy = -wsize.height() / 4
             self.current_scale = 2
@@ -1710,38 +2024,48 @@ def verbose(self):
         #     self.current_scale = 2
 
         # select full crop
-        key_list.append(QtCore.Qt.Key_F)
-        if event.key() == QtCore.Qt.Key_F:
+        key_list.append(QtKeys.Key_F)
+        if event.key() == QtKeys.Key_F:
             self.output_crop = (0., 0., 1., 1.)
             self.current_dx = 0
             self.current_dy = 0
             self.current_scale = 1
 
         # toggle antialiasing
-        key_list.append(QtCore.Qt.Key_A)
-        if event.key() == QtCore.Qt.Key_A:
+        key_list.append(QtKeys.Key_A)
+        if event.key() == QtKeys.Key_A:
             self.antialiasing = not self.antialiasing
             print(f&#34;antialiasing {self.antialiasing}&#34;)
 
         # toggle histograph
-        key_list.append(QtCore.Qt.Key_H)
-        if event.key() == QtCore.Qt.Key_H:
+        key_list.append(QtKeys.Key_H)
+        if event.key() == QtKeys.Key_H:
             self.show_histogram = not self.show_histogram
 
         # toggle overlay
-        key_list.append(QtCore.Qt.Key_O)
-        if event.key() == QtCore.Qt.Key_O:
+        key_list.append(QtKeys.Key_O)
+        if event.key() == QtKeys.Key_O:
             self.show_overlay = not self.show_overlay
 
         # C: toggle cursor
-        key_list.append(QtCore.Qt.Key_C)
-        if event.key() == QtCore.Qt.Key_C:
+        key_list.append(QtKeys.Key_C)
+        if event.key() == QtKeys.Key_C:
             self.show_cursor = not self.show_cursor
 
         # D: toggle image differences
-        key_list.append(QtCore.Qt.Key_D)
-        if event.key() == QtCore.Qt.Key_D:
+        key_list.append(QtKeys.Key_D)
+        if event.key() == QtKeys.Key_D:
             self.show_image_differences = not self.show_image_differences
+
+        # S: display stats on currrent image
+        key_list.append(QtKeys.Key_S)
+        if event.key() == QtKeys.Key_S:
+            self.show_stats = not self.show_stats
+
+        # I: display intensity line
+        key_list.append(QtKeys.Key_I)
+        if event.key() == QtKeys.Key_I:
+            self.show_intensity_line = not self.show_intensity_line
 
         if event.key() in key_list:
             self.viewer_update()
@@ -1764,6 +2088,14 @@ def verbose(self):
 </summary>
 <pre><code class="python">def mouse_double_click_event(self, event):
     self.print_log(&#34;double click &#34;)
+    # Check if double click is on histogram, if so, toggle histogram size
+    if self._histo_rect and self._histo_rect.contains(event.x(), event.y()):
+        # scale loops from 1 to 3 
+        self._histo_scale = (self._histo_scale % 3) + 1 
+        self.viewer_update()
+        event.accept()
+        return
+    # Else set current viewer active
     self.set_active()
     self.viewer_update()
     if self.synchronize_viewer is not None:
@@ -1789,14 +2121,14 @@ def verbose(self):
     self.mouse_y = event.y()
     if self.show_overlay:
         self.viewer_update()
-    if event.buttons() &amp; QtCore.Qt.LeftButton:
+    if event.buttons() &amp; QtMouse.LeftButton:
         self.mouse_dx = event.x() - self.lastPos.x()
         self.mouse_dy = - (event.y() - self.lastPos.y())
         self.viewer_update()
         self.synchronize(self)
         event.accept()
     else:
-        if event.buttons() &amp; QtCore.Qt.RightButton:
+        if event.buttons() &amp; QtMouse.RightButton:
             # right button zoom
             self.mouse_zx = event.x() - self.lastPos.x()
             self.mouse_zy = - (event.y() - self.lastPos.y())
@@ -1821,7 +2153,7 @@ def verbose(self):
 </summary>
 <pre><code class="python">def mouse_press_event(self, event):
     self.lastPos = event.pos()
-    if event.buttons() &amp; QtCore.Qt.RightButton:
+    if event.buttons() &amp; QtMouse.RightButton:
         event.accept()</code></pre>
 </details>
 </dd>
@@ -1835,14 +2167,14 @@ def verbose(self):
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">def mouse_release_event(self, event):
-    if event.button() &amp; QtCore.Qt.LeftButton:
+    if event.button() &amp; QtMouse.LeftButton:
         self.current_dx, self.current_dy = self.check_translation()
         self.mouse_dy = 0
         self.mouse_dx = 0
         event.accept()
-    if event.button() &amp; QtCore.Qt.RightButton:
-        if self.cv_image is not None:
-            self.current_scale = self.new_scale(self.mouse_zy, self.cv_image.data.shape[0])
+    if event.button() &amp; QtMouse.RightButton:
+        if self._image is not None:
+            self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
         self.mouse_zy = 0
         self.mouse_zx = 0
         event.accept()
@@ -1867,9 +2199,10 @@ def verbose(self):
     # print(&#34;delta = {}&#34;.format(delta))
     coeff = delta/5
     # coeff = 20 if delta &gt; 0 else -20
-    self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
-    self.viewer_update()
-    self.synchronize(self)</code></pre>
+    if self._image:
+        self.current_scale = self.new_scale(coeff, self._image.data.shape[0])
+        self.viewer_update()
+        self.synchronize(self)</code></pre>
 </details>
 </dd>
 <dt id="qimview.image_viewers.image_viewer.ImageViewer.new_scale"><code class="name flex">
@@ -1968,7 +2301,7 @@ def verbose(self):
 </details>
 </dd>
 <dt id="qimview.image_viewers.image_viewer.ImageViewer.set_image"><code class="name flex">
-<span>def <span class="ident">set_image</span></span>(<span>self, image)</span>
+<span>def <span class="ident">set_image</span></span>(<span>self, image: Optional[<a title="qimview.utils.viewer_image.ViewerImage" href="../utils/viewer_image.html#qimview.utils.viewer_image.ViewerImage">ViewerImage</a>])</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1976,18 +2309,18 @@ def verbose(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_image(self, image):
-    is_different = (self.cv_image is None) or (self.cv_image is not image)
+<pre><code class="python">def set_image(self, image : Optional[ViewerImage]):
+    is_different = (self._image is None) or (self._image is not image)
     if image is not None:
         self.print_log(&#39;set_image({}): is_different = {}&#39;.format(image.data.shape, is_different))
     if is_different:
-        self.cv_image = image
+        self._image = image
         self.image_id += 1
     return is_different</code></pre>
 </details>
 </dd>
 <dt id="qimview.image_viewers.image_viewer.ImageViewer.set_image_ref"><code class="name flex">
-<span>def <span class="ident">set_image_ref</span></span>(<span>self, image_ref=None)</span>
+<span>def <span class="ident">set_image_ref</span></span>(<span>self, image_ref: Optional[<a title="qimview.utils.viewer_image.ViewerImage" href="../utils/viewer_image.html#qimview.utils.viewer_image.ViewerImage">ViewerImage</a>] = None)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -1995,10 +2328,10 @@ def verbose(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_image_ref(self, image_ref=None):
-    is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+<pre><code class="python">def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
+    is_different = (self._image_ref is None) or (self._image_ref is not image_ref)
     if is_different:
-        self.cv_image_ref = image_ref
+        self._image_ref = image_ref
         self.image_ref_id += 1</code></pre>
 </details>
 </dd>
@@ -2082,15 +2415,17 @@ def verbose(self):
     other_viewer.current_scale = self.current_scale
     other_viewer.current_dx = self.current_dx
     other_viewer.current_dy = self.current_dy
-    other_viewer.mouse_dx = self.mouse_dx
-    other_viewer.mouse_dy = self.mouse_dy
-    other_viewer.mouse_zx = self.mouse_zx
-    other_viewer.mouse_zy = self.mouse_zy
-    other_viewer.mouse_x = self.mouse_x
-    other_viewer.mouse_y = self.mouse_y
+    other_viewer.mouse_dx   = self.mouse_dx
+    other_viewer.mouse_dy   = self.mouse_dy
+    other_viewer.mouse_zx   = self.mouse_zx
+    other_viewer.mouse_zy   = self.mouse_zy
+    other_viewer.mouse_x    = self.mouse_x
+    other_viewer.mouse_y    = self.mouse_y
 
-    other_viewer.show_histogram = self.show_histogram
-    other_viewer.show_cursor    = self.show_cursor</code></pre>
+    other_viewer.show_histogram      = self.show_histogram
+    other_viewer.show_cursor         = self.show_cursor
+    other_viewer.show_intensity_line = self.show_intensity_line
+    other_viewer._histo_scale        = self._histo_scale</code></pre>
 </details>
 </dd>
 <dt id="qimview.image_viewers.image_viewer.ImageViewer.toggle_fullscreen"><code class="name flex">
@@ -2104,22 +2439,28 @@ def verbose(self):
 </summary>
 <pre><code class="python">def toggle_fullscreen(self, event):
     print(f&#34;toggle_fullscreen&#34;)
+    if not issubclass(self.__class__,QtWidgets.QWidget):
+        print(f&#34;Cannot use toggle_fullscreen on a class that is not a QWidget&#34;)
+        return
     # Should be inside a layout
     if self.before_max_parent is None:
         if self.parent() is not None and (playout := self.parent().layout()) is not None:
             if self.find_in_layout(playout):
                 self.before_max_parent = self.parent()
                 self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                self.replaced_viewer = self
                 self.parent().layout().replaceWidget(self, self.replacing_widget)
+                # We need to go up from the parent widget to the main window to get its geometry
+                # so that the fullscreen is display on the same monitor
+                toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                 self.setParent(None)
+                if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                 self.showFullScreen()
-                # self.showMaximized()
                 event.accept()
                 return
     if self.before_max_parent is not None:
         self.setParent(self.before_max_parent)
-        self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+        self.parent().layout().replaceWidget(self.replacing_widget, self)
         self.replacing_widget = self.before_max_parent = None
         # self.resize(self.before_max_size)
         self.show()
@@ -2138,8 +2479,8 @@ def verbose(self):
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def viewer_update(self):
-    print(&#34;ImageViewer viewer_update&#34;)
+<pre><code class="python">@abstractmethod
+def viewer_update(self):
     pass</code></pre>
 </details>
 </dd>
@@ -2196,6 +2537,7 @@ def verbose(self):
 <li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.compute_histogram" href="#qimview.image_viewers.image_viewer.ImageViewer.compute_histogram">compute_histogram</a></code></li>
 <li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.compute_histogram_Cpp" href="#qimview.image_viewers.image_viewer.ImageViewer.compute_histogram_Cpp">compute_histogram_Cpp</a></code></li>
 <li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_histogram" href="#qimview.image_viewers.image_viewer.ImageViewer.display_histogram">display_histogram</a></code></li>
+<li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_intensity_line" href="#qimview.image_viewers.image_viewer.ImageViewer.display_intensity_line">display_intensity_line</a></code></li>
 <li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_message" href="#qimview.image_viewers.image_viewer.ImageViewer.display_message">display_message</a></code></li>
 <li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_text" href="#qimview.image_viewers.image_viewer.ImageViewer.display_text">display_text</a></code></li>
 <li><code><a title="qimview.image_viewers.image_viewer.ImageViewer.display_timing" href="#qimview.image_viewers.image_viewer.ImageViewer.display_timing">display_timing</a></code></li>

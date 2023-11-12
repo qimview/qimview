@@ -49,6 +49,7 @@ def main():
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationDisplayName(&#39;mview &#39; + &#39; &#39;.join(sys.argv[1:]))
 
     filenames = []
     if len(_params[&#39;images&#39;]) == 0:
@@ -92,7 +93,7 @@ def main():
     nb_inputs = len(filenames)
     mv.show()
     if nb_inputs&gt;=1 and nb_inputs&lt;=9:
-        mv.update_viewer_layout(f&#39;{nb_inputs}&#39;)
+        mv.set_number_of_viewers(nb_inputs)
         mv.viewer_grid_layout.update()
         mv.update_image()
         mv.setFocus()
@@ -135,6 +136,7 @@ if __name__ == &#39;__main__&#39;:
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationDisplayName(&#39;mview &#39; + &#39; &#39;.join(sys.argv[1:]))
 
     filenames = []
     if len(_params[&#39;images&#39;]) == 0:
@@ -178,7 +180,7 @@ if __name__ == &#39;__main__&#39;:
     nb_inputs = len(filenames)
     mv.show()
     if nb_inputs&gt;=1 and nb_inputs&lt;=9:
-        mv.update_viewer_layout(f&#39;{nb_inputs}&#39;)
+        mv.set_number_of_viewers(nb_inputs)
         mv.viewer_grid_layout.update()
         mv.update_image()
         mv.setFocus()

@@ -35,8 +35,8 @@ from ..parameters.numeric_parameter_gui import NumericParameterGui
 import sys
 
 class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.current_scale = 1
 
     def new_scale(self, mouse_zy, height):
@@ -67,11 +67,11 @@ class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
         # event.ignore()
 
 class VideoPlayer(QtWidgets.QWidget):
-    def __init__(self, open_button=False):
-        super().__init__()
+    def __init__(self, parent, open_button=False):
+        super().__init__(parent)
 
         self.setWindowTitle(&#34;QMediaPlayer&#34;)
-        self.setGeometry(350, 100, 700, 500)
+        # self.setGeometry(350, 100, 700, 500)
         self.setWindowIcon(QtGui.QIcon(&#39;player.png&#39;))
 
         p = self.palette()
@@ -89,7 +89,7 @@ class VideoPlayer(QtWidgets.QWidget):
     def init_ui(self):
 
         # create media player objectexamples_qtvlc.py
-        self.mediaPlayer = QtMultimedia.QMediaPlayer(None)
+        self.mediaPlayer = QtMultimedia.QMediaPlayer(self)
         # self.mediaPlayer.setNotifyInterval(20)
 
         # create videowidget object
@@ -266,7 +266,7 @@ if __name__ == &#39;__main__&#39;:
 <dl>
 <dt id="qimview.video_player.video_player.VideoPlayer"><code class="flex name class">
 <span>class <span class="ident">VideoPlayer</span></span>
-<span>(</span><span>open_button=False)</span>
+<span>(</span><span>parent, open_button=False)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>QWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
@@ -278,11 +278,11 @@ See help(type(self)) for accurate signature.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class VideoPlayer(QtWidgets.QWidget):
-    def __init__(self, open_button=False):
-        super().__init__()
+    def __init__(self, parent, open_button=False):
+        super().__init__(parent)
 
         self.setWindowTitle(&#34;QMediaPlayer&#34;)
-        self.setGeometry(350, 100, 700, 500)
+        # self.setGeometry(350, 100, 700, 500)
         self.setWindowIcon(QtGui.QIcon(&#39;player.png&#39;))
 
         p = self.palette()
@@ -300,7 +300,7 @@ See help(type(self)) for accurate signature.</p></div>
     def init_ui(self):
 
         # create media player objectexamples_qtvlc.py
-        self.mediaPlayer = QtMultimedia.QMediaPlayer(None)
+        self.mediaPlayer = QtMultimedia.QMediaPlayer(self)
         # self.mediaPlayer.setNotifyInterval(20)
 
         # create videowidget object
@@ -516,7 +516,7 @@ See help(type(self)) for accurate signature.</p></div>
 <pre><code class="python">def init_ui(self):
 
     # create media player objectexamples_qtvlc.py
-    self.mediaPlayer = QtMultimedia.QMediaPlayer(None)
+    self.mediaPlayer = QtMultimedia.QMediaPlayer(self)
     # self.mediaPlayer.setNotifyInterval(20)
 
     # create videowidget object
@@ -757,6 +757,7 @@ See help(type(self)) for accurate signature.</p></div>
 </dd>
 <dt id="qimview.video_player.video_player.myVideoWidget"><code class="flex name class">
 <span>class <span class="ident">myVideoWidget</span></span>
+<span>(</span><span>parent=None)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>QVideoWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None) -&gt; None</p>
@@ -768,8 +769,8 @@ See help(type(self)) for accurate signature.</p></div>
 <span>Expand source code</span>
 </summary>
 <pre><code class="python">class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.current_scale = 1
 
     def new_scale(self, mouse_zy, height):

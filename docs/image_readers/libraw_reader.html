@@ -26,14 +26,20 @@
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">import rawpy
+<pre><code class="python">try:
+  import rawpy
+except:
+  has_rawpy = False
+else:
+  has_rawpy = True
 import math
 import numpy as np
-from  qimview.utils.viewer_image import ViewerImage, ImageFormat
+from qimview.utils.viewer_image import ViewerImage, ImageFormat
+from io import BytesIO
 
 def read_libraw(image_filename, image_buffer, read_size=&#39;full&#39;, use_RGB=True, verbose=False):
     if image_buffer:
-        raw = rawpy.imread(image_buffer)
+        raw = rawpy.imread(BytesIO(image_buffer))
     else:
         raw = rawpy.imread(image_filename)
     height, width = raw.raw_image.shape
@@ -60,7 +66,7 @@ def read_libraw(image_filename, image_buffer, read_size=&#39;full&#39;, use_RGB=
 
 def libraw_supported_formats():
     # Need to find the complete list of supported formats
-    return [&#34;.ARW&#34;, &#34;.GPR&#34;]</code></pre>
+    return [&#34;.ARW&#34;, &#34;.GPR&#34;, &#34;.DNG&#34; ]</code></pre>
 </details>
 </section>
 <section>
@@ -81,7 +87,7 @@ def libraw_supported_formats():
 </summary>
 <pre><code class="python">def libraw_supported_formats():
     # Need to find the complete list of supported formats
-    return [&#34;.ARW&#34;, &#34;.GPR&#34;]</code></pre>
+    return [&#34;.ARW&#34;, &#34;.GPR&#34;, &#34;.DNG&#34; ]</code></pre>
 </details>
 </dd>
 <dt id="qimview.image_readers.libraw_reader.read_libraw"><code class="name flex">
@@ -95,7 +101,7 @@ def libraw_supported_formats():
 </summary>
 <pre><code class="python">def read_libraw(image_filename, image_buffer, read_size=&#39;full&#39;, use_RGB=True, verbose=False):
     if image_buffer:
-        raw = rawpy.imread(image_buffer)
+        raw = rawpy.imread(BytesIO(image_buffer))
     else:
         raw = rawpy.imread(image_filename)
     height, width = raw.raw_image.shape

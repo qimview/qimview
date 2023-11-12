@@ -51,7 +51,7 @@ class ViewerType(Enum):
 
 class MultiView(QtWidgets.QWidget):
 
-    def __init__(self, parent=None, viewer_mode=ViewerType.QT_VIEWER, nb_viewers=1):
+    def __init__(self, parent=None, viewer_mode: ViewerType =ViewerType.QT_VIEWER, nb_viewers: int =1) -&gt; None:
         &#34;&#34;&#34;
         :param parent:
         :param viewer_mode:
@@ -61,7 +61,7 @@ class MultiView(QtWidgets.QWidget):
 
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
 
-        self.nb_viewers_used = nb_viewers
+        self.nb_viewers_used : int = nb_viewers
         self.allocated_image_viewers = []  # keep allocated image viewers here
         self.image_viewers = []
         self.image_viewer_classes = {
@@ -102,8 +102,8 @@ class MultiView(QtWidgets.QWidget):
         self.default_raw_bayer = &#39;Read&#39;
         self.current_raw_bayer = self.default_raw_bayer
 
-        self.viewer_layouts = [&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;2+2&#39;, &#39;3+2&#39;, &#39;3+3&#39;, &#39;4+3&#39;, &#39;4+4&#39;, &#39;3+3+3&#39;]
-        self.default_viewer_layout = &#39;1&#39;
+        # Number of viewers currently displayed
+        self.nb_viewers_used : int = 0
 
         # save images of last visited row
         self.cache = ImageCache()
@@ -127,6 +127,10 @@ class MultiView(QtWidgets.QWidget):
         self.output_label_current_image   : str = &#39;&#39;
         self.output_label_reference_image : str = &#39;&#39;
         self.add_context_menu()
+        
+        # Parameter to set the number of columns in the viewer grid layout
+        # if 0: computed automatically
+        self.max_columns : int = 0 
 
     def set_key_up_callback(self, c):
         self.key_up_callback = c
@@ -160,7 +164,7 @@ class MultiView(QtWidgets.QWidget):
             viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
-        self.update_viewer_layout(self.current_viewer_layout)
+        self.set_number_of_viewers(self.nb_viewers_used)
         self.viewer_grid_layout.update()
         self.update_image()
 
@@ -269,7 +273,6 @@ class MultiView(QtWidgets.QWidget):
         :return:
         &#34;&#34;&#34;
         # if set_viewers, we force the viewer layout and images based on the list
-        self.nb_viewers_used = eval(self.current_viewer_layout)
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
@@ -414,7 +417,7 @@ class MultiView(QtWidgets.QWidget):
         self.viewer_grid_layout = QtWidgets.QGridLayout()
         self.viewer_grid_layout.setHorizontalSpacing(1)
         self.viewer_grid_layout.setVerticalSpacing(1)
-        self.update_viewer_layout(&#39;1&#39;)
+        self.set_number_of_viewers(1)
         vertical_layout.addLayout(self.viewer_grid_layout, 1)
 
         self.figures_widget = QtWidgets.QWidget()
@@ -443,7 +446,6 @@ class MultiView(QtWidgets.QWidget):
         # print(f&#34;get_output_image({im_string_id}) &#34;)
         start = get_time()
 
-        # Read both clean and original images and save them in dict as QPixmaps
         image_filename = self.image_dict[im_string_id]
         image_transform = None
         self.print_log(f&#34;MultiView.get_output_image() image_filename:{image_filename}&#34;)
@@ -486,7 +488,6 @@ class MultiView(QtWidgets.QWidget):
                 before adding them. Defaults to False.
         &#34;&#34;&#34;        
         # print(f&#34;cache_read_images({image_filenames}) &#34;)
-        # Read both clean and original images and save them in dict as QPixmaps
         image_transform = None
         if reload:
             for f in image_filenames:
@@ -639,27 +640,24 @@ class MultiView(QtWidgets.QWidget):
         # if self.show_timing():
         print(f&#34; Update image took {(get_time() - update_image_start)*1000:0.0f} ms&#34;)
 
-    def update_viewer_layout(self, layout_name=&#39;1&#39;):
-        self.print_log(&#34;*** update_viewer_layout()&#34;)
-        # # Action from menu ...
-        # menu = self.option_viewer_layout
-        # for action in menu.actions():
-        #     if action.text() == self.current_viewer_layout:
-        #         action.setChecked(False)
-        # for action in menu.actions():
-        #     if action.isChecked():
-        #         self.current_viewer_layout = action.text()
+    def set_number_of_viewers(self, nb_viewers: int = 1, max_columns : int = 0) -&gt; None:
+        self.print_log(&#34;*** set_number_of_viewers()&#34;)
 
-        self.current_viewer_layout = layout_name
         # 1. remove current viewers from grid layout
         # self.viewer_grid_layout.hide()
         for v in self.image_viewers:
             v.hide()
             self.viewer_grid_layout.removeWidget(v)
 
-        self.nb_viewers_used = eval(self.current_viewer_layout)
-        col_length = int(math.sqrt(self.nb_viewers_used))
-        row_length = int(math.ceil(self.nb_viewers_used / col_length))
+        self.nb_viewers_used : int = nb_viewers
+        print(f&#34;max_columns = {max_columns}&#34;)
+        if max_columns&gt;0:
+            row_length = min(self.nb_viewers_used, max_columns)
+            col_length = int(math.ceil(self.nb_viewers_used / row_length))
+        else:
+            # Find best configuration to fill the space based on image size and widget size?
+            col_length = int(math.sqrt(self.nb_viewers_used))
+            row_length = int(math.ceil(self.nb_viewers_used / col_length))
         self.print_log(&#39;col_length = {} row_length = {}&#39;.format(col_length, row_length))
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
@@ -668,24 +666,16 @@ class MultiView(QtWidgets.QWidget):
             self.allocated_image_viewers.append(viewer)
 
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
-        # self.image_viewers = []
-        # for n in range(self.nb_viewers_used):
-        #     self.image_viewers.append(self.allocated_image_viewers[n])
 
         for n in range(self.nb_viewers_used):
             self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
             self.image_viewers[n].hide()
 
-        # for n in range(row_length):
-        #       self.viewer_grid_layout.setColumnStretch(n, 1)
-        # for n in range(col_length):
-        #       self.viewer_grid_layout.setRowStretch(n, 1)
-
         # for n in range(self.nb_viewers_used):
         #     print(&#34;Viewer {} size {}&#34;.format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
 
-    def update_viewer_layout_callback(self):
-        self.update_viewer_layout()
+    def set_number_of_viewers_callback(self):
+        self.set_number_of_viewers()
         self.viewer_grid_layout.update()
         self.update_image()
 
@@ -723,6 +713,9 @@ class MultiView(QtWidgets.QWidget):
 
     def toggle_fullscreen(self, event):
         print(f&#34;toggle_fullscreen&#34;)
+        if not issubclass(self.__class__,QtWidgets.QWidget):
+            print(f&#34;Cannot use toggle_fullscreen on a class that is not a QWidget&#34;)
+            return
         # Should be inside a layout
         if self.before_max_parent is None:
             print(f&#34;self.parent() is not None {self.parent() is not None}&#34;)
@@ -731,16 +724,19 @@ class MultiView(QtWidgets.QWidget):
                 if self.find_in_layout(playout):
                     self.before_max_parent = self.parent()
                     self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.replaced_viewer = self
                     self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    # We need to go up from the parent widget to the main window to get its geometry
+                    # so that the fullscreen is display on the same monitor
+                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                     self.setParent(None)
+                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                     self.showFullScreen()
-                    # self.showMaximized()
                     event.accept()
                     return
         if self.before_max_parent is not None:
             self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.parent().layout().replaceWidget(self.replacing_widget, self)
             self.replacing_widget = self.before_max_parent = None
             # self.resize(self.before_max_size)
             self.show()
@@ -760,6 +756,26 @@ class MultiView(QtWidgets.QWidget):
             if self.show_trace():
                 print(&#34;key is &#34;, event.key())
             modifiers = QtWidgets.QApplication.keyboardModifiers()
+            # F1: open help in browser
+            if event.key() == QtCore.Qt.Key_F1:
+                import qimview
+                mb = QtWidgets.QMessageBox(self)
+                mb.setWindowTitle(f&#34;qimview {qimview.__version__}: MultiView help&#34;)
+                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+                mb.setText(
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki&#39;&gt;qimview&lt;/a&gt;&lt;br&gt;&#34;
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer&#39;&gt;MultiImage Viewer&lt;/a&gt;&lt;br&gt;&#34;
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/3.-Image-Viewers&#39;&gt;Image Viewer&lt;/a&gt;&#34;)
+                mb.exec()
+                event.accept()
+                return
+
+            # F5: reload images
+            if event.key() == QtCore.Qt.Key_F5:
+                self.update_image(reload=True)
+                event.accept()
+                return
+
             if event.key() == QtCore.Qt.Key_F11:
                 # Should be inside a layout
                 print(&#34;MultiView F11 pressed&#34;)
@@ -794,9 +810,9 @@ class MultiView(QtWidgets.QWidget):
                 return
             # print(f&#34;event.modifiers {event.modifiers()}&#34;)
             # if not event.modifiers():
-            for n in range(len(self.viewer_layouts)):
-                if event.key() == QtCore.Qt.Key_0 + (n+1):
-                    self.update_viewer_layout(self.viewer_layouts[n])
+            for n in range(1, 10):
+                if event.key() == QtCore.Qt.Key_0 + n:
+                    self.set_number_of_viewers(n)
                     self.viewer_grid_layout.update()
                     self.update_image()
                     self.setFocus()
@@ -831,13 +847,16 @@ class MultiView(QtWidgets.QWidget):
                         self.update_image(self.image_list[(n+1)%nb_images])
                         event.accept()
                         return
-
-            # R: reload images
-            if event.key() == QtCore.Qt.Key_R:
+                
+            # G: display number of columns
+            if event.key() == QtCore.Qt.Key_G:
+                self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
+                self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
                 self.update_image(reload=True)
+                self.setFocus()
                 event.accept()
                 return
-                
+
         else:
             event.ignore()</code></pre>
 </details>
@@ -853,7 +872,7 @@ class MultiView(QtWidgets.QWidget):
 <dl>
 <dt id="qimview.image_viewers.multi_view.MultiView"><code class="flex name class">
 <span>class <span class="ident">MultiView</span></span>
-<span>(</span><span>parent=None, viewer_mode=ViewerType.QT_VIEWER, nb_viewers=1)</span>
+<span>(</span><span>parent=None, viewer_mode: <a title="qimview.image_viewers.multi_view.ViewerType" href="#qimview.image_viewers.multi_view.ViewerType">ViewerType</a> = ViewerType.QT_VIEWER, nb_viewers: int = 1)</span>
 </code></dt>
 <dd>
 <div class="desc"><p>QWidget(self, parent: Optional[PySide6.QtWidgets.QWidget] = None, f: PySide6.QtCore.Qt.WindowType = Default(Qt.WindowFlags)) -&gt; None</p>
@@ -866,7 +885,7 @@ class MultiView(QtWidgets.QWidget):
 </summary>
 <pre><code class="python">class MultiView(QtWidgets.QWidget):
 
-    def __init__(self, parent=None, viewer_mode=ViewerType.QT_VIEWER, nb_viewers=1):
+    def __init__(self, parent=None, viewer_mode: ViewerType =ViewerType.QT_VIEWER, nb_viewers: int =1) -&gt; None:
         &#34;&#34;&#34;
         :param parent:
         :param viewer_mode:
@@ -876,7 +895,7 @@ class MultiView(QtWidgets.QWidget):
 
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
 
-        self.nb_viewers_used = nb_viewers
+        self.nb_viewers_used : int = nb_viewers
         self.allocated_image_viewers = []  # keep allocated image viewers here
         self.image_viewers = []
         self.image_viewer_classes = {
@@ -917,8 +936,8 @@ class MultiView(QtWidgets.QWidget):
         self.default_raw_bayer = &#39;Read&#39;
         self.current_raw_bayer = self.default_raw_bayer
 
-        self.viewer_layouts = [&#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;2+2&#39;, &#39;3+2&#39;, &#39;3+3&#39;, &#39;4+3&#39;, &#39;4+4&#39;, &#39;3+3+3&#39;]
-        self.default_viewer_layout = &#39;1&#39;
+        # Number of viewers currently displayed
+        self.nb_viewers_used : int = 0
 
         # save images of last visited row
         self.cache = ImageCache()
@@ -942,6 +961,10 @@ class MultiView(QtWidgets.QWidget):
         self.output_label_current_image   : str = &#39;&#39;
         self.output_label_reference_image : str = &#39;&#39;
         self.add_context_menu()
+        
+        # Parameter to set the number of columns in the viewer grid layout
+        # if 0: computed automatically
+        self.max_columns : int = 0 
 
     def set_key_up_callback(self, c):
         self.key_up_callback = c
@@ -975,7 +998,7 @@ class MultiView(QtWidgets.QWidget):
             viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
-        self.update_viewer_layout(self.current_viewer_layout)
+        self.set_number_of_viewers(self.nb_viewers_used)
         self.viewer_grid_layout.update()
         self.update_image()
 
@@ -1084,7 +1107,6 @@ class MultiView(QtWidgets.QWidget):
         :return:
         &#34;&#34;&#34;
         # if set_viewers, we force the viewer layout and images based on the list
-        self.nb_viewers_used = eval(self.current_viewer_layout)
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
@@ -1229,7 +1251,7 @@ class MultiView(QtWidgets.QWidget):
         self.viewer_grid_layout = QtWidgets.QGridLayout()
         self.viewer_grid_layout.setHorizontalSpacing(1)
         self.viewer_grid_layout.setVerticalSpacing(1)
-        self.update_viewer_layout(&#39;1&#39;)
+        self.set_number_of_viewers(1)
         vertical_layout.addLayout(self.viewer_grid_layout, 1)
 
         self.figures_widget = QtWidgets.QWidget()
@@ -1258,7 +1280,6 @@ class MultiView(QtWidgets.QWidget):
         # print(f&#34;get_output_image({im_string_id}) &#34;)
         start = get_time()
 
-        # Read both clean and original images and save them in dict as QPixmaps
         image_filename = self.image_dict[im_string_id]
         image_transform = None
         self.print_log(f&#34;MultiView.get_output_image() image_filename:{image_filename}&#34;)
@@ -1301,7 +1322,6 @@ class MultiView(QtWidgets.QWidget):
                 before adding them. Defaults to False.
         &#34;&#34;&#34;        
         # print(f&#34;cache_read_images({image_filenames}) &#34;)
-        # Read both clean and original images and save them in dict as QPixmaps
         image_transform = None
         if reload:
             for f in image_filenames:
@@ -1454,27 +1474,24 @@ class MultiView(QtWidgets.QWidget):
         # if self.show_timing():
         print(f&#34; Update image took {(get_time() - update_image_start)*1000:0.0f} ms&#34;)
 
-    def update_viewer_layout(self, layout_name=&#39;1&#39;):
-        self.print_log(&#34;*** update_viewer_layout()&#34;)
-        # # Action from menu ...
-        # menu = self.option_viewer_layout
-        # for action in menu.actions():
-        #     if action.text() == self.current_viewer_layout:
-        #         action.setChecked(False)
-        # for action in menu.actions():
-        #     if action.isChecked():
-        #         self.current_viewer_layout = action.text()
+    def set_number_of_viewers(self, nb_viewers: int = 1, max_columns : int = 0) -&gt; None:
+        self.print_log(&#34;*** set_number_of_viewers()&#34;)
 
-        self.current_viewer_layout = layout_name
         # 1. remove current viewers from grid layout
         # self.viewer_grid_layout.hide()
         for v in self.image_viewers:
             v.hide()
             self.viewer_grid_layout.removeWidget(v)
 
-        self.nb_viewers_used = eval(self.current_viewer_layout)
-        col_length = int(math.sqrt(self.nb_viewers_used))
-        row_length = int(math.ceil(self.nb_viewers_used / col_length))
+        self.nb_viewers_used : int = nb_viewers
+        print(f&#34;max_columns = {max_columns}&#34;)
+        if max_columns&gt;0:
+            row_length = min(self.nb_viewers_used, max_columns)
+            col_length = int(math.ceil(self.nb_viewers_used / row_length))
+        else:
+            # Find best configuration to fill the space based on image size and widget size?
+            col_length = int(math.sqrt(self.nb_viewers_used))
+            row_length = int(math.ceil(self.nb_viewers_used / col_length))
         self.print_log(&#39;col_length = {} row_length = {}&#39;.format(col_length, row_length))
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
@@ -1483,24 +1500,16 @@ class MultiView(QtWidgets.QWidget):
             self.allocated_image_viewers.append(viewer)
 
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
-        # self.image_viewers = []
-        # for n in range(self.nb_viewers_used):
-        #     self.image_viewers.append(self.allocated_image_viewers[n])
 
         for n in range(self.nb_viewers_used):
             self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
             self.image_viewers[n].hide()
 
-        # for n in range(row_length):
-        #       self.viewer_grid_layout.setColumnStretch(n, 1)
-        # for n in range(col_length):
-        #       self.viewer_grid_layout.setRowStretch(n, 1)
-
         # for n in range(self.nb_viewers_used):
         #     print(&#34;Viewer {} size {}&#34;.format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
 
-    def update_viewer_layout_callback(self):
-        self.update_viewer_layout()
+    def set_number_of_viewers_callback(self):
+        self.set_number_of_viewers()
         self.viewer_grid_layout.update()
         self.update_image()
 
@@ -1538,6 +1547,9 @@ class MultiView(QtWidgets.QWidget):
 
     def toggle_fullscreen(self, event):
         print(f&#34;toggle_fullscreen&#34;)
+        if not issubclass(self.__class__,QtWidgets.QWidget):
+            print(f&#34;Cannot use toggle_fullscreen on a class that is not a QWidget&#34;)
+            return
         # Should be inside a layout
         if self.before_max_parent is None:
             print(f&#34;self.parent() is not None {self.parent() is not None}&#34;)
@@ -1546,16 +1558,19 @@ class MultiView(QtWidgets.QWidget):
                 if self.find_in_layout(playout):
                     self.before_max_parent = self.parent()
                     self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.replaced_viewer = self
                     self.parent().layout().replaceWidget(self, self.replacing_widget)
+                    # We need to go up from the parent widget to the main window to get its geometry
+                    # so that the fullscreen is display on the same monitor
+                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                     self.setParent(None)
+                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                     self.showFullScreen()
-                    # self.showMaximized()
                     event.accept()
                     return
         if self.before_max_parent is not None:
             self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+            self.parent().layout().replaceWidget(self.replacing_widget, self)
             self.replacing_widget = self.before_max_parent = None
             # self.resize(self.before_max_size)
             self.show()
@@ -1575,6 +1590,26 @@ class MultiView(QtWidgets.QWidget):
             if self.show_trace():
                 print(&#34;key is &#34;, event.key())
             modifiers = QtWidgets.QApplication.keyboardModifiers()
+            # F1: open help in browser
+            if event.key() == QtCore.Qt.Key_F1:
+                import qimview
+                mb = QtWidgets.QMessageBox(self)
+                mb.setWindowTitle(f&#34;qimview {qimview.__version__}: MultiView help&#34;)
+                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+                mb.setText(
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki&#39;&gt;qimview&lt;/a&gt;&lt;br&gt;&#34;
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer&#39;&gt;MultiImage Viewer&lt;/a&gt;&lt;br&gt;&#34;
+                    &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/3.-Image-Viewers&#39;&gt;Image Viewer&lt;/a&gt;&#34;)
+                mb.exec()
+                event.accept()
+                return
+
+            # F5: reload images
+            if event.key() == QtCore.Qt.Key_F5:
+                self.update_image(reload=True)
+                event.accept()
+                return
+
             if event.key() == QtCore.Qt.Key_F11:
                 # Should be inside a layout
                 print(&#34;MultiView F11 pressed&#34;)
@@ -1609,9 +1644,9 @@ class MultiView(QtWidgets.QWidget):
                 return
             # print(f&#34;event.modifiers {event.modifiers()}&#34;)
             # if not event.modifiers():
-            for n in range(len(self.viewer_layouts)):
-                if event.key() == QtCore.Qt.Key_0 + (n+1):
-                    self.update_viewer_layout(self.viewer_layouts[n])
+            for n in range(1, 10):
+                if event.key() == QtCore.Qt.Key_0 + n:
+                    self.set_number_of_viewers(n)
                     self.viewer_grid_layout.update()
                     self.update_image()
                     self.setFocus()
@@ -1646,13 +1681,16 @@ class MultiView(QtWidgets.QWidget):
                         self.update_image(self.image_list[(n+1)%nb_images])
                         event.accept()
                         return
-
-            # R: reload images
-            if event.key() == QtCore.Qt.Key_R:
+                
+            # G: display number of columns
+            if event.key() == QtCore.Qt.Key_G:
+                self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
+                self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
                 self.update_image(reload=True)
+                self.setFocus()
                 event.accept()
                 return
-                
+
         else:
             event.ignore()</code></pre>
 </details>
@@ -1722,7 +1760,6 @@ before adding them. Defaults to False.</dd>
             before adding them. Defaults to False.
     &#34;&#34;&#34;        
     # print(f&#34;cache_read_images({image_filenames}) &#34;)
-    # Read both clean and original images and save them in dict as QPixmaps
     image_transform = None
     if reload:
         for f in image_filenames:
@@ -1841,7 +1878,6 @@ if not in cache reads it and add it to the cache
     # print(f&#34;get_output_image({im_string_id}) &#34;)
     start = get_time()
 
-    # Read both clean and original images and save them in dict as QPixmaps
     image_filename = self.image_dict[im_string_id]
     image_transform = None
     self.print_log(f&#34;MultiView.get_output_image() image_filename:{image_filename}&#34;)
@@ -1887,6 +1923,26 @@ if not in cache reads it and add it to the cache
         if self.show_trace():
             print(&#34;key is &#34;, event.key())
         modifiers = QtWidgets.QApplication.keyboardModifiers()
+        # F1: open help in browser
+        if event.key() == QtCore.Qt.Key_F1:
+            import qimview
+            mb = QtWidgets.QMessageBox(self)
+            mb.setWindowTitle(f&#34;qimview {qimview.__version__}: MultiView help&#34;)
+            mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+            mb.setText(
+                &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki&#39;&gt;qimview&lt;/a&gt;&lt;br&gt;&#34;
+                &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer&#39;&gt;MultiImage Viewer&lt;/a&gt;&lt;br&gt;&#34;
+                &#34;&lt;a href=&#39;https://github.com/qimview/qimview/wiki/3.-Image-Viewers&#39;&gt;Image Viewer&lt;/a&gt;&#34;)
+            mb.exec()
+            event.accept()
+            return
+
+        # F5: reload images
+        if event.key() == QtCore.Qt.Key_F5:
+            self.update_image(reload=True)
+            event.accept()
+            return
+
         if event.key() == QtCore.Qt.Key_F11:
             # Should be inside a layout
             print(&#34;MultiView F11 pressed&#34;)
@@ -1921,9 +1977,9 @@ if not in cache reads it and add it to the cache
             return
         # print(f&#34;event.modifiers {event.modifiers()}&#34;)
         # if not event.modifiers():
-        for n in range(len(self.viewer_layouts)):
-            if event.key() == QtCore.Qt.Key_0 + (n+1):
-                self.update_viewer_layout(self.viewer_layouts[n])
+        for n in range(1, 10):
+            if event.key() == QtCore.Qt.Key_0 + n:
+                self.set_number_of_viewers(n)
                 self.viewer_grid_layout.update()
                 self.update_image()
                 self.setFocus()
@@ -1958,13 +2014,16 @@ if not in cache reads it and add it to the cache
                     self.update_image(self.image_list[(n+1)%nb_images])
                     event.accept()
                     return
-
-        # R: reload images
-        if event.key() == QtCore.Qt.Key_R:
+            
+        # G: display number of columns
+        if event.key() == QtCore.Qt.Key_G:
+            self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
+            self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
             self.update_image(reload=True)
+            self.setFocus()
             event.accept()
             return
-            
+
     else:
         event.ignore()</code></pre>
 </details>
@@ -2171,7 +2230,7 @@ if not in cache reads it and add it to the cache
         viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
         self.allocated_image_viewers.append(viewer)
         self.image_viewers.append(viewer)
-    self.update_viewer_layout(self.current_viewer_layout)
+    self.set_number_of_viewers(self.nb_viewers_used)
     self.viewer_grid_layout.update()
     self.update_image()</code></pre>
 </details>
@@ -2261,6 +2320,65 @@ if not in cache reads it and add it to the cache
     self.message_cb = message_cb</code></pre>
 </details>
 </dd>
+<dt id="qimview.image_viewers.multi_view.MultiView.set_number_of_viewers"><code class="name flex">
+<span>def <span class="ident">set_number_of_viewers</span></span>(<span>self, nb_viewers: int = 1, max_columns: int = 0) ‑> None</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_number_of_viewers(self, nb_viewers: int = 1, max_columns : int = 0) -&gt; None:
+    self.print_log(&#34;*** set_number_of_viewers()&#34;)
+
+    # 1. remove current viewers from grid layout
+    # self.viewer_grid_layout.hide()
+    for v in self.image_viewers:
+        v.hide()
+        self.viewer_grid_layout.removeWidget(v)
+
+    self.nb_viewers_used : int = nb_viewers
+    print(f&#34;max_columns = {max_columns}&#34;)
+    if max_columns&gt;0:
+        row_length = min(self.nb_viewers_used, max_columns)
+        col_length = int(math.ceil(self.nb_viewers_used / row_length))
+    else:
+        # Find best configuration to fill the space based on image size and widget size?
+        col_length = int(math.sqrt(self.nb_viewers_used))
+        row_length = int(math.ceil(self.nb_viewers_used / col_length))
+    self.print_log(&#39;col_length = {} row_length = {}&#39;.format(col_length, row_length))
+    # be sure to have enough image viewers allocated
+    while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
+        viewer = self.image_viewer_class()
+        viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+        self.allocated_image_viewers.append(viewer)
+
+    self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
+
+    for n in range(self.nb_viewers_used):
+        self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
+        self.image_viewers[n].hide()
+
+    # for n in range(self.nb_viewers_used):
+    #     print(&#34;Viewer {} size {}&#34;.format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))</code></pre>
+</details>
+</dd>
+<dt id="qimview.image_viewers.multi_view.MultiView.set_number_of_viewers_callback"><code class="name flex">
+<span>def <span class="ident">set_number_of_viewers_callback</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_number_of_viewers_callback(self):
+    self.set_number_of_viewers()
+    self.viewer_grid_layout.update()
+    self.update_image()</code></pre>
+</details>
+</dd>
 <dt id="qimview.image_viewers.multi_view.MultiView.set_read_size"><code class="name flex">
 <span>def <span class="ident">set_read_size</span></span>(<span>self, read_size)</span>
 </code></dt>
@@ -2335,7 +2453,6 @@ if not in cache reads it and add it to the cache
     :return:
     &#34;&#34;&#34;
     # if set_viewers, we force the viewer layout and images based on the list
-    self.nb_viewers_used = eval(self.current_viewer_layout)
     # be sure to have enough image viewers allocated
     while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
         viewer = self.image_viewer_class()
@@ -2429,6 +2546,9 @@ if not in cache reads it and add it to the cache
 </summary>
 <pre><code class="python">def toggle_fullscreen(self, event):
     print(f&#34;toggle_fullscreen&#34;)
+    if not issubclass(self.__class__,QtWidgets.QWidget):
+        print(f&#34;Cannot use toggle_fullscreen on a class that is not a QWidget&#34;)
+        return
     # Should be inside a layout
     if self.before_max_parent is None:
         print(f&#34;self.parent() is not None {self.parent() is not None}&#34;)
@@ -2437,16 +2557,19 @@ if not in cache reads it and add it to the cache
             if self.find_in_layout(playout):
                 self.before_max_parent = self.parent()
                 self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                self.replaced_viewer = self
                 self.parent().layout().replaceWidget(self, self.replacing_widget)
+                # We need to go up from the parent widget to the main window to get its geometry
+                # so that the fullscreen is display on the same monitor
+                toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
+                while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
                 self.setParent(None)
+                if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
                 self.showFullScreen()
-                # self.showMaximized()
                 event.accept()
                 return
     if self.before_max_parent is not None:
         self.setParent(self.before_max_parent)
-        self.parent().layout().replaceWidget(self.replacing_widget, self.replaced_viewer)
+        self.parent().layout().replaceWidget(self.replacing_widget, self)
         self.replacing_widget = self.before_max_parent = None
         # self.resize(self.before_max_size)
         self.show()
@@ -2729,7 +2852,7 @@ if not in cache reads it and add it to the cache
     self.viewer_grid_layout = QtWidgets.QGridLayout()
     self.viewer_grid_layout.setHorizontalSpacing(1)
     self.viewer_grid_layout.setVerticalSpacing(1)
-    self.update_viewer_layout(&#39;1&#39;)
+    self.set_number_of_viewers(1)
     vertical_layout.addLayout(self.viewer_grid_layout, 1)
 
     self.figures_widget = QtWidgets.QWidget()
@@ -2760,76 +2883,6 @@ if not in cache reads it and add it to the cache
         viewer = self.image_viewers[n]
         # set reference image
         viewer.set_image_ref(reference_image)</code></pre>
-</details>
-</dd>
-<dt id="qimview.image_viewers.multi_view.MultiView.update_viewer_layout"><code class="name flex">
-<span>def <span class="ident">update_viewer_layout</span></span>(<span>self, layout_name='1')</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def update_viewer_layout(self, layout_name=&#39;1&#39;):
-    self.print_log(&#34;*** update_viewer_layout()&#34;)
-    # # Action from menu ...
-    # menu = self.option_viewer_layout
-    # for action in menu.actions():
-    #     if action.text() == self.current_viewer_layout:
-    #         action.setChecked(False)
-    # for action in menu.actions():
-    #     if action.isChecked():
-    #         self.current_viewer_layout = action.text()
-
-    self.current_viewer_layout = layout_name
-    # 1. remove current viewers from grid layout
-    # self.viewer_grid_layout.hide()
-    for v in self.image_viewers:
-        v.hide()
-        self.viewer_grid_layout.removeWidget(v)
-
-    self.nb_viewers_used = eval(self.current_viewer_layout)
-    col_length = int(math.sqrt(self.nb_viewers_used))
-    row_length = int(math.ceil(self.nb_viewers_used / col_length))
-    self.print_log(&#39;col_length = {} row_length = {}&#39;.format(col_length, row_length))
-    # be sure to have enough image viewers allocated
-    while self.nb_viewers_used &gt; len(self.allocated_image_viewers):
-        viewer = self.image_viewer_class()
-        viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
-        self.allocated_image_viewers.append(viewer)
-
-    self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
-    # self.image_viewers = []
-    # for n in range(self.nb_viewers_used):
-    #     self.image_viewers.append(self.allocated_image_viewers[n])
-
-    for n in range(self.nb_viewers_used):
-        self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
-        self.image_viewers[n].hide()
-
-    # for n in range(row_length):
-    #       self.viewer_grid_layout.setColumnStretch(n, 1)
-    # for n in range(col_length):
-    #       self.viewer_grid_layout.setRowStretch(n, 1)
-
-    # for n in range(self.nb_viewers_used):
-    #     print(&#34;Viewer {} size {}&#34;.format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))</code></pre>
-</details>
-</dd>
-<dt id="qimview.image_viewers.multi_view.MultiView.update_viewer_layout_callback"><code class="name flex">
-<span>def <span class="ident">update_viewer_layout_callback</span></span>(<span>self)</span>
-</code></dt>
-<dd>
-<div class="desc"></div>
-<details class="source">
-<summary>
-<span>Expand source code</span>
-</summary>
-<pre><code class="python">def update_viewer_layout_callback(self):
-    self.update_viewer_layout()
-    self.viewer_grid_layout.update()
-    self.update_image()</code></pre>
 </details>
 </dd>
 <dt id="qimview.image_viewers.multi_view.MultiView.update_viewer_mode"><code class="name flex">
@@ -2926,6 +2979,8 @@ if not in cache reads it and add it to the cache
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.set_key_down_callback" href="#qimview.image_viewers.multi_view.MultiView.set_key_down_callback">set_key_down_callback</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.set_key_up_callback" href="#qimview.image_viewers.multi_view.MultiView.set_key_up_callback">set_key_up_callback</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.set_message_callback" href="#qimview.image_viewers.multi_view.MultiView.set_message_callback">set_message_callback</a></code></li>
+<li><code><a title="qimview.image_viewers.multi_view.MultiView.set_number_of_viewers" href="#qimview.image_viewers.multi_view.MultiView.set_number_of_viewers">set_number_of_viewers</a></code></li>
+<li><code><a title="qimview.image_viewers.multi_view.MultiView.set_number_of_viewers_callback" href="#qimview.image_viewers.multi_view.MultiView.set_number_of_viewers_callback">set_number_of_viewers_callback</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.set_read_size" href="#qimview.image_viewers.multi_view.MultiView.set_read_size">set_read_size</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.set_reference_label" href="#qimview.image_viewers.multi_view.MultiView.set_reference_label">set_reference_label</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.set_verbosity" href="#qimview.image_viewers.multi_view.MultiView.set_verbosity">set_verbosity</a></code></li>
@@ -2944,8 +2999,6 @@ if not in cache reads it and add it to the cache
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.update_label_fonts" href="#qimview.image_viewers.multi_view.MultiView.update_label_fonts">update_label_fonts</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.update_layout" href="#qimview.image_viewers.multi_view.MultiView.update_layout">update_layout</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.update_reference" href="#qimview.image_viewers.multi_view.MultiView.update_reference">update_reference</a></code></li>
-<li><code><a title="qimview.image_viewers.multi_view.MultiView.update_viewer_layout" href="#qimview.image_viewers.multi_view.MultiView.update_viewer_layout">update_viewer_layout</a></code></li>
-<li><code><a title="qimview.image_viewers.multi_view.MultiView.update_viewer_layout_callback" href="#qimview.image_viewers.multi_view.MultiView.update_viewer_layout_callback">update_viewer_layout_callback</a></code></li>
 <li><code><a title="qimview.image_viewers.multi_view.MultiView.update_viewer_mode" href="#qimview.image_viewers.multi_view.MultiView.update_viewer_mode">update_viewer_mode</a></code></li>
 </ul>
 </li>

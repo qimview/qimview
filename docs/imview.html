@@ -112,13 +112,20 @@ class ImView(QtWidgets.QMainWindow):
             self.filter_params_gui.register_event_player(event_player)
             event_player.play_events(event_list=event_list)
     
-    def set_imagge(self, params):
+    def set_image(self, params):
         if params[&#39;input_image&#39;] is None:
             # Ask for input file
             filename =  QtWidgets.QFileDialog.getOpenFileName(caption=&#34;imview: Select input image&#34;)
             params[&#39;input_image&#39;] = filename[0]
         im = gb_image_reader.read(params[&#39;input_image&#39;])
         self.widget.set_image(im)
+        self.widget.image_name = params[&#39;input_image&#39;]
+
+        if params[&#39;ref&#39;] is not None:
+            im = gb_image_reader.read(params[&#39;ref&#39;])
+            print(f&#34;im ref {im}&#34;)
+            if im:
+                self.widget.set_image_ref(im)
 
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
@@ -142,6 +149,7 @@ def main():
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(&#39;input_image&#39;, nargs=&#39;?&#39;, help=&#39;input image (if not specified, will open file dialog)&#39;)
+    parser.add_argument(&#39;-ref&#39;, default=None,  help=&#39;reference image&#39;)
     parser.add_argument(&#39;-p&#39;, &#39;--play&#39;, help=&#39;events json file&#39;, default=None)
     parser.add_argument(&#39;-r&#39;, &#39;--record&#39;, help=&#39;record events in given json file&#39;, default=None)
     parser.add_argument(&#39;--timing&#39;, action=&#39;store_true&#39;, help=&#39;display timings&#39;)
@@ -154,6 +162,7 @@ def main():
     # create the Qt App and window
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationDisplayName(&#39;imview &#39; + &#39; &#39;.join(sys.argv[1:]))
     if _params[&#39;play&#39;] is not None:
         with open(_params[&#39;play&#39;]) as json_file:
             events = json.load(json_file)
@@ -161,7 +170,7 @@ def main():
         events = None
 
     window = ImView(events, _params)
-    window.set_imagge( _params)
+    window.set_image(_params)
     window.show()
     app.exec()
 
@@ -189,6 +198,7 @@ if __name__ == &#39;__main__&#39;:
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument(&#39;input_image&#39;, nargs=&#39;?&#39;, help=&#39;input image (if not specified, will open file dialog)&#39;)
+    parser.add_argument(&#39;-ref&#39;, default=None,  help=&#39;reference image&#39;)
     parser.add_argument(&#39;-p&#39;, &#39;--play&#39;, help=&#39;events json file&#39;, default=None)
     parser.add_argument(&#39;-r&#39;, &#39;--record&#39;, help=&#39;record events in given json file&#39;, default=None)
     parser.add_argument(&#39;--timing&#39;, action=&#39;store_true&#39;, help=&#39;display timings&#39;)
@@ -201,6 +211,7 @@ if __name__ == &#39;__main__&#39;:
     # create the Qt App and window
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
+    app.setApplicationDisplayName(&#39;imview &#39; + &#39; &#39;.join(sys.argv[1:]))
     if _params[&#39;play&#39;] is not None:
         with open(_params[&#39;play&#39;]) as json_file:
             events = json.load(json_file)
@@ -208,7 +219,7 @@ if __name__ == &#39;__main__&#39;:
         events = None
 
     window = ImView(events, _params)
-    window.set_imagge( _params)
+    window.set_image(_params)
     window.show()
     app.exec()</code></pre>
 </details>
@@ -297,13 +308,20 @@ See help(type(self)) for accurate signature.</p></div>
             self.filter_params_gui.register_event_player(event_player)
             event_player.play_events(event_list=event_list)
     
-    def set_imagge(self, params):
+    def set_image(self, params):
         if params[&#39;input_image&#39;] is None:
             # Ask for input file
             filename =  QtWidgets.QFileDialog.getOpenFileName(caption=&#34;imview: Select input image&#34;)
             params[&#39;input_image&#39;] = filename[0]
         im = gb_image_reader.read(params[&#39;input_image&#39;])
         self.widget.set_image(im)
+        self.widget.image_name = params[&#39;input_image&#39;]
+
+        if params[&#39;ref&#39;] is not None:
+            im = gb_image_reader.read(params[&#39;ref&#39;])
+            print(f&#34;im ref {im}&#34;)
+            if im:
+                self.widget.set_image_ref(im)
 
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
@@ -373,8 +391,8 @@ See help(type(self)) for accurate signature.</p></div>
     return QtWidgets.QMainWindow.event(self, evt)</code></pre>
 </details>
 </dd>
-<dt id="qimview.imview.ImView.set_imagge"><code class="name flex">
-<span>def <span class="ident">set_imagge</span></span>(<span>self, params)</span>
+<dt id="qimview.imview.ImView.set_image"><code class="name flex">
+<span>def <span class="ident">set_image</span></span>(<span>self, params)</span>
 </code></dt>
 <dd>
 <div class="desc"></div>
@@ -382,13 +400,20 @@ See help(type(self)) for accurate signature.</p></div>
 <summary>
 <span>Expand source code</span>
 </summary>
-<pre><code class="python">def set_imagge(self, params):
+<pre><code class="python">def set_image(self, params):
     if params[&#39;input_image&#39;] is None:
         # Ask for input file
         filename =  QtWidgets.QFileDialog.getOpenFileName(caption=&#34;imview: Select input image&#34;)
         params[&#39;input_image&#39;] = filename[0]
     im = gb_image_reader.read(params[&#39;input_image&#39;])
-    self.widget.set_image(im)</code></pre>
+    self.widget.set_image(im)
+    self.widget.image_name = params[&#39;input_image&#39;]
+
+    if params[&#39;ref&#39;] is not None:
+        im = gb_image_reader.read(params[&#39;ref&#39;])
+        print(f&#34;im ref {im}&#34;)
+        if im:
+            self.widget.set_image_ref(im)</code></pre>
 </details>
 </dd>
 <dt id="qimview.imview.ImView.update_image_intensity_event"><code class="name flex">
@@ -434,7 +459,7 @@ See help(type(self)) for accurate signature.</p></div>
 <ul class="">
 <li><code><a title="qimview.imview.ImView.closeEvent" href="#qimview.imview.ImView.closeEvent">closeEvent</a></code></li>
 <li><code><a title="qimview.imview.ImView.event" href="#qimview.imview.ImView.event">event</a></code></li>
-<li><code><a title="qimview.imview.ImView.set_imagge" href="#qimview.imview.ImView.set_imagge">set_imagge</a></code></li>
+<li><code><a title="qimview.imview.ImView.set_image" href="#qimview.imview.ImView.set_image">set_image</a></code></li>
 <li><code><a title="qimview.imview.ImView.staticMetaObject" href="#qimview.imview.ImView.staticMetaObject">staticMetaObject</a></code></li>
 <li><code><a title="qimview.imview.ImView.update_image_intensity_event" href="#qimview.imview.ImView.update_image_intensity_event">update_image_intensity_event</a></code></li>
 </ul>

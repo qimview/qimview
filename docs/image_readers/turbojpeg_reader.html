@@ -39,11 +39,32 @@ for the module to work, you can follow the installation instruction in <a href="
 
 from qimview.utils.viewer_image import *
 from qimview.utils.utils import get_time
-from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
+
+try:
+    from turbojpeg import TurboJPEG, TJPF_RGB, TJPF_BGR, TJFLAG_FASTDCT
+except:
+    has_turbojpeg = False
+else:
+    has_turbojpeg = True
+import configparser
+import os
+
+config = configparser.ConfigParser()
+config_file = os.path.expanduser(&#39;~/.qimview.cfg&#39;)
+lib_path = None
+if os.path.isfile(config_file): 
+    config.read([os.path.expanduser(&#39;~/.qimview.cfg&#39;)])
+    try:
+        lib_path = config[&#39;READER.TURBOJPEG&#39;][&#39;LibPath&#39;]
+    except Exception as e:
+        pass
 
 # Initialize once the TurboJPEG instance, as a global variable
 try:
-    gb_turbo_jpeg = TurboJPEG()
+    if lib_path:
+        gb_turbo_jpeg = TurboJPEG(lib_path)
+    else:
+        gb_turbo_jpeg = TurboJPEG()
 except Exception as e:
     print(f&#34;Failed to load TurboJPEG library&#34;)
     gb_turbo_jpeg = None

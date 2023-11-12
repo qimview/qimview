@@ -149,10 +149,10 @@ class FileCache(BaseCache[str,bytes,float]):
         self.add_results = []
         # print(f&#34; start worker with image {f}&#34;)
         # This part may be causing issues
-        use_threads = False
+        use_threads = True
         if use_threads:
             self.thread_pool.set_worker(self.thread_add_files, filenames)
-            self.thread_pool.set_worker_callbacks(progress_cb=self.show_progress, finished_cb=self.on_finished)
+            self.thread_pool.set_worker_callbacks(finished_cb=self.on_finished)
             self.thread_pool.start_worker()
         else:
             self.thread_add_files(filenames, progress_cb=self.show_progress)
@@ -303,10 +303,10 @@ we can enable an automatic reload</p>
         self.add_results = []
         # print(f&#34; start worker with image {f}&#34;)
         # This part may be causing issues
-        use_threads = False
+        use_threads = True
         if use_threads:
             self.thread_pool.set_worker(self.thread_add_files, filenames)
-            self.thread_pool.set_worker_callbacks(progress_cb=self.show_progress, finished_cb=self.on_finished)
+            self.thread_pool.set_worker_callbacks(finished_cb=self.on_finished)
             self.thread_pool.start_worker()
         else:
             self.thread_add_files(filenames, progress_cb=self.show_progress)
@@ -334,10 +334,10 @@ we can enable an automatic reload</p>
     self.add_results = []
     # print(f&#34; start worker with image {f}&#34;)
     # This part may be causing issues
-    use_threads = False
+    use_threads = True
     if use_threads:
         self.thread_pool.set_worker(self.thread_add_files, filenames)
-        self.thread_pool.set_worker_callbacks(progress_cb=self.show_progress, finished_cb=self.on_finished)
+        self.thread_pool.set_worker_callbacks(finished_cb=self.on_finished)
         self.thread_pool.start_worker()
     else:
         self.thread_add_files(filenames, progress_cb=self.show_progress)
