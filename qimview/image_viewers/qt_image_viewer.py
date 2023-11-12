@@ -33,8 +33,8 @@ BaseWidget = QtWidgets.QWidget
 class QTImageViewer(BaseWidget, ImageViewer ):
 
     def __init__(self, parent=None, event_recorder=None):
-        self.event_recorder = event_recorder
         super().__init__(parent)
+        self.event_recorder = event_recorder
         self.setMouseTracking(True)
         self.anti_aliasing = True
         size_policy = QtWidgets.QSizePolicy()
@@ -321,7 +321,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         painter.setPen(pen)
         painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
 
-    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter) -> Optional[Tuple[int, int]]:
+    def draw_cursor(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter, full=False) -> Optional[Tuple[int, int]]:
         """
         :param cropped_image_shape: dimensions of current crop
         :param crop_xmin: left pixel of current crop
@@ -348,14 +348,18 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         length_percent = 0.04
         # use percentage of the displayed image dimensions
         length = int(max(self.width(),self.height())*length_percent)
-        pen_width = 4
+        pen_width = 2 if full else 3
         color = QtGui.QColor(0, 255, 255, 200)
         pen = QtGui.QPen()
         pen.setColor(color)
         pen.setWidth(pen_width)
         painter.setPen(pen)
-        painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
-        painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
+        if not full:
+            painter.drawLine(pos_x-length, pos_y, pos_x+length, pos_y)
+            painter.drawLine(pos_x, pos_y-length, pos_x, pos_y+length)
+        else:
+            painter.drawLine(rect.x(), pos_y, rect.x()+rect.width(), pos_y)
+            painter.drawLine(pos_x, rect.y(), pos_x, rect.y()+rect.height())
 
         # Update text
         if im_x>=0 and im_x<cropped_image_shape[1] and im_y>=0 and im_y<cropped_image_shape[0]:
@@ -705,7 +709,28 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         # Draw cursor
         im_pos = None
         if self.show_cursor:
-            im_pos = self.draw_cursor(cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
+            im_pos = self.draw_cursor(cropped_image_shape, 
+                                      crop_xmin, 
+                                      crop_ymin, 
+                                      rect, 
+                                      painter, 
+                                      full = self.show_intensity_line,
+                                      )
+
+        if self.show_intensity_line:
+            (height, width) = cropped_image_shape[:2]
+            im_y = int((self.mouse_y -rect.y())/rect.height()*height)
+            im_y += crop_ymin
+            im_shape = self._image.data.shape
+            # Horizontal display
+            if im_y>=0 and im_y<im_shape[0] and crop_xmin>=0 and crop_xmin+cropped_image_shape[1]<=im_shape[1]:
+                line = self._image.data[im_y, crop_xmin:crop_xmin+cropped_image_shape[1]]
+                self.display_intensity_line(
+                    painter, 
+                    rect, 
+                    line,
+                    channels = self._image.channels,
+                    )
 
         self.display_text(painter, self.display_message(im_pos, ratio*self.devicePixelRatio()))
 
