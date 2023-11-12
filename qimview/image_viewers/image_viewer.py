@@ -16,6 +16,7 @@ import numpy as np
 from typing import TYPE_CHECKING, Optional, Tuple
 # if TYPE_CHECKING:
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
+from abc import abstractmethod
 
 try:
     import qimview_cpp
