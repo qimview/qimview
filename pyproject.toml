@@ -41,8 +41,9 @@ extra = [
 
 [project.urls]
 "Homepage" = "https://github.com/qimview/qimview"
-"Wiki" = "hhttps://github.com/qimview/qimview/wiki"
+"Wiki" = "https://github.com/qimview/qimview/wiki"
 "Bug Tracker" = "https://github.com/qimview/qimview/issues"
+"API" = "https://qimview.github.io/qimview/"
 
 [tool.pytest.ini_options]
 testpaths = [
