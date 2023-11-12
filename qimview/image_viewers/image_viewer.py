@@ -336,9 +336,10 @@ class ImageViewer:
         # print("delta = {}".format(delta))
         coeff = delta/5
         # coeff = 20 if delta > 0 else -20
-        self.current_scale = self.new_scale(coeff, self.cv_image.data.shape[0])
-        self.viewer_update()
-        self.synchronize(self)
+        if self._image:
+            self.current_scale = self.new_scale(coeff, self._image.data.shape[0])
+            self.viewer_update()
+            self.synchronize(self)
 
     def find_in_layout(self, layout: QtWidgets.QLayout) -> Optional[QtWidgets.QLayout]:
         """ Search Recursivement in Layouts for the current widget
@@ -479,11 +480,11 @@ class ImageViewer:
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -> str:
         text : str = self.image_name
         if self.show_cursor and im_pos:
-            text +=  f"\n {self.cv_image.data.shape} {self.cv_image.data.dtype} prec:{self.cv_image.precision}"
+            text +=  f"\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}"
             if scale is not None:
                 text += f"\n x{scale:0.2f}"
             im_x, im_y = im_pos
-            values = self.cv_image.data[im_y, im_x]
+            values = self._image.data[im_y, im_x]
             text += f"\n pos {im_x:4}, {im_y:4} \n rgb {values}"
 
         if self.show_overlay:
