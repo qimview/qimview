@@ -73,8 +73,8 @@ class ImageViewer:
         self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
-        self.cv_image : Optional[ViewerImage] = None
-        self.cv_image_ref = None
+        self._image     : Optional[ViewerImage] = None
+        self._image_ref : Optional[ViewerImage] = None
         self.synchronize_viewer = None
         self.tab = ["--"]
         self.trace_calls  = False
@@ -124,19 +124,19 @@ class ImageViewer:
     def verbose(self, v):
         self._verbose = v
 
-    def set_image(self, image):
-        is_different = (self.cv_image is None) or (self.cv_image is not image)
+    def set_image(self, image : Optional[ViewerImage]):
+        is_different = (self._image is None) or (self._image is not image)
         if image is not None:
             self.print_log('set_image({}): is_different = {}'.format(image.data.shape, is_different))
         if is_different:
-            self.cv_image = image
+            self._image = image
             self.image_id += 1
         return is_different
 
-    def set_image_ref(self, image_ref=None):
-        is_different = (self.cv_image_ref is None) or (self.cv_image_ref is not image_ref)
+    def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
+        is_different = (self._image_ref is None) or (self._image_ref is not image_ref)
         if is_different:
-            self.cv_image_ref = image_ref
+            self._image_ref = image_ref
             self.image_ref_id += 1
 
     def set_clipboard(self, clipboard, save_image):
@@ -243,7 +243,7 @@ class ImageViewer:
         self._image_name = v
 
     def get_image(self):
-        return self.cv_image
+        return self._image
 
     def new_scale(self, mouse_zy, height):
         return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
@@ -529,8 +529,8 @@ class ImageViewer:
         hist_x_step = max(1, int(im_w/target_w+0.5))
         hist_y_step = max(1, int(im_h/target_h+0.5))
         input_image = current_image
-        # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
-        # input_image = self.cv_image
+        # print(f"current_image {current_image.shape} _image {self._image.shape}")
+        # input_image = self._image
         resized_im = input_image[::hist_y_step, ::hist_x_step, :]
         resized_im = input_image
         if self.verbose:
@@ -613,8 +613,8 @@ class ImageViewer:
         painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
         if histo_timings: rect_time = get_time()-rect_start
 
-        # print(f"current_image {current_image.shape} cv_image {self.cv_image.shape}")
-        # input_image = self.cv_image
+        # print(f"current_image {current_image.shape} _image {self._image.shape}")
+        # input_image = self._image
         path_time = 0
 
         pen = QtGui.QPen()

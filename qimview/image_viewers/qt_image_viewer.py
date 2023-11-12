@@ -75,7 +75,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         super().set_image(image)
 
     def apply_zoom(self, crop):
-        (height, width) = self.cv_image.data.shape[:2]
+        (height, width) = self._image.data.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
         coeff = 1.0/self.new_scale(self.mouse_zy, height)
@@ -185,7 +185,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         self.start_timing(title='apply_filters()')
 
         # Output RGB from input
-        ch = self.cv_image.channels
+        ch = self._image.channels
         if has_cppbind:
             channels = current_image.channels
             black_level = self.filter_params.black_level.float
@@ -299,8 +299,6 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         return rgb_image
 
     def viewer_update(self):
-        #if self.cv_image is not None:
-        #    self.paint_image()
         if BaseWidget is QOpenGLWidget:
             self.paint_image()
             self.repaint()
@@ -381,8 +379,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             use_cache = False
 
         if not use_cache:
-            im1 = self.cv_image.data
-            im2 = self.cv_image_ref.data
+            im1 = self._image.data
+            im2 = self._image_ref.data
             # TODO: get factor from parameters ...
             # factor = int(self.diff_color_slider.value())
             print(f'factor = {factor}')
@@ -410,9 +408,9 @@ class QTImageViewer(BaseWidget, ImageViewer ):
                                     sum += nb
                         print('')
                         print(f'nb pixel diff  {sum}')
-                    res = ViewerImage(res,  precision=self.cv_image.precision, 
-                                            downscale=self.cv_image.downscale,
-                                            channels=self.cv_image.channels)
+                    res = ViewerImage(res,  precision=self._image.precision, 
+                                            downscale=self._image.downscale,
+                                            channels=self._image.channels)
                     self.paint_diff_cache = {  'imid': self.image_id, 'imrefid': self.image_ref_id, 
                         'factor': self.filter_params.imdiff_factor.float
                     }
@@ -423,8 +421,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
                     d[d>128] = 128
                     d = (d+127).astype(np.uint8)*255
                     res = ViewerImage(d,  precision=8, 
-                                            downscale=self.cv_image.downscale,
-                                            channels=self.cv_image.channels)
+                                            downscale=self._image.downscale,
+                                            channels=self._image.channels)
                     self.paint_diff_cache = {  'imid': self.image_id, 'imrefid': self.image_ref_id, 
                         'factor': self.filter_params.imdiff_factor.float
                     }
@@ -433,7 +431,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
                 print(f"Error {e}")
                 res = (im1!=im2).astype(np.uint8)*255
                 res = ViewerImage(res,  precision=8, 
-                                        downscale=self.cv_image.downscale,
+                                        downscale=self._image.downscale,
                                         channels=ImageFormat.CH_Y)
                 self.diff_image = res
 
@@ -448,8 +446,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         label_width = self.size().width()
         label_height = self.size().height()
 
-        show_diff = self.show_image_differences and self.cv_image is not self.cv_image_ref and \
-                    self.cv_image_ref is not None and self.cv_image.data.shape == self.cv_image_ref.data.shape
+        show_diff = self.show_image_differences and self._image is not self._image_ref and \
+                    self._image_ref is not None and self._image.data.shape == self._image_ref.data.shape
 
         c = self.update_crop()
         # check paint_cache
@@ -473,7 +471,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             # don't save the difference
             current_image = self.get_difference_image()
         else:
-            current_image = self.cv_image
+            current_image = self._image
 
         precision  = current_image.precision
         downscale  = current_image.downscale
@@ -511,8 +509,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         display_width = int(round(image_width * ratio))
         display_height = int(round(image_height * ratio))
 
-        if self.show_overlay and self.cv_image_ref is not self.cv_image and self.cv_image_ref and \
-            self.cv_image.data.shape == self.cv_image_ref.data.shape:
+        if self.show_overlay and self._image_ref is not self._image and self._image_ref and \
+            self._image.data.shape == self._image_ref.data.shape:
             # to create the overlay rapidly, we will mix the two images based on the current cursor position
             # 1. convert cursor position to image position
             (height, width) = cropped_image_shape[:2]
@@ -525,7 +523,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
             # We need to have a copy here .. slow, better option???
             image_data = np.copy(image_data)
-            image_data[:, :im_x] = self.cv_image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+            image_data[:, :im_x] = self._image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
 
         resize_applied = False
         if not use_cache:
@@ -595,7 +593,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
             current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
             if self.show_stats:
                 # Output RGB from input
-                ch = self.cv_image.channels
+                ch = self._image.channels
                 data_shape = current_image.data.shape
                 if len(data_shape)==2:
                     print(f"input average {np.average(current_image.data)}")
@@ -732,7 +730,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         if self.trace_calls:
             t = trace_method(self.tab)
         # try:
-        if self.cv_image is not None:
+        if self._image is not None:
             self.paint_image()
         # except Exception as e:
         #     print(f"Failed paint_image() {e}")

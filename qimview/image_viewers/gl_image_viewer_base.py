@@ -57,14 +57,14 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             t = trace_method(self.tab)
         changed = super(GLImageViewerBase, self).set_image(image)
 
-        img_width = self.cv_image.data.shape[1]
+        img_width = self._image.data.shape[1]
         if img_width % 4 != 0:
             print("Image is resized to a multiple of 4 dimension in X")
             img_width = ((img_width >> 4) << 4)
-            im = np.ascontiguousarray(self.cv_image.data[:,:img_width, :])
-            self.cv_image = ViewerImage(im, precision = self.cv_image.precision, downscale = 1,
-                                        channels = self.cv_image.channels)
-            print(self.cv_image.data.shape)
+            im = np.ascontiguousarray(self._image.data[:,:img_width, :])
+            self._image = ViewerImage(im, precision = self._image.precision, downscale = 1,
+                                        channels = self._image.channels)
+            print(self._image.data.shape)
 
         if changed:  # and self.textureID is not None:
             if self.setTexture():
@@ -96,11 +96,11 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         self.makeCurrent()
 
         # Replace texture only if required
-        if self.cv_image is None:
-            print("self.cv_image is None")
+        if self._image is None:
+            print("self._image is None")
             return False
 
-        img_height, img_width = self.cv_image.data.shape[:2]
+        img_height, img_width = self._image.data.shape[:2]
 
         # default type
         gl_types = {
@@ -113,7 +113,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             'float32': gl.GL_FLOAT,
             'float64': gl.GL_DOUBLE
         }
-        gl_type = gl_types[self.cv_image.data.dtype.name]
+        gl_type = gl_types[self._image.data.dtype.name]
 
         # It seems that the dimension in X should be even
 
@@ -121,21 +121,21 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         # on the input data type uint8, uint16, ...
         # need to test with different DXR images
         internal_format = gl.GL_RGB
-        if self.cv_image.data.shape[2] == 3:
-            if self.cv_image.precision == 8:
+        if self._image.data.shape[2] == 3:
+            if self._image.precision == 8:
                 internal_format = gl.GL_RGB
-            if self.cv_image.precision == 10:
+            if self._image.precision == 10:
                 internal_format = gl.GL_RGB10
-            if self.cv_image.precision == 12:
+            if self._image.precision == 12:
                 internal_format = gl.GL_RGB12
-        if self.cv_image.data.shape[2] == 4:
-            if self.cv_image.precision == 8:
+        if self._image.data.shape[2] == 4:
+            if self._image.precision == 8:
                 internal_format = gl.GL_RGBA
             else:
-                if self.cv_image.precision <= 12:
+                if self._image.precision <= 12:
                     internal_format = gl.GL_RGBA12
                 else:
-                    if self.cv_image.precision <= 16:
+                    if self._image.precision <= 16:
                         internal_format = gl.GL_RGBA16
                     else:
                         internal_format = gl.GL_RGBA32F
@@ -149,7 +149,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             ImageFormat.CH_GBRG : gl.GL_RGBA,
             ImageFormat.CH_BGGR : gl.GL_RGBA
         }
-        texture_pixel_format = channels2format[self.cv_image.channels]
+        texture_pixel_format = channels2format[self._image.channels]
 
         if (self.tex_width,self.tex_height) != (img_width,img_height):
             if self.textureID is not None:
@@ -167,16 +167,16 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
                             internal_format,
                             img_width, img_height,
-                         0, texture_pixel_format, gl_type, self.cv_image.data)
+                         0, texture_pixel_format, gl_type, self._image.data)
             # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
             self.tex_width, self.tex_height = img_width, img_height
         else:
             try:
                 gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
-                             texture_pixel_format, gl_type, self.cv_image.data)
+                             texture_pixel_format, gl_type, self._image.data)
                 # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
             except Exception as e:
-                print("setTexture failed shape={}: {}".format(self.cv_image.data.shape, e))
+                print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
                 return False
 
         self.print_timing(add_total=True)
@@ -218,12 +218,12 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         draw_text = True
         if draw_text:
             # adapt scale depending on the ratio image / viewport
-            scale *= self._width/self.cv_image.data.shape[1]
+            scale *= self._width/self._image.data.shape[1]
             self.display_text(painter, self.display_message(im_pos, scale))
 
         # draw histogram
         if self.show_histogram:
-            current_image = self.cv_image.data
+            current_image = self._image.data
             rect = QtCore.QRect(0, 0, self.width(), self.height())
             histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
             self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)

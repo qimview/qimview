@@ -127,7 +127,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     """
 
     def __init__(self, parent=None):
-        GLImageViewerBase.__init__(self, parent)
+        super().__init__(parent)
 
         self.setAutoFillBackground(False)
         self.textureID = None
@@ -251,7 +251,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        if self.cv_image.data.shape[2] == 4:
+        if self._image.data.shape[2] == 4:
             self.program = self.program_RAW
         else:
             # TODO: check for other types: scalar ...
@@ -281,7 +281,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         gl.glUniform1i(self.uBackgroundTexture, 0)
 
-        gl.glUniform1i( self.channels_location, self.cv_image.channels)
+        gl.glUniform1i( self.channels_location, self._image.channels)
 
         # set color transformation parameters
         self.print_log("levels {} {}".format(self.filter_params.black_level.value,
@@ -294,8 +294,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
 
         # Should work for unsigned types for the moment
-        gl.glUniform1f( self.max_value_location, (1 << self.cv_image.precision)-1)
-        gl.glUniform1f( self.max_type_location,  np.iinfo(self.cv_image.data.dtype).max)
+        gl.glUniform1f( self.max_value_location, (1 << self._image.precision)-1)
+        gl.glUniform1f( self.max_type_location,  np.iinfo(self._image.data.dtype).max)
 
         gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
 
