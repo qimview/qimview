@@ -14,8 +14,8 @@ import abc
 import inspect
 import numpy as np
 from typing import TYPE_CHECKING, Optional, Tuple
-if TYPE_CHECKING:
-    from qimview.utils.viewer_image import ViewerImage
+# if TYPE_CHECKING:
+from qimview.utils.viewer_image import ViewerImage, ImageFormat
 
 try:
     import qimview_cpp
@@ -63,7 +63,6 @@ class trace_method():
 class ImageViewer:
 
     def __init__(self, parent=None):
-        # super(ImageViewer, self).__init__(parent)
         self.data = None
         self._width = 500
         self._height = 500
@@ -259,7 +258,7 @@ class ImageViewer:
     def check_translation(self):
         return self.new_translation()
 
-    # @abstractmethod
+    @abstractmethod
     def viewer_update(self):
         pass
 
@@ -394,6 +393,18 @@ class ImageViewer:
     def key_press_event(self, event, wsize):
         self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
+
+            if event.key() == QtKeys.Key_F1:
+                import qimview
+                mb = QtWidgets.QMessageBox(self)
+                mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
+                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+                mb.setText(
+                    "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
+                    "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
+                mb.exec()
+                event.accept()
+
             if event.key() == QtKeys.Key_F11:
                 self.toggle_fullscreen(event)
                 return
@@ -467,6 +478,11 @@ class ImageViewer:
             key_list.append(QtKeys.Key_S)
             if event.key() == QtKeys.Key_S:
                 self.show_stats = not self.show_stats
+
+            # I: display intensity line
+            key_list.append(QtKeys.Key_I)
+            if event.key() == QtKeys.Key_I:
+                self.show_intensity_line = not self.show_intensity_line
 
             if event.key() in key_list:
                 self.viewer_update()
@@ -658,3 +674,69 @@ class ImageViewer:
         if histo_timings: 
             print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end='')
             print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
+
+
+    def display_intensity_line(self, 
+                               painter: QtGui.QPainter, 
+                               im_rect: QtCore.QRect, 
+                               line: np.ndarray,
+                               channels : ImageFormat,
+                                ) -> None:
+        #if histo_timings:
+        h_start = get_time()
+        # print(f'im_rect = {im_rect}')
+        w, h = self.evt_width, self.evt_height
+        width    : int = im_rect.width()
+        height   : int = int( h/5)
+        start_x  : int = im_rect.x()
+        margin_y : int = 2
+        start_y  : int = h-margin_y
+
+        rect = QtCore.QRect(start_x, start_y-height, width, height)
+        self._line_rect = rect
+        painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
+
+        pen = QtGui.QPen()
+        pen.setWidth(1)
+
+        # Adapt for Bayer, Y, etc ...
+        qcolors = {
+            'R' : QtGui.QColor(240,  30,  30, 255),
+            'G' : QtGui.QColor( 30, 240,  30, 255),
+            'Gr': QtGui.QColor(130, 240,  30, 255),
+            'Gb': QtGui.QColor( 30, 240, 130, 255),
+            'B' : QtGui.QColor( 30,  30, 240, 255),
+            'Y' : QtGui.QColor( 30,  30,  30, 255),
+        }
+        colors = {
+            ImageFormat.CH_RGB  : ['R','G','B'],
+            ImageFormat.CH_BGR  : ['B','G','R'],
+            ImageFormat.CH_RGGB : ['R','Gr','Gb','B'],
+            ImageFormat.CH_GRBG : ['Gr','R','B','Gb'],
+            ImageFormat.CH_GBRG : ['Gb','B','R','Gr'],
+            ImageFormat.CH_BGGR : ['B','Gb','Gr','R'],
+        }[channels]
+        assert line.shape[1] == len(colors), f"Error: Mismatch between imageformat and number of channels"
+
+        nb_values = line.shape[0]
+        step_x = float(width) / nb_values
+        x_range = np.array(range(0, nb_values))
+        x_pos = start_x + (x_range+0.5)*step_x
+
+        max_val = np.max(line)
+        line = line.astype(np.float32)
+        in_margin = 2
+        in_start_y = start_y - in_margin
+        in_height  = height - 2*in_margin
+        for channel in range(len(colors)):
+            pen.setColor(qcolors[colors[channel]])
+            painter.setPen(pen)
+            # apply a small Gaussian filtering to histogram curve
+            path = QtGui.QPainterPath()
+            y_pos = (in_start_y - line[:,channel]*(in_height/max_val)+0.5).astype(np.uint32)
+            path.moveTo(x_pos[0], y_pos[0])
+            for n in range(1,len(x_range)):
+                path.lineTo(x_pos[n], y_pos[n])
+            painter.drawPath(path)
+
+
