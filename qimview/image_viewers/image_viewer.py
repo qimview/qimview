@@ -91,12 +91,13 @@ class ImageViewer:
         self.timings = dict()
         self.replacing_widget = None
         self.before_max_parent = None
-        self.show_histogram = True
-        self.show_cursor    = False
-        self.show_overlay   = False
-        self.show_stats     = False
-        self.show_image_differences = False
-        self.antialiasing = True
+        self.show_histogram         : bool = True
+        self.show_cursor            : bool = False
+        self.show_overlay           : bool = False
+        self.show_stats             : bool = False
+        self.show_image_differences : bool = False
+        self.show_intensity_line    : bool = False
+        self.antialiasing           : bool = True
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
@@ -107,8 +108,6 @@ class ImageViewer:
         # Widget dimensions to be defined in child resize event
         self.evt_width : int
         self.evt_height : int
-       
-        
 
     @property
     def display_timing(self):
@@ -200,16 +199,17 @@ class ImageViewer:
         other_viewer.current_scale = self.current_scale
         other_viewer.current_dx = self.current_dx
         other_viewer.current_dy = self.current_dy
-        other_viewer.mouse_dx = self.mouse_dx
-        other_viewer.mouse_dy = self.mouse_dy
-        other_viewer.mouse_zx = self.mouse_zx
-        other_viewer.mouse_zy = self.mouse_zy
-        other_viewer.mouse_x = self.mouse_x
-        other_viewer.mouse_y = self.mouse_y
+        other_viewer.mouse_dx   = self.mouse_dx
+        other_viewer.mouse_dy   = self.mouse_dy
+        other_viewer.mouse_zx   = self.mouse_zx
+        other_viewer.mouse_zy   = self.mouse_zy
+        other_viewer.mouse_x    = self.mouse_x
+        other_viewer.mouse_y    = self.mouse_y
 
-        other_viewer.show_histogram = self.show_histogram
-        other_viewer.show_cursor    = self.show_cursor
-        other_viewer._histo_scale   = self._histo_scale
+        other_viewer.show_histogram      = self.show_histogram
+        other_viewer.show_cursor         = self.show_cursor
+        other_viewer.show_intensity_line = self.show_intensity_line
+        other_viewer._histo_scale        = self._histo_scale
 
     def synchronize(self, event_viewer):
         """
