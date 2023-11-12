@@ -729,6 +729,26 @@ class MultiView(QtWidgets.QWidget):
             if self.show_trace():
                 print("key is ", event.key())
             modifiers = QtWidgets.QApplication.keyboardModifiers()
+            # F1: open help in browser
+            if event.key() == QtCore.Qt.Key_F1:
+                import qimview
+                mb = QtWidgets.QMessageBox(self)
+                mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
+                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+                mb.setText(
+                    "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
+                    "<a href='https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer'>MultiImage Viewer</a><br>"
+                    "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
+                mb.exec()
+                event.accept()
+                return
+
+            # F5: reload images
+            if event.key() == QtCore.Qt.Key_F5:
+                self.update_image(reload=True)
+                event.accept()
+                return
+
             if event.key() == QtCore.Qt.Key_F11:
                 # Should be inside a layout
                 print("MultiView F11 pressed")
@@ -800,18 +820,13 @@ class MultiView(QtWidgets.QWidget):
                         self.update_image(self.image_list[(n+1)%nb_images])
                         event.accept()
                         return
-
-            # R: reload images
-            if event.key() == QtCore.Qt.Key_R:
-                self.update_image(reload=True)
-                event.accept()
-                return
                 
             # G: display number of columns
             if event.key() == QtCore.Qt.Key_G:
                 self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
                 self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
                 self.update_image(reload=True)
+                self.setFocus()
                 event.accept()
                 return
 
