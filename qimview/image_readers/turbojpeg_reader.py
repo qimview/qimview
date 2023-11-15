@@ -22,7 +22,7 @@ config = configparser.ConfigParser()
 config_file = os.path.expanduser('~/.qimview.cfg')
 lib_path = None
 if os.path.isfile(config_file): 
-    config.read([os.path.expanduser('~/.qimview.cfg')])
+    config.read([config_file])
     try:
         lib_path = config['READER.TURBOJPEG']['LibPath']
     except Exception as e:
