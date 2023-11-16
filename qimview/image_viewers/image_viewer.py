@@ -267,6 +267,18 @@ class ImageViewer:
         self.lastPos = event.pos()
         if event.buttons() & QtMouse.RightButton:
             event.accept()
+            return
+        # Else set current viewer active
+        self.set_active()
+        self.viewer_update()
+        if self.synchronize_viewer is not None:
+            v = self.synchronize_viewer
+            while v != self:
+                v.set_active(False)
+                v.viewer_update()
+                if v.synchronize_viewer is not None:
+                    v = v.synchronize_viewer
+        event.accept()
 
     def mouse_move_event(self, event):
         self.mouse_x = event.x()
@@ -315,17 +327,8 @@ class ImageViewer:
             self._histo_scale = (self._histo_scale % 3) + 1 
             self.viewer_update()
             event.accept()
-            return
-        # Else set current viewer active
-        self.set_active()
-        self.viewer_update()
-        if self.synchronize_viewer is not None:
-            v = self.synchronize_viewer
-            while v != self:
-                v.set_active(False)
-                v.viewer_update()
-                if v.synchronize_viewer is not None:
-                    v = v.synchronize_viewer
+        else:
+            event.setAccepted(False)
 
     def mouse_wheel_event(self,event):
         # Zoom by applying a factor to the distances to the sides

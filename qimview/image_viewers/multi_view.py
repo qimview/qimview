@@ -103,7 +103,10 @@ class MultiView(QtWidgets.QWidget):
         
         # Parameter to set the number of columns in the viewer grid layout
         # if 0: computed automatically
-        self.max_columns : int = 0 
+        self.max_columns       : int = 0 
+
+        # Show only active window
+        self._show_active_only : bool = False
 
     def set_key_up_callback(self, c):
         self.key_up_callback = c
@@ -596,17 +599,25 @@ class MultiView(QtWidgets.QWidget):
                 self.image_viewers[prev_n].set_synchronize(self.image_viewers[first_active_window])
 
         # Be sure to show the required viewers
-        for n in range(self.nb_viewers_used):
-            viewer = self.image_viewers[n]
-            # print(f"show viewer {n}")
-            # Note: calling show in any case seems to avoid double calls to paint event that update() triggers
-            # viewer.show()
-            if viewer.isHidden():
+        if self._show_active_only:
+            for n in range(self.nb_viewers_used):
+                viewer = self.image_viewers[n]
+                if not viewer.is_active():
+                    viewer.hide()
+                else:
+                    viewer.show()
+        else:
+            for n in range(self.nb_viewers_used):
+                viewer = self.image_viewers[n]
                 # print(f"show viewer {n}")
-                viewer.show()
-            else:
-                # print(f"update viewer {n}")
-                viewer.update()
+                # Note: calling show in any case seems to avoid double calls to paint event that update() triggers
+                # viewer.show()
+                if viewer.isHidden():
+                    # print(f"show viewer {n}")
+                    viewer.show()
+                else:
+                    # print(f"update viewer {n}")
+                    viewer.update()
 
 
         # self.image_scroll_area.adjustSize()
@@ -629,7 +640,7 @@ class MultiView(QtWidgets.QWidget):
             col_length = int(math.ceil(self.nb_viewers_used / row_length))
         else:
             # Find best configuration to fill the space based on image size and widget size?
-            col_length = int(math.sqrt(self.nb_viewers_used))
+            col_length = int(math.sqrt(self.nb_viewers_used)+0.5)
             row_length = int(math.ceil(self.nb_viewers_used / col_length))
         self.print_log('col_length = {} row_length = {}'.format(col_length, row_length))
         # be sure to have enough image viewers allocated
@@ -651,6 +662,11 @@ class MultiView(QtWidgets.QWidget):
         self.set_number_of_viewers()
         self.viewer_grid_layout.update()
         self.update_image()
+
+    def mouseDoubleClickEvent(self, event):
+        self._show_active_only = not self._show_active_only
+        self.update_image()
+        event.accept()
 
     def keyReleaseEvent(self, event):
         if type(event) == QtGui.QKeyEvent:
