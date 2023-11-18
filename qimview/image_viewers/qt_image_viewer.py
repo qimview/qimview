@@ -781,6 +781,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         self.mouse_release_event(event)
 
     def mouseDoubleClickEvent(self, event):
+        # We need to set the current viewer active before processing the double click event
+        self.set_active()
         self.mouse_double_click_event(event)
 
     def wheelEvent(self, event):
