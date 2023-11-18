@@ -486,6 +486,13 @@ class MultiView(QtWidgets.QWidget):
                 self.label[im_name].setWordWrap(True)
             # self.label[im_name].setMaximumWidth(160)
 
+    def get_active_viewer_index(self) -> int:
+        for n in range(self.nb_viewers_used):
+            if self.image_viewers[n].is_active():
+                return n
+        return -1
+
+
     def update_image(self, image_name=None, reload=False):
         """
         Uses the variable self.output_label_current_image
@@ -507,12 +514,10 @@ class MultiView(QtWidgets.QWidget):
         self.update_label_fonts()
 
         # find first active window
-        first_active_window = 0
-        for n in range(self.nb_viewers_used):
-            self.image_viewers[n].display_timing = self.show_timing()>0
-            if self.image_viewers[n].is_active():
-                first_active_window = n
-                break
+        first_active_window = self.get_active_viewer_index()
+        # If not found, set to 0
+        if first_active_window == 1: first_active_window = 0
+        self.image_viewers[first_active_window].display_timing = self.show_timing()>0
 
         # Read images in parallel to improve preformances
         # list all required image filenames
@@ -665,6 +670,12 @@ class MultiView(QtWidgets.QWidget):
 
     def mouseDoubleClickEvent(self, event):
         self._show_active_only = not self._show_active_only
+        # We need to set the current image 
+        active_idx = self.get_active_viewer_index()
+        print(f"active_idx {active_idx}")
+        self.output_label_reference_image = self.image_viewers[active_idx].image_name
+        print(f"output_label_reference_image {self.output_label_reference_image}")
+        # Update the image to show/hide viewers
         self.update_image()
         event.accept()
 
