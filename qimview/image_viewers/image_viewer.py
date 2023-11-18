@@ -232,6 +232,15 @@ class ImageViewer:
 
     def set_active(self, active=True):
         self.active_window = active
+        # be sure to deactivate other synchronized viewers
+        if active and self.synchronize_viewer is not None:
+            v = self.synchronize_viewer
+            # TODO: change this behavior and set active from multiviewer!
+            while v != self:
+                v.set_active(False)
+                v.viewer_update()
+                if v.synchronize_viewer is not None:
+                    v = v.synchronize_viewer
 
     def is_active(self):
         return self.active_window
@@ -271,13 +280,6 @@ class ImageViewer:
         # Else set current viewer active
         self.set_active()
         self.viewer_update()
-        if self.synchronize_viewer is not None:
-            v = self.synchronize_viewer
-            while v != self:
-                v.set_active(False)
-                v.viewer_update()
-                if v.synchronize_viewer is not None:
-                    v = v.synchronize_viewer
         event.accept()
 
     def mouse_move_event(self, event):
