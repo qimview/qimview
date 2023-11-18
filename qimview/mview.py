@@ -8,6 +8,14 @@ import glob
 from qimview.utils.qt_imports import QtWidgets, QtCore
 from qimview.image_viewers    import MultiView, ViewerType
 
+def get_filenames():
+    filenames = []
+    # Ask for input file
+    selected_files =  QtWidgets.QFileDialog.getOpenFileNames(caption="miview: Select  one or various input images")
+    filenames.extend(selected_files[0])
+    return filenames
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('images', nargs='*', help='input images')
@@ -24,14 +32,16 @@ def main():
     app.setApplicationDisplayName('mview ' + ' '.join(sys.argv[1:]))
 
     filenames = []
-    if len(_params['images']) == 0:
-        # Ask for input file
-        selected_files =  QtWidgets.QFileDialog.getOpenFileNames(caption="miview: Select  one or various input images")
-        filenames.extend(selected_files[0])
-    else:
-        for im in _params['images']:
-            filenames.extend(glob.glob(im,recursive=False))
+    for im in _params['images']:
+        filenames.extend(glob.glob(im,recursive=False))
+    checked_filenames = []
+    for f in filenames:
+        if os.path.isfile(f): checked_filenames.append(f)
+        else: print(f"Filename {f} not found")
 
+    if len(checked_filenames) == 0:
+        # Ask for input file(s)
+        checked_filenames = get_filenames()
 
     mode = {
         'qt': ViewerType.QT_VIEWER,
@@ -56,13 +66,14 @@ def main():
         return os.path.splitext(os.path.basename(path))[0][-maxlength:]
 
     images_dict = {}
-    for idx,im in enumerate(filenames):
+
+    for idx,im in enumerate(checked_filenames):
         images_dict[f"{idx}_{get_name(im)}"] = im
     mv.set_images(images_dict)
     mv.update_layout()
     # table_win.resize(3000, 1800)
 
-    nb_inputs = len(filenames)
+    nb_inputs = len(checked_filenames)
     mv.show()
     if nb_inputs>=1 and nb_inputs<=9:
         mv.set_number_of_viewers(nb_inputs)
