@@ -11,7 +11,7 @@ from enum                         import Enum, auto
 import math
 
 import types
-from typing import List, TYPE_CHECKING, Optional, NewType
+from typing import List, TYPE_CHECKING, Optional, NewType, Callable
 from qimview.image_viewers.image_viewer import ImageViewer
 # Class that derives from ImageViewer
 ImageViewerClass = NewType('ImageViewerClass', ImageViewer) 
@@ -35,6 +35,7 @@ class MultiView(QtWidgets.QWidget):
         # --- Protected members
         # Active viewer index, -1 if none viewer is active
         self._active_viewer_index : int = -1
+        self._active_viewer       : Optional[ImageViewerClass] = None
         # Show only active window
         self._show_active_only : bool = False
 
@@ -57,6 +58,7 @@ class MultiView(QtWidgets.QWidget):
         # Create viewer instances
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
+            viewer.set_activation_callback(self.on_active)
             # viewer.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
@@ -143,6 +145,7 @@ class MultiView(QtWidgets.QWidget):
         # Create viewer instances
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
+            viewer.set_activation_callback(self.on_active)
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
@@ -258,6 +261,7 @@ class MultiView(QtWidgets.QWidget):
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
+            viewer.set_activation_callback(self.on_active)
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
@@ -493,16 +497,14 @@ class MultiView(QtWidgets.QWidget):
             # self.label[im_name].setMaximumWidth(160)
 
     def get_active_viewer_index(self) -> int:
-        for n in range(self.nb_viewers_used):
-            if self.image_viewers[n].is_active:
-                return n
-        return -1
+        if not self._active_viewer: return -1
+        return self.image_viewers.index(self._active_viewer)
     
     def on_active(self, viewer : ImageViewerClass) -> None:
         # Activation requested for a given viewer
-        # Find viewer in viewer list
-        pass
-
+        self._active_viewer = viewer
+        self.update_image(viewer.image_name)
+ 
     def update_image(self, image_name=None, reload=False):
         """
         Uses the variable self.output_label_current_image
@@ -523,11 +525,12 @@ class MultiView(QtWidgets.QWidget):
 
         self.update_label_fonts()
 
-        # find first active window
-        first_active_window = self.get_active_viewer_index()
+        # find active window index
+        active_window_index = self.get_active_viewer_index()
         # If not found, set to 0
-        if first_active_window == 1: first_active_window = 0
-        self.image_viewers[first_active_window].display_timing = self.show_timing()>0
+        if active_window_index == -1: active_window_index = 0
+        if self._active_viewer:
+            self._active_viewer.display_timing = self.show_timing()>0
 
         # Read images in parallel to improve preformances
         # list all required image filenames
@@ -537,7 +540,7 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             viewer : ImageViewer = self.image_viewers[n]
             # Set active only the first active window
-            viewer.is_active = (n == first_active_window)
+            viewer.is_active = (n == active_window_index)
             if viewer.get_image() is None:
                 if n < len(self.image_list):
                     viewer.image_name = self.image_list[n]
@@ -572,7 +575,7 @@ class MultiView(QtWidgets.QWidget):
 
         self.setMessage("Image: {0}".format(current_filename))
 
-        current_viewer = self.image_viewers[first_active_window]
+        current_viewer = self.image_viewers[active_window_index]
         if self.save_image_clipboard:
             print("set save image to clipboard")
             current_viewer.set_clipboard(self.clip, True)
@@ -590,9 +593,9 @@ class MultiView(QtWidgets.QWidget):
             reference_image = self.get_output_image(self.output_label_reference_image)
 
         if self.nb_viewers_used >= 2:
-            prev_n = first_active_window
+            prev_n = active_window_index
             for n in range(1, self.nb_viewers_used):
-                n1 = (first_active_window + n) % self.nb_viewers_used
+                n1 = (active_window_index + n) % self.nb_viewers_used
                 viewer = self.image_viewers[n1]
                 # viewer image has already been defined
                 # try to update corresponding images in row
@@ -610,8 +613,8 @@ class MultiView(QtWidgets.QWidget):
                 self.image_viewers[prev_n].set_synchronize(viewer)
                 prev_n = n1
             # Create a synchronization loop
-            if prev_n != first_active_window:
-                self.image_viewers[prev_n].set_synchronize(self.image_viewers[first_active_window])
+            if prev_n != active_window_index:
+                self.image_viewers[prev_n].set_synchronize(self.image_viewers[active_window_index])
 
         # Be sure to show the required viewers
         if self._show_active_only:
@@ -661,6 +664,7 @@ class MultiView(QtWidgets.QWidget):
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
+            viewer.set_activation_callback(self.on_active)
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
 
@@ -693,7 +697,7 @@ class MultiView(QtWidgets.QWidget):
         if type(event) == QtGui.QKeyEvent:
             modifiers = QtWidgets.QApplication.keyboardModifiers()
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-            if modifiers & (QtCore.Qt.AltModifier | QtCore.Qt.ControlModifier):
+            if modifiers & (QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ControlModifier):
                 event.accept()
             # else:
             #     try:
@@ -706,7 +710,7 @@ class MultiView(QtWidgets.QWidget):
 
     def keyPressEvent(self, event):
         # Different functionalities
-        def help():
+        def help() -> bool :
             """ Open Help Dialog with links to wiki help
             """
             import qimview
@@ -720,10 +724,49 @@ class MultiView(QtWidgets.QWidget):
             mb.exec()
             return True
 
-        def reloadImages():    self.update_image(reload=True); return True
-        def enterFullScreen(): return self._fullscreen.enter_fullscreen(self)
-        def exitFullScreen():  return self._fullscreen.exit_fullscreen (self)
+        def reloadImages()    -> bool : self.update_image(reload=True); return True
+        def enterFullScreen() -> bool : return self._fullscreen.enter_fullscreen(self)
+        def exitFullScreen()  -> bool : return self._fullscreen.exit_fullscreen (self)
+        def upCallBack()      -> bool : 
+            if self.key_up_callback is not None:
+                self.key_up_callback()
+                return True
+            return False 
+        def downCallBack()      -> bool : 
+            if self.key_down_callback is not None:
+                self.key_down_callback()
+                return True
+            return False 
+        
+        def setNumberOfViewers(n:int) -> Callable:
+            def func() -> bool:
+                self.set_number_of_viewers(n)
+                self.viewer_grid_layout.update()
+                self.update_image()
+                self.setFocus()
+                return True
+            return func
 
+        def setActiveViewerImage(n:int) -> Callable:
+            def func() -> bool:
+                if self.image_list[n] is None: return False
+                if self.output_label_current_image != self.image_list[n]:
+                    self.update_image(self.image_list[n])
+                    self.setFocus()
+                    return True
+                return False
+            return func
+
+        def setReferenceImage(n:int) -> Callable:
+            def func() -> bool:
+                if self.image_list[n] is None: return False
+                if self.output_label_current_image != self.image_list[n]:
+                    self.set_reference_label(self.image_list[n], update_viewers=True)
+                    self.update_image()
+                    return True
+                return False
+            return func
+        
         if type(event) == QtGui.QKeyEvent:
             # print("key is ", event.key())
             self.print_log(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
@@ -738,68 +781,23 @@ class MultiView(QtWidgets.QWidget):
                 int(QtKey.Key_F5)    : reloadImages,
                 int(QtKey.Key_F10)   : enterFullScreen,
                 int(QtKey.Key_Escape): exitFullScreen,
+                int(QtKey.Key_Up)    : upCallBack,
+                int(QtKey.Key_Down)  : downCallBack,
             }
+            for n in range(10):
+                if modifiers & QtCore.Qt.KeyboardModifier.AltModifier:
+                    keys_callback[int(QtKey.Key_0+n)] = setActiveViewerImage(n)
+                elif modifiers & QtCore.Qt.KeyboardModifier.ControlModifier:
+                    keys_callback[int(QtKey.Key_0+n)] = setReferenceImage(n)
+                else:
+                    keys_callback[int(QtKey.Key_0+n)] = setNumberOfViewers(n)
 
             if event.key() in keys_callback:
-                if keys_callback[event.key()]():
-                    print(f"MultiView event.key() accept")
-                    event.accept()
-                else:
-                    print(f"MultiView event.key() ignore")
-                    event.ignore()
-                return
-
-            # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-            if modifiers & QtCore.Qt.AltModifier:
-                for n in range(len(self.image_list)):
-                    if self.image_list[n] is not None:
-                        if event.key() == QtCore.Qt.Key_0 + n:
-                            if self.output_label_current_image != self.image_list[n]:
-                                # with Alt+Ctrl, change reference image
-                                # if modifiers & QtCore.Qt.ControlModifier:
-                                #     self.set_reference_label(self.image_list[n])
-                                self.update_image(self.image_list[n])
-                                self.setFocus()
-                                return
-                event.accept()
-                return
-
-            if event.modifiers() & QtCore.Qt.ControlModifier:
-                # allow to switch between images by pressing Ctrl+'image position' (Ctrl+0, Ctrl+1, etc)
-                for n in range(len(self.image_list)):
-                    if self.image_list[n] != 'none':
-                        if event.key() == QtCore.Qt.Key_0 + n:
-                            if self.output_label_current_image != self.image_list[n]:
-                                self.set_reference_label(self.image_list[n], update_viewers=True)
-                                self.update_image()
-                                event.accept()
-                                return
-                return
-            # print(f"event.modifiers {event.modifiers()}")
-            # if not event.modifiers():
-            for n in range(1, 10):
-                if event.key() == QtCore.Qt.Key_0 + n:
-                    self.set_number_of_viewers(n)
-                    self.viewer_grid_layout.update()
-                    self.update_image()
-                    self.setFocus()
-                    event.accept()
-                    return
-
-            if event.key() == QtCore.Qt.Key_Up:
-                if self.key_up_callback is not None:
-                    self.key_up_callback()
-                event.accept()
-                return
-
-            if event.key() == QtCore.Qt.Key_Down:
-                if self.key_down_callback is not None:
-                    self.key_down_callback()
-                event.accept()
+                event.setAccepted(keys_callback[event.key()]())
                 return
 
             nb_images = len(self.image_list)
-            if event.key() == QtCore.Qt.Key_Left:
+            if event.key() == QtKey.Key_Left:
                 for n in range(nb_images):
                     if self.output_label_current_image == self.image_list[n]:
                         print(f"setting new image index {(n+nb_images-1)%nb_images}")
@@ -807,7 +805,7 @@ class MultiView(QtWidgets.QWidget):
                         event.accept()
                         return
 
-            if event.key() == QtCore.Qt.Key_Right:
+            if event.key() == QtKey.Key_Right:
                 for n in range(nb_images):
                     if self.output_label_current_image == self.image_list[n]:
                         print(f"setting new image index {(n+nb_images+1)%nb_images}")
@@ -816,7 +814,7 @@ class MultiView(QtWidgets.QWidget):
                         return
                 
             # G: display number of columns
-            if event.key() == QtCore.Qt.Key_G:
+            if event.key() ==QtKey.Key_G:
                 self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
                 self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
                 self.update_image(reload=True)

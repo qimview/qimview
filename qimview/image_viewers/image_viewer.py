@@ -158,11 +158,18 @@ class ImageViewer:
     def is_active(self, active: bool =True):
         # Do something only if the active flag changes
         if active != self._active:
+            self._active = active
+
+    def activate(self):
+        """
+            Activate this window and call possible callback if it was not already active
+        """
+        if self.is_active == False:
             # If a callback is set, rely on it
-            if active and self._on_active:
+            self._active = True
+            if self._on_active:
                 self._on_active(self)
-            else:
-                self._active = active
+
         # TODO: A single image viewer should not be linked to other viewers, it is
         # the multi-view image which must deal with synchronization
         # # be sure to deactivate other synchronized viewers
@@ -318,7 +325,7 @@ class ImageViewer:
             event.accept()
             return
         # Else set current viewer active
-        self.is_active = True
+        self.activate()
         self.viewer_update()
         event.accept()
 
