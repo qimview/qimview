@@ -366,7 +366,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         return posX, posY
 
     def mousePressEvent(self, event):
-        self.mouse_press_event(event)
+        super().mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
         if self.show_cursor:
