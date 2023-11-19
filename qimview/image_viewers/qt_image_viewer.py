@@ -10,6 +10,10 @@ from qimview.utils.viewer_image import *
 from qimview.utils.utils import clip_value
 from qimview.utils.utils import get_time
 from qimview.tests_utils.qtdump import *
+import cv2
+import numpy as np
+from typing import Tuple, Optional
+
 try:
     import qimview_cpp
 except Exception as e:
@@ -22,34 +26,27 @@ print("Do we have cpp binding ? {}".format(has_cppbind))
 from qimview.image_viewers import ImageFilterParameters
 from .image_viewer import (ImageViewer, trace_method,)
 
-import cv2
-import numpy as np
-from typing import Tuple, Optional
 
 # the opengl version is a bit slow for the moment, due to the texture generation
 # BaseWidget = QOpenGLWidget 
 BaseWidget = QtWidgets.QWidget
 
-class QTImageViewer(BaseWidget, ImageViewer ):
+class QTImageViewer(ImageViewer, BaseWidget):
 
-    def __init__(self, parent=None, event_recorder=None):
-        super().__init__(parent)
+    def __init__(self, parent : Optional[QtWidgets.QWidget] = None, event_recorder=None):
+        BaseWidget.__init__(self, parent)
+        ImageViewer.__init__(self, self)
         self.event_recorder = event_recorder
         self.setMouseTracking(True)
         self.anti_aliasing = True
         size_policy = QtWidgets.QSizePolicy()
-        size_policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Ignored)
-        size_policy.setVerticalPolicy(QtWidgets.QSizePolicy.Ignored)
+        size_policy.setHorizontalPolicy(QtWidgets.QSizePolicy.Policy.Ignored)
+        size_policy.setVerticalPolicy  (QtWidgets.QSizePolicy.Policy.Ignored)
         self.setSizePolicy(size_policy)
         # self.setAlignment(QtCore.Qt.AlignCenter )
         self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float32)
         self.zoom_center = np.array([0.5, 0.5, 0.5, 0.5])
-
-
-        if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
-            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
-        else:
-            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
 
         self.paint_cache      = None
         self.paint_diff_cache = None
@@ -71,10 +68,8 @@ class QTImageViewer(BaseWidget, ImageViewer ):
     #def __del__(self):
     #    pass
 
-    def set_image(self, image):
-        super().set_image(image)
-
     def apply_zoom(self, crop):
+        if self._image is None: return crop
         (height, width) = self._image.data.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
@@ -178,13 +173,14 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         # print(f"output_crop {self.output_crop} new crop {new_crop}")
         return new_crop
 
-    def apply_filters(self, current_image):
+    def apply_filters(self, current_image: ViewerImage) -> np.ndarray:
         self.print_log(f"current_image.data.shape {current_image.data.shape}")
         # return current_image
 
         self.start_timing(title='apply_filters()')
 
         # Output RGB from input
+        if self._image is None: return current_image
         ch = self._image.channels
         if has_cppbind:
             channels = current_image.channels
@@ -372,7 +368,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         if self.display_timing: self.print_timing()
         return im_pos
 
-    def get_difference_image(self, verbose=True):
+    def get_difference_image(self, verbose=True) -> Optional[ViewerImage]:
 
         factor = self.filter_params.imdiff_factor.float
         if self.paint_diff_cache is not None:
@@ -382,6 +378,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         else:
             use_cache = False
 
+        if self._image is None or self._image_ref is None: return None
         if not use_cache:
             im1 = self._image.data
             im2 = self._image_ref.data
@@ -451,6 +448,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         label_height = self.size().height()
 
         show_diff = self.show_image_differences and self._image is not self._image_ref and \
+                    self._image is not None and \
                     self._image_ref is not None and self._image.data.shape == self._image_ref.data.shape
 
         c = self.update_crop()
@@ -477,6 +475,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         else:
             current_image = self._image
 
+        if current_image is None: return
         precision  = current_image.precision
         downscale  = current_image.downscale
         channels   = current_image.channels
@@ -513,7 +512,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         display_width = int(round(image_width * ratio))
         display_height = int(round(image_height * ratio))
 
-        if self.show_overlay and self._image_ref is not self._image and self._image_ref and \
+        if self.show_overlay and self._image_ref is not self._image and self._image_ref and self._image and \
             self._image.data.shape == self._image_ref.data.shape:
             # to create the overlay rapidly, we will mix the two images based on the current cursor position
             # 1. convert cursor position to image position

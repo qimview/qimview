@@ -30,6 +30,11 @@ else:
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
 class MouseEvent(Enum):
+    """ Different processed events from mouse
+
+    Args:
+        Enum (_type_): _description_
+    """
     PanEvent   = auto()
     ZoomEvent  = auto()
     OtherEvent = auto()
@@ -71,7 +76,8 @@ class trace_method():
 
 class ImageViewer:
 
-    def __init__(self, parent=None):
+    def __init__(self, widget : QtWidgets.QWidget):
+        self._widget          : QtWidgets.QWidget = widget
 
         # --- Protected members
         self._width           : int = 500
@@ -405,8 +411,8 @@ class ImageViewer:
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
-        def toggleFullScreen(): return self._fullscreen.toggle_fullscreen(self)
-        def exitFullScreen():   return self._fullscreen.exit_fullscreen(self)
+        def toggleFullScreen(): return self._fullscreen.toggle_fullscreen(self._widget)
+        def exitFullScreen():   return self._fullscreen.exit_fullscreen(self._widget)
 
         self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
@@ -427,7 +433,7 @@ class ImageViewer:
                 return
             if event.key() == QtKeys.Key_F1:
                 import qimview
-                mb = QtWidgets.QMessageBox(self)
+                mb = QtWidgets.QMessageBox(self._widget)
                 mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
                 mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
                 mb.setText(
@@ -523,7 +529,7 @@ class ImageViewer:
 
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -> str:
         text : str = self.image_name
-        if self.show_cursor and im_pos:
+        if self.show_cursor and im_pos and self._image:
             text +=  f"\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}"
             if scale is not None:
                 text += f"\n x{scale:0.2f}"
@@ -597,13 +603,13 @@ class ImageViewer:
             hist_all[channel, :] = hist[:, 0]
 
         hist_all = hist_all / np.max(hist_all)
-        if show_timings: end_hist = get_time()
-        if show_timings: calc_hist_time += end_hist-start_hist
-        if show_timings: gauss_start = get_time()
-        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
-        if show_timings: gauss_time = get_time() - gauss_start
-
         if show_timings: 
+            end_hist = get_time()
+            calc_hist_time += end_hist-start_hist
+            gauss_start = get_time()
+        hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
+        if show_timings: 
+            gauss_time = get_time() - gauss_start
             print(f"compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end="")
             print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
               f"resizing:{resized_time*1000:0.1f}, "

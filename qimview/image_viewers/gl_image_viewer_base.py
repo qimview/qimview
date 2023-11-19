@@ -5,9 +5,7 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from qimview.utils.qt_imports   import *
-from qimview.utils.viewer_image import ImageFormat, ViewerImage
-from qimview.image_viewers.image_viewer import ImageViewer, trace_method
+from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
 
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
@@ -17,11 +15,15 @@ import traceback
 import numpy as np
 from typing import Optional, Tuple
 
-class GLImageViewerBase(QOpenGLWidget, ImageViewer):
+from qimview.utils.viewer_image import ImageFormat, ViewerImage
+from qimview.image_viewers.image_viewer import ImageViewer, trace_method
 
-    def __init__(self, parent=None):
+
+class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
+
+    def __init__(self, parent : Optional[QtWidgets.QWidget] = None):
+        ImageViewer.__init__(self, self)
         QOpenGLWidget.__init__(self, parent)
-        ImageViewer.__init__(self, parent)
         self.setAutoFillBackground(False)
 
         _format = QtGui.QSurfaceFormat()
@@ -42,11 +44,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         self.cursor_imy_ratio = 0.5
         self.trace_calls = False
         self.setMouseTracking(True)
-
-        if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
-            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
-        else:
-            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
 
     # def __del__(self):
     #     if self.textureID is not None:
@@ -57,6 +55,8 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             t = trace_method(self.tab)
         changed = super(GLImageViewerBase, self).set_image(image)
 
+        if self._image is None:
+            return
         img_width = self._image.data.shape[1]
         if img_width % 4 != 0:
             print("Image is resized to a multiple of 4 dimension in X")
@@ -67,6 +67,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             print(self._image.data.shape)
 
         if changed:  # and self.textureID is not None:
+            print(f"self.textureID {self.textureID}")
             if self.setTexture():
                 self.show()
                 self.update()
@@ -84,7 +85,7 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
             if status != gl.GL_NO_ERROR:
                 print(self.tab[0]+'gl error %s' % status)
 
-    def setTexture(self):
+    def setTexture(self) -> bool:
         """
         :return: set opengl texture based on input numpy array image
         """
@@ -152,24 +153,28 @@ class GLImageViewerBase(QOpenGLWidget, ImageViewer):
         texture_pixel_format = channels2format[self._image.channels]
 
         if (self.tex_width,self.tex_height) != (img_width,img_height):
-            if self.textureID is not None:
-                gl.glDeleteTextures(np.array([self.textureID]))
-            self.textureID = gl.glGenTextures(1)
-            gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-            gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
-            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-            # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-            gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-            gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
-                            internal_format,
-                            img_width, img_height,
-                         0, texture_pixel_format, gl_type, self._image.data)
-            # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
-            self.tex_width, self.tex_height = img_width, img_height
+            try:
+                if self.textureID is not None:
+                    gl.glDeleteTextures(np.array([self.textureID]))
+                self.textureID = gl.glGenTextures(1)
+                gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+                # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+                # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
+                                internal_format,
+                                img_width, img_height,
+                            0, texture_pixel_format, gl_type, self._image.data)
+                # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+                self.tex_width, self.tex_height = img_width, img_height
+            except Exception as e:
+                print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
+                return False
         else:
             try:
                 gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
