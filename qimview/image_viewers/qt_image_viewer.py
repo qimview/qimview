@@ -677,15 +677,17 @@ class QTImageViewer(ImageViewer, BaseWidget):
         #     self.add_time('qimage.scaled', time1)
         #     resize_applied = True
 
-        if self.save_image_clipboard:
+        if self._save_image_clipboard and self._clipboard:
             self.print_log("exporting to clipboard")
-            self.clipboard.setImage(qimage, mode=QtGui.QClipboard.Clipboard)
+            self._clipboard.setImage(qimage, mode=QtGui.QClipboard.Mode.Clipboard)
+        else:
+            print(f"No export to clipboard {self._save_image_clipboard} {self._clipboard}")
 
         painter : QtGui.QPainter = QtGui.QPainter()
 
         painter.begin(self)
         if BaseWidget is QOpenGLWidget:
-            painter.setRenderHint(QtGui.QPainter.Antialiasing)
+            painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         # TODO: check that this condition is not needed
         if BaseWidget is QOpenGLWidget:

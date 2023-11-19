@@ -34,13 +34,17 @@ class MultiView(QtWidgets.QWidget):
 
         # --- Protected members
         # Active viewer index, -1 if none viewer is active
-        self._active_viewer_index : int = -1
-        self._active_viewer       : Optional[ImageViewerClass] = None
+        self._active_viewer_index  : int                        = -1
+        self._active_viewer        : Optional[ImageViewerClass] = None
         # Show only active window
-        self._show_active_only : bool = False
+        self._show_active_only     : bool                       = False
 
         # FullScreen helper features
-        self._fullscreen      : FullScreenHelper = FullScreenHelper()
+        self._fullscreen           : FullScreenHelper           = FullScreenHelper()
+
+        # Clipboard
+        self._save_image_clipboard : bool                       = False
+        self._clipboard            : Optional[QtGui.QClipboard] = None
 
         # --- Public members
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
@@ -79,7 +83,6 @@ class MultiView(QtWidgets.QWidget):
         # self.set_verbosity(self.verbosity_TRACE)
 
         self.current_image_filename = None
-        self.save_image_clipboard = False
 
         self.filter_params = ImageFilterParameters()
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params)
@@ -512,7 +515,11 @@ class MultiView(QtWidgets.QWidget):
                 v.viewer_update()
                 # Force immediate paint
                 # viewer.repaint()
- 
+    
+    def set_clipboard(self, clipboard : Optional[QtGui.QClipboard], save_image: bool):
+        self._clipboard            = clipboard
+        self._save_image_clipboard = save_image
+
     def update_image(self, image_name=None, reload=False):
         """
         Uses the variable self.output_label_current_image
@@ -579,15 +586,9 @@ class MultiView(QtWidgets.QWidget):
         self.setMessage("Image: {0}".format(current_filename))
 
         current_viewer = self._active_viewer
-        if self.save_image_clipboard:
-            print("set save image to clipboard")
-            current_viewer.set_clipboard(self.clip, True)
         current_viewer.is_active = True
         current_viewer.image_name = self.output_label_current_image
         current_viewer.set_image(current_image)
-        if self.save_image_clipboard:
-            print("end save image to clipboard")
-            current_viewer.set_clipboard(None, False)
 
         # print(f"ref {self.output_label_reference_image}")
         if self.output_label_reference_image==self.output_label_current_image:
@@ -610,6 +611,10 @@ class MultiView(QtWidgets.QWidget):
                     # set reference image
                     viewer.set_image_ref(reference_image)
 
+        # if self._save_image_clipboard and self._clipboard:
+        #     print("set save image to clipboard")
+        #     self._active_viewer.set_clipboard(self._clipboard, True)
+
         # Be sure to show the required viewers
         if self._show_active_only:
             for n in range(self.nb_viewers_used):
@@ -623,6 +628,13 @@ class MultiView(QtWidgets.QWidget):
                 # viewer.show()
                 if viewer.isHidden(): viewer.show()
                 else:                 viewer.update()
+
+        if self._save_image_clipboard:
+            print("set save image to clipboard")
+            self._active_viewer.set_clipboard(self._clipboard, True)
+            self._active_viewer.repaint()
+            print("end save image to clipboard")
+            self._active_viewer.set_clipboard(None, False)
 
         # self.image_scroll_area.adjustSize()
         # if self.show_timing():

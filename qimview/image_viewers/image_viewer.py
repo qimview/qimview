@@ -103,6 +103,10 @@ class ImageViewer:
         # Synchronization callback
         self._on_synchronize  : Optional[Callable]= None
 
+        # Clipboard
+        self._save_image_clipboard : bool                       = False
+        self._clipboard            : Optional[QtGui.QClipboard] = None
+
         # --- Public members
         self.data = None
         self.lastPos = None # Last mouse position before mouse click
@@ -114,10 +118,8 @@ class ImageViewer:
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
         self.tab = ["--"]
-        self.trace_calls  = False
-        self.filter_params = ImageFilterParameters()
-        self.save_image_clipboard = False
-        self.clipboard = None
+        self.trace_calls           : bool                       = False
+        self.filter_params         : ImageFilterParameters      = ImageFilterParameters()
 
         self.start_time = dict()
         self.timings = dict()
@@ -212,9 +214,9 @@ class ImageViewer:
             self._image_ref = image_ref
             self.image_ref_id += 1
 
-    def set_clipboard(self, clipboard, save_image):
-        self.clipboard = clipboard
-        self.save_image_clipboard = save_image
+    def set_clipboard(self, clipboard : Optional[QtGui.QClipboard], save_image: bool):
+        self._clipboard            = clipboard
+        self._save_image_clipboard = save_image
 
     def print_log(self, mess, force=False):
         if self.verbose or force:
