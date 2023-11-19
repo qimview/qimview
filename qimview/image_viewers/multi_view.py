@@ -87,7 +87,13 @@ class MultiView(QtWidgets.QWidget):
         self.filter_params = ImageFilterParameters()
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params)
 
-        self.raw_bayer = {'Read': None, 'Bayer0': ImageFormat.CH_GBRG, 'Bayer1': ImageFormat.CH_BGGR, 'Bayer2': ImageFormat.CH_RGGB, 'Bayer3': ImageFormat.CH_GRBG}
+        self.raw_bayer = {
+            'Read': None, 
+            'Bayer0': ImageFormat.CH_GBRG, 
+            'Bayer1': ImageFormat.CH_BGGR, 
+            'Bayer2': ImageFormat.CH_RGGB, 
+            'Bayer3': ImageFormat.CH_GRBG
+        }
         self.default_raw_bayer = 'Read'
         self.current_raw_bayer = self.default_raw_bayer
 
@@ -102,11 +108,7 @@ class MultiView(QtWidgets.QWidget):
         self.image2 = dict()
         self.button_layout = None
         self.message_cb = None
-
-        if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
-            self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
-        else:
-            self.setFocusPolicy(QtCore.Qt.ClickFocus)
+        self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
 
         self.key_up_callback = None
         self.key_down_callback = None
@@ -127,7 +129,7 @@ class MultiView(QtWidgets.QWidget):
         self.key_down_callback = c
 
     def add_context_menu(self):
-        self.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
         self._context_menu = QtWidgets.QMenu()
         self.viewer_modes = {}
@@ -142,8 +144,8 @@ class MultiView(QtWidgets.QWidget):
 
     def reset_viewers(self):
         for v in self.image_viewers:
-            v.hide()
-            self.viewer_grid_layout.removeWidget(v)
+            v.widget.hide()
+            self.viewer_grid_layout.removeWidget(v.widget)
         self.allocated_image_viewers.clear()
         self.image_viewers.clear()
         # Create viewer instances
@@ -242,7 +244,7 @@ class MultiView(QtWidgets.QWidget):
 
         for n in range(self.nb_viewers_used):
             self.image_viewers[n].filter_params.copy_from(self.filter_params)
-            self.image_viewers[n].update()
+            self.image_viewers[n].widget.update()
 
         if self.show_timing():
             time_spent = get_time() - update_start
@@ -305,10 +307,11 @@ class MultiView(QtWidgets.QWidget):
             # possibility to disable an image using the string 'none', especially useful for input image
             if image_name != 'none':
                 self.label[image_name] = MVLabel(image_name, self)
-                self.label[image_name].setFrameShape(QtWidgets.QFrame.Panel)
-                self.label[image_name].setFrameShadow(QtWidgets.QFrame.Sunken)
+                self.label[image_name].setFrameShape(QtWidgets.QFrame.Shape.Panel)
+                self.label[image_name].setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
                 # self.label[image_name].setLineWidth(3)
-                self.label[image_name].setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Minimum)
+                self.label[image_name].setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, 
+                                                     QtWidgets.QSizePolicy.Policy.Minimum)
                 # self.label[image_name].setFixedHeight(40)
                 self.label[image_name].mousePressEvent = self.make_mouse_press(image_name)
                 self.label[image_name].mouseReleaseEvent = self.mouse_release
@@ -352,11 +355,11 @@ class MultiView(QtWidgets.QWidget):
         self.button_layout.setVerticalSpacing(0)
         # button_layout.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
         self.create_buttons()
-        vertical_layout.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
+        vertical_layout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
         # vertical_layout.setSizeConstraint(QtWidgets.QLayout.SetNoConstraint)
-        self.button_widget.setSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Fixed)
+        self.button_widget.setSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Fixed)
         self.button_widget.setLayout(self.button_layout)
-        vertical_layout.addWidget(self.button_widget, 0, QtCore.Qt.AlignTop)
+        vertical_layout.addWidget(self.button_widget, 0, QtCore.Qt.AlignmentFlag.AlignTop)
 
     def layout_parameters(self, parameters_layout):
         # Add Profiles and keep zoom options
@@ -414,7 +417,7 @@ class MultiView(QtWidgets.QWidget):
 
         self.figures_widget = QtWidgets.QWidget()
         self.figures_layout = QtWidgets.QHBoxLayout()
-        self.figures_layout.setSizeConstraint(QtWidgets.QLayout.SetMinimumSize)
+        self.figures_layout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
         # for the moment ignore this
         # self.figures_layout.addWidget(self.value_in_range_canvas)
         # self.figures_widget.setLayout(self.figures_layout)
@@ -619,20 +622,20 @@ class MultiView(QtWidgets.QWidget):
         if self._show_active_only:
             for n in range(self.nb_viewers_used):
                 viewer = self.image_viewers[n]
-                viewer.setVisible(viewer.is_active)
-            self._active_viewer.update()
+                viewer.widget.setVisible(viewer.is_active)
+            self._active_viewer.widget.update()
         else:
             for n in range(self.nb_viewers_used):
                 viewer = self.image_viewers[n]
                 # Note: calling show in any case seems to avoid double calls to paint event that update() triggers
                 # viewer.show()
-                if viewer.isHidden(): viewer.show()
-                else:                 viewer.update()
+                if viewer.widget.isHidden(): viewer.widget.show()
+                else:                        viewer.widget.update()
 
         if self._save_image_clipboard:
             print("set save image to clipboard")
             self._active_viewer.set_clipboard(self._clipboard, True)
-            self._active_viewer.repaint()
+            self._active_viewer.widget.repaint()
             print("end save image to clipboard")
             self._active_viewer.set_clipboard(None, False)
 
@@ -647,7 +650,7 @@ class MultiView(QtWidgets.QWidget):
         # 1. remove current viewers from grid layout
         # self.viewer_grid_layout.hide()
         for v in self.image_viewers:
-            v.hide()
+            v.widget.hide()
             self.viewer_grid_layout.removeWidget(v)
 
         self.nb_viewers_used : int = nb_viewers

@@ -141,6 +141,11 @@ class ImageViewer:
 
     # === Properties 
 
+    # --- widget
+    @property
+    def widget(self) -> QtWidgets.QWidget:
+        return self._widget
+
     # --- display_timing
     @property
     def display_timing(self):
