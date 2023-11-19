@@ -417,120 +417,101 @@ class ImageViewer:
 
     # def mouseDoubleClickEvent(self, event):
 
+    def get_key_seq(self, event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
+        """ Return a key sequence from a keyboard event
+        """
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        QtMod = QtCore.Qt.KeyboardModifier
+        # Python > 3.7 key order is maintained
+        mod_str = { QtMod.ShiftModifier   : 'Shift', QtMod.ControlModifier : 'Ctrl', 
+                    QtMod.AltModifier     : 'Alt',   QtMod.MetaModifier    : 'Meta',}
+        # Compact line to create the contatenated string like 'Ctrl+Alt+'
+        mod_seq_str = "".join([ f"{mod_str[m]}+" for  m in mod_str.keys() if modifiers & m])
+        key_str = QtGui.QKeySequence(event.key()).toString()
+        return QtGui.QKeySequence(mod_seq_str + key_str)
+    
     def key_press_event(self, event, wsize):
-        def toggleFullScreen(): return self._fullscreen.toggle_fullscreen(self._widget)
-        def exitFullScreen():   return self._fullscreen.exit_fullscreen(self._widget)
+        def helpDialog() -> bool :
+            """ Open Help Dialog with links to wiki help
+            """
+            import qimview
+            mb = QtWidgets.QMessageBox(self)
+            mb.setWindowTitle(f"qimview {qimview.__version__}: ImageViewer help")
+            mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+            mb.setText(
+                    "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
+                    "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
+            mb.exec()
+            return True
+        def toggleFullScreen() -> bool: return self._fullscreen.toggle_fullscreen(self._widget)
+        def exitFullScreen()   -> bool: return self._fullscreen.exit_fullscreen(self._widget)
+        def updateAndAccept() -> bool:
+            self.viewer_update()
+            self.synchronize()
+            return True
+        def zoomUpperLeft()    -> bool:
+            self.current_dx = wsize.width()/4
+            self.current_dy = -wsize.height()/4
+            self.current_scale = 2
+            return updateAndAccept()
+        def zoomLowerLeft()    -> bool:
+            self.current_dx = wsize.width() / 4
+            self.current_dy = wsize.height() / 4
+            self.current_scale = 2
+            return updateAndAccept()
+        def zoomUpperRight()    -> bool:
+            self.current_dx = -wsize.width()/4
+            self.current_dy = -wsize.height()/4
+            self.current_scale = 2
+            return updateAndAccept()
+        def zoomLowerRight()    -> bool:
+            self.current_dx = -wsize.width() / 4
+            self.current_dy =  wsize.height() / 4
+            self.current_scale = 2
+            return updateAndAccept()
+        def unZoom()    -> bool:
+            self.current_dx = 0
+            self.current_dy = 0
+            self.current_scale = 1
+            return updateAndAccept()
+        def toggleAntialiasing()->bool: self.antialiasing   = not self.antialiasing;   return updateAndAccept()
+        def toggleHistogram()   ->bool: self.show_histogram = not self.show_histogram; return updateAndAccept()
+        def toggleOverlay()     ->bool: self.show_overlay   = not self.show_overlay;   return updateAndAccept()
+        def toggleCursor()      ->bool: self.show_cursor    = not self.show_cursor;    return updateAndAccept()
+        def toggleStats()       ->bool: self.show_stats     = not self.show_stats;     return updateAndAccept()
+        def toggleDifferences() ->bool: 
+            self.show_image_differences = not self.show_image_differences
+            return updateAndAccept()
+        def toggleIntensityLine() ->bool: 
+            self.show_intensity_line = not self.show_intensity_line
+            return updateAndAccept()
 
         self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
-
-            QtKey = QtCore.Qt.Key
             keys_callback = {
-                int(QtKey.Key_F11)   : toggleFullScreen,
-                int(QtKey.Key_Escape): exitFullScreen,
+                'A'     : toggleAntialiasing,
+                'C'     : toggleCursor,
+                'D'     : toggleDifferences,
+                'H'     : toggleHistogram,
+                'I'     : toggleIntensityLine,
+                'O'     : toggleOverlay,
+                'S'     : toggleStats,
+                'F1'    : helpDialog,
+                'F11'   : toggleFullScreen,
+                'Esc'   : exitFullScreen,
+                'Alt+A' : zoomUpperLeft,
+                'Alt+B' : zoomUpperRight,
+                'Alt+C' : zoomLowerLeft,
+                'Alt+D' : zoomLowerRight,
+                'Alt+F' : unZoom,
             }
 
-            if event.key() in keys_callback:
-                if keys_callback[event.key()](): 
-                    print(f"ImageViewer event.key() accept")
-                    event.accept() 
-                else: 
-                    print(f"ImageViewer event.key() ignore")
-                    event.ignore()
-                return
-            if event.key() == QtKeys.Key_F1:
-                import qimview
-                mb = QtWidgets.QMessageBox(self._widget)
-                mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
-                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
-                mb.setText(
-                    "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
-                    "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
-                mb.exec()
-                event.accept()
-                return
-
-            # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-            key_list = []
-
-            # # select upper left crop
-            # key_list.append(QtCore.Qt.Key_A)
-            # if event.key() == QtCore.Qt.Key_A:
-            #     self.current_dx = wsize.width()/4
-            #     self.current_dy = -wsize.height()/4
-            #     self.current_scale = 2
-
-            # select upper left crop
-            key_list.append(QtKeys.Key_B)
-            if event.key() == QtKeys.Key_B:
-                self.current_dx = -wsize.width() / 4
-                self.current_dy = -wsize.height() / 4
-                self.current_scale = 2
-
-            # # select lower left crop
-            # key_list.append(QtCore.Qt.Key_C)
-            # if event.key() == QtCore.Qt.Key_C:
-            #     self.current_dx = wsize.width() / 4
-            #     self.current_dy = wsize.height() / 4
-            #     self.current_scale = 2
-
-            # # select lower right crop
-            # key_list.append(QtCore.Qt.Key_D)
-            # if event.key() == QtCore.Qt.Key_D:
-            #     self.current_dx = -wsize.width() / 4
-            #     self.current_dy = wsize.height() / 4
-            #     self.current_scale = 2
-
-            # select full crop
-            key_list.append(QtKeys.Key_F)
-            if event.key() == QtKeys.Key_F:
-                self.output_crop = (0., 0., 1., 1.)
-                self.current_dx = 0
-                self.current_dy = 0
-                self.current_scale = 1
-
-            # toggle antialiasing
-            key_list.append(QtKeys.Key_A)
-            if event.key() == QtKeys.Key_A:
-                self.antialiasing = not self.antialiasing
-                print(f"antialiasing {self.antialiasing}")
-
-            # toggle histograph
-            key_list.append(QtKeys.Key_H)
-            if event.key() == QtKeys.Key_H:
-                self.show_histogram = not self.show_histogram
-
-            # toggle overlay
-            key_list.append(QtKeys.Key_O)
-            if event.key() == QtKeys.Key_O:
-                self.show_overlay = not self.show_overlay
-
-            # C: toggle cursor
-            key_list.append(QtKeys.Key_C)
-            if event.key() == QtKeys.Key_C:
-                self.show_cursor = not self.show_cursor
-
-            # D: toggle image differences
-            key_list.append(QtKeys.Key_D)
-            if event.key() == QtKeys.Key_D:
-                self.show_image_differences = not self.show_image_differences
-
-            # S: display stats on currrent image
-            key_list.append(QtKeys.Key_S)
-            if event.key() == QtKeys.Key_S:
-                self.show_stats = not self.show_stats
-
-            # I: display intensity line
-            key_list.append(QtKeys.Key_I)
-            if event.key() == QtKeys.Key_I:
-                self.show_intensity_line = not self.show_intensity_line
-
-            if event.key() in key_list:
-                self.viewer_update()
-                self.synchronize()
-                event.accept()
-                return
-            event.ignore()
+            key_seq : str = self.get_key_seq(event).toString()
+            # print(f"key sequence = {key_seq}")
+            if key_seq in keys_callback:
+                event.setAccepted(keys_callback[key_seq]())
+            else:
+                event.ignore()
         else:
             event.ignore()
 

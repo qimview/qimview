@@ -696,14 +696,19 @@ class MultiView(QtWidgets.QWidget):
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
             if modifiers & (QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ControlModifier):
                 event.accept()
-            # else:
-            #     try:
-            #         # reset reference image
-            #         if self.output_label_current_image != self.output_label_reference_image:
-            #             self.update_image(self.output_label_reference_image)
-            #     except Exception as e:
-            #         print(" Error: {}".format(e))
 
+    def get_key_seq(self, event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
+        """ Return a key sequence from a keyboard event
+        """
+        modifiers = QtWidgets.QApplication.keyboardModifiers()
+        QtMod = QtCore.Qt.KeyboardModifier
+        # Python > 3.7 key order is maintained
+        mod_str = { QtMod.ShiftModifier   : 'Shift', QtMod.ControlModifier : 'Ctrl', 
+                    QtMod.AltModifier     : 'Alt',   QtMod.MetaModifier    : 'Meta',}
+        # Compact line to create the contatenated string like 'Ctrl+Alt+'
+        mod_seq_str = "".join([ f"{mod_str[m]}+" for  m in mod_str.keys() if modifiers & m])
+        key_str = QtGui.QKeySequence(event.key()).toString()
+        return QtGui.QKeySequence(mod_seq_str + key_str)
 
     def keyPressEvent(self, event):
         # Different functionalities
@@ -792,37 +797,31 @@ class MultiView(QtWidgets.QWidget):
             return True
 
         if type(event) == QtGui.QKeyEvent:
-            # print("key is ", event.key())
             self.print_log(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
-            # print( QtGui.QKeySequence(event.key()).toString())
             # print(f" capslock: {event.getModifierState('CapsLock')}")
-            if self.show_trace():
-                print("key is ", event.key())
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-            QtKey = QtCore.Qt.Key
+            if self.show_trace(): print("key is ", event.key())
             keys_callback = {
-                int(QtKey.Key_F1)    : help,
-                int(QtKey.Key_F5)    : reloadImages,
-                int(QtKey.Key_F10)   : toggleFullScreen,
-                int(QtKey.Key_Escape): exitFullScreen,
-                int(QtKey.Key_Up)    : upCallBack,
-                int(QtKey.Key_Down)  : downCallBack,
-                int(QtKey.Key_Left)  : selectPreviousImage,
-                int(QtKey.Key_Right) : selectNextImage,
-                int(QtKey.Key_G)     : changeGridLayout,
+                'F1'    : help,
+                'F5'    : reloadImages,
+                'F10'   : toggleFullScreen,
+                'Esc'   : exitFullScreen,
+                'Up'    : upCallBack,
+                'Down'  : downCallBack,
+                'Left'  : selectPreviousImage,
+                'Right' : selectNextImage,
+                'G'     : changeGridLayout,
             }
 
             for n in range(10):
-                if modifiers & QtCore.Qt.KeyboardModifier.AltModifier:
-                    keys_callback[int(QtKey.Key_0+n)] = setActiveViewerImage(n)
-                elif modifiers & QtCore.Qt.KeyboardModifier.ControlModifier:
-                    keys_callback[int(QtKey.Key_0+n)] = setReferenceImage(n)
-                else:
-                    if n>0: keys_callback[int(QtKey.Key_0+n)] = setNumberOfViewers(n)
+                keys_callback[f'Alt+{n}' ] = setActiveViewerImage(n)
+                keys_callback[f'Ctrl+{n}'] = setReferenceImage(n)
+                if n>0:
+                    keys_callback[f'{n}']      = setNumberOfViewers(n)
 
-            if event.key() in keys_callback and modifiers == QtCore.Qt.KeyboardModifier.NoModifier:
-                print(f"modifiers {modifiers}")
-                event.setAccepted(keys_callback[event.key()]())
+            key_seq : str = self.get_key_seq(event).toString()
+            # print(f"key sequence = {key_seq}")
+            if key_seq in keys_callback:
+                event.setAccepted(keys_callback[key_seq]())
             else:
                 event.ignore()
 
