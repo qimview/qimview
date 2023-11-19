@@ -765,7 +765,32 @@ class MultiView(QtWidgets.QWidget):
                     return True
                 return False
             return func
-        
+
+        def selectPreviousImage() -> bool:
+            try:
+                current_pos = self.image_list.index(self.output_label_current_image)
+                nb_images = len(self.image_list)
+                self.update_image(self.image_list[(current_pos+nb_images-1)%nb_images])
+                return True
+            except ValueError:
+                return False
+
+        def selectNextImage() -> bool:
+            try:
+                current_pos = self.image_list.index(self.output_label_current_image)
+                nb_images = len(self.image_list)
+                self.update_image(self.image_list[(current_pos+1)%nb_images])
+                return True
+            except ValueError:
+                return False
+
+        def changeGridLayout() -> bool:
+            self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
+            self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
+            self.update_image(reload=True)
+            self.setFocus()
+            return True
+
         if type(event) == QtGui.QKeyEvent:
             # print("key is ", event.key())
             self.print_log(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
@@ -782,7 +807,11 @@ class MultiView(QtWidgets.QWidget):
                 int(QtKey.Key_Escape): exitFullScreen,
                 int(QtKey.Key_Up)    : upCallBack,
                 int(QtKey.Key_Down)  : downCallBack,
+                int(QtKey.Key_Left)  : selectPreviousImage,
+                int(QtKey.Key_Right) : selectNextImage,
+                int(QtKey.Key_G)     : changeGridLayout,
             }
+
             for n in range(10):
                 if modifiers & QtCore.Qt.KeyboardModifier.AltModifier:
                     keys_callback[int(QtKey.Key_0+n)] = setActiveViewerImage(n)
@@ -791,35 +820,11 @@ class MultiView(QtWidgets.QWidget):
                 else:
                     if n>0: keys_callback[int(QtKey.Key_0+n)] = setNumberOfViewers(n)
 
-            if event.key() in keys_callback:
+            if event.key() in keys_callback and modifiers == QtCore.Qt.KeyboardModifier.NoModifier:
+                print(f"modifiers {modifiers}")
                 event.setAccepted(keys_callback[event.key()]())
-                return
-
-            nb_images = len(self.image_list)
-            if event.key() == QtKey.Key_Left:
-                for n in range(nb_images):
-                    if self.output_label_current_image == self.image_list[n]:
-                        print(f"setting new image index {(n+nb_images-1)%nb_images}")
-                        self.update_image(self.image_list[(n+nb_images-1)%nb_images])
-                        event.accept()
-                        return
-
-            if event.key() == QtKey.Key_Right:
-                for n in range(nb_images):
-                    if self.output_label_current_image == self.image_list[n]:
-                        print(f"setting new image index {(n+nb_images+1)%nb_images}")
-                        self.update_image(self.image_list[(n+1)%nb_images])
-                        event.accept()
-                        return
-                
-            # G: display number of columns
-            if event.key() ==QtKey.Key_G:
-                self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
-                self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
-                self.update_image(reload=True)
-                self.setFocus()
-                event.accept()
-                return
+            else:
+                event.ignore()
 
         else:
             event.ignore()

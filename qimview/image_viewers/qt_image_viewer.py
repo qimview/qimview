@@ -667,21 +667,10 @@ class QTImageViewer(ImageViewer, BaseWidget):
         # self.add_time('QtGui.QPixmap',time1)
 
         assert resize_applied, "Image resized should be applied at this point"
-        # if not resize_applied:
-        #     printf("*** We should never get here ***")
-        #     time1 = get_time()
-        #     if anti_aliasing:
-        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        #     else:
-        #         qimage = qimage.scaled(display_width, display_height, QtCore.Qt.KeepAspectRatio)
-        #     self.add_time('qimage.scaled', time1)
-        #     resize_applied = True
 
         if self._save_image_clipboard and self._clipboard:
             self.print_log("exporting to clipboard")
             self._clipboard.setImage(qimage, mode=QtGui.QClipboard.Mode.Clipboard)
-        else:
-            print(f"No export to clipboard {self._save_image_clipboard} {self._clipboard}")
 
         painter : QtGui.QPainter = QtGui.QPainter()
 
@@ -718,7 +707,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                                       full = self.show_intensity_line,
                                       )
 
-        if self.show_intensity_line:
+        if self.show_intensity_line and self._image:
             (height, width) = cropped_image_shape[:2]
             im_y = int((self.mouse_y -rect.y())/rect.height()*height)
             im_y += crop_ymin
