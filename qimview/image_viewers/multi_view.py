@@ -1,20 +1,20 @@
 
-from qimview.utils.qt_imports import *
-from qimview.utils.utils import get_time
-from qimview.utils.viewer_image  import *
+from qimview.utils.qt_imports     import QtGui, QtWidgets, QtCore
+from qimview.utils.utils          import get_time
+from qimview.utils.viewer_image   import *
 from qimview.utils.menu_selection import MenuSelection
-from qimview.utils.mvlabel import MVLabel
-from qimview.cache import ImageCache
-
-from qimview.image_viewers import *
-
-from enum import Enum, auto
+from qimview.utils.mvlabel        import MVLabel
+from qimview.cache                import ImageCache
+from .fullscreen_helper           import FullScreenHelper
+from qimview.image_viewers        import *
+from enum                         import Enum, auto
 import math
 
 import types
-from typing import List, TYPE_CHECKING, Optional
-if TYPE_CHECKING:
-    from qimview.image_viewers.image_viewer import ImageViewer
+from typing import List, TYPE_CHECKING, Optional, NewType
+from qimview.image_viewers.image_viewer import ImageViewer
+# Class that derives from ImageViewer
+ImageViewerClass = NewType('ImageViewerClass', ImageViewer) 
 
 class ViewerType(Enum):
     QT_VIEWER             = auto()
@@ -32,11 +32,20 @@ class MultiView(QtWidgets.QWidget):
         """
         QtWidgets.QWidget.__init__(self, parent)
 
+        # --- Protected members
+        # Active viewer index, -1 if none viewer is active
+        self._active_viewer_index : int = -1
+        # Show only active window
+        self._show_active_only : bool = False
+
+        # FullScreen helper features
+        self._fullscreen      : FullScreenHelper = FullScreenHelper()
+
+        # --- Public members
         self.use_opengl = viewer_mode in [ViewerType.OPENGL_SHADERS_VIEWER, ViewerType.OPENGL_VIEWER]
 
         self.nb_viewers_used : int = nb_viewers
         self.allocated_image_viewers = []  # keep allocated image viewers here
-        self.image_viewers = []
         self.image_viewer_classes = {
             ViewerType.QT_VIEWER:             QTImageViewer,
             ViewerType.OPENGL_VIEWER:         GLImageViewer,
@@ -44,10 +53,11 @@ class MultiView(QtWidgets.QWidget):
         }
         self.image_viewer_class = self.image_viewer_classes[viewer_mode]
 
+        self.image_viewers : List[ImageViewerClass] = []
         # Create viewer instances
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
-            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            # viewer.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
 
@@ -86,7 +96,6 @@ class MultiView(QtWidgets.QWidget):
         self.image2 = dict()
         self.button_layout = None
         self.message_cb = None
-        self.replacing_widget = self.before_max_parent = None
 
         if 'ClickFocus' in QtCore.Qt.FocusPolicy.__dict__:
             self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
@@ -104,9 +113,6 @@ class MultiView(QtWidgets.QWidget):
         # Parameter to set the number of columns in the viewer grid layout
         # if 0: computed automatically
         self.max_columns       : int = 0 
-
-        # Show only active window
-        self._show_active_only : bool = False
 
     def set_key_up_callback(self, c):
         self.key_up_callback = c
@@ -137,7 +143,7 @@ class MultiView(QtWidgets.QWidget):
         # Create viewer instances
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
-            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
         self.set_number_of_viewers(self.nb_viewers_used)
@@ -252,7 +258,7 @@ class MultiView(QtWidgets.QWidget):
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
-            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
         image_names = list(self.image_dict.keys())
@@ -488,10 +494,14 @@ class MultiView(QtWidgets.QWidget):
 
     def get_active_viewer_index(self) -> int:
         for n in range(self.nb_viewers_used):
-            if self.image_viewers[n].is_active():
+            if self.image_viewers[n].is_active:
                 return n
         return -1
-
+    
+    def on_active(self, viewer : ImageViewerClass) -> None:
+        # Activation requested for a given viewer
+        # Find viewer in viewer list
+        pass
 
     def update_image(self, image_name=None, reload=False):
         """
@@ -527,7 +537,7 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             viewer : ImageViewer = self.image_viewers[n]
             # Set active only the first active window
-            viewer.set_active(n == first_active_window)
+            viewer.is_active = (n == first_active_window)
             if viewer.get_image() is None:
                 if n < len(self.image_list):
                     viewer.image_name = self.image_list[n]
@@ -566,7 +576,7 @@ class MultiView(QtWidgets.QWidget):
         if self.save_image_clipboard:
             print("set save image to clipboard")
             current_viewer.set_clipboard(self.clip, True)
-        current_viewer.set_active(True)
+        current_viewer.is_active = True
         current_viewer.image_name = self.output_label_current_image
         current_viewer.set_image(current_image)
         if self.save_image_clipboard:
@@ -607,7 +617,7 @@ class MultiView(QtWidgets.QWidget):
         if self._show_active_only:
             for n in range(self.nb_viewers_used):
                 viewer = self.image_viewers[n]
-                if not viewer.is_active():
+                if not viewer.is_active:
                     viewer.hide()
                 else:
                     viewer.show()
@@ -651,7 +661,7 @@ class MultiView(QtWidgets.QWidget):
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
-            viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
 
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
@@ -693,61 +703,27 @@ class MultiView(QtWidgets.QWidget):
             #     except Exception as e:
             #         print(" Error: {}".format(e))
 
-    def find_in_layout(self, layout: QtWidgets.QLayout) -> Optional[QtWidgets.QLayout]:
-        """ Search Recursivement in Layouts for the current widget
-
-        Args:
-            layout (QtWidgets.QLayout): input layout for search
-
-        Returns:
-            layout containing the current widget or None if not found
-        """
-        print("find_in_layout()")
-        if layout.indexOf(self) != -1: return layout
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if item.widget() == self: return layout
-            if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
-        print("find_in_layout() return None")
-        return None
-
-    def toggle_fullscreen(self, event):
-        print(f"toggle_fullscreen")
-        if not issubclass(self.__class__,QtWidgets.QWidget):
-            print(f"Cannot use toggle_fullscreen on a class that is not a QWidget")
-            return
-        # Should be inside a layout
-        if self.before_max_parent is None:
-            print(f"self.parent() is not None {self.parent() is not None}")
-            print(f"self.parent().layout() {self.parent().layout()} ")
-            if self.parent() is not None and (playout := self.parent().layout()) is not None:
-                if self.find_in_layout(playout):
-                    self.before_max_parent = self.parent()
-                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.parent().layout().replaceWidget(self, self.replacing_widget)
-                    # We need to go up from the parent widget to the main window to get its geometry
-                    # so that the fullscreen is display on the same monitor
-                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
-                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
-                    self.setParent(None)
-                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
-                    self.showFullScreen()
-                    event.accept()
-                    return
-        if self.before_max_parent is not None:
-            self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self)
-            self.replacing_widget = self.before_max_parent = None
-            # self.resize(self.before_max_size)
-            self.show()
-            self.parent().update()
-            self.setFocus()
-            event.accept()
-            return
-
-
 
     def keyPressEvent(self, event):
+        # Different functionalities
+        def help():
+            """ Open Help Dialog with links to wiki help
+            """
+            import qimview
+            mb = QtWidgets.QMessageBox(self)
+            mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
+            mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
+            mb.setText(
+                "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
+                "<a href='https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer'>MultiImage Viewer</a><br>"
+                "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
+            mb.exec()
+            return True
+
+        def reloadImages():    self.update_image(reload=True); return True
+        def enterFullScreen(): return self._fullscreen.enter_fullscreen(self)
+        def exitFullScreen():  return self._fullscreen.exit_fullscreen (self)
+
         if type(event) == QtGui.QKeyEvent:
             # print("key is ", event.key())
             self.print_log(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
@@ -756,30 +732,21 @@ class MultiView(QtWidgets.QWidget):
             if self.show_trace():
                 print("key is ", event.key())
             modifiers = QtWidgets.QApplication.keyboardModifiers()
-            # F1: open help in browser
-            if event.key() == QtCore.Qt.Key_F1:
-                import qimview
-                mb = QtWidgets.QMessageBox(self)
-                mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
-                mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
-                mb.setText(
-                    "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
-                    "<a href='https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer'>MultiImage Viewer</a><br>"
-                    "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
-                mb.exec()
-                event.accept()
-                return
+            QtKey = QtCore.Qt.Key
+            keys_callback = {
+                int(QtKey.Key_F1)    : help,
+                int(QtKey.Key_F5)    : reloadImages,
+                int(QtKey.Key_F10)   : enterFullScreen,
+                int(QtKey.Key_Escape): exitFullScreen,
+            }
 
-            # F5: reload images
-            if event.key() == QtCore.Qt.Key_F5:
-                self.update_image(reload=True)
-                event.accept()
-                return
-
-            if event.key() == QtCore.Qt.Key_F11:
-                # Should be inside a layout
-                print("MultiView F11 pressed")
-                self.toggle_fullscreen(event)
+            if event.key() in keys_callback:
+                if keys_callback[event.key()]():
+                    print(f"MultiView event.key() accept")
+                    event.accept()
+                else:
+                    print(f"MultiView event.key() ignore")
+                    event.ignore()
                 return
 
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
