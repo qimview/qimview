@@ -59,6 +59,7 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
             viewer.set_activation_callback(self.on_active)
+            viewer.set_synchronization_callback(self.on_synchronize)
             # viewer.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
@@ -146,6 +147,7 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             viewer = self.image_viewer_class()
             viewer.set_activation_callback(self.on_active)
+            viewer.set_synchronization_callback(self.on_synchronize)
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
@@ -176,18 +178,18 @@ class MultiView(QtWidgets.QWidget):
         else:
             self.verbosity = self.verbosity & ~flag
 
-    def check_verbosity(self, flag):
+    def check_verbosity(self, flag) -> int:
         return self.verbosity & flag
 
     def print_log(self, mess):
         if self.verbosity & self.verbosity_LIGHT:
             print(mess)
 
-    def show_timing(self):
+    def show_timing(self) -> int:
         return self.check_verbosity(self.verbosity_TIMING) or self.check_verbosity(self.verbosity_TIMING_DETAILED)
 
-    def show_timing_detailed(self):
-        return self.check_verbosity(self.verbosity_TIMING_DETAILED)
+    def show_timing_detailed(self) -> bool:
+        return (self.check_verbosity(self.verbosity_TIMING_DETAILED)>0)
 
     def show_trace(self):
         return self.check_verbosity(self.verbosity_TRACE)
@@ -262,6 +264,7 @@ class MultiView(QtWidgets.QWidget):
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
             viewer.set_activation_callback(self.on_active)
+            viewer.set_synchronization_callback(self.on_synchronize)
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
@@ -422,7 +425,7 @@ class MultiView(QtWidgets.QWidget):
         self.figures_widget.setVisible(self.display_profiles.isChecked())
         self.update_image()
 
-    def get_output_image(self, im_string_id):
+    def get_output_image(self, im_string_id : str):
         """
         Search for the image with given label in the current row
         if not in cache reads it and add it to the cache
@@ -495,19 +498,20 @@ class MultiView(QtWidgets.QWidget):
                 self.label[im_name].setFont(self.bold_font)
                 self.label[im_name].setWordWrap(True)
             # self.label[im_name].setMaximumWidth(160)
-
-    def get_active_viewer_index(self) -> int:
-        if not self._active_viewer: return -1
-        try:
-            return self.image_viewers.index(self._active_viewer)
-        except ValueError as e:
-            print(f"viewer not found: {e}")
-            return -1
     
     def on_active(self, viewer : ImageViewerClass) -> None:
         # Activation requested for a given viewer
         self._active_viewer = viewer
         self.update_image(viewer.image_name)
+ 
+    def on_synchronize(self, viewer : ImageViewerClass) -> None:
+        # Synchronize other viewer to calling viewer
+        for v in self.image_viewers:
+            if v != viewer:
+                viewer.synchronize_data(v)
+                v.viewer_update()
+                # Force immediate paint
+                # viewer.repaint()
  
     def update_image(self, image_name=None, reload=False):
         """
@@ -517,11 +521,10 @@ class MultiView(QtWidgets.QWidget):
         self.print_log('update_image {} current: {}'.format(image_name, self.output_label_current_image))
         update_image_start = get_time()
 
+        # Checks
         # Define the current selected image
-        if image_name is not None:
-            self.output_label_current_image = image_name
-        if self.output_label_current_image == "":
-            return
+        if image_name is not None: self.output_label_current_image = image_name
+        if self.output_label_current_image == "" or len(self.image_viewers) == 0: return
 
         if self.image_dict[self.output_label_current_image] is None:
             print(" No image filename for current image")
@@ -529,12 +532,10 @@ class MultiView(QtWidgets.QWidget):
 
         self.update_label_fonts()
 
-        # find active window index
-        active_window_index = self.get_active_viewer_index()
         # If not found, set to 0
-        if active_window_index == -1: active_window_index = 0
-        if self._active_viewer:
-            self._active_viewer.display_timing = self.show_timing()>0
+        if self._active_viewer not in self.image_viewers: 
+            self._active_viewer = self.image_viewers[0]
+        self._active_viewer.display_timing = self.show_timing()>0
 
         # Read images in parallel to improve preformances
         # list all required image filenames
@@ -544,7 +545,7 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             viewer : ImageViewer = self.image_viewers[n]
             # Set active only the first active window
-            viewer.is_active = (n == active_window_index)
+            viewer.is_active = (viewer == self._active_viewer)
             if viewer.get_image() is None:
                 if n < len(self.image_list):
                     viewer.image_name = self.image_list[n]
@@ -565,8 +566,7 @@ class MultiView(QtWidgets.QWidget):
 
         try:
             current_image = self.get_output_image(self.output_label_current_image)
-            if current_image is None:
-                return
+            if current_image is None: return
         except Exception as e:
             print("Error: failed to get image {}: {}".format(self.output_label_current_image, e))
             return
@@ -574,12 +574,11 @@ class MultiView(QtWidgets.QWidget):
         # print(f"cur {self.output_label_current_image}")
         current_filename = self.output_image_label[self.output_label_current_image]
 
-        if self.show_timing_detailed():
-            time_spent = get_time() - update_image_start
+        # if self.show_timing_detailed(): time_spent = get_time() - update_image_start
 
         self.setMessage("Image: {0}".format(current_filename))
 
-        current_viewer = self.image_viewers[active_window_index]
+        current_viewer = self._active_viewer
         if self.save_image_clipboard:
             print("set save image to clipboard")
             current_viewer.set_clipboard(self.clip, True)
@@ -597,50 +596,33 @@ class MultiView(QtWidgets.QWidget):
             reference_image = self.get_output_image(self.output_label_reference_image)
 
         if self.nb_viewers_used >= 2:
-            prev_n = active_window_index
-            for n in range(1, self.nb_viewers_used):
-                n1 = (active_window_index + n) % self.nb_viewers_used
-                viewer = self.image_viewers[n1]
-                # viewer image has already been defined
-                # try to update corresponding images in row
-                try:
-                    viewer_image = self.get_output_image(viewer.image_name)
-                except Exception as e:
-                    print("Error: failed to get image {}: {}".format(viewer.image_name, e))
-                    viewer.set_image(current_image)
-                else:
+            for n in range(self.nb_viewers_used):
+                viewer : ImageViewer = self.image_viewers[n]
+                if viewer != self._active_viewer:
+                    # Update viewer images
+                    try:
+                        viewer_image = self.get_output_image(viewer.image_name)
+                    except Exception as e:
+                        print("Error: failed to get image {}: {}".format(viewer.image_name, e))
+                        viewer_image = current_image
+                    # Be sure to update image data
                     viewer.set_image(viewer_image)
-
-                # set reference image
-                viewer.set_image_ref(reference_image)
-
-                self.image_viewers[prev_n].set_synchronize(viewer)
-                prev_n = n1
-            # Create a synchronization loop
-            if prev_n != active_window_index:
-                self.image_viewers[prev_n].set_synchronize(self.image_viewers[active_window_index])
+                    # set reference image
+                    viewer.set_image_ref(reference_image)
 
         # Be sure to show the required viewers
         if self._show_active_only:
             for n in range(self.nb_viewers_used):
                 viewer = self.image_viewers[n]
-                if not viewer.is_active:
-                    viewer.hide()
-                else:
-                    viewer.show()
+                viewer.setVisible(viewer.is_active)
+            self._active_viewer.update()
         else:
             for n in range(self.nb_viewers_used):
                 viewer = self.image_viewers[n]
-                # print(f"show viewer {n}")
                 # Note: calling show in any case seems to avoid double calls to paint event that update() triggers
                 # viewer.show()
-                if viewer.isHidden():
-                    # print(f"show viewer {n}")
-                    viewer.show()
-                else:
-                    # print(f"update viewer {n}")
-                    viewer.update()
-
+                if viewer.isHidden(): viewer.show()
+                else:                 viewer.update()
 
         # self.image_scroll_area.adjustSize()
         # if self.show_timing():
@@ -670,6 +652,7 @@ class MultiView(QtWidgets.QWidget):
         while self.nb_viewers_used > len(self.allocated_image_viewers):
             viewer = self.image_viewer_class()
             viewer.set_activation_callback(self.on_active)
+            viewer.set_synchronization_callback(self.on_synchronize)
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
 
@@ -684,10 +667,9 @@ class MultiView(QtWidgets.QWidget):
 
     def mouseDoubleClickEvent(self, event):
         self._show_active_only = not self._show_active_only
-        # We need to set the current image 
-        active_idx = self.get_active_viewer_index()
-        print(f"active_idx {active_idx}")
-        self.output_label_reference_image = self.image_viewers[active_idx].image_name
+        if not self._active_viewer: return
+        # Set the current image 
+        self.output_label_reference_image = self._active_viewer.image_name
         print(f"output_label_reference_image {self.output_label_reference_image}")
         # Update the image to show/hide viewers
         self.update_image()

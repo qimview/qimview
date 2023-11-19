@@ -94,6 +94,9 @@ class ImageViewer:
         # FullScreen helper features
         self._fullscreen      : FullScreenHelper = FullScreenHelper()
 
+        # Synchronization callback
+        self._on_synchronize  : Optional[Callable]= None
+
         # --- Public members
         self.data = None
         self.lastPos = None # Last mouse position before mouse click
@@ -104,7 +107,6 @@ class ImageViewer:
         self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
-        self.synchronize_viewer = None
         self.tab = ["--"]
         self.trace_calls  = False
         self.filter_params = ImageFilterParameters()
@@ -170,18 +172,6 @@ class ImageViewer:
             if self._on_active:
                 self._on_active(self)
 
-        # TODO: A single image viewer should not be linked to other viewers, it is
-        # the multi-view image which must deal with synchronization
-        # # be sure to deactivate other synchronized viewers
-        # if active and self.synchronize_viewer is not None:
-        #     v = self.synchronize_viewer
-        #     # TODO: change this behavior and set active from multiviewer!
-        #     while v != self:
-        #         v.is_active = False
-        #         v.viewer_update()
-        #         if v.synchronize_viewer is not None:
-        #             v = v.synchronize_viewer
-
     # --- image_name
     @property
     def image_name(self) -> str:
@@ -194,6 +184,9 @@ class ImageViewer:
     # === Public methods
     def set_activation_callback(self, cb : Optional[Callable]):
         self._on_active = cb
+
+    def set_synchronization_callback(self, cb : Optional[Callable]):
+        self._on_synchronize = cb
 
     def get_image(self):
         return self._image
@@ -265,43 +258,35 @@ class ImageViewer:
         if self.timings[caller_name] != '':
             print(self.timings[caller_name])
 
-    def set_synchronize(self, viewer):
-        self.synchronize_viewer = viewer
-
-    def synchronize_data(self, other_viewer):
-        other_viewer.current_scale = self.current_scale
-        other_viewer.current_dx = self.current_dx
-        other_viewer.current_dy = self.current_dy
-        other_viewer.mouse_dx   = self.mouse_dx
-        other_viewer.mouse_dy   = self.mouse_dy
-        other_viewer.mouse_zx   = self.mouse_zx
-        other_viewer.mouse_zy   = self.mouse_zy
-        other_viewer.mouse_x    = self.mouse_x
-        other_viewer.mouse_y    = self.mouse_y
-
-        other_viewer.show_histogram      = self.show_histogram
-        other_viewer.show_cursor         = self.show_cursor
-        other_viewer.show_intensity_line = self.show_intensity_line
-        other_viewer._histo_scale        = self._histo_scale
-
-    def synchronize(self, event_viewer):
+    # Note: 'ImageViewer' is a forward reference to ImageViewer class
+    def synchronize_data(self, dest_viewer: 'ImageViewer') -> None:
+        """ Synchronize: copy parameters to another viewer
         """
-        This method needs to be overloaded with call to self.synchronize_viewer.synchronize()
-        :param event_viewer: the viewer that started the synchronization
-        :return:
+        dest_viewer.current_scale = self.current_scale
+        dest_viewer.current_dx = self.current_dx
+        dest_viewer.current_dy = self.current_dy
+        dest_viewer.mouse_dx   = self.mouse_dx
+        dest_viewer.mouse_dy   = self.mouse_dy
+        dest_viewer.mouse_zx   = self.mouse_zx
+        dest_viewer.mouse_zy   = self.mouse_zy
+        dest_viewer.mouse_x    = self.mouse_x
+        dest_viewer.mouse_y    = self.mouse_y
+
+        dest_viewer.show_histogram      = self.show_histogram
+        dest_viewer.show_cursor         = self.show_cursor
+        dest_viewer.show_intensity_line = self.show_intensity_line
+        dest_viewer._histo_scale        = self._histo_scale
+
+    def synchronize(self):
+        """ Calls synchronization callback if available
         """
-        if self==event_viewer:
-            if self.display_timing:
-                start_time = get_time()
-                if self.display_timing:
-                    print("[ --- Start sync")
-        if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
-            self.synchronize_data(self.synchronize_viewer)
-            self.synchronize_viewer.viewer_update()
-            self.synchronize_viewer.synchronize(event_viewer)
-        if self==event_viewer:
-            if self.display_timing:
-                print('       End sync --- {:0.1f} ms'.format((get_time()-start_time)*1000))
+        if self.display_timing:
+            start_time = get_time()
+            print("[ --- Start sync")
+        if self._on_synchronize: 
+            self._on_synchronize(self)
+        if self.display_timing:
+            print('       End sync --- {:0.1f} ms'.format((get_time()-start_time)*1000))
 
     def new_scale(self, mouse_zy, height):
         return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
@@ -370,7 +355,7 @@ class ImageViewer:
         if self._mouse_event in event_cb:
             event_cb[self._mouse_event](event)
             self.viewer_update()
-            self.synchronize(self)
+            self.synchronize()
             event.accept()
         else:
             if self.show_overlay:
@@ -378,7 +363,7 @@ class ImageViewer:
                 event.accept()
             elif self.show_cursor:
                 self.viewer_update()
-                self.synchronize(self)
+                self.synchronize()
                 event.accept()
 
     def mouse_release_event(self, event):
@@ -389,7 +374,7 @@ class ImageViewer:
         if self._mouse_event in event_cb:
             event_cb[self._mouse_event](event)
             event.accept()
-        self.synchronize(self)
+        self.synchronize()
         self._mouse_event = MouseEvent.NoEvent
 
     def mouse_double_click_event(self, event):
@@ -415,7 +400,7 @@ class ImageViewer:
         if self._image:
             self.current_scale = self.new_scale(coeff, self._image.data.shape[0])
             self.viewer_update()
-            self.synchronize(self)
+            self.synchronize()
 
     # def mouseDoubleClickEvent(self, event):
 
@@ -529,7 +514,7 @@ class ImageViewer:
 
             if event.key() in key_list:
                 self.viewer_update()
-                self.synchronize(self)
+                self.synchronize()
                 event.accept()
                 return
             event.ignore()

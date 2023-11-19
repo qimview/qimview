@@ -133,7 +133,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.textureID = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = False
-        self.synchronize_viewer = None
         self.pMatrix  = np.identity(4, dtype=np.float32)
         self.mvMatrix = np.identity(4, dtype=np.float32)
         self.program_RGB = None
