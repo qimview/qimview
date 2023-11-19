@@ -19,6 +19,12 @@ class FullScreenHelper:
             if (l := item.layout()) and (found:=self.find_in_layout(l, widget)): return l
         return None
 
+    def toggle_fullscreen(self, widget:QtWidgets.QWidget) -> bool:
+        if self._before_max_parent is None: 
+            return self.enter_fullscreen(widget)
+        else:
+            return self.exit_fullscreen(widget)
+
     def enter_fullscreen(self, widget:QtWidgets.QWidget) -> bool:
         # if before_max_parent is not None, we are already in fullscreen mode
         if self._before_max_parent is not None: return False

@@ -330,10 +330,13 @@ class ImageViewer:
         event.accept()
 
     def _get_mouse_event(self,event: QtGui.QMouseEvent) -> MouseEvent:
-        is_ctrl = event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier
+        is_alt = event.modifiers() == QtCore.Qt.KeyboardModifier.AltModifier
         left_button = event.buttons() & QtMouse.LeftButton
-        if left_button and is_ctrl:     return MouseEvent.ZoomEvent
-        if left_button and not is_ctrl: return MouseEvent.PanEvent
+        if left_button:
+            if is_alt: 
+                return MouseEvent.PanEvent
+            else:
+                return MouseEvent.ZoomEvent
         return MouseEvent.OtherEvent
 
     def _pan_update(self, event):
@@ -417,15 +420,15 @@ class ImageViewer:
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
-        def enterFullScreen(): return self._fullscreen.enter_fullscreen(self)
-        def exitFullScreen():  return self._fullscreen.exit_fullscreen(self)
+        def toggleFullScreen(): return self._fullscreen.toggle_fullscreen(self)
+        def exitFullScreen():   return self._fullscreen.exit_fullscreen(self)
 
         self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
 
             QtKey = QtCore.Qt.Key
             keys_callback = {
-                int(QtKey.Key_F11)   : enterFullScreen,
+                int(QtKey.Key_F11)   : toggleFullScreen,
                 int(QtKey.Key_Escape): exitFullScreen,
             }
 

@@ -498,7 +498,11 @@ class MultiView(QtWidgets.QWidget):
 
     def get_active_viewer_index(self) -> int:
         if not self._active_viewer: return -1
-        return self.image_viewers.index(self._active_viewer)
+        try:
+            return self.image_viewers.index(self._active_viewer)
+        except ValueError as e:
+            print(f"viewer not found: {e}")
+            return -1
     
     def on_active(self, viewer : ImageViewerClass) -> None:
         # Activation requested for a given viewer
@@ -644,6 +648,7 @@ class MultiView(QtWidgets.QWidget):
 
     def set_number_of_viewers(self, nb_viewers: int = 1, max_columns : int = 0) -> None:
         self.print_log("*** set_number_of_viewers()")
+        if nb_viewers<1: return
 
         # 1. remove current viewers from grid layout
         # self.viewer_grid_layout.hide()
@@ -673,14 +678,9 @@ class MultiView(QtWidgets.QWidget):
         for n in range(self.nb_viewers_used):
             self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
             self.image_viewers[n].hide()
-
+        
         # for n in range(self.nb_viewers_used):
         #     print("Viewer {} size {}".format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
-
-    def set_number_of_viewers_callback(self):
-        self.set_number_of_viewers()
-        self.viewer_grid_layout.update()
-        self.update_image()
 
     def mouseDoubleClickEvent(self, event):
         self._show_active_only = not self._show_active_only
@@ -724,10 +724,10 @@ class MultiView(QtWidgets.QWidget):
             mb.exec()
             return True
 
-        def reloadImages()    -> bool : self.update_image(reload=True); return True
-        def enterFullScreen() -> bool : return self._fullscreen.enter_fullscreen(self)
-        def exitFullScreen()  -> bool : return self._fullscreen.exit_fullscreen (self)
-        def upCallBack()      -> bool : 
+        def reloadImages()     -> bool : self.update_image(reload=True); return True
+        def toggleFullScreen() -> bool : return self._fullscreen.toggle_fullscreen(self)
+        def exitFullScreen()   -> bool : return self._fullscreen.exit_fullscreen (self)
+        def upCallBack()       -> bool : 
             if self.key_up_callback is not None:
                 self.key_up_callback()
                 return True
@@ -741,8 +741,10 @@ class MultiView(QtWidgets.QWidget):
         def setNumberOfViewers(n:int) -> Callable:
             def func() -> bool:
                 self.set_number_of_viewers(n)
+                if self._active_viewer not in self.image_viewers:
+                    self._active_viewer = self.image_viewers[n-1]
                 self.viewer_grid_layout.update()
-                self.update_image()
+                self.update_image(self._active_viewer.image_name)
                 self.setFocus()
                 return True
             return func
@@ -779,7 +781,7 @@ class MultiView(QtWidgets.QWidget):
             keys_callback = {
                 int(QtKey.Key_F1)    : help,
                 int(QtKey.Key_F5)    : reloadImages,
-                int(QtKey.Key_F10)   : enterFullScreen,
+                int(QtKey.Key_F10)   : toggleFullScreen,
                 int(QtKey.Key_Escape): exitFullScreen,
                 int(QtKey.Key_Up)    : upCallBack,
                 int(QtKey.Key_Down)  : downCallBack,
@@ -790,7 +792,7 @@ class MultiView(QtWidgets.QWidget):
                 elif modifiers & QtCore.Qt.KeyboardModifier.ControlModifier:
                     keys_callback[int(QtKey.Key_0+n)] = setReferenceImage(n)
                 else:
-                    keys_callback[int(QtKey.Key_0+n)] = setNumberOfViewers(n)
+                    if n>0: keys_callback[int(QtKey.Key_0+n)] = setNumberOfViewers(n)
 
             if event.key() in keys_callback:
                 event.setAccepted(keys_callback[event.key()]())
