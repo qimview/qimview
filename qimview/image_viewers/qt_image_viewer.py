@@ -772,7 +772,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
     def mousePressEvent(self, event):
-        self.mouse_press_event(event)
+        super().mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
         self.mouse_move_event(event)
@@ -782,7 +782,7 @@ class QTImageViewer(BaseWidget, ImageViewer ):
 
     def mouseDoubleClickEvent(self, event):
         # We need to set the current viewer active before processing the double click event
-        self.set_active()
+        self.is_active = True
         self.mouse_double_click_event(event)
 
     def wheelEvent(self, event):
