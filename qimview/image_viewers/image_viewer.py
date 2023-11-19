@@ -5,6 +5,7 @@
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils import get_time
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
+from .fullscreen_helper import FullScreenHelper
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
@@ -13,10 +14,11 @@ import traceback
 import abc
 import inspect
 import numpy as np
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple, Callable
 # if TYPE_CHECKING:
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from abc import abstractmethod
+from enum import Enum, auto
 
 try:
     import qimview_cpp
@@ -26,6 +28,12 @@ except Exception as e:
 else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
+
+class MouseEvent(Enum):
+    PanEvent   = auto()
+    ZoomEvent  = auto()
+    OtherEvent = auto()
+    NoEvent    = auto()
 
 
 # copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
@@ -64,9 +72,30 @@ class trace_method():
 class ImageViewer:
 
     def __init__(self, parent=None):
+
+        # --- Protected members
+        self._width           : int = 500
+        self._height          : int = 500
+        self._image_name      : str = ""
+        # If the window is active, its appearance (text color or more) will be different
+        self._active          : bool = False
+        self._on_active       : Optional[Callable] = None
+        self._display_timing  : bool = False
+        self._verbose         : bool = False
+        self._image           : Optional[ViewerImage] = None
+        self._image_ref       : Optional[ViewerImage] = None
+        # Rectangle in which the histogram is displayed
+        self._histo_rect      : Optional[QtCore.QRect] = None
+        # Histogram displayed scale
+        self._histo_scale     : int = 1
+        # Current mouse event
+        self._mouse_event     : MouseEvent = MouseEvent.NoEvent
+
+        # FullScreen helper features
+        self._fullscreen      : FullScreenHelper = FullScreenHelper()
+
+        # --- Public members
         self.data = None
-        self._width = 500
-        self._height = 500
         self.lastPos = None # Last mouse position before mouse click
         self.mouse_dx = self.mouse_dy = 0
         self.mouse_zx = 0
@@ -75,18 +104,13 @@ class ImageViewer:
         self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
-        self._image     : Optional[ViewerImage] = None
-        self._image_ref : Optional[ViewerImage] = None
         self.synchronize_viewer = None
         self.tab = ["--"]
         self.trace_calls  = False
-        self._image_name = ""
-        self.active_window = False
         self.filter_params = ImageFilterParameters()
         self.save_image_clipboard = False
         self.clipboard = None
-        self._display_timing = False
-        self._verbose = False
+
         self.start_time = dict()
         self.timings = dict()
         self.replacing_widget = None
@@ -101,14 +125,13 @@ class ImageViewer:
         # We track an image counter, changed by set_image, to help reducing same calculations
         self.image_id       = -1
         self.image_ref_id   = -1
-        # Rectangle in which the histogram is displayed
-        self._histo_rect : Optional[QtCore.QRect] = None
-        # Histogram displayed scale
-        self._histo_scale : int = 1
         # Widget dimensions to be defined in child resize event
         self.evt_width : int
         self.evt_height : int
 
+    # === Properties 
+
+    # --- display_timing
     @property
     def display_timing(self):
         return self._display_timing
@@ -117,6 +140,7 @@ class ImageViewer:
     def display_timing(self, v):
         self._display_timing = v
 
+    # --- verbose
     @property
     def verbose(self):
         return self._verbose
@@ -124,6 +148,48 @@ class ImageViewer:
     @verbose.setter
     def verbose(self, v):
         self._verbose = v
+
+    # --- is_active
+    @property
+    def is_active(self) -> bool:
+        return self._active
+
+    @is_active.setter
+    def is_active(self, active: bool =True):
+        # Do something only if the active flag changes
+        if active != self._active:
+            # If a callback is set, rely on it
+            if active and self._on_active:
+                self._on_active(self)
+            else:
+                self._active = active
+        # TODO: A single image viewer should not be linked to other viewers, it is
+        # the multi-view image which must deal with synchronization
+        # # be sure to deactivate other synchronized viewers
+        # if active and self.synchronize_viewer is not None:
+        #     v = self.synchronize_viewer
+        #     # TODO: change this behavior and set active from multiviewer!
+        #     while v != self:
+        #         v.is_active = False
+        #         v.viewer_update()
+        #         if v.synchronize_viewer is not None:
+        #             v = v.synchronize_viewer
+
+    # --- image_name
+    @property
+    def image_name(self) -> str:
+        return self._image_name
+
+    @image_name.setter
+    def image_name(self, v : str):
+        self._image_name = v
+
+    # === Public methods
+    def set_activation_callback(self, cb : Optional[Callable]):
+        self._on_active = cb
+
+    def get_image(self):
+        return self._image
 
     def set_image(self, image : Optional[ViewerImage]):
         is_different = (self._image is None) or (self._image is not image)
@@ -230,32 +296,6 @@ class ImageViewer:
             if self.display_timing:
                 print('       End sync --- {:0.1f} ms'.format((get_time()-start_time)*1000))
 
-    def set_active(self, active=True):
-        self.active_window = active
-        # be sure to deactivate other synchronized viewers
-        if active and self.synchronize_viewer is not None:
-            v = self.synchronize_viewer
-            # TODO: change this behavior and set active from multiviewer!
-            while v != self:
-                v.set_active(False)
-                v.viewer_update()
-                if v.synchronize_viewer is not None:
-                    v = v.synchronize_viewer
-
-    def is_active(self):
-        return self.active_window
-
-    @property
-    def image_name(self) -> str:
-        return self._image_name
-
-    @image_name.setter
-    def image_name(self, v : str):
-        self._image_name = v
-
-    def get_image(self):
-        return self._image
-
     def new_scale(self, mouse_zy, height):
         return max(1, self.current_scale * (1 + mouse_zy * 5.0 / self._height))
         # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
@@ -278,48 +318,69 @@ class ImageViewer:
             event.accept()
             return
         # Else set current viewer active
-        self.set_active()
+        self.is_active = True
         self.viewer_update()
         event.accept()
 
-    def mouse_move_event(self, event):
+    def _get_mouse_event(self,event: QtGui.QMouseEvent) -> MouseEvent:
+        is_ctrl = event.modifiers() == QtCore.Qt.KeyboardModifier.ControlModifier
+        left_button = event.buttons() & QtMouse.LeftButton
+        if left_button and is_ctrl:     return MouseEvent.ZoomEvent
+        if left_button and not is_ctrl: return MouseEvent.PanEvent
+        return MouseEvent.OtherEvent
+
+    def _pan_update(self, event):
+        self.mouse_dx = event.x() - self.lastPos.x()
+        self.mouse_dy = - (event.y() - self.lastPos.y())
+
+    def _pan_end(self, event):
+        self.current_dx, self.current_dy = self.check_translation()
+        self.mouse_dy = 0
+        self.mouse_dx = 0
+
+    def _zoom_update(self, event):
+        self.mouse_zx = event.x() - self.lastPos.x()
+        self.mouse_zy = - (event.y() - self.lastPos.y())
+
+    def _zoom_end(self, event):
+        if self._image is not None:
+            self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
+        self.mouse_zy = 0
+        self.mouse_zx = 0
+
+    def mouse_move_event(self, event: QtGui.QMouseEvent):
         self.mouse_x = event.x()
         self.mouse_y = event.y()
-        if self.show_overlay:
-            self.viewer_update()
-        if event.buttons() & QtMouse.LeftButton:
-            self.mouse_dx = event.x() - self.lastPos.x()
-            self.mouse_dy = - (event.y() - self.lastPos.y())
+        # We save the event type in a member variable to be able to process the release event
+        self._mouse_event = self._get_mouse_event(event)
+        event_cb = {
+            MouseEvent.PanEvent  : self._pan_update,
+            MouseEvent.ZoomEvent : self._zoom_update,
+        }
+        if self._mouse_event in event_cb:
+            event_cb[self._mouse_event](event)
             self.viewer_update()
             self.synchronize(self)
             event.accept()
         else:
-            if event.buttons() & QtMouse.RightButton:
-                # right button zoom
-                self.mouse_zx = event.x() - self.lastPos.x()
-                self.mouse_zy = - (event.y() - self.lastPos.y())
+            if self.show_overlay:
+                self.viewer_update()
+                event.accept()
+            elif self.show_cursor:
                 self.viewer_update()
                 self.synchronize(self)
                 event.accept()
-            else:
-                modifiers = QtWidgets.QApplication.keyboardModifiers()
-                if self.show_cursor:
-                    self.viewer_update()
-                    self.synchronize(self)
 
     def mouse_release_event(self, event):
-        if event.button() & QtMouse.LeftButton:
-            self.current_dx, self.current_dy = self.check_translation()
-            self.mouse_dy = 0
-            self.mouse_dx = 0
-            event.accept()
-        if event.button() & QtMouse.RightButton:
-            if self._image is not None:
-                self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
-            self.mouse_zy = 0
-            self.mouse_zx = 0
+        event_cb = {
+            MouseEvent.PanEvent  : self._pan_end,
+            MouseEvent.ZoomEvent : self._zoom_end,
+        }
+        if self._mouse_event in event_cb:
+            event_cb[self._mouse_event](event)
             event.accept()
         self.synchronize(self)
+        self._mouse_event = MouseEvent.NoEvent
 
     def mouse_double_click_event(self, event):
         self.print_log("double click ")
@@ -346,60 +407,29 @@ class ImageViewer:
             self.viewer_update()
             self.synchronize(self)
 
-    def find_in_layout(self, layout: QtWidgets.QLayout) -> Optional[QtWidgets.QLayout]:
-        """ Search Recursivement in Layouts for the current widget
-
-        Args:
-            layout (QtWidgets.QLayout): input layout for search
-
-        Returns:
-            layout containing the current widget or None if not found
-        """
-        if layout.indexOf(self) != -1: return layout
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if item.widget() == self: return layout
-            if (l := item.layout()) and (found:=self.find_in_layout(l)): return l
-        return None
-
-    def toggle_fullscreen(self, event):
-        print(f"toggle_fullscreen")
-        if not issubclass(self.__class__,QtWidgets.QWidget):
-            print(f"Cannot use toggle_fullscreen on a class that is not a QWidget")
-            return
-        # Should be inside a layout
-        if self.before_max_parent is None:
-            if self.parent() is not None and (playout := self.parent().layout()) is not None:
-                if self.find_in_layout(playout):
-                    self.before_max_parent = self.parent()
-                    self.replacing_widget = QtWidgets.QWidget(self.before_max_parent)
-                    self.parent().layout().replaceWidget(self, self.replacing_widget)
-                    # We need to go up from the parent widget to the main window to get its geometry
-                    # so that the fullscreen is display on the same monitor
-                    toplevel_parent : Optional[QtWidgets.QWidget] = self.parentWidget()
-                    while toplevel_parent.parentWidget(): toplevel_parent = toplevel_parent.parentWidget()
-                    self.setParent(None)
-                    if toplevel_parent: self.setGeometry(toplevel_parent.geometry())
-                    self.showFullScreen()
-                    event.accept()
-                    return
-        if self.before_max_parent is not None:
-            self.setParent(self.before_max_parent)
-            self.parent().layout().replaceWidget(self.replacing_widget, self)
-            self.replacing_widget = self.before_max_parent = None
-            # self.resize(self.before_max_size)
-            self.show()
-            self.parent().update()
-            self.setFocus()
-            event.accept()
-            return
-
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
+        def enterFullScreen(): return self._fullscreen.enter_fullscreen(self)
+        def exitFullScreen():  return self._fullscreen.exit_fullscreen(self)
+
         self.print_log(f"ImageViewer: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
 
+            QtKey = QtCore.Qt.Key
+            keys_callback = {
+                int(QtKey.Key_F11)   : enterFullScreen,
+                int(QtKey.Key_Escape): exitFullScreen,
+            }
+
+            if event.key() in keys_callback:
+                if keys_callback[event.key()](): 
+                    print(f"ImageViewer event.key() accept")
+                    event.accept() 
+                else: 
+                    print(f"ImageViewer event.key() ignore")
+                    event.ignore()
+                return
             if event.key() == QtKeys.Key_F1:
                 import qimview
                 mb = QtWidgets.QMessageBox(self)
@@ -410,10 +440,6 @@ class ImageViewer:
                     "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
                 mb.exec()
                 event.accept()
-                return
-
-            if event.key() == QtKeys.Key_F11:
-                self.toggle_fullscreen(event)
                 return
 
             # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
@@ -518,7 +544,7 @@ class ImageViewer:
 
     def display_text(self, painter: QtGui.QPainter, text: str) -> None:
         self.start_timing()
-        color = QtGui.QColor(255, 50, 50, 255) if self.is_active() else QtGui.QColor(50, 50, 255, 255)
+        color = QtGui.QColor(255, 50, 50, 255) if self.is_active else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
         font = QtGui.QFont('Decorative', 12)
         # font.setBold(True)
