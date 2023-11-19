@@ -3,15 +3,15 @@
 #
 
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
-from qimview.utils.utils import get_time
+from qimview.utils.utils      import get_time
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
-from .fullscreen_helper import FullScreenHelper
+from .fullscreen_helper       import FullScreenHelper
+from .image_viewer_events     import ImageViewerEvents
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
 import cv2
 import traceback
-import abc
 import inspect
 import numpy as np
 from typing import TYPE_CHECKING, Optional, Tuple, Callable
@@ -106,6 +106,9 @@ class ImageViewer:
         # Clipboard
         self._save_image_clipboard : bool                       = False
         self._clipboard            : Optional[QtGui.QClipboard] = None
+
+        # Event class
+        self._events : ImageViewerEvents = ImageViewerEvents(self)
 
         # --- Public members
         self.data = None
@@ -417,103 +420,8 @@ class ImageViewer:
 
     # def mouseDoubleClickEvent(self, event):
 
-    def get_key_seq(self, event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
-        """ Return a key sequence from a keyboard event
-        """
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        QtMod = QtCore.Qt.KeyboardModifier
-        # Python > 3.7 key order is maintained
-        mod_str = { QtMod.ShiftModifier   : 'Shift', QtMod.ControlModifier : 'Ctrl', 
-                    QtMod.AltModifier     : 'Alt',   QtMod.MetaModifier    : 'Meta',}
-        # Compact line to create the contatenated string like 'Ctrl+Alt+'
-        mod_seq_str = "".join([ f"{mod_str[m]}+" for  m in mod_str.keys() if modifiers & m])
-        key_str = QtGui.QKeySequence(event.key()).toString()
-        return QtGui.QKeySequence(mod_seq_str + key_str)
-    
     def key_press_event(self, event, wsize):
-        def helpDialog() -> bool :
-            """ Open Help Dialog with links to wiki help
-            """
-            import qimview
-            mb = QtWidgets.QMessageBox(self)
-            mb.setWindowTitle(f"qimview {qimview.__version__}: ImageViewer help")
-            mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
-            mb.setText(
-                    "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
-                    "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
-            mb.exec()
-            return True
-        def toggleFullScreen() -> bool: return self._fullscreen.toggle_fullscreen(self._widget)
-        def exitFullScreen()   -> bool: return self._fullscreen.exit_fullscreen(self._widget)
-        def updateAndAccept() -> bool:
-            self.viewer_update()
-            self.synchronize()
-            return True
-        def zoomUpperLeft()    -> bool:
-            self.current_dx = wsize.width()/4
-            self.current_dy = -wsize.height()/4
-            self.current_scale = 2
-            return updateAndAccept()
-        def zoomLowerLeft()    -> bool:
-            self.current_dx = wsize.width() / 4
-            self.current_dy = wsize.height() / 4
-            self.current_scale = 2
-            return updateAndAccept()
-        def zoomUpperRight()    -> bool:
-            self.current_dx = -wsize.width()/4
-            self.current_dy = -wsize.height()/4
-            self.current_scale = 2
-            return updateAndAccept()
-        def zoomLowerRight()    -> bool:
-            self.current_dx = -wsize.width() / 4
-            self.current_dy =  wsize.height() / 4
-            self.current_scale = 2
-            return updateAndAccept()
-        def unZoom()    -> bool:
-            self.current_dx = 0
-            self.current_dy = 0
-            self.current_scale = 1
-            return updateAndAccept()
-        def toggleAntialiasing()->bool: self.antialiasing   = not self.antialiasing;   return updateAndAccept()
-        def toggleHistogram()   ->bool: self.show_histogram = not self.show_histogram; return updateAndAccept()
-        def toggleOverlay()     ->bool: self.show_overlay   = not self.show_overlay;   return updateAndAccept()
-        def toggleCursor()      ->bool: self.show_cursor    = not self.show_cursor;    return updateAndAccept()
-        def toggleStats()       ->bool: self.show_stats     = not self.show_stats;     return updateAndAccept()
-        def toggleDifferences() ->bool: 
-            self.show_image_differences = not self.show_image_differences
-            return updateAndAccept()
-        def toggleIntensityLine() ->bool: 
-            self.show_intensity_line = not self.show_intensity_line
-            return updateAndAccept()
-
-        self.print_log(f"ImageViewer: key_press_event {event.key()}")
-        if type(event) == QtGui.QKeyEvent:
-            keys_callback = {
-                'A'     : toggleAntialiasing,
-                'C'     : toggleCursor,
-                'D'     : toggleDifferences,
-                'H'     : toggleHistogram,
-                'I'     : toggleIntensityLine,
-                'O'     : toggleOverlay,
-                'S'     : toggleStats,
-                'F1'    : helpDialog,
-                'F11'   : toggleFullScreen,
-                'Esc'   : exitFullScreen,
-                'Alt+A' : zoomUpperLeft,
-                'Alt+B' : zoomUpperRight,
-                'Alt+C' : zoomLowerLeft,
-                'Alt+D' : zoomLowerRight,
-                'Alt+F' : unZoom,
-            }
-
-            key_seq : str = self.get_key_seq(event).toString()
-            # print(f"key sequence = {key_seq}")
-            if key_seq in keys_callback:
-                event.setAccepted(keys_callback[key_seq]())
-            else:
-                event.ignore()
-        else:
-            event.ignore()
+        self._events.key_press_event(event, wsize)
 
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -> str:
         text : str = self.image_name
