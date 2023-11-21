@@ -7,6 +7,7 @@ from qimview.utils.mvlabel        import MVLabel
 from qimview.cache                import ImageCache
 from .fullscreen_helper           import FullScreenHelper
 from qimview.image_viewers        import *
+from .multi_view_events           import MultiViewEvents
 from enum                         import Enum, auto
 import math
 
@@ -41,6 +42,9 @@ class MultiView(QtWidgets.QWidget):
 
         # FullScreen helper features
         self._fullscreen           : FullScreenHelper           = FullScreenHelper()
+
+        # Event class
+        self._events : MultiViewEvents = MultiViewEvents(self)
 
         # Clipboard
         self._save_image_clipboard : bool                       = False
@@ -711,119 +715,4 @@ class MultiView(QtWidgets.QWidget):
         return QtGui.QKeySequence(mod_seq_str + key_str)
 
     def keyPressEvent(self, event):
-        # Different functionalities
-        def help() -> bool :
-            """ Open Help Dialog with links to wiki help
-            """
-            import qimview
-            mb = QtWidgets.QMessageBox(self)
-            mb.setWindowTitle(f"qimview {qimview.__version__}: MultiView help")
-            mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
-            mb.setText(
-                "<a href='https://github.com/qimview/qimview/wiki'>qimview</a><br>"
-                "<a href='https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer'>MultiImage Viewer</a><br>"
-                "<a href='https://github.com/qimview/qimview/wiki/3.-Image-Viewers'>Image Viewer</a>")
-            mb.exec()
-            return True
-
-        def reloadImages()     -> bool : self.update_image(reload=True); return True
-        def toggleFullScreen() -> bool : return self._fullscreen.toggle_fullscreen(self)
-        def exitFullScreen()   -> bool : return self._fullscreen.exit_fullscreen (self)
-        def upCallBack()       -> bool : 
-            if self.key_up_callback is not None:
-                self.key_up_callback()
-                return True
-            return False 
-        def downCallBack()      -> bool : 
-            if self.key_down_callback is not None:
-                self.key_down_callback()
-                return True
-            return False 
-        
-        def setNumberOfViewers(n:int) -> Callable:
-            def func() -> bool:
-                self.set_number_of_viewers(n)
-                if self._active_viewer not in self.image_viewers:
-                    self._active_viewer = self.image_viewers[n-1]
-                self.viewer_grid_layout.update()
-                self.update_image(self._active_viewer.image_name)
-                self.setFocus()
-                return True
-            return func
-
-        def setActiveViewerImage(n:int) -> Callable:
-            def func() -> bool:
-                if self.image_list[n] is None: return False
-                if self.output_label_current_image != self.image_list[n]:
-                    self.update_image(self.image_list[n])
-                    self.setFocus()
-                    return True
-                return False
-            return func
-
-        def setReferenceImage(n:int) -> Callable:
-            def func() -> bool:
-                if self.image_list[n] is None: return False
-                if self.output_label_current_image != self.image_list[n]:
-                    self.set_reference_label(self.image_list[n], update_viewers=True)
-                    self.update_image()
-                    return True
-                return False
-            return func
-
-        def selectPreviousImage() -> bool:
-            try:
-                current_pos = self.image_list.index(self.output_label_current_image)
-                nb_images = len(self.image_list)
-                self.update_image(self.image_list[(current_pos+nb_images-1)%nb_images])
-                return True
-            except ValueError:
-                return False
-
-        def selectNextImage() -> bool:
-            try:
-                current_pos = self.image_list.index(self.output_label_current_image)
-                nb_images = len(self.image_list)
-                self.update_image(self.image_list[(current_pos+1)%nb_images])
-                return True
-            except ValueError:
-                return False
-
-        def changeGridLayout() -> bool:
-            self.max_columns = int ((self.max_columns + 1) % self.nb_viewers_used + 1)
-            self.set_number_of_viewers(self.nb_viewers_used, max_columns=self.max_columns)
-            self.update_image(reload=True)
-            self.setFocus()
-            return True
-
-        if type(event) == QtGui.QKeyEvent:
-            self.print_log(f" QKeySequence() {QtGui.QKeySequence(event.key()).toString()}")
-            # print(f" capslock: {event.getModifierState('CapsLock')}")
-            if self.show_trace(): print("key is ", event.key())
-            keys_callback = {
-                'F1'    : help,
-                'F5'    : reloadImages,
-                'F10'   : toggleFullScreen,
-                'Esc'   : exitFullScreen,
-                'Up'    : upCallBack,
-                'Down'  : downCallBack,
-                'Left'  : selectPreviousImage,
-                'Right' : selectNextImage,
-                'G'     : changeGridLayout,
-            }
-
-            for n in range(10):
-                keys_callback[f'Alt+{n}' ] = setActiveViewerImage(n)
-                keys_callback[f'Ctrl+{n}'] = setReferenceImage(n)
-                if n>0:
-                    keys_callback[f'{n}']      = setNumberOfViewers(n)
-
-            key_seq : str = self.get_key_seq(event).toString()
-            # print(f"key sequence = {key_seq}")
-            if key_seq in keys_callback:
-                event.setAccepted(keys_callback[key_seq]())
-            else:
-                event.ignore()
-
-        else:
-            event.ignore()
+        self._events.key_press_event(event)
