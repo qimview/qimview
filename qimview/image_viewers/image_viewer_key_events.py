@@ -6,7 +6,7 @@ QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
 
-class ImageViewerEvents:
+class ImageViewerKeyEvents:
     """ Implement events for ImageViewer
     """
     def __init__(self, viewer: 'ImageViewer'):
@@ -33,6 +33,9 @@ class ImageViewerEvents:
                 'Alt+F' : self.unZoom,
         }
 
+        self._help_text  : str = ''
+        self._help_links : str = ''
+
     def _get_markdown_help(self) -> str:
         res =  '## Image Viewer  \n'
         res += '### Keyboard Events  \n'
@@ -43,6 +46,18 @@ class ImageViewerEvents:
             res += f'|{k}|{v.__doc__}|  \n'
         res += '  \n'
         return res
+    
+    def add_help_text(self, help: str) -> None:
+        """ Additional help to display
+        Args:  help (str): help string in markdown format
+        """
+        self._help_text = help
+
+    def add_help_links(self, help_links: str) -> None:
+        """ Additional help links to display
+        Args:  help_links (str): help string in markdown format
+        """
+        self._help_links = help_links
 
     @staticmethod
     def get_key_seq(event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
@@ -72,9 +87,11 @@ class ImageViewerEvents:
         mb.setText(
                 f"# qimview {qimview.__version__}  \n" +
                 self._get_markdown_help() +
+                self._help_text +
                 "### Links \n" +
                 "[github: qimview](https://github.com/qimview/qimview/wiki)  \n" +
-                "[wiki help: Image Viewer](https://github.com/qimview/qimview/wiki/3.-Image-Viewers)  \n"
+                "[wiki help: Image Viewer](https://github.com/qimview/qimview/wiki/3.-Image-Viewers)  \n" +
+                self._help_links
                 )
         mb.exec()
         return True
@@ -167,7 +184,7 @@ class ImageViewerEvents:
         # print(f"ImageViewerEvents: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
 
-            key_seq : str = ImageViewerEvents.get_key_seq(event).toString()
+            key_seq : str = ImageViewerKeyEvents.get_key_seq(event).toString()
             # print(f"key sequence = {key_seq}")
             if key_seq in self.keys_callback:
                 event.setAccepted(self.keys_callback[key_seq]())

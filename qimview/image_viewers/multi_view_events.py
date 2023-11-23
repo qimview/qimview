@@ -32,6 +32,8 @@ class MultiViewEvents:
                 '([1-9])'       : self.setNumberOfViewers,
         }
 
+        self._help_links : str = "[wiki help: Multi-image Viewer](https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer)  \n"
+
     @staticmethod
     def get_key_seq(event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
         """ Return a key sequence from a keyboard event
@@ -62,6 +64,12 @@ class MultiViewEvents:
             res += f'|{k}|{v.__doc__}|  \n'
         res += '  \n'
         return res
+    
+    def markdown_help(self) -> str:
+        return self._get_markdown_help()
+
+    def help_links(self) -> str:
+        return self._help_links
 
     def helpDialog(self) -> bool :
         """ Open help dialog with links to wiki pages """
@@ -73,8 +81,8 @@ class MultiViewEvents:
                 f"# qimview {qimview.__version__}  \n" +
                 self._get_markdown_help() +
                 "### Links \n" +
+                self._help_links +
                 "[github: qimview](https://github.com/qimview/qimview/wiki)  \n" +
-                "[wiki help: Multi-image Viewer](https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer)  \n"
                 "[wiki help: Image Viewer](https://github.com/qimview/qimview/wiki/3.-Image-Viewers)  \n"
                 )
         mb.exec()
@@ -178,7 +186,7 @@ class MultiViewEvents:
     def key_press_event(self, event : QtGui.QKeyEvent):
         if type(event) == QtGui.QKeyEvent:
             key_seq : str = MultiViewEvents.get_key_seq(event).toString()
-            print(f"key_seq {key_seq}")
+            # print(f"key_seq {key_seq}")
             if key_seq in self.keys_callback:
                 event.setAccepted(self.keys_callback[key_seq]())
             else:

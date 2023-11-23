@@ -65,10 +65,7 @@ class MultiView(QtWidgets.QWidget):
         self.image_viewers : List[ImageViewerClass] = []
         # Create viewer instances
         for n in range(self.nb_viewers_used):
-            viewer = self.image_viewer_class()
-            viewer.set_activation_callback(self.on_active)
-            viewer.set_synchronization_callback(self.on_synchronize)
-            # viewer.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.PreventContextMenu)
+            viewer = self.create_viewer()
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
 
@@ -126,6 +123,14 @@ class MultiView(QtWidgets.QWidget):
         # if 0: computed automatically
         self.max_columns       : int = 0 
 
+    def create_viewer(self) -> ImageViewerClass:
+        viewer = self.image_viewer_class()
+        viewer.set_activation_callback(self.on_active)
+        viewer.set_synchronization_callback(self.on_synchronize)
+        viewer.add_help_text (self._events.markdown_help())
+        viewer.add_help_links(self._events.help_links())
+        return viewer
+
     def set_key_up_callback(self, c):
         self.key_up_callback = c
 
@@ -154,9 +159,7 @@ class MultiView(QtWidgets.QWidget):
         self.image_viewers.clear()
         # Create viewer instances
         for n in range(self.nb_viewers_used):
-            viewer = self.image_viewer_class()
-            viewer.set_activation_callback(self.on_active)
-            viewer.set_synchronization_callback(self.on_synchronize)
+            viewer = self.create_viewer()
             # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
             self.allocated_image_viewers.append(viewer)
             self.image_viewers.append(viewer)
@@ -271,18 +274,12 @@ class MultiView(QtWidgets.QWidget):
         # if set_viewers, we force the viewer layout and images based on the list
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
-            viewer = self.image_viewer_class()
-            viewer.set_activation_callback(self.on_active)
-            viewer.set_synchronization_callback(self.on_synchronize)
-            # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            viewer = self.create_viewer()
             self.allocated_image_viewers.append(viewer)
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
         image_names = list(self.image_dict.keys())
         for n in range(self.nb_viewers_used):
-            if n < len(image_names):
-                self.image_viewers[n].image_name = image_names[n]
-            else:
-                self.image_viewers[n].image_name = image_names[len(image_names)-1]
+            self.image_viewers[n].image_name = image_names[max(n,len(image_names)-1)]
 
     def update_reference(self) -> None:
         reference_image = self.get_output_image(self.output_label_reference_image)
@@ -669,10 +666,7 @@ class MultiView(QtWidgets.QWidget):
         self.print_log('col_length = {} row_length = {}'.format(col_length, row_length))
         # be sure to have enough image viewers allocated
         while self.nb_viewers_used > len(self.allocated_image_viewers):
-            viewer = self.image_viewer_class()
-            viewer.set_activation_callback(self.on_active)
-            viewer.set_synchronization_callback(self.on_synchronize)
-            # viewer.setContextMenuPolicy(QtCore.Qt.PreventContextMenu)
+            viewer = self.create_viewer()
             self.allocated_image_viewers.append(viewer)
 
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]

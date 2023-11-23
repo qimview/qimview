@@ -6,7 +6,7 @@ from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils      import get_time
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
 from .fullscreen_helper       import FullScreenHelper
-from .image_viewer_events     import ImageViewerEvents
+from .image_viewer_key_events import ImageViewerKeyEvents
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
@@ -108,7 +108,7 @@ class ImageViewer:
         self._clipboard            : Optional[QtGui.QClipboard] = None
 
         # Event class
-        self._events : ImageViewerEvents = ImageViewerEvents(self)
+        self._key_events : ImageViewerKeyEvents = ImageViewerKeyEvents(self)
 
         # --- Public members
         self.data = None
@@ -198,6 +198,14 @@ class ImageViewer:
         self._image_name = v
 
     # === Public methods
+    def add_help_text(self, help:str) -> None:
+        """ Add markdown formatted text to generated help in help dialog """
+        self._key_events.add_help_text(help)
+
+    def add_help_links(self, help:str) -> None:
+        """ Add markdown formatted text to generated help in help dialog """
+        self._key_events.add_help_links(help)
+
     def set_activation_callback(self, cb : Optional[Callable]):
         self._on_active = cb
 
@@ -421,7 +429,7 @@ class ImageViewer:
     # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
-        self._events.key_press_event(event, wsize)
+        self._key_events.key_press_event(event, wsize)
 
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -> str:
         text : str = self.image_name
