@@ -320,12 +320,12 @@ class ImageViewer:
         dest_viewer.current_scale = self.current_scale
         dest_viewer.current_dx = self.current_dx
         dest_viewer.current_dy = self.current_dy
-        dest_viewer._mouse_events.mouse_dx   = self._mouse_events.mouse_dx
-        dest_viewer._mouse_events.mouse_dy   = self._mouse_events.mouse_dy
-        dest_viewer._mouse_events.mouse_zx   = self._mouse_events.mouse_zx
-        dest_viewer._mouse_events.mouse_zy   = self._mouse_events.mouse_zy
-        dest_viewer._mouse_events.mouse_x    = self._mouse_events.mouse_x
-        dest_viewer._mouse_events.mouse_y    = self._mouse_events.mouse_y
+        dest_viewer._mouse_events._mouse_dx   = self._mouse_events._mouse_dx
+        dest_viewer._mouse_events._mouse_dy   = self._mouse_events._mouse_dy
+        dest_viewer._mouse_events._mouse_zx   = self._mouse_events._mouse_zx
+        dest_viewer._mouse_events._mouse_zy   = self._mouse_events._mouse_zy
+        dest_viewer._mouse_events._mouse_x    = self._mouse_events._mouse_x
+        dest_viewer._mouse_events._mouse_y    = self._mouse_events._mouse_y
 
         dest_viewer.show_histogram      = self.show_histogram
         dest_viewer.show_cursor         = self.show_cursor
@@ -346,8 +346,8 @@ class ImageViewer:
         # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
 
     def new_translation(self):
-        dx = self.current_dx + self._mouse_events.mouse_dx/self.current_scale
-        dy = self.current_dy + self._mouse_events.mouse_dy/self.current_scale
+        dx = self.current_dx + self._mouse_events._mouse_dx/self.current_scale
+        dy = self.current_dy + self._mouse_events._mouse_dy/self.current_scale
         return dx, dy
 
     def check_translation(self):

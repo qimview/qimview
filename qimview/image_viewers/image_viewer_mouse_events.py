@@ -26,10 +26,11 @@ class ImageViewerMouseEvents:
         self._last_pos = None # Last mouse position before mouse click
         # Current mouse event
         self._mouse_action : MouseAction = MouseAction.NoAction
-        self.mouse_dx = self.mouse_dy = 0
-        self.mouse_zy = 0
-        self.mouse_x = 0
-        self.mouse_y = 0
+        self._mouse_dx = self._mouse_dy = 0
+        self._mouse_zy = 0
+        self._mouse_zx = 0
+        self._mouse_x = 0
+        self._mouse_y = 0
 
         # Set key events callbacks
         # Each event will be associate with a unique string
@@ -82,27 +83,27 @@ class ImageViewerMouseEvents:
         return MouseAction.Other
 
     def _pan_update(self, event):
-        self.mouse_dx = event.x() - self._last_pos.x()
-        self.mouse_dy = - (event.y() - self._last_pos.y())
+        self._mouse_dx = event.x() - self._last_pos.x()
+        self._mouse_dy = - (event.y() - self._last_pos.y())
 
     def _pan_end(self, event):
         self._viewer.current_dx, self._viewer.current_dy = self._viewer.check_translation()
-        self.mouse_dy = 0
-        self.mouse_dx = 0
+        self._mouse_dy = 0
+        self._mouse_dx = 0
 
     def _zoom_update(self, event):
-        self.mouse_zx = event.x() - self._last_pos.x()
-        self.mouse_zy = - (event.y() - self._last_pos.y())
+        self._mouse_zx = event.x() - self._last_pos.x()
+        self._mouse_zy = - (event.y() - self._last_pos.y())
 
     def _zoom_end(self, event):
         if self._viewer._image is not None:
-            self._viewer.current_scale = self._viewer.new_scale(self.mouse_zy, self._viewer._image.data.shape[0])
-        self.mouse_zy = 0
-        self.mouse_zx = 0
+            self._viewer.current_scale = self._viewer.new_scale(self._mouse_zy, self._viewer._image.data.shape[0])
+        self._mouse_zy = 0
+        self._mouse_zx = 0
 
     def mouse_move_event(self, event: QtGui.QMouseEvent):
-        self.mouse_x = event.x()
-        self.mouse_y = event.y()
+        self._mouse_x = event.x()
+        self._mouse_y = event.y()
         # We save the event type in a member variable to be able to process the release event
         self._mouse_action = self._get_mouse_action(event)
         event_cb = {
@@ -139,7 +140,7 @@ class ImageViewerMouseEvents:
         # Check if double click is on histogram, if so, toggle histogram size
         if self._viewer._histo_rect and self._viewer._histo_rect.contains(event.x(), event.y()):
             # scale loops from 1 to 3 
-            self._histo_scale = (self._histo_scale % 3) + 1 
+            self._viewer._histo_scale = (self._viewer._histo_scale % 3) + 1 
             self._viewer.viewer_update()
             event.accept()
         else:

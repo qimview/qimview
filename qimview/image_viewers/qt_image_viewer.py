@@ -81,7 +81,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         (height, width) = self._image.data.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
-        coeff = 1.0/self.new_scale(self._mouse_events.mouse_zy, height)
+        coeff = 1.0/self.new_scale(self._mouse_events._mouse_zy, height)
         # zoom from the center of the image
         center = self.zoom_center
         new_crop = center + (crop - center) * coeff
@@ -311,9 +311,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
     def draw_overlay_separation(self, cropped_image_shape, rect, painter):
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self._mouse_events.mouse_x - rect.x())/rect.width()*width)
+        im_x = int((self._mouse_events._mouse_x - rect.x())/rect.width()*width)
         im_x = max(0, min(width - 1, im_x))
-        # im_y = int((self._mouse_events.mouse_y - rect.y())/rect.height()*height)
+        # im_y = int((self._mouse_events._mouse_y - rect.y())/rect.height()*height)
         # Set position at the beginning of the pixel
         pos_from_im_x = int(im_x*rect.width()/width + rect.x())
         # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
@@ -339,8 +339,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
         if self.display_timing: self.start_timing()
         # get image position
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self._mouse_events.mouse_x -rect.x())/rect.width()*width)
-        im_y = int((self._mouse_events.mouse_y -rect.y())/rect.height()*height)
+        im_x = int((self._mouse_events._mouse_x -rect.x())/rect.width()*width)
+        im_y = int((self._mouse_events._mouse_y -rect.y())/rect.height()*height)
 
         pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
         pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
@@ -529,9 +529,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
             rect = QtCore.QRect(0, 0, display_width, display_height)
             devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
             rect.moveCenter(devRect.center())
-            im_x = int((self._mouse_events.mouse_x - rect.x()) / rect.width() * width)
+            im_x = int((self._mouse_events._mouse_x - rect.x()) / rect.width() * width)
             im_x = max(0,min(width-1, im_x))
-            # im_y = int((self._mouse_events.mouse_y - rect.y()) / rect.height() * height)
+            # im_y = int((self._mouse_events._mouse_y - rect.y()) / rect.height() * height)
             # We need to have a copy here .. slow, better option???
             image_data = np.copy(image_data)
             image_data[:, :im_x] = self._image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
@@ -718,7 +718,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
         if self.show_intensity_line and self._image:
             (height, width) = cropped_image_shape[:2]
-            im_y = int((self._mouse_events.mouse_y -rect.y())/rect.height()*height)
+            im_y = int((self._mouse_events._mouse_y -rect.y())/rect.height()*height)
             im_y += crop_ymin
             im_shape = self._image.data.shape
             # Horizontal display
