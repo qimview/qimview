@@ -53,8 +53,7 @@ class MultiViewEvents:
         return QtGui.QKeySequence(mod_seq_str + key_str)
 
     def _get_markdown_help(self) -> str:
-        res =  '## Multi-image Viewer  \n'
-        res += '### Keyboard Events  \n'
+        res = ''
         res += '|key sequence|action  |  \n'
         res += '|:-----------|:------:|  \n'
         # TODO create html table

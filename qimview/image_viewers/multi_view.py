@@ -127,7 +127,7 @@ class MultiView(QtWidgets.QWidget):
         viewer = self.image_viewer_class()
         viewer.set_activation_callback(self.on_active)
         viewer.set_synchronization_callback(self.on_synchronize)
-        viewer.add_help_text (self._events.markdown_help())
+        viewer.add_help_tab  ('MultiView key events', self._events.markdown_help())
         viewer.add_help_links(self._events.help_links())
         return viewer
 
