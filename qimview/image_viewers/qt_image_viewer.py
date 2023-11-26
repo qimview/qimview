@@ -10,7 +10,15 @@ from qimview.utils.viewer_image import *
 from qimview.utils.utils import clip_value
 from qimview.utils.utils import get_time
 from qimview.tests_utils.qtdump import *
+# Renaming manually since syntax checker has issues with cv2
 import cv2
+# from cv2 import resize          as opencv_resize
+# from cv2 import add             as opencv_add
+# from cv2 import subtract        as opencv_subtract
+# from cv2 import addWeighted     as opencv_addWeighted
+# from cv2 import convertScaleAbs as opencv_convertScaleAbs
+# from cv2 import INTER_NEAREST   as opencv_INTER_NEAREST
+# from cv2 import INTER_AREA      as opencv_INTER_AREA
 import numpy as np
 from typing import Tuple, Optional
 
@@ -73,7 +81,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         (height, width) = self._image.data.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
-        coeff = 1.0/self.new_scale(self.mouse_zy, height)
+        coeff = 1.0/self.new_scale(self._mouse_events.mouse_zy, height)
         # zoom from the center of the image
         center = self.zoom_center
         new_crop = center + (crop - center) * coeff
@@ -303,9 +311,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
     def draw_overlay_separation(self, cropped_image_shape, rect, painter):
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self.mouse_x - rect.x())/rect.width()*width)
+        im_x = int((self._mouse_events.mouse_x - rect.x())/rect.width()*width)
         im_x = max(0, min(width - 1, im_x))
-        # im_y = int((self.mouse_y - rect.y())/rect.height()*height)
+        # im_y = int((self._mouse_events.mouse_y - rect.y())/rect.height()*height)
         # Set position at the beginning of the pixel
         pos_from_im_x = int(im_x*rect.width()/width + rect.x())
         # pos_from_im_y = int((im_y+0.5)*rect.height()/height+ rect.y())
@@ -331,8 +339,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
         if self.display_timing: self.start_timing()
         # get image position
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self.mouse_x -rect.x())/rect.width()*width)
-        im_y = int((self.mouse_y -rect.y())/rect.height()*height)
+        im_x = int((self._mouse_events.mouse_x -rect.x())/rect.width()*width)
+        im_y = int((self._mouse_events.mouse_y -rect.y())/rect.height()*height)
 
         pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
         pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
@@ -521,9 +529,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
             rect = QtCore.QRect(0, 0, display_width, display_height)
             devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
             rect.moveCenter(devRect.center())
-            im_x = int((self.mouse_x - rect.x()) / rect.width() * width)
+            im_x = int((self._mouse_events.mouse_x - rect.x()) / rect.width() * width)
             im_x = max(0,min(width-1, im_x))
-            # im_y = int((self.mouse_y - rect.y()) / rect.height() * height)
+            # im_y = int((self._mouse_events.mouse_y - rect.y()) / rect.height() * height)
             # We need to have a copy here .. slow, better option???
             image_data = np.copy(image_data)
             image_data[:, :im_x] = self._image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
@@ -532,16 +540,16 @@ class QTImageViewer(ImageViewer, BaseWidget):
         if not use_cache:
             anti_aliasing = ratio < 1
             #self.print_log("ratio is {:0.2f}".format(ratio))
-            use_opencv_resize = anti_aliasing
+            use_opencv_resize : bool = anti_aliasing
             # enable this as optional?
-            # opencv_downscale_interpolation = opencv_fast_interpolation
-            opencv_fast_interpolation = cv2.INTER_NEAREST
+            # opencv_downscale_interpolation = cv2.fast_interpolation
+            cv2.fast_interpolation = cv2.INTER_NEAREST
             if self.antialiasing:
                 opencv_downscale_interpolation = cv2.INTER_AREA
             else:
                 opencv_downscale_interpolation = cv2.INTER_NEAREST
             # opencv_upscale_interpolation   = cv2.INTER_LINEAR
-            opencv_upscale_interpolation   = opencv_fast_interpolation
+            opencv_upscale_interpolation   = cv2.fast_interpolation
             # self.print_time('several settings', time1, start_time)
 
             # self.print_log("use_opencv_resize {} channels {}".format(use_opencv_resize, current_image.channels))
@@ -594,7 +602,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                 self.add_time('cv2.resize',time1)
 
             current_image = ViewerImage(image_data,  precision=precision, downscale=downscale, channels=channels)
-            if self.show_stats:
+            if self.show_stats and self._image:
                 # Output RGB from input
                 ch = self._image.channels
                 data_shape = current_image.data.shape
@@ -636,8 +644,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
         else:
             resize_applied = True
-            current_image = self.paint_cache['current_image']
-            histograms = self.paint_cache['histograms']
+            if self.paint_cache:
+                current_image = self.paint_cache['current_image']
+                histograms = self.paint_cache['histograms']
             # histograms2 = self.paint_cache['histograms2']
 
         # if could_use_cache:
@@ -709,7 +718,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
         if self.show_intensity_line and self._image:
             (height, width) = cropped_image_shape[:2]
-            im_y = int((self.mouse_y -rect.y())/rect.height()*height)
+            im_y = int((self._mouse_events.mouse_y -rect.y())/rect.height()*height)
             im_y += crop_ymin
             im_shape = self._image.data.shape
             # Horizontal display
@@ -762,21 +771,21 @@ class QTImageViewer(ImageViewer, BaseWidget):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
     def mousePressEvent(self, event):
-        super().mouse_press_event(event)
+        self._mouse_events.mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
-        self.mouse_move_event(event)
+        self._mouse_events.mouse_move_event(event)
 
     def mouseReleaseEvent(self, event):
-        self.mouse_release_event(event)
+        self._mouse_events.mouse_release_event(event)
 
     def mouseDoubleClickEvent(self, event):
         # We need to set the current viewer active before processing the double click event
         self.is_active = True
-        self.mouse_double_click_event(event)
+        self._mouse_events.mouse_double_click_event(event)
 
     def wheelEvent(self, event):
-        self.mouse_wheel_event(event)
+        self._mouse_events.mouse_wheel_event(event)
 
     def event(self, evt):
         if self.event_recorder is not None:

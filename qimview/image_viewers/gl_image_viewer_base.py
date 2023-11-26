@@ -328,7 +328,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
-        scale = self.new_scale(self.mouse_zy, self.tex_height)
+        scale = self.new_scale(self._mouse_events.mouse_zy, self.tex_height)
         print(f"updateTransforms scale {scale}")
         try:
             # print("current context ", QtOpenGL.QGLContext.currentContext())
@@ -371,21 +371,21 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         return posX, posY
 
     def mousePressEvent(self, event):
-        super().mouse_press_event(event)
+        self._mouse_events.mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
         if self.show_cursor:
             self.set_cursor_image_position(event.x(), event.y())
-        self.mouse_move_event(event)
+        self._mouse_events.mouse_move_event(event)
 
     def mouseReleaseEvent(self, event):
-        self.mouse_release_event(event)
+        self._mouse_events.mouse_release_event(event)
 
     def mouseDoubleClickEvent(self, event):
-        self.mouse_double_click_event(event)
+        self._mouse_events.mouse_double_click_event(event)
 
     def wheelEvent(self, event):
-        self.mouse_wheel_event(event)
+        self._mouse_events.mouse_wheel_event(event)
 
     def keyPressEvent(self, event):
         # TODO: Fix the correct parameters for selecting image zoom/pan

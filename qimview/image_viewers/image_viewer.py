@@ -3,10 +3,11 @@
 #
 
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
-from qimview.utils.utils      import get_time
-from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
-from .fullscreen_helper       import FullScreenHelper
-from .image_viewer_key_events import ImageViewerKeyEvents
+from qimview.utils.utils        import get_time
+from qimview.utils.qt_imports   import QtGui, QtCore, QtWidgets
+from .fullscreen_helper         import FullScreenHelper
+from .image_viewer_key_events   import ImageViewerKeyEvents
+from .image_viewer_mouse_events import ImageViewerMouseEvents
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
@@ -18,7 +19,7 @@ from typing import TYPE_CHECKING, Optional, Tuple, Callable
 # if TYPE_CHECKING:
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from abc import abstractmethod
-from enum import Enum, auto
+from dataclasses import dataclass
 
 try:
     import qimview_cpp
@@ -29,16 +30,6 @@ else:
     has_cppbind = True
 print("Do we have cpp binding ? {}".format(has_cppbind))
 
-class MouseEvent(Enum):
-    """ Different processed events from mouse
-
-    Args:
-        Enum (_type_): _description_
-    """
-    PanEvent   = auto()
-    ZoomEvent  = auto()
-    OtherEvent = auto()
-    NoEvent    = auto()
 
 
 # copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
@@ -74,7 +65,53 @@ class trace_method():
         self.tab[0] = self.tab[0][:-2]
 
 
+#  @dataclass(slots=True)
 class ImageViewer:
+    # Use slots to avoid new member creation
+    # __slots__ = (
+    #     '_widget',
+    #     '_width',
+    #     '_height',
+    #     '_image_name',
+    #     '_active',
+    #     '_on_active',
+    #     '_display_timing',
+    #     '_verbose',
+    #     '_image',
+    #     '_image_ref',
+    #     '_histo_ref',
+    #     '_histo_rect',
+    #     '_histo_scale',
+    #     '_fullscreen',
+    #     '_on_synchronize',
+    #     '_save_image_clipboard',
+    #     '_clipboard',
+    #     '_key_events',
+    #     '_mouse_events',
+    #     'data',
+    #     'lastPos',
+    #     'current_dx',
+    #     'current_dy',
+    #     'current_scale',
+    #     'tab',
+    #     'trace_calls',
+    #     'filter_params',
+    #     'start_time',
+    #     'timings',
+    #     'replacing_widget',
+    #     'before_max_parent',
+    #     'show_histogram',
+    #     'show_cursor',
+    #     'show_overlay',
+    #     'show_stats',
+    #     'show_image_differences',
+    #     'show_intensity_line',
+    #     'antialiasing',
+    #     'image_id',
+    #     'image_ref_id',
+    #     'evt_width',
+    #     'evt_height',
+    #     )
 
     def __init__(self, widget : QtWidgets.QWidget):
         self._widget          : QtWidgets.QWidget = widget
@@ -94,8 +131,6 @@ class ImageViewer:
         self._histo_rect      : Optional[QtCore.QRect] = None
         # Histogram displayed scale
         self._histo_scale     : int = 1
-        # Current mouse event
-        self._mouse_event     : MouseEvent = MouseEvent.NoEvent
 
         # FullScreen helper features
         self._fullscreen      : FullScreenHelper = FullScreenHelper()
@@ -106,18 +141,14 @@ class ImageViewer:
         # Clipboard
         self._save_image_clipboard : bool                       = False
         self._clipboard            : Optional[QtGui.QClipboard] = None
-
-        # Event class
-        self._key_events : ImageViewerKeyEvents = ImageViewerKeyEvents(self)
+        # Key event class
+        self._key_events   : ImageViewerKeyEvents   = ImageViewerKeyEvents(self)
+        # Mouse event class
+        self._mouse_events : ImageViewerMouseEvents = ImageViewerMouseEvents(self)
 
         # --- Public members
         self.data = None
         self.lastPos = None # Last mouse position before mouse click
-        self.mouse_dx = self.mouse_dy = 0
-        self.mouse_zx = 0
-        self.mouse_zy = 0
-        self.mouse_x = 0
-        self.mouse_y = 0
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
         self.tab = ["--"]
@@ -198,9 +229,9 @@ class ImageViewer:
         self._image_name = v
 
     # === Public methods
-    def add_help_text(self, help:str) -> None:
+    def add_help_tab(self, title:str,  help:str) -> None:
         """ Add markdown formatted text to generated help in help dialog """
-        self._key_events.add_help_text(help)
+        self._key_events.add_help_tab(title, help)
 
     def add_help_links(self, help:str) -> None:
         """ Add markdown formatted text to generated help in help dialog """
@@ -289,12 +320,12 @@ class ImageViewer:
         dest_viewer.current_scale = self.current_scale
         dest_viewer.current_dx = self.current_dx
         dest_viewer.current_dy = self.current_dy
-        dest_viewer.mouse_dx   = self.mouse_dx
-        dest_viewer.mouse_dy   = self.mouse_dy
-        dest_viewer.mouse_zx   = self.mouse_zx
-        dest_viewer.mouse_zy   = self.mouse_zy
-        dest_viewer.mouse_x    = self.mouse_x
-        dest_viewer.mouse_y    = self.mouse_y
+        dest_viewer._mouse_events.mouse_dx   = self._mouse_events.mouse_dx
+        dest_viewer._mouse_events.mouse_dy   = self._mouse_events.mouse_dy
+        dest_viewer._mouse_events.mouse_zx   = self._mouse_events.mouse_zx
+        dest_viewer._mouse_events.mouse_zy   = self._mouse_events.mouse_zy
+        dest_viewer._mouse_events.mouse_x    = self._mouse_events.mouse_x
+        dest_viewer._mouse_events.mouse_y    = self._mouse_events.mouse_y
 
         dest_viewer.show_histogram      = self.show_histogram
         dest_viewer.show_cursor         = self.show_cursor
@@ -304,12 +335,10 @@ class ImageViewer:
     def synchronize(self):
         """ Calls synchronization callback if available
         """
-        if self.display_timing:
-            start_time = get_time()
-            print("[ --- Start sync")
+        start_time = get_time() if self.display_timing else None
         if self._on_synchronize: 
             self._on_synchronize(self)
-        if self.display_timing:
+        if start_time:
             print('       End sync --- {:0.1f} ms'.format((get_time()-start_time)*1000))
 
     def new_scale(self, mouse_zy, height):
@@ -317,8 +346,8 @@ class ImageViewer:
         # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
 
     def new_translation(self):
-        dx = self.current_dx + self.mouse_dx/self.current_scale
-        dy = self.current_dy + self.mouse_dy/self.current_scale
+        dx = self.current_dx + self._mouse_events.mouse_dx/self.current_scale
+        dy = self.current_dy + self._mouse_events.mouse_dy/self.current_scale
         return dx, dy
 
     def check_translation(self):
@@ -327,106 +356,6 @@ class ImageViewer:
     @abstractmethod
     def viewer_update(self):
         pass
-
-    def mouse_press_event(self, event):
-        self.lastPos = event.pos()
-        if event.buttons() & QtMouse.RightButton:
-            event.accept()
-            return
-        # Else set current viewer active
-        self.activate()
-        self.viewer_update()
-        event.accept()
-
-    def _get_mouse_event(self,event: QtGui.QMouseEvent) -> MouseEvent:
-        is_alt = event.modifiers() == QtCore.Qt.KeyboardModifier.AltModifier
-        left_button = event.buttons() & QtMouse.LeftButton
-        if left_button:
-            if is_alt: 
-                return MouseEvent.PanEvent
-            else:
-                return MouseEvent.ZoomEvent
-        return MouseEvent.OtherEvent
-
-    def _pan_update(self, event):
-        self.mouse_dx = event.x() - self.lastPos.x()
-        self.mouse_dy = - (event.y() - self.lastPos.y())
-
-    def _pan_end(self, event):
-        self.current_dx, self.current_dy = self.check_translation()
-        self.mouse_dy = 0
-        self.mouse_dx = 0
-
-    def _zoom_update(self, event):
-        self.mouse_zx = event.x() - self.lastPos.x()
-        self.mouse_zy = - (event.y() - self.lastPos.y())
-
-    def _zoom_end(self, event):
-        if self._image is not None:
-            self.current_scale = self.new_scale(self.mouse_zy, self._image.data.shape[0])
-        self.mouse_zy = 0
-        self.mouse_zx = 0
-
-    def mouse_move_event(self, event: QtGui.QMouseEvent):
-        self.mouse_x = event.x()
-        self.mouse_y = event.y()
-        # We save the event type in a member variable to be able to process the release event
-        self._mouse_event = self._get_mouse_event(event)
-        event_cb = {
-            MouseEvent.PanEvent  : self._pan_update,
-            MouseEvent.ZoomEvent : self._zoom_update,
-        }
-        if self._mouse_event in event_cb:
-            event_cb[self._mouse_event](event)
-            self.viewer_update()
-            self.synchronize()
-            event.accept()
-        else:
-            if self.show_overlay:
-                self.viewer_update()
-                event.accept()
-            elif self.show_cursor:
-                self.viewer_update()
-                self.synchronize()
-                event.accept()
-
-    def mouse_release_event(self, event):
-        event_cb = {
-            MouseEvent.PanEvent  : self._pan_end,
-            MouseEvent.ZoomEvent : self._zoom_end,
-        }
-        if self._mouse_event in event_cb:
-            event_cb[self._mouse_event](event)
-            event.accept()
-        self.synchronize()
-        self._mouse_event = MouseEvent.NoEvent
-
-    def mouse_double_click_event(self, event):
-        self.print_log("double click ")
-        # Check if double click is on histogram, if so, toggle histogram size
-        if self._histo_rect and self._histo_rect.contains(event.x(), event.y()):
-            # scale loops from 1 to 3 
-            self._histo_scale = (self._histo_scale % 3) + 1 
-            self.viewer_update()
-            event.accept()
-        else:
-            event.setAccepted(False)
-
-    def mouse_wheel_event(self,event):
-        # Zoom by applying a factor to the distances to the sides
-        if hasattr(event, 'delta'):
-            delta = event.delta()
-        else:
-            delta = event.angleDelta().y()
-        # print("delta = {}".format(delta))
-        coeff = delta/5
-        # coeff = 20 if delta > 0 else -20
-        if self._image:
-            self.current_scale = self.new_scale(coeff, self._image.data.shape[0])
-            self.viewer_update()
-            self.synchronize()
-
-    # def mouseDoubleClickEvent(self, event):
 
     def key_press_event(self, event, wsize):
         self._key_events.key_press_event(event, wsize)
@@ -477,7 +406,7 @@ class ImageViewer:
 
     def compute_histogram(self, current_image, show_timings=False):
         # print(f"compute_histogram show_timings {show_timings}")
-        if show_timings: h_start = get_time()
+        h_start = get_time() if show_timings else None
         # Compute steps based on input image resolution
         im_w, im_h = current_image.shape[1], current_image.shape[0]
         target_w = 800
@@ -492,12 +421,12 @@ class ImageViewer:
         if self.verbose:
             print(f"qtImageViewer.compute_histograph() steps are {hist_x_step, hist_y_step} "
                 f"shape {current_image.shape} --> {resized_im.shape}")
-        if show_timings: resized_time = get_time()-h_start
+        resized_time = get_time()-h_start if h_start else None
 
         calc_hist_time = 0
 
         # First compute all histograms
-        if show_timings: start_hist = get_time()
+        start_hist = get_time() if show_timings else None
         hist_all = np.empty((3, 256), dtype=np.float32)
         # print(f"{resized_im[::100,::100,:]}")
         for channel, im_ch in enumerate(cv2.split(resized_im)):
@@ -507,12 +436,14 @@ class ImageViewer:
             hist_all[channel, :] = hist[:, 0]
 
         hist_all = hist_all / np.max(hist_all)
-        if show_timings: 
+        if start_hist: 
             end_hist = get_time()
             calc_hist_time += end_hist-start_hist
             gauss_start = get_time()
+        else:
+            gauss_start = None # Help syntax parser
         hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
-        if show_timings: 
+        if gauss_start and h_start and resized_time:
             gauss_time = get_time() - gauss_start
             print(f"compute_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end="")
             print(f"from which calchist:{calc_hist_time*1000:0.1f}, "
@@ -523,7 +454,7 @@ class ImageViewer:
 
     def compute_histogram_Cpp(self, current_image, show_timings=False):
         # print(f"compute_histogram show_timings {show_timings}")
-        if show_timings: h_start = get_time()
+        h_start = get_time() if show_timings else None 
         # Compute steps based on input image resolution
         im_w, im_h = current_image.shape[1], current_image.shape[0]
         target_w = 800
@@ -532,11 +463,12 @@ class ImageViewer:
         hist_y_step = max(1, int(im_h/target_h+0.5))
         output_histogram = np.empty((3,256), dtype=np.uint32)
         qimview_cpp.compute_histogram(current_image, output_histogram, int(hist_x_step), int(hist_y_step))
-        if show_timings: t1 = get_time()
+        t1 = get_time() if show_timings else None
         hist_all = output_histogram.astype(np.float32)
         hist_all = hist_all / np.max(hist_all)
         hist_all = cv2.GaussianBlur(hist_all, (7, 1), sigmaX=1.5, sigmaY=0.2)
-        if show_timings: print(f"qimview_cpp.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, "
+        if h_start and t1: 
+            print(f"qimview_cpp.compute_histogram took {(get_time()-h_start)*1000:0.1f} ms, "
                                 f"{(get_time()-t1)*1000:0.1f} ms")
         return hist_all
 
@@ -561,13 +493,13 @@ class ImageViewer:
         start_y : int = h - 10
         margin  : int = 3
 
-        if histo_timings: rect_start = get_time()
+        rect_start = get_time() if histo_timings else None 
         rect = QtCore.QRect(start_x-margin, start_y-margin-height, width+2*margin, height+2*margin)
         self._histo_rect = rect
         # painter.fillRect(rect, QtGui.QBrush(QtGui.QColor(255, 255, 255, 128+64)))
         # Transparent light grey
         painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
-        if histo_timings: rect_time = get_time()-rect_start
+        rect_time = get_time()-rect_start if rect_start else None
 
         # print(f"current_image {current_image.shape} _image {self._image.shape}")
         # input_image = self._image
@@ -595,7 +527,7 @@ class ImageViewer:
 
             # print(f"histogram painting 2 took {get_time() - h_start} sec.")
 
-            if histo_timings: start_path = get_time()
+            start_path = get_time() if histo_timings else None
 
             # apply a small Gaussian filtering to histogram curve
             path = QtGui.QPainterPath()
@@ -607,9 +539,9 @@ class ImageViewer:
             for n in range(1,len(x_range)):
                 path.lineTo(x_pos[n], y_pos[n])
             painter.drawPath(path)
-            if histo_timings: path_time += get_time()-start_path
+            path_time += get_time()-start_path if start_path else 0
 
-        if histo_timings: 
+        if rect_time: 
             print(f"display_histogram took {(get_time()-h_start)*1000:0.1f} msec. ", end='')
             print(f"from which path:{int(path_time*1000)}, rect:{int(rect_time*1000)}")
 
@@ -631,7 +563,6 @@ class ImageViewer:
         start_y  : int = h-margin_y
 
         rect = QtCore.QRect(start_x, start_y-height, width, height)
-        self._line_rect = rect
         painter.fillRect(rect, QtGui.QColor(205, 205, 205, 128+32))
 
         pen = QtGui.QPen()
