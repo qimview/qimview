@@ -2,15 +2,6 @@
 #
 #
 
-from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
-from qimview.utils.utils        import get_time
-from qimview.utils.qt_imports   import QtGui, QtCore, QtWidgets
-from .fullscreen_helper         import FullScreenHelper
-from .image_viewer_key_events   import ImageViewerKeyEvents
-from .image_viewer_mouse_events import ImageViewerMouseEvents
-QtKeys  = QtCore.Qt.Key
-QtMouse = QtCore.Qt.MouseButton
-
 import cv2
 import traceback
 import inspect
@@ -21,40 +12,53 @@ from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from abc import abstractmethod
 from dataclasses import dataclass
 
+from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
+from qimview.utils.utils        import get_time
+from qimview.utils.qt_imports   import QtGui, QtCore, QtWidgets
+from .fullscreen_helper         import FullScreenHelper
+from .image_viewer_key_events   import ImageViewerKeyEvents
+from .image_viewer_mouse_events import ImageViewerMouseEvents
+
+QtKeys  = QtCore.Qt.Key
+QtMouse = QtCore.Qt.MouseButton
+
 try:
     import qimview_cpp
-except Exception as e:
-    has_cppbind = False
-    print("Failed to load qimview_cpp: {}".format(e))
+except ImportError as import_excep:
+    HAS_CPPBIND = False
+    print(f"Failed to load qimview_cpp: {import_excep}")
 else:
-    has_cppbind = True
-print("Do we have cpp binding ? {}".format(has_cppbind))
+    HAS_CPPBIND = True
+print(f"Do we have cpp binding ? {HAS_CPPBIND}")
 
-
-
-# copied from https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-a-function-of-another-class-in-python
+# Copied from:
+# https://stackoverflow.com/questions/17065086/how-to-get-the-caller-class-name-inside-
+# a-function-of-another-class-in-python
 def get_class_from_frame(fr):
-  args, _, _, value_dict = inspect.getargvalues(fr)
-  # we check the first parameter for the frame function is
-  # named 'self'
-  if len(args) and args[0] == 'self':
-    # in that case, 'self' will be referenced in value_dict
-    instance = value_dict.get('self', None)
-    if instance:
-      # return its class name
-      try:
-          # return getattr(instance, '__class__', None)
-          return getattr(instance, '__class__', None).__name__
-      except:
-          return None
-  # return None otherwise
-  return None
+    args, _, _, value_dict = inspect.getargvalues(fr)
+    # we check the first parameter for the frame function is
+    # named 'self'
+    if len(args) and args[0] == 'self':
+        # in that case, 'self' will be referenced in value_dict
+        instance = value_dict.get('self', None)
+        if instance:
+            # return its class name
+            try:
+                # return getattr(instance, '__class__', None)
+                return getattr(instance, '__class__', None).__name__
+            except AttributeError as _e:
+                print(f"get_class_from_frame error {_e}")
+                return None
+    # return None otherwise
+    return None
 
 
-def get_function_name():
+def get_function_name() -> str:
+    """ Return function name from traceback """
     return traceback.extract_stack(None, 2)[0][2]
 
 class trace_method():
+    """ """
     def __init__(self, tab):
         self.tab = tab
         method = traceback.extract_stack(None, 2)[0][2]
@@ -67,6 +71,7 @@ class trace_method():
 
 #  @dataclass(slots=True)
 class ImageViewer:
+    """ Image Viewer base class, holds a member _widget of the inherited class """
     # Use slots to avoid new member creation
     # __slots__ = (
     #     '_widget',
@@ -237,25 +242,30 @@ class ImageViewer:
         """ Add markdown formatted text to generated help in help dialog """
         self._key_events.add_help_links(help)
 
-    def set_activation_callback(self, cb : Optional[Callable]):
+    def set_activation_callback(self, cb : Optional[Callable]) -> None:
+        """ Set the activation callback """
         self._on_active = cb
 
-    def set_synchronization_callback(self, cb : Optional[Callable]):
+    def set_synchronization_callback(self, cb : Optional[Callable]) -> None:
+        """ Set the synchronization callback """
         self._on_synchronize = cb
 
-    def get_image(self):
+    def get_image(self) -> None:
+        """ Return the current image """
         return self._image
 
     def set_image(self, image : Optional[ViewerImage]):
+        """ Set the viewer image """
         is_different = (self._image is None) or (self._image is not image)
         if image is not None:
-            self.print_log('set_image({}): is_different = {}'.format(image.data.shape, is_different))
+            self.print_log(f'set_image({image.data.shape}): is_different = {is_different}')
         if is_different:
             self._image = image
             self.image_id += 1
         return is_different
 
     def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
+        """ Set the reference image """
         is_different = (self._image_ref is None) or (self._image_ref is not image_ref)
         if is_different:
             self._image_ref = image_ref
@@ -320,12 +330,9 @@ class ImageViewer:
         dest_viewer.current_scale = self.current_scale
         dest_viewer.current_dx = self.current_dx
         dest_viewer.current_dy = self.current_dy
-        dest_viewer._mouse_events._mouse_dx   = self._mouse_events._mouse_dx
-        dest_viewer._mouse_events._mouse_dy   = self._mouse_events._mouse_dy
-        dest_viewer._mouse_events._mouse_zx   = self._mouse_events._mouse_zx
-        dest_viewer._mouse_events._mouse_zy   = self._mouse_events._mouse_zy
-        dest_viewer._mouse_events._mouse_x    = self._mouse_events._mouse_x
-        dest_viewer._mouse_events._mouse_y    = self._mouse_events._mouse_y
+        dest_viewer._mouse_events._mouse_displ      = self._mouse_events._mouse_displ
+        dest_viewer._mouse_events._mouse_pos        = self._mouse_events._mouse_pos
+        dest_viewer._mouse_events._mouse_zoom_displ = self._mouse_events._mouse_zoom_displ
 
         dest_viewer.show_histogram      = self.show_histogram
         dest_viewer.show_cursor         = self.show_cursor
@@ -346,8 +353,8 @@ class ImageViewer:
         # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
 
     def new_translation(self):
-        dx = self.current_dx + self._mouse_events._mouse_dx/self.current_scale
-        dy = self.current_dy + self._mouse_events._mouse_dy/self.current_scale
+        dx = self.current_dx + self._mouse_events._mouse_displ.x()/self.current_scale
+        dy = self.current_dy - self._mouse_events._mouse_displ.y()/self.current_scale
         return dx, dy
 
     def check_translation(self):

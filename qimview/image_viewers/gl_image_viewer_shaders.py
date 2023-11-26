@@ -341,7 +341,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         h = self._height
         dx, dy = self.new_translation()
         # Deduce new scale from mouse vertical displacement
-        scale = self.new_scale(self._mouse_events._mouse_zy, self.tex_height)
+        scale = self.new_scale(-self._mouse_events._mouse_zoom_displ.y(), self.tex_height)
         # update the window size
         gl.glMatrixMode(gl.GL_PROJECTION)
         gl.glLoadIdentity()

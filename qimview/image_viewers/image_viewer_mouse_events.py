@@ -1,5 +1,5 @@
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 from enum import Enum, auto
 #from .image_viewer import ImageViewer, MouseAction
 QtKeys  = QtCore.Qt.Key
@@ -18,19 +18,30 @@ class MouseAction(Enum):
     NoAction = auto()
 
 
+class MousePressActions:
+    def __init__(self) -> None:
+        self._press_pos : Optional[QtCore.QPoint] = None
+        pass
+    def press(self, event : QtGui.QMouseEvent) -> None:
+        self._press_pos = event.pos()
+        pass
+    def move(self, event: QtGui.QMoveEvent) -> None:
+        displacement : QtCore.QPoint = event.pos() - self._press_pos
+        pass
+    def release(self, event: QtGui.QMouseEvent) -> None:
+        pass
+
 class ImageViewerMouseEvents:
     """ Implement events for ImageViewer
     """
     def __init__(self, viewer: 'ImageViewer'):
         self._viewer : 'ImageViewer' = viewer
-        self._last_pos = None # Last mouse position before mouse click
+        self._press_pos = None # Last mouse position before mouse click
         # Current mouse event
-        self._mouse_action : MouseAction = MouseAction.NoAction
-        self._mouse_dx = self._mouse_dy = 0
-        self._mouse_zy = 0
-        self._mouse_zx = 0
-        self._mouse_x = 0
-        self._mouse_y = 0
+        self._mouse_action     : MouseAction = MouseAction.NoAction
+        self._mouse_displ      : QtCore.QPoint = QtCore.QPoint(0,0)
+        self._mouse_pos        : QtCore.QPoint = QtCore.QPoint(0,0)
+        self._mouse_zoom_displ : QtCore.QPoint = QtCore.QPoint(0,0)
 
         # Set key events callbacks
         # Each event will be associate with a unique string
@@ -63,7 +74,7 @@ class ImageViewerMouseEvents:
         }
 
     def mouse_press_event(self, event):
-        self._last_pos = event.pos()
+        self._press_pos = event.pos()
         if event.buttons() & QtMouse.RightButton:
             event.accept()
             return
@@ -82,28 +93,23 @@ class ImageViewerMouseEvents:
                 return MouseAction.Zoom
         return MouseAction.Other
 
-    def _pan_update(self, event):
-        self._mouse_dx = event.x() - self._last_pos.x()
-        self._mouse_dy = - (event.y() - self._last_pos.y())
+    def _pan_update(self, event : QtGui.QMouseEvent):
+        self._mouse_displ = event.pos() - self._press_pos
 
     def _pan_end(self, event):
         self._viewer.current_dx, self._viewer.current_dy = self._viewer.check_translation()
-        self._mouse_dy = 0
-        self._mouse_dx = 0
+        self._mouse_displ = QtCore.QPoint(0,0)
 
     def _zoom_update(self, event):
-        self._mouse_zx = event.x() - self._last_pos.x()
-        self._mouse_zy = - (event.y() - self._last_pos.y())
+        self._mouse_zoom_displ = event.pos() - self._press_pos
 
     def _zoom_end(self, event):
         if self._viewer._image is not None:
-            self._viewer.current_scale = self._viewer.new_scale(self._mouse_zy, self._viewer._image.data.shape[0])
-        self._mouse_zy = 0
-        self._mouse_zx = 0
+            self._viewer.current_scale = self._viewer.new_scale(-self._mouse_zoom_displ.y(), self._viewer._image.data.shape[0])
+        self._mouse_zoom_displ = QtCore.QPoint(0,0)
 
-    def mouse_move_event(self, event: QtGui.QMouseEvent):
-        self._mouse_x = event.x()
-        self._mouse_y = event.y()
+    def mouse_move_event(self, event: QtGui.QMoveEvent):
+        self._mouse_pos = event.pos()
         # We save the event type in a member variable to be able to process the release event
         self._mouse_action = self._get_mouse_action(event)
         event_cb = {
