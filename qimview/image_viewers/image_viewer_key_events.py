@@ -1,5 +1,6 @@
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, List, Tuple
+from qimview.utils.tab_dialog import TabDialog
 if TYPE_CHECKING:
     from .image_viewer import ImageViewer
 QtKeys  = QtCore.Qt.Key
@@ -33,12 +34,11 @@ class ImageViewerKeyEvents:
                 'Alt+F' : self.unZoom,
         }
 
-        self._help_text  : str = ''
+        self._help_tabs  : List[Tuple[str,str]] = []
         self._help_links : str = ''
 
     def _get_markdown_help(self) -> str:
-        res =  '## Image Viewer  \n'
-        res += '### Keyboard Events  \n'
+        res = ''
         res += '|key sequence|action  |  \n'
         res += '|:-----------|:------:|  \n'
         # TODO create html table
@@ -47,11 +47,11 @@ class ImageViewerKeyEvents:
         res += '  \n'
         return res
     
-    def add_help_text(self, help: str) -> None:
+    def add_help_tab(self, title: str, text: str) -> None:
         """ Additional help to display
         Args:  help (str): help string in markdown format
         """
-        self._help_text = help
+        self._help_tabs.append((title, text))
 
     def add_help_links(self, help_links: str) -> None:
         """ Additional help links to display
@@ -80,20 +80,21 @@ class ImageViewerKeyEvents:
     def helpDialog(self) -> bool :
         """ Open help dialog with links to wiki pages """
         import qimview
-        mb = QtWidgets.QMessageBox(self._viewer.widget)
-        mb.setWindowTitle(f"qimview {qimview.__version__}: ImageViewer help")
+        help_win = TabDialog(self._viewer.widget, f"qimview {qimview.__version__}: ImageViewer help")
         # mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
-        mb.setTextFormat(QtCore.Qt.TextFormat.MarkdownText)
-        mb.setText(
-                f"# qimview {qimview.__version__}  \n" +
-                self._get_markdown_help() +
-                self._help_text +
+        help_win.add_markdown_tab("ImageViewer key events",
+                                  self._get_markdown_help()
+                                  )
+        for (title,text) in self._help_tabs:
+            help_win.add_markdown_tab(title, text)
+
+        help_win.add_markdown_tab("Links",
                 "### Links \n" +
                 "[github: qimview](https://github.com/qimview/qimview/wiki)  \n" +
                 "[wiki help: Image Viewer](https://github.com/qimview/qimview/wiki/3.-Image-Viewers)  \n" +
                 self._help_links
                 )
-        mb.exec()
+        help_win.show()
         return True
     
     def toggleFullScreen(self) -> bool:
