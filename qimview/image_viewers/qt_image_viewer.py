@@ -781,7 +781,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
     def mouseMoveEvent   (self, event : QtGui.QMoveEvent)  -> None: 
         self._mouse_events.mouse_move_event(event)
 
-    def mouseDoubleClickEvent(self, event):
+    def mouseDoubleClickEvent(self, event: QtGui.QMouseEvent) ->None:
         # We need to set the current viewer active before processing the double click event
         self.is_active = True
         self._mouse_events.mouse_double_click_event(event)

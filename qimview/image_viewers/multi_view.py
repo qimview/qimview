@@ -7,7 +7,7 @@ from qimview.utils.mvlabel        import MVLabel
 from qimview.cache                import ImageCache
 from .fullscreen_helper           import FullScreenHelper
 from qimview.image_viewers        import *
-from .multi_view_events           import MultiViewEvents
+from .multi_view_key_events       import MultiViewKeyEvents
 from enum                         import Enum, auto
 import math
 
@@ -43,8 +43,8 @@ class MultiView(QtWidgets.QWidget):
         # FullScreen helper features
         self._fullscreen           : FullScreenHelper           = FullScreenHelper()
 
-        # Event class
-        self._events : MultiViewEvents = MultiViewEvents(self)
+        # Key event class
+        self._key_events : MultiViewKeyEvents = MultiViewKeyEvents(self)
 
         # Clipboard
         self._save_image_clipboard : bool                       = False
@@ -127,8 +127,9 @@ class MultiView(QtWidgets.QWidget):
         viewer = self.image_viewer_class()
         viewer.set_activation_callback(self.on_active)
         viewer.set_synchronization_callback(self.on_synchronize)
-        viewer.add_help_tab  ('MultiView key events', self._events.markdown_help())
-        viewer.add_help_links(self._events.help_links())
+        viewer.add_help_tab  ('MultiView keys', self._key_events.markdown_help())
+        viewer.add_help_tab  ('ImageViewer mouse', viewer._mouse_events.markdown_help())
+        viewer.add_help_links(self._key_events.help_links())
         return viewer
 
     def set_key_up_callback(self, c):
@@ -688,25 +689,12 @@ class MultiView(QtWidgets.QWidget):
         self.update_image()
         event.accept()
 
-    def keyReleaseEvent(self, event):
-        if type(event) == QtGui.QKeyEvent:
-            modifiers = QtWidgets.QApplication.keyboardModifiers()
-            # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-            if modifiers & (QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ControlModifier):
-                event.accept()
-
-    def get_key_seq(self, event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
-        """ Return a key sequence from a keyboard event
-        """
-        modifiers = QtWidgets.QApplication.keyboardModifiers()
-        QtMod = QtCore.Qt.KeyboardModifier
-        # Python > 3.7 key order is maintained
-        mod_str = { QtMod.ShiftModifier   : 'Shift', QtMod.ControlModifier : 'Ctrl', 
-                    QtMod.AltModifier     : 'Alt',   QtMod.MetaModifier    : 'Meta',}
-        # Compact line to create the contatenated string like 'Ctrl+Alt+'
-        mod_seq_str = "".join([ f"{mod_str[m]}+" for  m in mod_str.keys() if modifiers & m])
-        key_str = QtGui.QKeySequence(event.key()).toString()
-        return QtGui.QKeySequence(mod_seq_str + key_str)
+    # def keyReleaseEvent(self, event):
+    #     if type(event) == QtGui.QKeyEvent:
+    #         modifiers = QtWidgets.QApplication.keyboardModifiers()
+    #         # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
+    #         if modifiers & (QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ControlModifier):
+    #             event.accept()
 
     def keyPressEvent(self, event):
-        self._events.key_press_event(event)
+        self._key_events.key_press_event(event)
