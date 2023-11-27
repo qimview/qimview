@@ -7,7 +7,7 @@ QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
 
-class MultiViewEvents:
+class MultiViewKeyEvents:
     """ Implement events for MultiView
     """
     def __init__(self, multiview: 'MultiView'):
@@ -54,8 +54,8 @@ class MultiViewEvents:
 
     def _get_markdown_help(self) -> str:
         res = ''
-        res += '|key sequence|action  |  \n'
-        res += '|:-----------|:------:|  \n'
+        res += '|Keys  |Action  |  \n'
+        res += '|:-----|:------:|  \n'
         # TODO create html table
         for k,v in self.keys_callback.items():
             res += f'|{k}|{v.__doc__}|  \n'
@@ -184,7 +184,7 @@ class MultiViewEvents:
 
     def key_press_event(self, event : QtGui.QKeyEvent):
         if type(event) == QtGui.QKeyEvent:
-            key_seq : str = MultiViewEvents.get_key_seq(event).toString()
+            key_seq : str = MultiViewKeyEvents.get_key_seq(event).toString()
             # print(f"key_seq {key_seq}")
             if key_seq in self.keys_callback:
                 event.setAccepted(self.keys_callback[key_seq]())
