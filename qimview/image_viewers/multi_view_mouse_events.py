@@ -1,5 +1,5 @@
 """ 
-    Deal with ImageViewer mouse events
+    Deal with MultiView mouse events
 """
 
 from typing import Optional
