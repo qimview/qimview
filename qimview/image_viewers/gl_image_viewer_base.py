@@ -328,7 +328,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
-        scale = self.new_scale(-self._mouse_events._mouse_zoom_displ.y(), self.tex_height)
+        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.tex_height)
         print(f"updateTransforms scale {scale}")
         try:
             # print("current context ", QtOpenGL.QGLContext.currentContext())

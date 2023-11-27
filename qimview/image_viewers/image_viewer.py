@@ -151,9 +151,13 @@ class ImageViewer:
         # Mouse event class
         self._mouse_events : ImageViewerMouseEvents = ImageViewerMouseEvents(self)
 
+        # Current mouse information: position, displacement
+        self.mouse_displ      : QtCore.QPoint = QtCore.QPoint(0,0)
+        self.mouse_pos        : QtCore.QPoint = QtCore.QPoint(0,0)
+        self.mouse_zoom_displ : QtCore.QPoint = QtCore.QPoint(0,0)
+
         # --- Public members
         self.data = None
-        self.lastPos = None # Last mouse position before mouse click
         self.current_dx = self.current_dy = 0
         self.current_scale = 1
         self.tab = ["--"]
@@ -330,9 +334,9 @@ class ImageViewer:
         dest_viewer.current_scale = self.current_scale
         dest_viewer.current_dx = self.current_dx
         dest_viewer.current_dy = self.current_dy
-        dest_viewer._mouse_events._mouse_displ      = self._mouse_events._mouse_displ
-        dest_viewer._mouse_events._mouse_pos        = self._mouse_events._mouse_pos
-        dest_viewer._mouse_events._mouse_zoom_displ = self._mouse_events._mouse_zoom_displ
+        dest_viewer.mouse_displ      = self.mouse_displ
+        dest_viewer.mouse_pos        = self.mouse_pos
+        dest_viewer.mouse_zoom_displ = self.mouse_zoom_displ
 
         dest_viewer.show_histogram      = self.show_histogram
         dest_viewer.show_cursor         = self.show_cursor
@@ -353,8 +357,8 @@ class ImageViewer:
         # return max(1, self.current_scale  + mouse_zy * 5.0 / height)
 
     def new_translation(self):
-        dx = self.current_dx + self._mouse_events._mouse_displ.x()/self.current_scale
-        dy = self.current_dy - self._mouse_events._mouse_displ.y()/self.current_scale
+        dx = self.current_dx + self.mouse_displ.x()/self.current_scale
+        dy = self.current_dy - self.mouse_displ.y()/self.current_scale
         return dx, dy
 
     def check_translation(self):

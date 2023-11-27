@@ -1,123 +1,208 @@
-from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
-from typing import TYPE_CHECKING, Optional
+""" 
+    Deal with ImageViewer mouse events
+"""
+
 from enum import Enum, auto
+from typing import Optional
+from qimview.utils.qt_imports import QtGui, QtCore
 #from .image_viewer import ImageViewer, MouseAction
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
 
-class MouseAction(Enum):
-    """ Different processed events from mouse
-
-    Args:
-        Enum (_type_): _description_
-    """
-    Pan      = auto()
-    Zoom     = auto()
-    Other    = auto()
-    NoAction = auto()
+def add2repr(res:str, elt:str) -> str:
+    """ Add a substring to a string representing an event """
+    if res=='':
+        return elt
+    return res+'+'+elt
 
 
-class MousePressActions:
-    def __init__(self) -> None:
+class MouseMotionActions:
+    """ Base class to deal with Mouse Motion with button (Press + Move + Release) events """
+    def __init__(self, viewer: 'ImageViewer') -> None:
         self._press_pos : Optional[QtCore.QPoint] = None
-        pass
+        self._delta     : QtCore.QPoint = QtCore.QPoint(0,0)
+        self._viewer    : 'ImageViewer'   = viewer
+
     def press(self, event : QtGui.QMouseEvent) -> None:
+        """ Press event """
         self._press_pos = event.pos()
-        pass
+
     def move(self, event: QtGui.QMoveEvent) -> None:
-        displacement : QtCore.QPoint = event.pos() - self._press_pos
-        pass
+        """ Move event """
+        self._delta = event.pos() - self._press_pos
+
     def release(self, event: QtGui.QMouseEvent) -> None:
-        pass
+        """ Release event """
+        self._delta = QtCore.QPoint(0,0)
+
+
+class MousePanActions(MouseMotionActions):
+    """ Image panning """
+    def press(self, event : QtGui.QMouseEvent) -> None:
+        """ Press event """
+        super().press(event)
+        event.setAccepted(True)
+    def move(self, event: QtGui.QMoveEvent) -> None:
+        """ Move event """
+        super().move(event)
+        self._viewer.mouse_displ = self._delta
+    def release(self, event: QtGui.QMouseEvent) -> None:
+        """ Release event """
+        self._viewer.current_dx, self._viewer.current_dy = self._viewer.check_translation()
+        super().release(event)
+        self._viewer.mouse_displ = self._delta
+
+class MouseZoomActions(MouseMotionActions):
+    """ Image Zooming """
+    def press(self, event : QtGui.QMouseEvent) -> None:
+        """ Press event """
+        super().press(event)
+        event.setAccepted(True)
+    def move(self, event: QtGui.QMoveEvent) -> None:
+        """ Move event """
+        super().move(event)
+        self._viewer.mouse_zoom_displ = self._delta
+    def release(self, event: QtGui.QMouseEvent) -> None:
+        """ Release event """
+        if self._viewer.get_image():
+            self._viewer.current_scale = self._viewer.new_scale(
+                        -self._delta.y(),
+                        self._viewer.get_image().data.shape[0]
+                        )
+        super().release(event)
+        self._viewer.mouse_zoom_displ = self._delta
 
 class ImageViewerMouseEvents:
     """ Implement events for ImageViewer
+
+        Create a string representation of each event to associate a corresponding callback
+        Modifier + Key + Mouse Event + Position
+         - modifier:
+           QMouseEvent.modifiers(): Qt::KeyboardModifiers
+           QFlags<KeyboardModifier>
+             Qt::NoModifier          empty string
+             Qt::ShiftModifier       Shft
+             Qt::ControlModifier     Ctrl
+             Qt::AltModifier         Alt
+             Qt::MetaModifier        Meta
+             Qt::KeypadModifier      Keypad: unused
+             Qt::GroupSwitchModifier unused
+        - Mouse events
+             MouseButtonPress        Press Left/Right/Middle
+             MouseMove               Move
+             MouseButtonRelease      Release
+             MouseButtonDblClick     DblClick
+             Wheel                   Wheel
+               event is separated on Qt but processes here
+        - Position
+             Inside one of the available positions
     """
     def __init__(self, viewer: 'ImageViewer'):
         self._viewer : 'ImageViewer' = viewer
         self._press_pos = None # Last mouse position before mouse click
-        # Current mouse event
-        self._mouse_action     : MouseAction = MouseAction.NoAction
-        self._mouse_displ      : QtCore.QPoint = QtCore.QPoint(0,0)
-        self._mouse_pos        : QtCore.QPoint = QtCore.QPoint(0,0)
-        self._mouse_zoom_displ : QtCore.QPoint = QtCore.QPoint(0,0)
+
+        # Instance of motion action
+        self._current_motion    : Optional[MouseMotionActions] = None
 
         # Set key events callbacks
         # Each event will be associate with a unique string
 
-        # Modifier + Key + Mouse Event + Position
-        #  - modifier:
-        #    QMouseEvent.modifiers(): Qt::KeyboardModifiers
-        #    QFlags<KeyboardModifier>
-        #      Qt::NoModifier          empty string
-        #      Qt::ShiftModifier       Shft
-        #      Qt::ControlModifier     Ctrl
-        #      Qt::AltModifier         Alt
-        #      Qt::MetaModifier        Meta
-        #      Qt::KeypadModifier      Keypad: unused
-        #      Qt::GroupSwitchModifier unused
-        # - Mouse events
-        #      MouseButtonPress
-        #      MouseMove
-        #      MouseButtonRelease
-        #      MouseButtonDblClick
-        #      Wheel event is separated on Qt but processes here
-        # - Position
-        #      Inside one of the available positions
 
         # wheel	zoom image or unzoom depending on the direction
         # move + left button	zoom
         # Alt + move + left button	pan
         # doubleClick on histogram	Switch histogram display size factor (x1,x2,x3)
-        self.mouse_callback = {
+        self._mouse_callback = {
+            'Left Pressed'          : self.action_activate,
+            'DblClick on histogram' : self.toogle_histo_size,
         }
 
-    def mouse_press_event(self, event):
+        self._motion_classes = {
+            'Left Motion'     : MouseZoomActions,
+            'Alt+Left Motion' : MousePanActions,
+        }
+
+    def modifiers2str(self, modifiers: QtCore.Qt.KeyboardModifiers ) -> str:
+        """ Converts the modifiers to a string representation """
+        res = ''
+        qt_mod = QtCore.Qt.KeyboardModifiers
+        mod_str = {
+            qt_mod.ShiftModifier   : 'Shft',
+            qt_mod.ControlModifier : 'Ctrl',
+            qt_mod.AltModifier     : 'Alt',
+            qt_mod.MetaModifier    : 'Meta',
+        }
+        for m,m_str in mod_str.items():
+            if modifiers & m:
+                res = add2repr(res, m_str)
+        return res
+
+    def buttons2str(self, buttons: QtGui.Qt.MouseButtons ) -> str:
+        """ Converts the mouse buttons to a string representation """
+        res = ''
+        qt_but = QtGui.Qt.MouseButton
+        button_str = {
+            qt_but.LeftButton   : 'Left',
+            qt_but.RightButton  : 'Right',
+            qt_but.MiddleButton : 'Middle',
+        }
+        for b,b_str in button_str.items():
+            if buttons & b:
+                res = add2repr(res, b_str)
+        return res
+
+    def process_event(self, event_repr: str, event : QtCore.QEvent) -> bool:
+        """ Process the event base on its representation as string and on the dict of callbacks """
+        if event_repr in self._mouse_callback:
+            return self._mouse_callback[event_repr]()
+        return False
+
+    def start_motion(self, event_repr: str, event : QtCore.QEvent) -> bool:
+        """ Instantiate motion actions """
+        print(f"{event_repr}")
+        if event_repr in self._motion_classes and self._current_motion is None:
+            self._current_motion = self._motion_classes[event_repr](self._viewer)
+            self._current_motion.press(event)
+            print(f"started motion {event_repr}")
+            return True
+        return False
+
+    def mouse_press_event(self, event : QtGui.QMouseEvent):
+        """ Build str that represents the event and call process_event() """
+        event_repr : str = ''
+        # 1. Get Modifiers
+        event_repr = add2repr(event_repr, self.modifiers2str(event.modifiers()))
+        # 2. Get Buttons
+        event_repr = add2repr(event_repr, self.buttons2str(event.buttons()))
+        motion_event = event_repr + ' Motion'
+        press_event  = event_repr + ' Pressed'
+        print(f'press_event = {press_event}')
         self._press_pos = event.pos()
-        if event.buttons() & QtMouse.RightButton:
-            event.accept()
-            return
-        # Else set current viewer active
+        processed = self.process_event(press_event,  event)
+        started   = self.start_motion (motion_event, event)
+        event.setAccepted(processed or started)
+
+    def action_activate(self) -> bool:
+        """ Set viewer active """
         self._viewer.activate()
         self._viewer.viewer_update()
-        event.accept()
+        return True
 
-    def _get_mouse_action(self,event: QtGui.QMouseEvent) -> MouseAction:
-        is_alt = event.modifiers() == QtCore.Qt.KeyboardModifier.AltModifier
-        left_button = event.buttons() & QtMouse.LeftButton
-        if left_button:
-            if is_alt: 
-                return MouseAction.Pan
-            else:
-                return MouseAction.Zoom
-        return MouseAction.Other
-
-    def _pan_update(self, event : QtGui.QMouseEvent):
-        self._mouse_displ = event.pos() - self._press_pos
-
-    def _pan_end(self, event):
-        self._viewer.current_dx, self._viewer.current_dy = self._viewer.check_translation()
-        self._mouse_displ = QtCore.QPoint(0,0)
-
-    def _zoom_update(self, event):
-        self._mouse_zoom_displ = event.pos() - self._press_pos
-
-    def _zoom_end(self, event):
-        if self._viewer._image is not None:
-            self._viewer.current_scale = self._viewer.new_scale(-self._mouse_zoom_displ.y(), self._viewer._image.data.shape[0])
-        self._mouse_zoom_displ = QtCore.QPoint(0,0)
+    def mouse_release_event(self, event: QtGui.QMouseEvent) -> None:
+        """ Build str that represents the event and call process_event() """
+        if self._current_motion:
+            self._current_motion.release(event)
+            self._current_motion = None
+            event.accept()
+        event.ignore()
 
     def mouse_move_event(self, event: QtGui.QMoveEvent):
-        self._mouse_pos = event.pos()
+        """ Build str that represents the event and call process_event() """
+        self._viewer.mouse_pos = event.pos()
         # We save the event type in a member variable to be able to process the release event
-        self._mouse_action = self._get_mouse_action(event)
-        event_cb = {
-            MouseAction.Pan  : self._pan_update,
-            MouseAction.Zoom : self._zoom_update,
-        }
-        if self._mouse_action in event_cb:
-            event_cb[self._mouse_action](event)
+        if self._current_motion:
+            self._current_motion.move(event)
             self._viewer.viewer_update()
             self._viewer.synchronize()
             event.accept()
@@ -130,25 +215,19 @@ class ImageViewerMouseEvents:
                 self._viewer.synchronize()
                 event.accept()
 
-    def mouse_release_event(self, event):
-        event_cb = {
-            MouseAction.Pan  : self._pan_end,
-            MouseAction.Zoom : self._zoom_end,
-        }
-        if self._mouse_action in event_cb:
-            event_cb[self._mouse_action](event)
-            event.accept()
-        self._viewer.synchronize()
-        self._mouse_action = MouseAction.NoAction
+    def toogle_histo_size(self)->bool:
+        """ Switch histogram scale from 1 to 3 """
+        self._viewer._histo_scale = (self._viewer._histo_scale % 3) + 1 
+        self._viewer.viewer_update()
+        return True
 
     def mouse_double_click_event(self, event):
+        """ Deal with double-click event """
         self._viewer.print_log("double click ")
         # Check if double click is on histogram, if so, toggle histogram size
         if self._viewer._histo_rect and self._viewer._histo_rect.contains(event.x(), event.y()):
-            # scale loops from 1 to 3 
-            self._viewer._histo_scale = (self._viewer._histo_scale % 3) + 1 
-            self._viewer.viewer_update()
-            event.accept()
+            processed = self.process_event("DblClick on histogram",  event)
+            event.setAccepted(processed)
         else:
             event.setAccepted(False)
 
@@ -161,7 +240,7 @@ class ImageViewerMouseEvents:
         # print("delta = {}".format(delta))
         coeff = delta/5
         # coeff = 20 if delta > 0 else -20
-        if self._viewer._image:
-            self._viewer.current_scale = self._viewer.new_scale(coeff, self._viewer._image.data.shape[0])
+        if self._viewer.get_image():
+            self._viewer.current_scale = self._viewer.new_scale(coeff, self._viewer.get_image().data.shape[0])
             self._viewer.viewer_update()
             self._viewer.synchronize()

@@ -81,7 +81,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         (height, width) = self._image.data.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
-        coeff = 1.0/self.new_scale(-self._mouse_events._mouse_zoom_displ.y(), height)
+        coeff = 1.0/self.new_scale(-self.mouse_zoom_displ.y(), height)
         # zoom from the center of the image
         center = self.zoom_center
         new_crop = center + (crop - center) * coeff
@@ -311,7 +311,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
     def draw_overlay_separation(self, cropped_image_shape, rect : QtCore.QRect, painter):
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self._mouse_events._mouse_pos.x() - rect.x())/rect.width()*width)
+        im_x = int((self.mouse_pos.x() - rect.x())/rect.width()*width)
         im_x = max(0, min(width - 1, im_x))
         # Set position at the beginning of the pixel
         pos_from_im_x = int(im_x*rect.width()/width + rect.x())
@@ -344,8 +344,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
         if self.display_timing: self.start_timing()
         # get image position
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self._mouse_events._mouse_pos.x() -rect.x())/rect.width()*width)
-        im_y = int((self._mouse_events._mouse_pos.y() -rect.y())/rect.height()*height)
+        im_x = int((self.mouse_pos.x() -rect.x())/rect.width()*width)
+        im_y = int((self.mouse_pos.y() -rect.y())/rect.height()*height)
 
         pos_from_im_x = int((im_x+0.5)*rect.width()/width +rect.x())
         pos_from_im_y = int((im_y+0.5)*rect.height()/height+rect.y())
@@ -534,7 +534,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             rect = QtCore.QRect(0, 0, display_width, display_height)
             devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
             rect.moveCenter(devRect.center())
-            im_x = int((self._mouse_events._mouse_pos.x() - rect.x()) / rect.width() * width)
+            im_x = int((self.mouse_pos.x() - rect.x()) / rect.width() * width)
             im_x = max(0,min(width-1, im_x))
             # We need to have a copy here .. slow, better option???
             image_data = np.copy(image_data)
@@ -722,7 +722,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
         if self.show_intensity_line and self._image:
             (height, width) = cropped_image_shape[:2]
-            im_y = int((self._mouse_events._mouse_pos.y() -rect.y())/rect.height()*height)
+            im_y = int((self.mouse_pos.y() -rect.y())/rect.height()*height)
             im_y += crop_ymin
             im_shape = self._image.data.shape
             # Horizontal display
@@ -774,9 +774,12 @@ class QTImageViewer(ImageViewer, BaseWidget):
         BaseWidget.resizeEvent(self, event)
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
-    def mousePressEvent  (self, event:  QtGui.QMouseEvent) -> None: self._mouse_events.mouse_press_event(event)
-    def mouseReleaseEvent(self, event : QtGui.QMouseEvent) -> None: self._mouse_events.mouse_release_event(event)
-    def mouseMoveEvent   (self, event : QtGui.QMoveEvent)  -> None: self._mouse_events.mouse_move_event(event)
+    def mousePressEvent  (self, event:  QtGui.QMouseEvent) -> None: 
+        self._mouse_events.mouse_press_event(event)
+    def mouseReleaseEvent(self, event : QtGui.QMouseEvent) -> None: 
+        self._mouse_events.mouse_release_event(event)
+    def mouseMoveEvent   (self, event : QtGui.QMoveEvent)  -> None: 
+        self._mouse_events.mouse_move_event(event)
 
     def mouseDoubleClickEvent(self, event):
         # We need to set the current viewer active before processing the double click event
