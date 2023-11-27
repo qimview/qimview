@@ -2,20 +2,16 @@
     Deal with ImageViewer mouse events
 """
 
-from enum import Enum, auto
 from typing import Optional
 from qimview.utils.qt_imports import QtGui, QtCore
-#from .image_viewer import ImageViewer, MouseAction
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
-
 
 def add2repr(res:str, elt:str) -> str:
     """ Add a substring to a string representing an event """
     if res=='':
         return elt
     return res+'+'+elt
-
 
 class MouseMotionActions:
     """ Base class to deal with Mouse Motion with button (Press + Move + Release) events """
@@ -114,14 +110,31 @@ class ImageViewerMouseEvents:
         # Alt + move + left button	pan
         # doubleClick on histogram	Switch histogram display size factor (x1,x2,x3)
         self._mouse_callback = {
-            'Left Pressed'          : self.action_activate,
-            'DblClick on histogram' : self.toogle_histo_size,
+            'Left Pressed'               : self.action_activate,
+            'Left+DblClick on histogram' : self.toogle_histo_size,
+            'Wheel'                      : self.wheel_zoom,
         }
 
         self._motion_classes = {
             'Left Motion'     : MouseZoomActions,
             'Alt+Left Motion' : MousePanActions,
         }
+
+    def _get_markdown_help(self) -> str:
+        res = ''
+        res += '|Mouse    |Action  |  \n'
+        res += '|:--------|:------:|  \n'
+        # TODO create html table
+        for k,v in self._mouse_callback.items():
+            res += f'|{k}|{v.__doc__}|  \n'
+        for k,v in self._motion_classes.items():
+            res += f'|{k}|{v.__doc__}|  \n'
+        res += '  \n'
+        return res
+
+    def markdown_help(self) -> str:
+        """ return events documentation in markdown format """
+        return self._get_markdown_help()
 
     def modifiers2str(self, modifiers: QtCore.Qt.KeyboardModifiers ) -> str:
         """ Converts the modifiers to a string representation """
@@ -155,7 +168,7 @@ class ImageViewerMouseEvents:
     def process_event(self, event_repr: str, event : QtCore.QEvent) -> bool:
         """ Process the event base on its representation as string and on the dict of callbacks """
         if event_repr in self._mouse_callback:
-            return self._mouse_callback[event_repr]()
+            return self._mouse_callback[event_repr](event)
         return False
 
     def start_motion(self, event_repr: str, event : QtCore.QEvent) -> bool:
@@ -183,7 +196,7 @@ class ImageViewerMouseEvents:
         started   = self.start_motion (motion_event, event)
         event.setAccepted(processed or started)
 
-    def action_activate(self) -> bool:
+    def action_activate(self, _) -> bool:
         """ Set viewer active """
         self._viewer.activate()
         self._viewer.viewer_update()
@@ -215,28 +228,41 @@ class ImageViewerMouseEvents:
                 self._viewer.synchronize()
                 event.accept()
 
-    def toogle_histo_size(self)->bool:
+    def toogle_histo_size(self, _)->bool:
         """ Switch histogram scale from 1 to 3 """
         self._viewer._histo_scale = (self._viewer._histo_scale % 3) + 1 
         self._viewer.viewer_update()
         return True
 
-    def mouse_double_click_event(self, event):
+    def mouse_double_click_event(self, event: QtGui.QMouseEvent):
         """ Deal with double-click event """
-        self._viewer.print_log("double click ")
+        event_repr : str = ''
+        # 1. Get Modifiers
+        event_repr = add2repr(event_repr, self.modifiers2str(event.modifiers()))
+        # 2. Get Buttons
+        event_repr = add2repr(event_repr, self.buttons2str(event.buttons()))
+        event_repr = add2repr(event_repr, 'DblClick')
         # Check if double click is on histogram, if so, toggle histogram size
         if self._viewer._histo_rect and self._viewer._histo_rect.contains(event.x(), event.y()):
-            processed = self.process_event("DblClick on histogram",  event)
-            event.setAccepted(processed)
-        else:
-            event.setAccepted(False)
+            event_repr += ' on histogram'
+        print(f"{event_repr}")
+        processed = self.process_event(event_repr,  event)
+        event.setAccepted(processed)
 
-    def mouse_wheel_event(self,event):
+    def mouse_wheel_event(self,event: QtGui.QWheelEvent) -> None:
+        """ Build str that represents the wheek event and call process_event() """
+        # Can add button states
+        # 1. Get Modifiers
+        event_repr = add2repr('', self.modifiers2str(event.modifiers()))
+        event_repr = add2repr(event_repr, 'Wheel')
+        print(f"{event_repr}")
+        processed = self.process_event(event_repr,  event)
+        event.setAccepted(processed)
+
+    def wheel_zoom(self, event) -> bool:
+        """ Zoom in/out based on wheel angle """
         # Zoom by applying a factor to the distances to the sides
-        if hasattr(event, 'delta'):
-            delta = event.delta()
-        else:
-            delta = event.angleDelta().y()
+        delta = event.angleDelta().y()
         # print("delta = {}".format(delta))
         coeff = delta/5
         # coeff = 20 if delta > 0 else -20
@@ -244,3 +270,5 @@ class ImageViewerMouseEvents:
             self._viewer.current_scale = self._viewer.new_scale(coeff, self._viewer.get_image().data.shape[0])
             self._viewer.viewer_update()
             self._viewer.synchronize()
+            return True
+        return False
