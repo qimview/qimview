@@ -110,7 +110,6 @@ class ImageViewerMouseEvents:
         # Alt + move + left button	pan
         # doubleClick on histogram	Switch histogram display size factor (x1,x2,x3)
         self._mouse_callback = {
-            'Left Pressed'               : self.action_activate,
             'Left+DblClick on histogram' : self.toogle_histo_size,
             'Wheel'                      : self.wheel_zoom,
         }
@@ -190,17 +189,13 @@ class ImageViewerMouseEvents:
         event_repr = add2repr(event_repr, self.buttons2str(event.buttons()))
         motion_event = event_repr + ' Motion'
         press_event  = event_repr + ' Pressed'
-        print(f'press_event = {press_event}')
+        print(f'ImageViewer press_event = {press_event}')
         self._press_pos = event.pos()
         processed = self.process_event(press_event,  event)
         started   = self.start_motion (motion_event, event)
-        event.setAccepted(processed or started)
-
-    def action_activate(self, _) -> bool:
-        """ Set viewer active """
-        self._viewer.activate()
-        self._viewer.viewer_update()
-        return True
+        # Propagate event to parent anyway?
+        print(f"accepted = {processed}")
+        event.setAccepted(processed) # or started)
 
     def mouse_release_event(self, event: QtGui.QMouseEvent) -> None:
         """ Build str that represents the event and call process_event() """

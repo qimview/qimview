@@ -150,6 +150,8 @@ class ImageViewer:
         self._key_events   : ImageViewerKeyEvents   = ImageViewerKeyEvents(self)
         # Mouse event class
         self._mouse_events : ImageViewerMouseEvents = ImageViewerMouseEvents(self)
+        # Add Mouse help tab
+        self._key_events.add_help_tab("ImageViewer Mouse", self._mouse_events.markdown_help())
 
         # Current mouse information: position, displacement
         self.mouse_displ      : QtCore.QPoint = QtCore.QPoint(0,0)

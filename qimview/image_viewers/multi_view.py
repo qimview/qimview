@@ -1,29 +1,41 @@
-
+"""
+    MultiView class: display and compare multiple images
+"""
+import math
+import types
+from enum                         import Enum, auto
+from typing                       import List, Optional, NewType
 from qimview.utils.qt_imports     import QtGui, QtWidgets, QtCore
 from qimview.utils.utils          import get_time
-from qimview.utils.viewer_image   import *
+from qimview.utils.viewer_image   import ImageFormat
 from qimview.utils.menu_selection import MenuSelection
 from qimview.utils.mvlabel        import MVLabel
 from qimview.cache                import ImageCache
-from .fullscreen_helper           import FullScreenHelper
-from qimview.image_viewers        import *
-from .multi_view_key_events       import MultiViewKeyEvents
-from enum                         import Enum, auto
-import math
-
-import types
-from typing import List, TYPE_CHECKING, Optional, NewType, Callable
+from qimview.image_viewers        import (QTImageViewer, GLImageViewer, GLImageViewerShaders,
+                                          ImageFilterParameters, ImageFilterParametersGui)
 from qimview.image_viewers.image_viewer import ImageViewer
+from .fullscreen_helper                 import FullScreenHelper
+from .multi_view_key_events             import MultiViewKeyEvents
+from .multi_view_mouse_events           import MultiViewMouseEvents
+
 # Class that derives from ImageViewer
-ImageViewerClass = NewType('ImageViewerClass', ImageViewer) 
+ImageViewerClass = NewType('ImageViewerClass', ImageViewer)
 
 class ViewerType(Enum):
+    """ Different flavors of ImageViewer """
     QT_VIEWER             = auto()
     OPENGL_VIEWER         = auto()
     OPENGL_SHADERS_VIEWER = auto()
 
 
 class MultiView(QtWidgets.QWidget):
+    """ Multiple image viewer: hold a grid layout of several image viewers and a set of input images.
+        Each viewer has the possibility to display any of the input images.
+        Features:
+          - geometric and intensity comparison by synchronizing the different viewers.
+          - synchronized image filters
+          - fast switch between images
+    """
 
     def __init__(self, parent=None, viewer_mode: ViewerType =ViewerType.QT_VIEWER, nb_viewers: int =1) -> None:
         """
@@ -44,7 +56,9 @@ class MultiView(QtWidgets.QWidget):
         self._fullscreen           : FullScreenHelper           = FullScreenHelper()
 
         # Key event class
-        self._key_events : MultiViewKeyEvents = MultiViewKeyEvents(self)
+        self._key_events   : MultiViewKeyEvents   = MultiViewKeyEvents(self)
+        # Mouse event class
+        self._mouse_events : MultiViewMouseEvents = MultiViewMouseEvents(self)
 
         # Clipboard
         self._save_image_clipboard : bool                       = False
@@ -124,11 +138,11 @@ class MultiView(QtWidgets.QWidget):
         self.max_columns       : int = 0 
 
     def create_viewer(self) -> ImageViewerClass:
-        viewer = self.image_viewer_class()
+        viewer = self.image_viewer_class(self)
         viewer.set_activation_callback(self.on_active)
         viewer.set_synchronization_callback(self.on_synchronize)
-        viewer.add_help_tab  ('MultiView keys', self._key_events.markdown_help())
-        viewer.add_help_tab  ('ImageViewer mouse', viewer._mouse_events.markdown_help())
+        viewer.add_help_tab('MultiView keys',  self._key_events  .markdown_help())
+        viewer.add_help_tab('MultiView Mouse', self._mouse_events.markdown_help())
         viewer.add_help_links(self._key_events.help_links())
         return viewer
 
@@ -680,21 +694,10 @@ class MultiView(QtWidgets.QWidget):
         #     print("Viewer {} size {}".format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
 
     def mouseDoubleClickEvent(self, event):
-        self._show_active_only = not self._show_active_only
-        if not self._active_viewer: return
-        # Set the current image 
-        self.output_label_reference_image = self._active_viewer.image_name
-        print(f"output_label_reference_image {self.output_label_reference_image}")
-        # Update the image to show/hide viewers
-        self.update_image()
-        event.accept()
+        self._mouse_events.mouse_double_click_event(event)
 
-    # def keyReleaseEvent(self, event):
-    #     if type(event) == QtGui.QKeyEvent:
-    #         modifiers = QtWidgets.QApplication.keyboardModifiers()
-    #         # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
-    #         if modifiers & (QtCore.Qt.KeyboardModifier.AltModifier | QtCore.Qt.KeyboardModifier.ControlModifier):
-    #             event.accept()
+    def mousePressEvent(self, event):
+        self._mouse_events.mouse_press_event(event)
 
     def keyPressEvent(self, event):
         self._key_events.key_press_event(event)
