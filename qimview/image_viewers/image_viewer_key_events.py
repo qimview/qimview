@@ -39,8 +39,8 @@ class ImageViewerKeyEvents:
 
     def _get_markdown_help(self) -> str:
         res = ''
-        res += '|key sequence|action  |  \n'
-        res += '|:-----------|:------:|  \n'
+        res += '|Keys  |Action  |  \n'
+        res += '|:-----|:------:|  \n'
         # TODO create html table
         for k,v in self.keys_callback.items():
             res += f'|{k}|{v.__doc__}|  \n'
@@ -82,7 +82,7 @@ class ImageViewerKeyEvents:
         import qimview
         help_win = TabDialog(self._viewer.widget, f"qimview {qimview.__version__}: ImageViewer help")
         # mb.setTextFormat(QtCore.Qt.TextFormat.RichText)
-        help_win.add_markdown_tab("ImageViewer key events",
+        help_win.add_markdown_tab("ImageViewer keys",
                                   self._get_markdown_help()
                                   )
         for (title,text) in self._help_tabs:
