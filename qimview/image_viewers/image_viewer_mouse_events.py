@@ -2,20 +2,11 @@
     Deal with ImageViewer mouse events
 """
 
-from typing import NewType, TypeVar, TYPE_CHECKING
+from typing import TypeVar, TYPE_CHECKING
 from qimview.utils.qt_imports import QtGui, QtCore
 if TYPE_CHECKING:
     from qimview.image_viewers.image_viewer import ImageViewer
 from .mouse_events import MouseEvents, MouseMotionActions
-
-# Class that derives from ImageViewer
-ImageViewerClass = NewType('ImageViewerClass', 'ImageViewer')
-
-def add2repr(res:str, elt:str) -> str:
-    """ Add a substring to a string representing an event """
-    if res=='':
-        return elt
-    return res+'+'+elt
 
 # T is a type that inherits from QWidget
 V = TypeVar('V', bound='ImageViewer')
