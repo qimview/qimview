@@ -4,8 +4,6 @@
 
 from typing import Optional
 from qimview.utils.qt_imports import QtGui, QtCore
-QtKeys  = QtCore.Qt.Key
-QtMouse = QtCore.Qt.MouseButton
 
 def add2repr(res:str, elt:str) -> str:
     """ Add a substring to a string representing an event """
@@ -115,8 +113,9 @@ class ImageViewerMouseEvents:
         }
 
         self._motion_classes = {
-            'Left Motion'     : MouseZoomActions,
-            'Alt+Left Motion' : MousePanActions,
+            'Left Motion'      : MousePanActions,
+            'Ctrl+Left Motion' : MouseZoomActions,
+            'Right Motion'     : MouseZoomActions,
         }
 
     def _get_markdown_help(self) -> str:
