@@ -2,16 +2,13 @@
 #
 #
 
-import cv2
 import traceback
 import inspect
+from abc    import abstractmethod
+from typing import Optional, Tuple, Callable
+import cv2
 import numpy as np
-from typing import TYPE_CHECKING, Optional, Tuple, Callable
-# if TYPE_CHECKING:
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
-from abc import abstractmethod
-from dataclasses import dataclass
-
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils        import get_time
 from qimview.utils.qt_imports   import QtGui, QtCore, QtWidgets
@@ -256,7 +253,7 @@ class ImageViewer:
         """ Set the synchronization callback """
         self._on_synchronize = cb
 
-    def get_image(self) -> None:
+    def get_image(self) -> Optional[ViewerImage]:
         """ Return the current image """
         return self._image
 
