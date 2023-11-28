@@ -40,7 +40,6 @@ class MultiViewMouseEvents(MouseEvents['MultiView']):
             if v.geometry().contains(event.pos()):
                 # Set the current viewer active before processing the double click event
                 self._widget.on_active(v)
-                print("set_active_viewer")
                 self._widget._show_active_only = not self._widget._show_active_only
                 if not self._widget._active_viewer:
                     return False

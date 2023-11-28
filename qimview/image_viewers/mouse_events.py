@@ -128,11 +128,9 @@ class MouseEvents(Generic[T]):
 
     def start_motion(self, event_repr: str, event : QtGui.QMouseEvent) -> bool:
         """ Instantiate motion actions """
-        print(f"{event_repr}")
         if event_repr in self._motion_classes and self._current_motion is None:
             self._current_motion = self._motion_classes[event_repr](self._widget)
             self._current_motion.press(event)
-            print(f"started motion {event_repr}")
             return True
         return False
 
@@ -145,12 +143,10 @@ class MouseEvents(Generic[T]):
         event_repr = add2repr(event_repr, self.buttons2str(event.buttons()))
         motion_event = event_repr + ' Motion'
         press_event  = event_repr + ' Pressed'
-        print(f'ImageViewer press_event = {press_event}')
         processed = self.process_event(press_event,  event)
-        started   = self.start_motion (motion_event, event)
+        self.start_motion (motion_event, event)
         # Propagate event to parent anyway?
-        print(f"accepted = {processed}")
-        event.setAccepted(processed) # or started)
+        event.setAccepted(processed)
 
     def mouse_release_event(self, event: QtGui.QMouseEvent) -> None:
         """ Build str that represents the event and call process_event() """
