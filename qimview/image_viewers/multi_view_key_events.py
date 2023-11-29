@@ -131,6 +131,7 @@ class MultiViewKeyEvents:
         """ Set the image N displayed by the active viewer """
         def func() -> bool:
             mv = self._multiview
+            if n>=len(mv.image_list): return False
             if mv.image_list[n] is None: return False
             if mv.output_label_current_image != mv.image_list[n]:
                 mv.update_image(mv.image_list[n])

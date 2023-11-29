@@ -163,7 +163,13 @@ class MouseEvents(Generic[T]):
         if self._current_motion:
             self._current_motion.move(event)
         else:
-            self.mouse_move_unpressed(event)
+            event_repr : str = 'Move'
+            event_repr += self.check_regions(event.pos())
+            processed = self.process_event(event_repr,  event)
+            if processed:
+                event.setAccepted(True)
+            else:
+                self.mouse_move_unpressed(event)
 
     @abstractmethod
     def mouse_move_unpressed(self, event: QtGui.QMoveEvent)->None:

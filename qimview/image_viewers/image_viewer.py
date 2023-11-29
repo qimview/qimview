@@ -122,6 +122,7 @@ class ImageViewer:
         self._width           : int = 500
         self._height          : int = 500
         self._image_name      : str = ""
+        self._image_ref_name  : str = ""
         # If the window is active, its appearance (text color or more) will be different
         self._active          : bool = False
         self._on_active       : Optional[Callable] = None
@@ -133,6 +134,8 @@ class ImageViewer:
         self._histo_rect      : Optional[QtCore.QRect] = None
         # Histogram displayed scale
         self._histo_scale     : int = 1
+        # Area of the text
+        self._text_rect : Optional[QtCore.QRect] = None
 
         # FullScreen helper features
         self._fullscreen      : FullScreenHelper = FullScreenHelper()
@@ -235,6 +238,15 @@ class ImageViewer:
     @image_name.setter
     def image_name(self, v : str):
         self._image_name = v
+
+    # --- image_ref_name
+    @property
+    def image_ref_name(self) -> str:
+        return self._image_ref_name
+
+    @image_ref_name.setter
+    def image_ref_name(self, v : str):
+        self._image_ref_name = v
 
     # === Public methods
     def add_help_tab(self, title:str,  help:str) -> None:
@@ -380,10 +392,11 @@ class ImageViewer:
             values = self._image.data[im_y, im_x]
             text += f"\n pos {im_x:4}, {im_y:4} \n rgb {values}"
 
+        ref_txt = self.image_ref_name if self.image_ref_name else 'ref'
         if self.show_overlay:
-            text += "\n ref | im " 
+            text += f"\n {ref_txt} | im"
         if self.show_image_differences:
-            text += "\n im - ref" 
+            text += f"\n im - {ref_txt}"
         return text
 
     def display_text(self, painter: QtGui.QPainter, text: str) -> None:
@@ -412,6 +425,8 @@ class ImageViewer:
             text_options,
             text
             )
+        self._text_rect = painter.boundingRect(margin_x, margin_y, 
+                                               area_width, area_height, text_options, text)
         self.print_timing()
 
     def compute_histogram(self, current_image, show_timings=False):

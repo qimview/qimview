@@ -156,9 +156,7 @@ class MultiView(QtWidgets.QWidget):
         self.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
         self.customContextMenuRequested.connect(self.show_context_menu)
         self._context_menu = QtWidgets.QMenu()
-        self.viewer_modes = {}
-        for v in ViewerType:
-            self.viewer_modes[v.name] = v
+        self.viewer_modes = { v.name:v for v in ViewerType}
         self._default_viewer_mode = ViewerType.QT_VIEWER.name
         self.viewer_mode_selection = MenuSelection("Viewer mode", 
             self._context_menu, self.viewer_modes, self._default_viewer_mode, self.update_viewer_mode)
@@ -187,7 +185,6 @@ class MultiView(QtWidgets.QWidget):
         self.image_viewer_class = self.image_viewer_classes[viewer_mode]
 
     def show_context_menu(self, pos):
-        # allow to switch between images by pressing Alt+'image position' (Alt+0, Alt+1, etc)
         self._context_menu.show()
         self._context_menu.popup( self.mapToGlobal(pos) )
 
@@ -302,6 +299,7 @@ class MultiView(QtWidgets.QWidget):
             viewer = self.image_viewers[n]
             # set reference image
             viewer.set_image_ref(reference_image)
+            viewer.image_ref_name = self.output_label_reference_image
 
     def set_reference_label(self, ref: str, update_viewers=False) -> None:
         try:
@@ -629,6 +627,7 @@ class MultiView(QtWidgets.QWidget):
                     viewer.set_image(viewer_image)
                     # set reference image
                     viewer.set_image_ref(reference_image)
+                    viewer.image_ref_name = self.output_label_reference_image
 
         # if self._save_image_clipboard and self._clipboard:
         #     print("set save image to clipboard")

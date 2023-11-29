@@ -74,6 +74,8 @@ class ImageReader:
                 buffer, fromcache = self.file_cache.get_file(filename, check_size=check_filecache_size)
                 print(f" got buffer from cache? {fromcache}")
             res = self._plugins[extension](filename, buffer, read_size, use_RGB, verbose)
+            if res:
+                res.set_filename(filename)
             return res
         except Exception as e:
             print(f"Exception while reading image {filename}: {e}")

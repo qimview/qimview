@@ -3,7 +3,7 @@
 """
 
 from typing import TypeVar, TYPE_CHECKING
-from qimview.utils.qt_imports import QtGui, QtCore
+from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
 if TYPE_CHECKING:
     from qimview.image_viewers.image_viewer import ImageViewer
 from .mouse_events import MouseEvents, MouseMotionActions
@@ -62,6 +62,7 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         self._mouse_callback.update({
             'Left+DblClick on histogram' : self.toogle_histo_size,
             'Wheel'                      : self.wheel_zoom,
+            'Move on text'               : self.tooltip_image_filename,
         })
 
         self._motion_classes.update({
@@ -75,8 +76,14 @@ class ImageViewerMouseEvents(MouseEvents[V]):
                 return self._widget._histo_rect.contains(point)
             return False
 
+        def in_text(point:QtCore.QPoint)->bool:
+            if self._widget._text_rect:
+                return self._widget._text_rect.contains(point)
+            return False
+
         self._regions.update({
-            'histogram' : in_histo,
+            'histogram'  : in_histo,
+            'text'       : in_text,
         })
 
     def mouse_move_unpressed(self, event: QtGui.QMoveEvent)->None:
@@ -111,4 +118,12 @@ class ImageViewerMouseEvents(MouseEvents[V]):
             self._widget.viewer_update()
             self._widget.synchronize()
             return True
+        return False
+
+    def tooltip_image_filename(self, event: QtGui.QMoveEvent) -> bool:
+        """ Display image filename as tooltip """
+        global_pos = self._widget.mapToGlobal(event.pos())
+        QtWidgets.QToolTip.showText(global_pos, f"{self._widget._image.filename}", 
+                                    self._widget, self._widget._text_rect)
+        # Return False to allow event propagation
         return False
