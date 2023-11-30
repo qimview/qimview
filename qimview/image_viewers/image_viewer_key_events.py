@@ -32,6 +32,8 @@ class ImageViewerKeyEvents:
                 'Alt+C' : self.zoomLowerLeft,
                 'Alt+D' : self.zoomLowerRight,
                 'Alt+F' : self.unZoom,
+                'Ctrl+B': self.copy2Clipboard,
+                'Ctrl+S': self.saveImage,
         }
 
         self._help_tabs  : List[Tuple[str,str]] = []
@@ -112,29 +114,29 @@ class ImageViewerKeyEvents:
     
     def zoomUpperLeft(self) -> bool:
         """ Display upper left quarter of the image """
-        self._viewer.current_dx =  self._wsize.width()/4
-        self._viewer.current_dy = -self._wsize.height()/4
+        self._viewer.current_dx = int(self._wsize.width()/4+0.5)
+        self._viewer.current_dy = -int(self._wsize.height()/4+0.5)
         self._viewer.current_scale = 2
         return self.updateAndAccept()
 
     def zoomLowerLeft(self)    -> bool:
         """ Display lower left quarter of the image """
-        self._viewer.current_dx = self._wsize.width() / 4
-        self._viewer.current_dy = self._wsize.height() / 4
+        self._viewer.current_dx = int(self._wsize.width()/4+0.5)
+        self._viewer.current_dy = int(self._wsize.height()/4+0.5)
         self._viewer.current_scale = 2
         return self.updateAndAccept()
 
     def zoomUpperRight(self)    -> bool:
         """ Display upper right quarter of the image """
-        self._viewer.current_dx = -self._wsize.width()/4
-        self._viewer.current_dy = -self._wsize.height()/4
+        self._viewer.current_dx = -int(self._wsize.width()/4+0.5)
+        self._viewer.current_dy = -int(self._wsize.height()/4+0.5)
         self._viewer.current_scale = 2
         return self.updateAndAccept()
 
     def zoomLowerRight(self)    -> bool:
         """ Display lower right quarter of the image """
-        self._viewer.current_dx = -self._wsize.width() / 4
-        self._viewer.current_dy =  self._wsize.height() / 4
+        self._viewer.current_dx = -int(self._wsize.width()/4+0.5)
+        self._viewer.current_dy =  int(self._wsize.height()/4+0.5)
         self._viewer.current_scale = 2
         return self.updateAndAccept()
 
@@ -179,6 +181,31 @@ class ImageViewerKeyEvents:
         """ Toggle horizontal intensity line display """
         self._viewer.show_intensity_line = not self._viewer.show_intensity_line
         return self.updateAndAccept()
+    
+    def copy2Clipboard(self)->bool:
+        """ Copy current image to clipboard """
+        clipboard = QtWidgets.QApplication.clipboard()
+        self._viewer.set_clipboard(clipboard, True)
+        self._viewer.widget.repaint()
+        self._viewer.set_clipboard(None, False)
+        print("Image saved to clipboard")
+        return True
+
+    def saveImage(self)->bool:
+        """ Save current image to disk and clipboard """
+        clipboard = QtWidgets.QApplication.clipboard()
+        self._viewer.set_clipboard(clipboard, True)
+        self._viewer.widget.repaint()
+        self._viewer.set_clipboard(None, False)
+        # Ask for input file
+        filename = QtWidgets.QFileDialog.getSaveFileName(self._viewer._widget, "ImageViewer: Save current image", filter="Images (*.png *.xpm *.jpg)")
+        print(f"filename {filename}")
+        im = clipboard.image()
+        if im.isNull():
+            print("Image not found")
+            return False
+        else:
+            return im.save(filename[0])
 
     def key_press_event(self, event : QtGui.QKeyEvent, wsize : QtCore.QSize):
         self._wsize = wsize

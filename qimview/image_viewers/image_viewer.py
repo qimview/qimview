@@ -184,7 +184,7 @@ class ImageViewer:
         self.evt_width : int
         self.evt_height : int
 
-    # === Properties 
+    # === Properties
 
     # --- widget
     @property
