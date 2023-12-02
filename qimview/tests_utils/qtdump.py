@@ -1,16 +1,14 @@
 
-from ..utils.qt_imports import QtGui, QtCore
 from _md5 import md5
 import numpy as np
 import os
+from typing import List
+from ..utils.qt_imports import QtGui, QtCore
 
 # Adapt to different versions
-if "MouseButtonPress" in QtCore.QEvent.__dict__:
-    qevent_types = QtCore.QEvent
-else:
-    qevent_types = QtCore.QEvent.Type
+qevent_types = QtCore.QEvent.Type
 
-MOUSE_EVENTS = [
+MOUSE_EVENTS : List[qevent_types] = [
             # qevent_typese.KeyPress,
             qevent_types.MouseButtonPress,
             qevent_types.MouseButtonRelease,
@@ -18,9 +16,9 @@ MOUSE_EVENTS = [
             qevent_types.MouseButtonDblClick,
         ]
 
-RESIZE_EVENTS = [ qevent_types.Resize ]
+RESIZE_EVENTS : List[qevent_types] = [ qevent_types.Resize ]
 
-WHEEL_EVENT = [ qevent_types.Wheel]
+WHEEL_EVENT : List[qevent_types] = [ qevent_types.Wheel]
 
 class QtDump:
 
