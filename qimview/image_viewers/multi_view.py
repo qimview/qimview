@@ -291,7 +291,7 @@ class MultiView(QtWidgets.QWidget):
         self.image_viewers = self.allocated_image_viewers[:self.nb_viewers_used]
         image_names = list(self.image_dict.keys())
         for n in range(self.nb_viewers_used):
-            self.image_viewers[n].image_name = image_names[max(n,len(image_names)-1)]
+            self.image_viewers[n].image_name = image_names[min(n,len(image_names)-1)]
 
     def update_reference(self) -> None:
         reference_image = self.get_output_image(self.output_label_reference_image)
