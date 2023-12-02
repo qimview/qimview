@@ -383,27 +383,35 @@ class ImageViewer:
         self._key_events.key_press_event(event, wsize)
 
     def display_message(self, im_pos: Optional[Tuple[int,int]], scale = None) -> str:
-        text : str = self.image_name
+        text : str = f'im:{self.image_name}'
+        text += f'\nref:{self.image_ref_name}'
         if self.show_cursor and im_pos and self._image:
             text +=  f"\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}"
             if scale is not None:
                 text += f"\n x{scale:0.2f}"
             im_x, im_y = im_pos
             values = self._image.data[im_y, im_x]
-            text += f"\n pos {im_x:4}, {im_y:4} \n rgb {values}"
+            text += f"\n pos {im_x:4}, {im_y:4} \n {self._image.channels.name[3:]}:{str(values).strip('[]')}"
 
-        ref_txt = self.image_ref_name if self.image_ref_name else 'ref'
+        # ref_txt = self.image_ref_name if self.image_ref_name else 'ref'
+        ref_txt = 'ref'
         if self.show_overlay:
             text += f"\n {ref_txt} | im"
         if self.show_image_differences:
             text += f"\n im - {ref_txt}"
         return text
 
-    def display_text(self, painter: QtGui.QPainter, text: str) -> None:
+    def display_text(self, painter: QtGui.QPainter, text: str, font_size=-1) -> None:
         self.start_timing()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
-        font = QtGui.QFont('Decorative', 12)
+        # Compute font size base on widget size
+        if font_size == -1:
+            # from 4 tp 14
+            # for now very ad-hoc formula
+            s = min(self._widget.width(), self._widget.height())
+            font_size = min(14, int(4 + s/130 +0.5))
+        font = QtGui.QFont('Decorative', font_size)
         # font.setBold(True)
         painter.setFont(font)
         painter.setBackground(QtGui.QColor(250, 250, 250, int(0.75*255)))
