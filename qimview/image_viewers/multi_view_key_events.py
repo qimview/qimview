@@ -27,30 +27,36 @@ class MultiViewKeyEvents:
         # Use regular expression with 1 group that will be the argument of the callback
         # currently limited to function that take only one integer parameter to return a callback
         self.keys_callback_re = {
-                'Alt\+([0-9])'  : self.setActiveViewerImage,
-                'Ctrl\+([0-9])' : self.setReferenceImage,
-                '([1-9])'       : self.setNumberOfViewers,
+                'Alt\+Keypad\+([0-9])' : self.setActiveViewerImage,
+                'Alt\+Shift\+([0-9])'  : self.setActiveViewerImage,
+                'Ctrl\+Keypad\+([0-9])': self.setReferenceImage,
+                'Ctrl\+Shift\+([0-9])' : self.setReferenceImage,
+                'Keypad\+([1-9])'      : self.setNumberOfViewers,
+                'Shift\+([1-9])'       : self.setNumberOfViewers,
         }
 
         self._help_links : str = "[wiki help: Multi-image Viewer](https://github.com/qimview/qimview/wiki/4.-Multi%E2%80%90image-viewer)  \n"
 
     @staticmethod
-    def get_key_seq(event : QtGui.QKeyEvent) -> QtGui.QKeySequence:
+    def get_key_seq(event : QtGui.QKeyEvent) -> str:
         """ Return a key sequence from a keyboard event
         """
         modifiers = QtWidgets.QApplication.keyboardModifiers()
         QtMod = QtCore.Qt.KeyboardModifier
         # Python > 3.7 key order is maintained
         mod_str = { 
-            QtMod.ShiftModifier   : 'Shift',
             QtMod.ControlModifier : 'Ctrl',
             QtMod.AltModifier     : 'Alt',
             QtMod.MetaModifier    : 'Meta',
+            QtMod.ShiftModifier   : 'Shift',
+            QtMod.KeypadModifier  : 'Keypad',
         }
         # Compact line to create the contatenated string like 'Ctrl+Alt+'
         mod_seq_str = "".join([ f"{mod_str[m]}+" for  m in mod_str.keys() if modifiers & m])
         key_str = QtGui.QKeySequence(event.key()).toString()
-        return QtGui.QKeySequence(mod_seq_str + key_str)
+        print(f'{mod_seq_str + key_str} event.text() = {event.text()}')
+        return mod_seq_str + key_str
+        # return QtGui.QKeySequence(mod_seq_str + key_str).toString()
 
     def _get_markdown_help(self) -> str:
         res = ''
@@ -185,8 +191,8 @@ class MultiViewKeyEvents:
 
     def key_press_event(self, event : QtGui.QKeyEvent):
         if type(event) == QtGui.QKeyEvent:
-            key_seq : str = MultiViewKeyEvents.get_key_seq(event).toString()
-            # print(f"key_seq {key_seq}")
+            key_seq : str = MultiViewKeyEvents.get_key_seq(event)
+            print(f"key_seq {key_seq}")
             if key_seq in self.keys_callback:
                 event.setAccepted(self.keys_callback[key_seq]())
             else:
