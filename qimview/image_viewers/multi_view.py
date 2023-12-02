@@ -689,6 +689,8 @@ class MultiView(QtWidgets.QWidget):
             self.viewer_grid_layout.addWidget(self.image_viewers[n], int(n / float(row_length)), n % row_length)
             self.image_viewers[n].hide()
         
+        # Update image parameters for all viewers
+        self.update_image_parameters()
         # for n in range(self.nb_viewers_used):
         #     print("Viewer {} size {}".format(n, (self.image_viewers[n].width(), self.image_viewers[n].height())))
 

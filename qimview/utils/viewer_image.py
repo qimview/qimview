@@ -62,10 +62,10 @@ class ViewerImage:
         # We first cast to be our class type
         self._data = input_array
         # add the new attribute to the created instance
-        self.precision = precision
-        self.downscale = downscale
-        self.channels  = channels
-        self.filename  = None
+        self.precision : int         = precision
+        self.downscale : int         = downscale
+        self.channels  : ImageFormat = channels
+        self.filename  : str         = None
         self.data_reduced_2 = None
         self.data_reduced_4 = None
 
