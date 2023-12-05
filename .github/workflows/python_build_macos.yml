@@ -37,6 +37,7 @@ jobs:
     - name: Build package
       run: |
         bash .github/build_wheels.sh
+        clang --version
         python -m build
     # Publishing does not work yet
     # - name: Publish package
