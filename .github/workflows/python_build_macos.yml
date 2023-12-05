@@ -35,7 +35,7 @@ jobs:
         # brew install llvm libomp
 
     - name: Build and test wheels
-      run: bash CI/github/build_wheels.sh
+      run: bash .github/build_wheels.sh
 
     - name: Build package
       run: |
