@@ -1,6 +1,6 @@
-from pybind11.setup_helpers import Pybind11Extension
+from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
-import os
+# import os
 # import distutils
 # distutils.log.set_verbosity(1)
 
@@ -11,20 +11,25 @@ import os
 # compiler_args = ['/openmp', '/O2', '/arch:AVX512']
 # compiler_args = ['-std=c++11', '-stdlib=libc++', '-mmacosx-version-min=10.7', '/openmp', '/Ox']
 
-# copt =  {'msvc': ['/openmp', '/Ox', '/fp:fast','/favor:INTEL64','/Og']  ,
-#      'mingw32' : ['-fopenmp','-O3','-ffast-math','-march=native']       }
-# lopt =  {'mingw32' : ['-fopenmp'] }
 
-# class build_ext_subclass( build_ext ):
-#     def build_extensions(self):
-#         c = self.compiler.compiler_type
-#         if copt.has_key(c):
-#            for e in self.extensions:
-#                e.extra_compile_args = copt[ c ]
-#         if lopt.has_key(c):
-#             for e in self.extensions:
-#                 e.extra_link_args = lopt[ c ]
-#         build_ext.build_extensions(self)
+class build_ext_subclass( build_ext ):
+    copt =  {
+        'msvc': ['/openmp', '/Ox', '/fp:fast','/favor:INTEL64','/Og'],
+        'mingw32' : ['-fopenmp','-O3','-ffast-math','-march=native'],
+        }
+    lopt =  {
+        'mingw32' : ['-fopenmp'],
+    }
+
+    def build_extensions(self):
+        c = self.compiler.compiler_type
+        if c in self.copt:
+           for e in self.extensions:
+               e.extra_compile_args = self.copt[ c ]
+        if c in self.lopt:
+            for e in self.extensions:
+                e.extra_link_args = self.lopt[ c ]
+        build_ext.build_extensions(self)
 
 setup_args = dict(
     ext_modules = [
@@ -42,6 +47,6 @@ setup_args = dict(
             extra_link_args=['-L/usr/local/opt/libomp/lib'],
             ),
     ],
-    # cmdclass = {'build_ext': build_ext_subclass } 
+    cmdclass = {'build_ext': build_ext_subclass } 
 )
 setup(**setup_args)
