@@ -73,9 +73,6 @@ class QTImageViewer(ImageViewer, BaseWidget):
         self.verbose = False
         # self.trace_calls = True
 
-    #def __del__(self):
-    #    pass
-
     def apply_zoom(self, crop):
         if self._image is None: return crop
         (height, width) = self._image.data.shape[:2]

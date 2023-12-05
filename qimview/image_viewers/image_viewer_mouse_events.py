@@ -12,7 +12,7 @@ from .mouse_events import MouseEvents, MouseMotionActions
 V = TypeVar('V', bound='ImageViewer')
 
 class MousePanActions(MouseMotionActions[V]):
-    """ Image panning """
+    """ Panning while mouse button is pressed """
     def press(self, event : QtGui.QMouseEvent) -> None:
         """ Press event """
         super().press(event)
@@ -33,7 +33,7 @@ class MousePanActions(MouseMotionActions[V]):
         self._widget.mouse_displ = self._delta
 
 class MouseZoomActions(MouseMotionActions[V]):
-    """ Image Zooming """
+    """ Zooming while mouse button is pressed """
     def press(self, event : QtGui.QMouseEvent) -> None:
         """ Press event """
         super().press(event)
@@ -59,16 +59,24 @@ class ImageViewerMouseEvents(MouseEvents[V]):
  
     def __init__(self, viewer: V):
         super().__init__(viewer)
+
+        # # Accept touch events
+        # viewer._widget.setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents)
+
         self._mouse_callback.update({
             'Left+DblClick on histogram' : self.toogle_histo_size,
-            'Wheel'                      : self.wheel_zoom,
+            # Touch pad panning will be interpreted as Wheel event
+            'Wheel'                      : self.wheel_pan,
+            'Shft+Wheel'                 : self.wheel_pan_horizontal,
+            # Set Ctrl+Wheel for touch pad zooming with 2 fingers
+            'Ctrl+Wheel'                 : self.wheel_zoom,
             'Move on text'               : self.tooltip_image_filename,
         })
 
         self._motion_classes.update({
             'Left Motion'      : MousePanActions,
             'Ctrl+Left Motion' : MouseZoomActions,
-            'Right Motion'     : MouseZoomActions,
+            'Middle Motion'    : MouseZoomActions,
         })
 
         def in_histo(point:QtCore.QPoint)->bool:
@@ -106,9 +114,10 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         self._widget.viewer_update()
         return True
 
-    def wheel_zoom(self, event) -> bool:
+    def wheel_zoom(self, event: QtGui.QWheelEvent) -> bool:
         """ Zoom in/out based on wheel angle """
         # Zoom by applying a factor to the distances to the sides
+        # print(f"{event.angleDelta(), event.deviceType(), event.source()}")
         delta = event.angleDelta().y()
         # print("delta = {}".format(delta))
         coeff = delta/5
@@ -117,6 +126,39 @@ class ImageViewerMouseEvents(MouseEvents[V]):
             self._widget.current_scale = self._widget.new_scale(coeff, im.data.shape[0])
             self._widget.viewer_update()
             self._widget.synchronize()
+            return True
+        return False
+
+    def wheel_pan(self, event: QtGui.QWheelEvent) -> bool:
+        """ Pan (image translation) based on wheel angle, mainly for touchpad """
+        # Zoom by applying a factor to the distances to the sides
+        # print(f"{event.angleDelta(), event.deviceType(), event.source()}")
+        delta = event.angleDelta()
+        if im := self._widget.get_image():
+            self._widget.mouse_displ = delta
+            self._widget.viewer_update()
+            self._widget.synchronize()
+            # Update current displacement
+            self._widget.current_dx = int(self._widget.check_translation()[0])
+            self._widget.current_dy = int(self._widget.check_translation()[1])
+            return True
+        return False
+
+    def wheel_pan_horizontal(self, event: QtGui.QWheelEvent) -> bool:
+        """ Pan horizontal (image horizontal translation) based on wheel angle """
+        # Zoom by applying a factor to the distances to the sides
+        # print(f"{event.angleDelta(), event.deviceType(), event.source()}")
+        delta = event.angleDelta()
+        # To translation horizontally using wheel mouse
+        delta.setX(delta.y())
+        delta.setY(0)
+        if im := self._widget.get_image():
+            self._widget.mouse_displ = delta
+            self._widget.viewer_update()
+            self._widget.synchronize()
+            # Update current displacement
+            self._widget.current_dx = int(self._widget.check_translation()[0])
+            self._widget.current_dy = int(self._widget.check_translation()[1])
             return True
         return False
 

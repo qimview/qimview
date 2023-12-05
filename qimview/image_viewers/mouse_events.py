@@ -203,6 +203,6 @@ class MouseEvents(Generic[T]):
         # 1. Get Modifiers
         event_repr = add2repr('', self.modifiers2str(event.modifiers()))
         event_repr = add2repr(event_repr, 'Wheel')
-        print(f"{event_repr}")
+        # print(f"{event_repr}")
         processed = self.process_event(event_repr,  event)
         event.setAccepted(processed)
