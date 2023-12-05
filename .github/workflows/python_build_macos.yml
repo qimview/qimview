@@ -34,13 +34,9 @@ jobs:
         # brew update
         # brew install llvm libomp
 
-    - name: Build and test wheels
-      run: bash .github/build_wheels.sh
-
     - name: Build package
       run: |
-        # export LDFLAGS="-L/usr/local/opt/libomp/lib"
-        # export CPPFLAGS="-I/usr/local/opt/libomp/include"
+        bash .github/build_wheels.sh
         python -m build
     # Publishing does not work yet
     # - name: Publish package
