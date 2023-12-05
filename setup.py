@@ -38,7 +38,7 @@ setup_args = dict(
             # Example: passing in the version to the compiled code
             # define_macros = [('VERSION_INFO', __version__)],
             include_dirs=['qimview/cpp_bind'],
-            extra_compile_args=['-std=c++17','-O3']            
+            extra_compile_args=['-std=c++17', '-fopenmp','-O3']            
             ),
     ],
     # cmdclass = {'build_ext': build_ext_subclass } 
