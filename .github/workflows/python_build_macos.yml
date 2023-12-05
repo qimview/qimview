@@ -33,6 +33,10 @@ jobs:
         pip install build
         # brew update
         # brew install llvm libomp
+
+    - name: Build and test wheels
+      run: bash CI/github/build_wheels.sh
+
     - name: Build package
       run: |
         # export LDFLAGS="-L/usr/local/opt/libomp/lib"
