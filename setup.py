@@ -14,15 +14,17 @@ from setuptools import setup
 
 class build_ext_subclass( build_ext ):
     copt =  {
-        'msvc': ['/openmp', '/Ox', '/fp:fast','/favor:INTEL64','/Og'],
-        'mingw32' : ['-fopenmp','-O3','-ffast-math','-march=native'],
-        }
+        'msvc':     ['/openmp',  '/O2', ],  # , '/fp:fast','/favor:INTEL64','/Og'],
+        'mingw32' : ['-fopenmp', '-O3', '-std=c++17', '-march=native', ], # ,'-ffast-math'
+        'unix':     ['-fopenmp', '-O3', '-std=c++17', ],
+    }
     lopt =  {
         'mingw32' : ['-fopenmp'],
     }
 
     def build_extensions(self):
         c = self.compiler.compiler_type
+        print(f"compiler_type {c}")
         if c in self.copt:
            for e in self.extensions:
                e.extra_compile_args = self.copt[ c ]
