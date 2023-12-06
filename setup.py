@@ -51,6 +51,8 @@ class build_ext_subclass( build_ext ):
         c = self.compiler.compiler_type
         print(f"compiler_type {c}")
         print(f"Using compiler {compilerName()}")
+        import sys
+        print(f" *** platform {sys.platform}")
         if c in self.copt:
            for e in self.extensions:
                e.extra_compile_args = self.copt[ c ]
