@@ -26,7 +26,7 @@ class build_ext_subclass( build_ext ):
         # c = self.compiler.compiler_type
         # print(f"compiler_type {c}")
         import sys
-        print(f" *** platform {sys.platform} {self.compiler.get_executable()}")
+        print(f" *** platform {sys.platform}")
         c = sys.platform
         if c in self.copt:
            for e in self.extensions:
