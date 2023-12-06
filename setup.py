@@ -38,21 +38,24 @@ def compilerName():
 
 
 class build_ext_subclass( build_ext ):
+    # win32, linux, darwin
+    # msvc, unix
     copt =  {
-        'msvc':     ['/openmp',  '/O2', ],  # , '/fp:fast','/favor:INTEL64','/Og'],
-        'mingw32' : ['-fopenmp', '-O3', '-std=c++17', '-march=native', ], # ,'-ffast-math'
-        'unix':     ['-fopenmp', '-O3', '-std=c++17', ],
+        'win32' : ['/openmp',  '/O2', ],  # , '/fp:fast','/favor:INTEL64','/Og'],
+        'linux' : ['-fopenmp', '-O3', '-std=c++17', ],
+        'darwin': [            '-O3', '-std=c++17', ],
     }
     lopt =  {
-        'mingw32' : ['-fopenmp'],
+        'darwin' : ['-L/usr/local/opt/libomp/lib'],
     }
 
     def build_extensions(self):
-        c = self.compiler.compiler_type
-        print(f"compiler_type {c}")
-        print(f"Using compiler {compilerName()}")
+        # c = self.compiler.compiler_type
+        # print(f"compiler_type {c}")
+        # print(f"Using compiler {compilerName()}")
         import sys
         print(f" *** platform {sys.platform}")
+        c = sys.platform
         if c in self.copt:
            for e in self.extensions:
                e.extra_compile_args = self.copt[ c ]
@@ -73,8 +76,6 @@ setup_args = dict(
             # Example: passing in the version to the compiled code
             # define_macros = [('VERSION_INFO', __version__)],
             include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
-            extra_compile_args=['-std=c++17', '-O3'], # , '-fopenmp'
-            extra_link_args=['-L/usr/local/opt/libomp/lib'],
             ),
     ],
     cmdclass = {'build_ext': build_ext_subclass } 
