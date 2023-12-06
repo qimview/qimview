@@ -20,6 +20,7 @@ class build_ext_subclass( build_ext ):
     }
     lopt =  {
         'darwin' : ['-L/usr/local/opt/libomp/lib'],
+        'linux' : ['-fopenmp', ],
     }
 
     def build_extensions(self):
