@@ -4,38 +4,11 @@ from setuptools import setup
 # import distutils
 # distutils.log.set_verbosity(1)
 
-
 # from distutils.command.build_ext import build_ext
 # compiler/linker args depending on the platform: check how to set it up
 # compiler_args = ['-std=c++11', '-fopenmp', '-O3']
 # compiler_args = ['/openmp', '/O2', '/arch:AVX512']
 # compiler_args = ['-std=c++11', '-stdlib=libc++', '-mmacosx-version-min=10.7', '/openmp', '/Ox']
-
-#This should work pretty good
-def compilerName():
-    import re, sys
-    import distutils.ccompiler
-    comp = distutils.ccompiler.get_default_compiler()
-    getnext = False
-
-    for a in sys.argv[2:]:
-        if getnext:
-            comp = a
-            getnext = False
-            continue
-        #separated by space
-        if a == '--compiler'  or  re.search('^-[a-z]*c$', a):
-            getnext = True
-            continue
-        #without space
-        m = re.search('^--compiler=(.+)', a)
-        if m is None:
-            m = re.search('^-[a-z]*c(.+)', a)
-        if m:
-            comp = m.group(1)
-
-    return comp
-
 
 class build_ext_subclass( build_ext ):
     # win32, linux, darwin
@@ -52,9 +25,8 @@ class build_ext_subclass( build_ext ):
     def build_extensions(self):
         # c = self.compiler.compiler_type
         # print(f"compiler_type {c}")
-        # print(f"Using compiler {compilerName()}")
         import sys
-        print(f" *** platform {sys.platform}")
+        print(f" *** platform {sys.platform} {self.compiler.get_executable()}")
         c = sys.platform
         if c in self.copt:
            for e in self.extensions:
