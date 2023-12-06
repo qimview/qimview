@@ -60,7 +60,7 @@ bool compute_histogram(
     const int NH = 16;
 
     // can we use uint16 ?
-    uint32_t nb_pixels = input.shape(0)*input.shape(1);
+    uint32_t nb_pixels = (uint32_t)(input.shape(0)*input.shape(1));
     int16_t split_size = nb_pixels/(1<<16);
     // printf("split_size is %d \n", (int)split_size);
     int inc_x = 3*(step_x-1);

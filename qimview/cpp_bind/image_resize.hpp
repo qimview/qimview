@@ -143,11 +143,10 @@ bool image_binning_2x2_test2(
     int16_t width  = static_cast<int16_t>(input.shape(1));
     int16_t height2 = height>>1;
     int16_t width2  = width>>1;
-    int16_t channels = input.shape(2);
+    // int16_t channels = input.shape(2);
 
 
     // #pragma omp parallel for
-    uint_fast8_t channels2 = 2*channels;
     auto output_ptr = &output(0, 0, 0);
     for (int_fast16_t i = 0; i < height2; i++)
     {
@@ -192,7 +191,7 @@ bool image_binning_2x2_test3(
     int16_t height = static_cast<int16_t>(input.shape(0));
     int16_t width  = static_cast<int16_t>(input.shape(1));
     int16_t height2 = height>>1;
-    int16_t width2  = width>>1;
+    // int16_t width2  = width>>1;
 
     prec_type* buf;
 
@@ -208,7 +207,7 @@ bool image_binning_2x2_test3(
             // printf("i=%d \n", i);
             // split width into blocks
 
-            auto output_ptr = &output(i, 0, 0);
+            // auto output_ptr = &output(i, 0, 0);
 
             auto input_ptr1 = &input(2*i,   0, 0);
             auto input_ptr2 = &input(2*i+1, 0, 0);
@@ -220,7 +219,6 @@ bool image_binning_2x2_test3(
                 //     printf(" %d -- %d \n", start, end);
                 auto buf_ptr = buf;
                 int_fast16_t size  = end-start;
-                int_fast16_t size2 = size>>1;
                 for (int_fast16_t j = 0; j < size; j++)
                 {
                     *buf_ptr++ = (prec_type) *input_ptr1++ + (prec_type)*input_ptr2++;
@@ -228,6 +226,7 @@ bool image_binning_2x2_test3(
                     *buf_ptr++ = (prec_type) *input_ptr1++ + (prec_type)*input_ptr2++;
                 }
 
+                //int_fast16_t size2 = size>>1;
                 // buf_ptr = buf;
                 // auto buf_ptr2 = buf + channels;
                 // for (int_fast16_t j = 0; j < size2; j++, buf_ptr += 2*channels, but_ptr2 += 2*channels)

@@ -221,7 +221,7 @@ bool apply_filters(
     }
 
     // transform bayer input to RGB
-    int r,gr,gb,b, g = -1;
+    int r = 0,gr = 0,gb = 0,b = 0, g = 0;
     switch (channels) {
     case CH_RGB:   r = 0; g = 1; b = 2;  break;
     case CH_BGR:   r = 2; g = 1; b = 0;  break;
@@ -398,7 +398,7 @@ bool apply_filters_u8(
     if (fabsf(g_b_coeff-1.0f)<0.01f) b_lut = g_lut; else b_lut = b_lut1;
 
     // transform bayer input to RGB
-    int r,gr,gb,b, g = -1;
+    int r = -1,gr = -1,gb = -1,b = -1, g = -1;
     switch (channels) {
     case CH_RGB:   r = 0; g = 1; b = 2;  break;
     case CH_BGR:   r = 2; g = 1; b = 0;  break;

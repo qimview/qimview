@@ -31,12 +31,9 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install build
-        # brew update
-        # brew install llvm libomp
+
     - name: Build package
       run: |
-        # export LDFLAGS="-L/usr/local/opt/libomp/lib"
-        # export CPPFLAGS="-I/usr/local/opt/libomp/include"
         python -m build
     # Publishing does not work yet
     # - name: Publish package
