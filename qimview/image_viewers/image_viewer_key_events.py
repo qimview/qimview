@@ -32,6 +32,7 @@ class ImageViewerKeyEvents:
                 'Alt+C' : self.zoomLowerLeft,
                 'Alt+D' : self.zoomLowerRight,
                 'Alt+F' : self.unZoom,
+                'Ctrl+P': self.ImagePath2Clipboard,
                 'Ctrl+B': self.copy2Clipboard,
                 'Ctrl+S': self.saveImage,
         }
@@ -159,7 +160,7 @@ class ImageViewerKeyEvents:
     
     def toggleOverlay(self) ->bool:
         """ Toggle overlay display """
-        self._viewer.show_overlay   = not self._viewer.show_overlay
+        self._viewer._show_overlay   = not self._viewer._show_overlay
         return self.updateAndAccept()
     
     def toggleCursor(self) ->bool:
@@ -174,7 +175,7 @@ class ImageViewerKeyEvents:
 
     def toggleDifferences(self) ->bool: 
         """ Toggle image difference with reference """
-        self._viewer.show_image_differences = not self._viewer.show_image_differences
+        self._viewer._show_image_differences = not self._viewer._show_image_differences
         return self.updateAndAccept()
     
     def toggleIntensityLine(self) ->bool: 
@@ -182,6 +183,15 @@ class ImageViewerKeyEvents:
         self._viewer.show_intensity_line = not self._viewer.show_intensity_line
         return self.updateAndAccept()
     
+    def ImagePath2Clipboard(self)->bool:
+        """ Copy image full path to clipboard """
+        clipboard = QtWidgets.QApplication.clipboard()
+        im = self._viewer.get_image()
+        if im and im.filename:
+            clipboard.setText(im.filename)
+            return True
+        return False
+
     def copy2Clipboard(self)->bool:
         """ Copy current image to clipboard """
         clipboard = QtWidgets.QApplication.clipboard()

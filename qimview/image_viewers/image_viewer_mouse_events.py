@@ -96,7 +96,7 @@ class ImageViewerMouseEvents(MouseEvents[V]):
 
     def mouse_move_unpressed(self, event: QtGui.QMoveEvent)->None:
         """ Actions while moving the mouse without pressing any button """
-        if self._widget.show_overlay:
+        if self._widget._show_overlay:
             self._widget.mouse_pos = event.pos()
             self._widget.viewer_update()
             event.accept()

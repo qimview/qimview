@@ -2,11 +2,11 @@
 # from https://numpy.org/doc/stable/user/basics.subclassing.html
 
 from __future__ import annotations
+from typing import Tuple, Optional
+from enum import Enum, IntEnum
 import numpy as np
 import cv2
 from .utils import get_time
-from enum import Enum, IntEnum
-from typing import Tuple
 
 class ImageFormat(IntEnum):
     CH_RGB  = 1 
@@ -62,10 +62,10 @@ class ViewerImage:
         # We first cast to be our class type
         self._data = input_array
         # add the new attribute to the created instance
-        self.precision : int         = precision
-        self.downscale : int         = downscale
-        self.channels  : ImageFormat = channels
-        self.filename  : str         = None
+        self.precision : int           = precision
+        self.downscale : int           = downscale
+        self.channels  : ImageFormat   = channels
+        self.filename  : Optional[str] = None
         self.data_reduced_2 = None
         self.data_reduced_4 = None
 

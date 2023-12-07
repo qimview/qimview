@@ -153,6 +153,13 @@ class ImageViewer:
         # Add Mouse help tab
         self._key_events.add_help_tab("ImageViewer Mouse", self._mouse_events.markdown_help())
 
+        self._show_overlay          : bool = False
+        self._show_overlay_possible : bool = False
+
+        self._show_image_differences          : bool  = False
+        self._show_image_differences_possible : bool  = False
+        self._mean_absolute_difference        : float = 0
+
         # Current mouse information: position, displacement
         self.mouse_displ      : QtCore.QPoint = QtCore.QPoint(0,0)
         self.mouse_pos        : QtCore.QPoint = QtCore.QPoint(0,0)
@@ -172,9 +179,7 @@ class ImageViewer:
         self.before_max_parent = None
         self.show_histogram         : bool = True
         self.show_cursor            : bool = False
-        self.show_overlay           : bool = False
         self.show_stats             : bool = False
-        self.show_image_differences : bool = False
         self.show_intensity_line    : bool = False
         self.antialiasing           : bool = True
         # We track an image counter, changed by set_image, to help reducing same calculations
@@ -395,13 +400,21 @@ class ImageViewer:
 
         # ref_txt = self.image_ref_name if self.image_ref_name else 'ref'
         ref_txt = 'ref'
-        if self.show_overlay:
-            text += f"\n {ref_txt} | im"
-        if self.show_image_differences:
-            text += f"\n im - {ref_txt}"
+        if self._show_overlay:
+            text += f"\n {ref_txt} | im" if self._show_overlay_possible else "\noverlay not available"
+        if self._show_image_differences:
+            if self._show_image_differences_possible:
+                np.set_printoptions(precision=2)
+                if self._mean_absolute_difference>0:
+                    text += f"\n im - {ref_txt}, MAD = {self._mean_absolute_difference:0.5f} "
+                else:
+                    text += f"\n im - {ref_txt}, SAME IMAGES"
+            else:
+                text += "\nimage differences not available"
         return text
 
     def display_text(self, painter: QtGui.QPainter, text: str, font_size=-1) -> None:
+        """ Display the text inside the image widget, with transparent background """
         self.start_timing()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)

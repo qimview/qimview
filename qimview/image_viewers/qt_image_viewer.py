@@ -378,7 +378,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         if self.display_timing: self.print_timing()
         return im_pos
 
-    def get_difference_image(self, verbose=True) -> Optional[ViewerImage]:
+    def get_difference_image(self, verbose=False) -> Optional[ViewerImage]:
 
         factor = self.filter_params.imdiff_factor.float
         if self.paint_diff_cache is not None:
@@ -394,8 +394,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
             im2 = self._image_ref.data
             # TODO: get factor from parameters ...
             # factor = int(self.diff_color_slider.value())
-            print(f'factor = {factor}')
-            print(f' im1.dtype {im1.dtype} im2.dtype {im2.dtype}')
+            # print(f'factor = {factor}')
+            # print(f' im1.dtype {im1.dtype} im2.dtype {im2.dtype}')
             # Fast OpenCV code
             start = get_time()
             # positive diffs in unsigned 8 bits, OpenCV puts negative values to 0
@@ -404,6 +404,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
                     diff_plus = cv2.subtract(im1, im2)
                     diff_minus = cv2.subtract(im2, im1)
                     res = cv2.addWeighted(diff_plus, factor, diff_minus, -factor, 127)
+                    # Will slow down the display
+                    self._mean_absolute_difference = np.mean(np.absolute(im1.astype(np.int16)-im2.astype(np.int16)))
                     if verbose:
                         print(f" qtImageViewer.difference_image()  took {int((get_time() - start)*1000)} ms")
                         vmin = np.min(res)
@@ -427,7 +429,10 @@ class QTImageViewer(ImageViewer, BaseWidget):
                     }
                     self.diff_image = res
                 else:
-                    d = (im1.astype(np.float32)-im2.astype(np.float32))*factor
+                    d = (im1.astype(np.float32)-im2.astype(np.float32))
+                    # Will slow down the display
+                    self._mean_absolute_difference = np.mean(np.absolute(d))
+                    d = d*factor
                     d[d<-127] = -127
                     d[d>128] = 128
                     d = (d+127).astype(np.uint8)*255
@@ -441,10 +446,12 @@ class QTImageViewer(ImageViewer, BaseWidget):
             except Exception as e:
                 print(f"Error {e}")
                 res = (im1!=im2).astype(np.uint8)*255
+                self._mean_absolute_difference = np.mean(np.absolute(self.diff_image.data))
                 res = ViewerImage(res,  precision=8, 
                                         downscale=self._image.downscale,
                                         channels=ImageFormat.CH_Y)
                 self.diff_image = res
+
 
         return self.diff_image
 
@@ -457,9 +464,10 @@ class QTImageViewer(ImageViewer, BaseWidget):
         label_width = self.size().width()
         label_height = self.size().height()
 
-        show_diff = self.show_image_differences and self._image is not self._image_ref and \
+        show_diff = self._show_image_differences and self._image is not self._image_ref and \
                     self._image is not None and \
                     self._image_ref is not None and self._image.data.shape == self._image_ref.data.shape
+        self._show_image_differences_possible = show_diff
 
         c = self.update_crop()
         # check paint_cache
@@ -472,7 +480,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                         (self.paint_cache['showhist'] == self.show_histogram or not self.show_histogram) and \
                         self.paint_cache['show_diff'] == show_diff and \
                         self.paint_cache['antialiasing'] == self.antialiasing and \
-                        not self.show_overlay
+                        not self._show_overlay
         else:
             use_cache = False
 
@@ -522,8 +530,12 @@ class QTImageViewer(ImageViewer, BaseWidget):
         display_width = int(round(image_width * ratio))
         display_height = int(round(image_height * ratio))
 
-        if self.show_overlay and self._image_ref is not self._image and self._image_ref and self._image and \
-            self._image.data.shape == self._image_ref.data.shape:
+        self._show_overlay_possible = self._show_overlay and \
+                self._image_ref is not self._image and \
+                self._image_ref is not None and self._image is not None and \
+                self._image.data.shape == self._image_ref.data.shape
+        if self._show_overlay_possible:
+            self._show_overlay_possible = True
             # to create the overlay rapidly, we will mix the two images based on the current cursor position
             # 1. convert cursor position to image position
             (height, width) = cropped_image_shape[:2]
@@ -653,7 +665,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         # if could_use_cache:
         #     print(f" ======= current_image equal ? {np.array_equal(self.paint_cache['current_image'],current_image)}")
 
-        if not use_cache and not self.show_overlay:
+        if not use_cache and not (self._show_overlay and self._show_overlay_possible):
             # cache_time = get_time()
             fp = ImageFilterParameters()
             fp.copy_from(self.filter_params)
@@ -703,7 +715,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             painter.drawImage(rect.topLeft(), qimage)
         self.add_time('painter.drawImage',time1)
 
-        if self.show_overlay:
+        if self._show_overlay and self._show_overlay_possible:
             self.draw_overlay_separation(cropped_image_shape, rect, painter)
 
         # Draw cursor
