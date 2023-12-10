@@ -18,8 +18,9 @@ class MultiViewMouseEvents(MouseEvents['MultiView']):
         super().__init__(multiview)
 
         self._mouse_callback.update({
-            'Left Pressed'  : self.action_activate,
-            'Left+DblClick' : self.toggle_show_single_viewer,
+            'Left Pressed'      : self.action_activate,
+            'Ctrl+Left Pressed' : self.action_setreference,
+            'Left+DblClick'     : self.toggle_show_single_viewer,
         })
 
 
@@ -31,6 +32,17 @@ class MultiViewMouseEvents(MouseEvents['MultiView']):
                 self._widget.on_active(v)
                 self._widget.update_image()
                 return True
+        return False
+
+    def action_setreference(self,  event: QtGui.QMouseEvent) -> bool:
+        """ Set viewer active """
+        for v in self._widget.image_viewers:
+            if v.geometry().contains(event.pos()):
+                # Set the current viewer image as the reference
+                if self._widget.output_label_current_image != v.image_name:
+                    self._widget.set_reference_label(v.image_name, update_viewers=True)
+                    self._widget.update_image()
+                    return True
         return False
 
     def toggle_show_single_viewer(self, event: QtGui.QMouseEvent)->bool:
