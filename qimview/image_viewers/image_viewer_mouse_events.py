@@ -136,11 +136,11 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         delta = event.angleDelta()
         if im := self._widget.get_image():
             self._widget.mouse_displ = delta
-            self._widget.viewer_update()
-            self._widget.synchronize()
             # Update current displacement
             self._widget.current_dx = int(self._widget.check_translation()[0])
             self._widget.current_dy = int(self._widget.check_translation()[1])
+            self._widget.viewer_update()
+            self._widget.synchronize()
             return True
         return False
 
@@ -154,11 +154,11 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         delta.setY(0)
         if im := self._widget.get_image():
             self._widget.mouse_displ = delta
-            self._widget.viewer_update()
-            self._widget.synchronize()
             # Update current displacement
             self._widget.current_dx = int(self._widget.check_translation()[0])
             self._widget.current_dy = int(self._widget.check_translation()[1])
+            self._widget.viewer_update()
+            self._widget.synchronize()
             return True
         return False
 
