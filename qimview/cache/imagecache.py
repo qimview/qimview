@@ -4,10 +4,9 @@ from qimview.image_readers import gb_image_reader
 from .basecache import BaseCache
 import os
 import psutil
-from typing import TYPE_CHECKING
 from qimview.utils.viewer_image import ViewerImage
 
-class ImageCache(BaseCache[str, ViewerImage, float]): 
+class ImageCache(BaseCache[str, ViewerImage, float]):
     """
         Save output bytes from read() function into a cache indexed by the filename
         inherits from BaseCache, with
@@ -19,20 +18,21 @@ class ImageCache(BaseCache[str, ViewerImage, float]):
 
     Args:
         BaseCache (_type_): _description_
-    """    
+    """
     def __init__(self):
         BaseCache.__init__(self, "ImageCache")
         # let use 25% of total memory
         total_memory = psutil.virtual_memory().total / self.cache_unit
         self.max_cache_size = int(total_memory * 0.25)
-        self.verbose : bool = False
+        self.verbose : bool = True
 
     def has_image(self, filename):
         # is it too slow
         filename = os.path.abspath(filename)
         return filename in self.cache_list
 
-    def get_image(self, filename, read_size='full', verbose=False, use_RGB=True, image_transform=None,
+    def get_image(self, filename, read_size='full', verbose=False,
+                  use_RGB=True, image_transform=None,
                   check_size=True):
         """
         :param filename:
@@ -53,7 +53,7 @@ class ImageCache(BaseCache[str, ViewerImage, float]):
                 # Remove outdated cache element
                 self.cache.remove(image_data)
                 self.cache_list.remove(filename)
-        
+
         image = gb_image_reader.read(filename, None, read_size, use_RGB=use_RGB, verbose=verbose,
                                             check_filecache_size=check_size)
         if image is not None:
@@ -66,8 +66,9 @@ class ImageCache(BaseCache[str, ViewerImage, float]):
             return None, False
         return image, False
 
-    def add_image(self, filename, read_size='full', verbose=False, use_RGB=True, image_transform=None,
-                    progress_callback = None):
+    def add_image(self, filename, read_size='full', verbose=False,
+                  use_RGB=True, image_transform=None,
+                  progress_callback = None):
         """
         :param filename:
         :param show_timing:
@@ -84,7 +85,8 @@ class ImageCache(BaseCache[str, ViewerImage, float]):
         # print(f"adding {r} to results ")
         self.add_results.append(r)
 
-    def add_images(self, filenames, read_size='full', verbose=False, use_RGB=True, image_transform=None):
+    def add_images(self, filenames, read_size='full', verbose=False,
+                   use_RGB=True, image_transform=None):
         start = get_time()
         self.add_results = []
         num_workers = 0

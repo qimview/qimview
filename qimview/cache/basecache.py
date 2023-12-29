@@ -1,21 +1,22 @@
+from collections import deque
+from typing import List, TypeVar, Optional, Generic, Any, Tuple
+
 from qimview.utils.utils      import deep_getsizeof
 from qimview.utils.thread_pool import ThreadPool
 from qimview.utils.qt_imports import QtWidgets
-
-from collections import deque
-from typing import List, TypeVar, Optional, Generic, Any, Tuple
 
 TId    = TypeVar("TId")
 TValue = TypeVar("TValue")
 TExtra = TypeVar("TExtra")
 
 class BaseCache(Generic[TId, TValue, TExtra]):
+    """ Base class for Image and File caches """
     # --- Private methods
     def __init__(self, name : str =""):
         # Python list and deque are thread-safe
-        self.cache      : deque[Tuple[TId, TValue, TExtra]] = deque()
-        self.cache_list : List[TId]                                   = []
-        self.cache_size : int                                         = 0
+        self.cache      : deque[Tuple[TId, TValue, TExtra]]    = deque()
+        self.cache_list : List[TId]                            = []
+        self.cache_size : int                                  = 0
         # Max size in Mb
         self.max_cache_size : int                              = 2000
         self.verbose        : bool                             = False

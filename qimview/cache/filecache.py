@@ -1,11 +1,11 @@
 
-from qimview.utils.utils import get_time
-# from qimview.utils.qt_imports import *
-from .basecache import BaseCache
 import os
 from os import path as osp
 import psutil
 from typing import Optional, Tuple
+from qimview.utils.utils import get_time
+# from qimview.utils.qt_imports import *
+from .basecache import BaseCache
 
 class FileCache(BaseCache[str,bytes,float]):
     """
@@ -128,5 +128,5 @@ class FileCache(BaseCache[str,bytes,float]):
             self.thread_pool.set_worker_callbacks(finished_cb=self.on_finished)
             self.thread_pool.start_worker()
         else:
-            self.thread_add_files(filenames, progress_cb=self.show_progress)
+            self.thread_add_files(filenames, progress_callback=self.show_progress)
         self._print_log(f" FileCache.add_files() {self.add_results} took {int((get_time()-start)*1000+0.5)} ms;")
