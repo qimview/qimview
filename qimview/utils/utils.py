@@ -7,14 +7,7 @@ import os
 
 
 def get_time():
-	is_windows = sys.platform.startswith('win')
-	if is_windows:
-		if hasattr(time, 'clock'):
-			return time.clock()
-		else:
-			return time.perf_counter()
-	else:
-		return time.time()
+    return time.perf_counter()
 
 def clip_value(value, lower, upper):
     return lower if value < lower else upper if value > upper else value
