@@ -143,70 +143,120 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # on the input data type uint8, uint16, ...
         # need to test with different DXR images
         internal_format = gl.GL_RGB
-        if self._image.data.shape[2] == 3:
-            if self._image.precision == 8:
-                internal_format = gl.GL_RGB
-            if self._image.precision == 10:
-                internal_format = gl.GL_RGB10
-            if self._image.precision == 12:
-                internal_format = gl.GL_RGB12
-        if self._image.data.shape[2] == 4:
-            if self._image.precision == 8:
-                internal_format = gl.GL_RGBA
-            else:
-                if self._image.precision <= 12:
-                    internal_format = gl.GL_RGBA12
+        if len(self._image.data.shape) == 3:
+            if self._image.data.shape[2] == 3:
+                if self._image.precision == 8:
+                    internal_format = gl.GL_RGB
+                if self._image.precision == 10:
+                    internal_format = gl.GL_RGB10
+                if self._image.precision == 12:
+                    internal_format = gl.GL_RGB12
+            if self._image.data.shape[2] == 4:
+                if self._image.precision == 8:
+                    internal_format = gl.GL_RGBA
                 else:
-                    if self._image.precision <= 16:
-                        internal_format = gl.GL_RGBA16
+                    if self._image.precision <= 12:
+                        internal_format = gl.GL_RGBA12
                     else:
-                        internal_format = gl.GL_RGBA32F
+                        if self._image.precision <= 16:
+                            internal_format = gl.GL_RGBA16
+                        else:
+                            internal_format = gl.GL_RGBA32F
 
-        channels2format = {
-            ImageFormat.CH_RGB  : gl.GL_RGB,
-            ImageFormat.CH_BGR  : gl.GL_BGR,
-            ImageFormat.CH_Y    : gl.GL_RED, # not sure about this one
-            ImageFormat.CH_RGGB : gl.GL_RGBA, # we save 4 component data
-            ImageFormat.CH_GRBG : gl.GL_RGBA,
-            ImageFormat.CH_GBRG : gl.GL_RGBA,
-            ImageFormat.CH_BGGR : gl.GL_RGBA
-        }
-        texture_pixel_format = channels2format[self._image.channels]
-
-        if (self.tex_width,self.tex_height) != (img_width,img_height):
+        if self._image.channels == ImageFormat.CH_YUV420:
+            # Set Y, U and V
             try:
-                if self.textureID is not None:
-                    gl.glDeleteTextures(np.array([self.textureID]))
-                self.textureID = gl.glGenTextures(1)
-                gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-                # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
-                # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-                gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
-                                internal_format,
+                # Y
+                # if self.textureY is not None:
+                #     gl.glDeleteTextures(np.array([self.textureY]))
+                self.textureY = gl.GL_TEXTURE0
+                # self.textureY = _gl.glGenTextures(1,[self.textureY])
+                _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+                # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+                _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
+                                gl.GL_LUMINANCE,
                                 img_width, img_height,
-                            0, texture_pixel_format, gl_type, self._image.data)
-                # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+                            0, gl.GL_LUMINANCE, gl_type, self._image.data)
                 self.tex_width, self.tex_height = img_width, img_height
+
+                # U
+                # if self.textureU is not None: gl.glDeleteTextures(np.array([self.textureU]))
+                self.textureU =  gl.GL_TEXTURE1
+                _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+                # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+                _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_LUMINANCE, int(img_width/2), int(img_height/2),
+                                0, gl.GL_LUMINANCE, gl_type, self._image.u)
+
+                # V
+                # if self.textureV is not None: gl.glDeleteTextures(np.array([self.textureV]))
+                self.textureV = gl.GL_TEXTURE2
+                _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+                # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+                _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,  gl.GL_LUMINANCE, int(img_width/2), int(img_height/2),
+                                0, gl.GL_LUMINANCE, gl_type, self._image.v)
+
             except Exception as e:
                 print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
                 return False
         else:
-            try:
-                gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
-                             texture_pixel_format, gl_type, self._image.data)
-                # gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
-            except Exception as e:
-                print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
-                return False
+            channels2format = {
+                ImageFormat.CH_RGB    : gl.GL_RGB,
+                ImageFormat.CH_BGR    : gl.GL_BGR,
+                ImageFormat.CH_Y      : gl.GL_RED, # not sure about this one
+                ImageFormat.CH_RGGB   : gl.GL_RGBA, # we save 4 component data
+                ImageFormat.CH_GRBG   : gl.GL_RGBA,
+                ImageFormat.CH_GBRG   : gl.GL_RGBA,
+                ImageFormat.CH_BGGR   : gl.GL_RGBA
+            }
+            texture_pixel_format = channels2format[self._image.channels]
+
+            if (self.tex_width,self.tex_height) != (img_width,img_height):
+                try:
+                    if self.textureID is not None:
+                        gl.glDeleteTextures(np.array([self.textureID]))
+                    self.textureID = gl.glGenTextures(1)
+                    _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+                    # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+                    # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                    # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+                    _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
+                                    internal_format,
+                                    img_width, img_height,
+                                0, texture_pixel_format, gl_type, self._image.data)
+                    # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+                    self.tex_width, self.tex_height = img_width, img_height
+                except Exception as e:
+                    print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
+                    return False
+            else:
+                try:
+                    _gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
+                                texture_pixel_format, gl_type, self._image.data)
+                    # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+                except Exception as e:
+                    print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
+                    return False
 
         self.print_timing(add_total=True)
         self.opengl_error()
+        # self.doneCurrent()
         return True
 
     # @abstract_method
@@ -214,21 +264,30 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.update()
 
     # To be defined in children
-    def myPaintGL(self):  pass 
+    def myPaintGL(self):  pass
 
     def paintAll(self):
+        """ Should be called from PaintGL() exclusively """
+        # print("GLIVB paintAll")
         if self.trace_calls:
             t = trace_method(self.tab)
-        if self.textureID is None or not self.isValid() or not self.isVisible():
-            print("paintGL()** not ready {} {}".format(self.textureID, self.isValid()))
+        if self._image is None:
             return
-        # No need for makeCurrent() since it is called from PaintGL() only
+        if self._image.channels != ImageFormat.CH_YUV420:
+            if self.textureID is None or not self.isValid() or not self.isVisible():
+                print("paintGL()** not ready {} {}".format(self.textureID, self.isValid()))
+                return
+        else:
+            if self.textureY is None or not self.isValid() or not self.isVisible():
+                print("paintGL()** not ready {} {}".format(self.textureID, self.isValid()))
+                return
+        # No need for makeCurrent() since it is called from PaintGL() only ?
         # self.makeCurrent()
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.beginNativePainting()
         im_pos = None
-        scale  = None
+        scale  = 1
         try:
             self.updateViewPort()
             scale = self.updateTransforms()
@@ -239,7 +298,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.print_log(" failed paintGL {}".format(e))
             traceback.print_exc()
         painter.endNativePainting()
-        # status = gl.glGetError()
+        # status = _gl.glGetError()
 
         draw_text = True
         if draw_text:
@@ -255,8 +314,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
 
         painter.end()
+        # self.context().swapBuffers(self.context().surface())
         # Seems required here, at least on linux
         # self.update()
+        # self.doneCurrent()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
         """
@@ -278,6 +339,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
 
     def gl_draw_cursor(self) -> Optional[Tuple[int, int]]:
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
         x0, x1, y0, y1 = self.image_centered_position()
 
         im_x = int(self.cursor_imx_ratio*self.tex_width)
@@ -289,7 +351,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # get image coordinates
         length = 20 # /self.current_scale
         width = 4
-        gl.glLineWidth(width)
+        _gl.glLineWidth(width)
         gl.glColor3f(0.0, 1.0, 1.0)
         gl.glBegin(gl.GL_LINES)
         gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
@@ -298,7 +360,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
         gl.glEnd()
         if im_x>=0 and im_x<self.tex_width and im_y>=0 and im_y<=self.tex_height:
-            return (im_x, im_y) 
+            return (im_x, im_y)
         return None
 
 
@@ -346,6 +408,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             t = trace_method(self.tab)
         self.start_timing()
         self.makeCurrent()
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
@@ -384,12 +447,24 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # print("width height ratios {} {}".format(self._width/self.width(), self._height/self.height()))
         self.viewer_update()
 
+    # def event(self, evt):
+    #     print(f"event {evt.type()}")
+    #     return super().event(evt)
+
     def get_mouse_gl_coordinates(self, x, y):
         modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
         projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
         viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
         posX, posY, posZ = glu.gluUnProject(x, y, 0, modelview, projection, viewport)
         return posX, posY
+
+    # def paintEvent(self, event):
+    #     # print("GLIVB paintEvent")
+    #     if self._image is not None:
+    #         self.paintAll()
+
+    # def paintGL(self):
+    #     self.paintAll()
 
     def mousePressEvent(self, event):
         self._mouse_events.mouse_press_event(event)
