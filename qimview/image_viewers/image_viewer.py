@@ -155,6 +155,7 @@ class ImageViewer:
 
         self._show_overlay          : bool = False
         self._show_overlay_possible : bool = False
+        self._show_text             : bool = True
 
         self._show_image_differences          : bool  = False
         self._show_image_differences_possible : bool  = False
@@ -283,6 +284,11 @@ class ImageViewer:
             self._image = image
             self.image_id += 1
         return is_different
+
+    def set_image_fast(self, image : Optional[ViewerImage]) -> None:
+        """ Set the viewer image """
+        self._image = image
+        self.image_id += 1
 
     def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
         """ Set the reference image """
@@ -415,6 +421,8 @@ class ImageViewer:
 
     def display_text(self, painter: QtGui.QPainter, text: str, font_size=-1) -> None:
         """ Display the text inside the image widget, with transparent background """
+        if not self._show_text:
+            return
         self.start_timing()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
