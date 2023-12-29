@@ -372,8 +372,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glUniform1i(self.uYTex, 0)
-            _gl.glUniform1i(self.uUTex, 1)
-            _gl.glUniform1i(self.uVTex, 2)
+            _gl.glUniform1i(self.uUTex, 2)
+            _gl.glUniform1i(self.uVTex, 4)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
 
@@ -416,9 +416,9 @@ class GLImageViewerShaders(GLImageViewerBase):
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glActiveTexture(gl.GL_TEXTURE0)
             _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
-            _gl.glActiveTexture(gl.GL_TEXTURE1)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
             _gl.glActiveTexture(gl.GL_TEXTURE2)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
+            _gl.glActiveTexture(gl.GL_TEXTURE4)
             _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
         else:
             _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
