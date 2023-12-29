@@ -4,18 +4,20 @@
 #
 #
 
-from qimview.utils.qt_imports import QtWidgets
-from .image_viewer            import trace_method, get_time
-from .gl_image_viewer_base    import GLImageViewerBase
-
-from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
-                              QOpenGLShaderProgram, QOpenGLTexture)
-
 import OpenGL.GL as gl
 from OpenGL.GL import shaders
 import argparse
 import sys
 import numpy as np
+
+from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
+                              QOpenGLShaderProgram, QOpenGLTexture)
+
+from qimview.utils.qt_imports  import QtWidgets, QtGui
+from .image_viewer             import trace_method, get_time
+from .gl_image_viewer_base     import GLImageViewerBase
+from qimview.utils.viewer_image import ImageFormat
+
 
 class GLImageViewerShaders(GLImageViewerBase):
     # vertex shader program
