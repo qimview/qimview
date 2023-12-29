@@ -126,7 +126,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             t = trace_method(self.tab)
         self.start_timing()
         self.makeCurrent()
-        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        # _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl = gl
 
         # Replace texture only if required
         if self._image is None:
@@ -339,7 +340,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
 
     def gl_draw_cursor(self) -> Optional[Tuple[int, int]]:
-        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        # _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl = gl
+
         x0, x1, y0, y1 = self.image_centered_position()
 
         im_x = int(self.cursor_imx_ratio*self.tex_width)
@@ -408,7 +411,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             t = trace_method(self.tab)
         self.start_timing()
         self.makeCurrent()
-        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        # _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl = gl
         w = self._width
         h = self._height
         dx, dy = self.new_translation()

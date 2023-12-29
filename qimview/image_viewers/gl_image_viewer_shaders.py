@@ -322,7 +322,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.opengl_error()
         self.start_timing()
 
-        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        # _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
         if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
@@ -358,8 +359,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         shaders.glUseProgram(self.program)
 
         # set uniforms
-        _gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
-        _gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
+        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+        gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glUniform1i(self.uYTex, 0)
             _gl.glUniform1i(self.uUTex, 1)
@@ -397,9 +398,9 @@ class GLImageViewerShaders(GLImageViewerBase):
         # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
 
         _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
-        _gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
         _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
-        _gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
