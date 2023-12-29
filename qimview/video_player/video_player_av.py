@@ -6,7 +6,7 @@ from av import container, VideoFrame # type: ignore
 from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
 import fastremap
 
-from qimview.utils.qt_imports import QtWidgets, QtCore
+from qimview.utils.qt_imports import QtWidgets, QtCore, QtGui
 from qimview.image_viewers.qt_image_viewer import QTImageViewer
 from qimview.image_viewers.gl_image_viewer_shaders import GLImageViewerShaders
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
@@ -163,11 +163,10 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.widget.image_name = im_name
 
     def set_image_YUV420(self, y, u, v, im_name):
-        format = ImageFormat.CH_YUV420
-        self._im = ViewerImage(y, channels = format)
+        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420)
         self._im.u = u
         self._im.v = v
-        self.widget.set_image(self._im)
+        self.widget.set_image_fast(self._im)
         self.widget.image_name = im_name
 
     def set_image_data(self, np_array):
@@ -521,9 +520,9 @@ class Scheduler:
 
             # p.repaint()
             # print("<<===")
-            if p.viewer_class is GLImageViewerShaders:
-                loop = QtCore.QEventLoop()
-                loop.processEvents(QtCore.QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents, 1)
+            # if p.viewer_class is GLImageViewerShaders:
+            #     loop = QtCore.QEventLoop()
+            #     loop.processEvents(QtCore.QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents, 1)
             # print("===>>")
 
             self._displayed_pts[self._current_player] = p._frame.pts
@@ -533,7 +532,7 @@ class Scheduler:
     def _timer_cmds(self):
         print(f" _timer_cmds() {self._timer_counter} - ")
         self._timer_counter += 1
-        if time.perf_counter() - self._start_clock_time >= 10:
+        if time.perf_counter() - self._start_clock_time >= 30:
             self._timer.stop()
             for idx in range(len(self._players)):
                 p : VideoPlayerAV = self._players[idx]
@@ -693,7 +692,13 @@ def main():
     # height = int(video_stream['height'])
     # print(f" width x height = {width}x{height}")
 
-    # QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+    # These 3 lines solve a flickering issue by allowing immediate repaint
+    # of QOpenGLWidget objects (see https://forum.qt.io/topic/99824/qopenglwidget-immediate-opengl-repaint/3)
+    format = QtGui.QSurfaceFormat.defaultFormat()
+    format.setSwapInterval(0)
+    QtGui.QSurfaceFormat.setDefaultFormat(format)
+
     app = QtWidgets.QApplication()
     app.setApplicationDisplayName(f'ffmpeg on imview: {args.input_video}')
 
