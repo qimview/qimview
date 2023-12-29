@@ -23,6 +23,8 @@ class ImageFormat(IntEnum):
     "phase 2, bayer 0"
     CH_BGGR = 7 
     "phase 3, bayer 1"
+    CH_YUV420 = 8
+    "YUV 420 format"
 
     @staticmethod
     def CH_RAWFORMATS() -> Tuple[ImageFormat, ...]:
@@ -68,15 +70,42 @@ class ViewerImage:
         self.filename  : Optional[str] = None
         self.data_reduced_2 = None
         self.data_reduced_4 = None
+        # For YUV format, _data contains Y and _u and _v contain U and V
+        self._u : Optional[np.ndarray] = None
+        self._v : Optional[np.ndarray] = None
 
+
+    @property
+    def y(self) -> Optional[np.ndarray] :
+        return self._data
+
+    @y.setter
+    def y(self, d : np.ndarray):
+        self._data = d
+
+    @property
+    def u(self) -> Optional[np.ndarray] :
+        return self._u
+
+    @u.setter
+    def u(self, d : np.ndarray):
+        self._u = d
+
+    @property
+    def v(self) -> Optional[np.ndarray] :
+        return self._v
+
+    @v.setter
+    def v(self, d : np.ndarray):
+        self._v = d
 
     @property
     def data(self) -> np.ndarray :
         return self._data
 
     @data.setter
-    def data(self, v : np.ndarray):
-        self._data = v
+    def data(self, d : np.ndarray):
+        self._data = d
 
     def reduce_half(self, input_data, interpolation=cv2.INTER_AREA, display_timing=False):
         image_height, image_width  = input_data.shape[:2]
