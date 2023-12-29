@@ -81,10 +81,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print(self._image.data.shape)
 
         if changed:  # and self.textureID is not None:
-            print(f"self.textureID {self.textureID}")
+            # print(f"self.textureID {self.textureID}")
             if self.setTexture():
                 self.show()
                 self.update()
+            else:
+                print("setTexture() return False")
+
     def set_image_fast(self, image):
         self._image = image
         self.image_id += 1
