@@ -37,6 +37,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         # self.setFormat()
         self.textureID  = None
+        self.textureY   = None
+        self.textureU   = None
+        self.textureV   = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
         self.current_text = None
@@ -45,6 +48,17 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.trace_calls = False
         self.setMouseTracking(True)
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)
+        # default type
+        self._gl_types = {
+            'int8'   : gl.GL_BYTE,
+            'uint8'  : gl.GL_UNSIGNED_BYTE,
+            'int16'  : gl.GL_SHORT,
+            'uint16' : gl.GL_UNSIGNED_SHORT,
+            'int32'  : gl.GL_INT,
+            'uint32' : gl.GL_UNSIGNED_INT,
+            'float32': gl.GL_FLOAT,
+            'float64': gl.GL_DOUBLE
+        }
 
     # def __del__(self):
     #     if self.textureID is not None:
@@ -71,8 +85,24 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             if self.setTexture():
                 self.show()
                 self.update()
-            else:
-                print("setTexture() return False")
+    def set_image_fast(self, image):
+        self._image = image
+        self.image_id += 1
+        # super(GLImageViewerBase, self).set_image_fast(image)
+        # img_width = self._image.data.shape[1]
+        # if img_width % 4 != 0:
+        #     print("Image is resized to a multiple of 4 dimension in X")
+        #     img_width = ((img_width >> 4) << 4)
+        #     im = np.ascontiguousarray(self._image.data[:,:img_width, :])
+        #     self._image = ViewerImage(im, precision = self._image.precision, downscale = 1,
+        #                                 channels = self._image.channels)
+        #     print(self._image.data.shape)
+        if self.setTexture():
+            return
+            # self.show()
+            # self.update()
+        else:
+            print("setTexture() return False")
 
     def synchronize_data(self, other_viewer):
         super(GLImageViewerBase, self).synchronize_data(other_viewer)
@@ -89,12 +119,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         """
         :return: set opengl texture based on input numpy array image
         """
+
         # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
 
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
         self.makeCurrent()
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
 
         # Replace texture only if required
         if self._image is None:
@@ -103,18 +135,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         img_height, img_width = self._image.data.shape[:2]
 
-        # default type
-        gl_types = {
-            'int8'   : gl.GL_BYTE,
-            'uint8'  : gl.GL_UNSIGNED_BYTE,
-            'int16'  : gl.GL_SHORT,
-            'uint16' : gl.GL_UNSIGNED_SHORT,
-            'int32'  : gl.GL_INT,
-            'uint32' : gl.GL_UNSIGNED_INT,
-            'float32': gl.GL_FLOAT,
-            'float64': gl.GL_DOUBLE
-        }
-        gl_type = gl_types[self._image.data.dtype.name]
+        gl_type = self._gl_types[self._image.data.dtype.name]
 
         # It seems that the dimension in X should be even
 
