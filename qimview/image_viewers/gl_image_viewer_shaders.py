@@ -71,6 +71,66 @@ class GLImageViewerShaders(GLImageViewerBase):
         }
     """
 
+    # fragment shader program
+    fragmentShader_YUV420 = """
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D YTex;
+        uniform sampler2D UTex;
+        uniform sampler2D VTex;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        float y,u,v, r, g, b;
+        out vec3 colour;
+    
+        void main() {
+          y = texture(YTex, UV).r;
+          u = texture(UTex, UV).r;
+          v = texture(VTex, UV).r;
+
+          y = 1.1643*(y-0.0625);
+          u = u-0.5;
+          v = v-0.5;
+
+          r = y+1.5958*v;
+          g = y-0.39173*u-0.81290*v;
+          b = y+2.017*u;
+          
+          // r = y+1.13983*v;
+          // g = y-0.39465*u-0.5806*v;
+          // b = y+2.03211*u;
+
+          //r = y+1.28033*v;
+          //g = y-0.21482*u-0.38059*v;
+          //b = y+2.12798*u;
+
+          // first version greyscale 
+          colour.rgb = vec3(r,g,b);
+
+          // black level
+          colour.rgb = colour.rgb/max_value*max_type;
+          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
+
+          // white balance
+          colour.r = colour.r*g_r_coeff;
+          colour.b = colour.b*g_b_coeff;
+
+          // rescale to white level as saturation level
+          colour.rgb = colour.rgb/(white_level-black_level);
+          
+          // apply gamma
+          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+
+        }
+    """
+
     fragmentShader_RAW = """
         #version 330 core
         
