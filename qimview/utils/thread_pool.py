@@ -2,7 +2,6 @@
 
 from .qt_imports import *
 
-import traceback, sys
 
 class WorkerSignals(QtCore.QObject):
     '''
@@ -18,8 +17,8 @@ class WorkerSignals(QtCore.QObject):
         int indicating % progress
     '''
     finished = Signal()
-    error = Signal(tuple)
-    result = Signal(object)
+    error    = Signal(tuple)
+    result   = Signal(object)
     progress = Signal(int)
 
 
@@ -68,8 +67,12 @@ class Worker(QtCore.QRunnable):
         """
         # Retrieve args/kwargs here; and fire processing using them
         try:
+            # print("run")
             result = self.fn(*self.args, **self.kwargs)
-        except:
+        except Exception as e:
+            print(f"Exception catched while processing Worker task: {e}")
+            import sys
+            import traceback
             traceback.print_exc()
             exctype, value = sys.exc_info()[:2]
             self.signals.error.emit((exctype, value, traceback.format_exc()))
@@ -82,18 +85,26 @@ class Worker(QtCore.QRunnable):
 
 
 class ThreadPool(QtCore.QThreadPool):
-    def __init(self):
-        super(ThreadPool, self).__init__()
-        print("Multithreading with maximum %d threads" % self.threadpool.maxThreadCount())
+    """ Can start several runnables in threads """
+    def __init__(self):
+        super().__init__()
+        # print(f"Multithreading with maximum {self.maxThreadCount()} threads" )
+        self._worker : Worker
 
     def set_worker(self, work_function, *args, **kwargs):
-        self.worker = Worker(work_function,  *args, **kwargs)  # Any other args, kwargs are passed to the run function
+        """ Define a new worker to process work_function and its arguments """
+        self._worker = Worker(work_function,  *args, **kwargs)  # Any other args, kwargs are passed to the run function
+
+    def set_autodelete(self, d: bool):
+        self._worker.setAutoDelete(d)
 
     def set_worker_callbacks(self, progress_cb=None, finished_cb=None, result_cb=None):
-        self.worker.set_progress_callback(progress_cb)
-        self.worker.set_finished_callback(finished_cb)
-        self.worker.set_result_callback(result_cb)
+        """ Define several possible callbacks """
+        self._worker.set_progress_callback(progress_cb)
+        self._worker.set_finished_callback(finished_cb)
+        self._worker.set_result_callback(result_cb)
 
     def start_worker(self):
-        self.start(self.worker)
+        """ Starts the worker in a thread """
+        self.start(self._worker)
 
