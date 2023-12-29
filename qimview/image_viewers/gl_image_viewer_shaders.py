@@ -316,8 +316,17 @@ class GLImageViewerShaders(GLImageViewerBase):
     def myPaintGL(self):
         """Paint the scene.
         """
-        if self.textureID is None or not self.isValid():
-            print("paintGL() not ready")
+        if self._image is not None:
+            if self._image.channels == ImageFormat.CH_YUV420:
+                if self.textureY is None or not self.isValid():
+                    print("paintGL() not ready")
+                    return
+            else:
+                if self.textureID is None or not self.isValid():
+                    print("paintGL() not ready")
+                    return
+        else:
+            print("Image is None")
             return
         self.opengl_error()
         self.start_timing()
