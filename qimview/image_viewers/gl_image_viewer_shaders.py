@@ -198,6 +198,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.pMatrix  = np.identity(4, dtype=np.float32)
         self.mvMatrix = np.identity(4, dtype=np.float32)
         self.program_RGB = None
+        self.program_YUV420 = None
         self.program_RAW = None
         self.program = None
         self.vertexBuffer = None
@@ -209,6 +210,17 @@ class GLImageViewerShaders(GLImageViewerBase):
             try:
                 self.program_RGB = shaders.compileProgram(vs, fs, validate=False)
                 print("\n***** self.program_RGB = {} *****\n".format(self.program_RGB))
+            except Exception as e:
+                print('failed RGB shaders.compileProgram() {}'.format(e))
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+        if self.program_YUV420 is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_YUV420, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_YUV420 = shaders.compileProgram(vs, fs, validate=False)
+                print("\n***** self.program_RGB = {} *****\n".format(self.program_YUV420))
             except Exception as e:
                 print('failed RGB shaders.compileProgram() {}'.format(e))
             shaders.glDeleteShader(vs)
@@ -310,10 +322,13 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.opengl_error()
         self.start_timing()
 
-        gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        if self._image.data.shape[2] == 4:
+        if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
             self.program = self.program_RAW
+        elif self._image and self._image.channels == ImageFormat.CH_YUV420:
+            self.program = self.program_YUV420
         else:
             # TODO: check for other types: scalar ...
             self.program = self.program_RGB
@@ -323,7 +338,12 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
         self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
         self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
-        self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
+        if self._image and self._image.channels == ImageFormat.CH_YUV420:
+            self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
+            self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
+            self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+        else:
+            self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
         self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
         self.black_level_location = shaders.glGetUniformLocation(self.program, "black_level")
         self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
@@ -338,31 +358,36 @@ class GLImageViewerShaders(GLImageViewerBase):
         shaders.glUseProgram(self.program)
 
         # set uniforms
-        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
-        gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
-        gl.glUniform1i(self.uBackgroundTexture, 0)
+        _gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+        _gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
+        if self._image and self._image.channels == ImageFormat.CH_YUV420:
+            _gl.glUniform1i(self.uYTex, 0)
+            _gl.glUniform1i(self.uUTex, 1)
+            _gl.glUniform1i(self.uVTex, 2)
+        else:
+            _gl.glUniform1i(self.uBackgroundTexture, 0)
 
-        gl.glUniform1i( self.channels_location, self._image.channels)
+        _gl.glUniform1i( self.channels_location, self._image.channels)
 
         # set color transformation parameters
         self.print_log("levels {} {}".format(self.filter_params.black_level.value,
                                              self.filter_params.white_level.value))
-        gl.glUniform1f( self.black_level_location, self.filter_params.black_level.float)
-        gl.glUniform1f( self.white_level_location, self.filter_params.white_level.float)
+        _gl.glUniform1f( self.black_level_location, self.filter_params.black_level.float)
+        _gl.glUniform1f( self.white_level_location, self.filter_params.white_level.float)
 
         # white balance coefficients
-        gl.glUniform1f(self.g_r_coeff_location, self.filter_params.g_r.float)
-        gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
+        _gl.glUniform1f(self.g_r_coeff_location, self.filter_params.g_r.float)
+        _gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
 
         # Should work for unsigned types for the moment
-        gl.glUniform1f( self.max_value_location, (1 << self._image.precision)-1)
-        gl.glUniform1f( self.max_type_location,  np.iinfo(self._image.data.dtype).max)
+        _gl.glUniform1f( self.max_value_location, (1 << self._image.precision)-1)
+        _gl.glUniform1f( self.max_type_location,  np.iinfo(self._image.data.dtype).max)
 
-        gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
+        _gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
 
         # enable attribute arrays
-        gl.glEnableVertexAttribArray(self.aVert)
-        gl.glEnableVertexAttribArray(self.aUV)
+        _gl.glEnableVertexAttribArray(self.aVert)
+        _gl.glEnableVertexAttribArray(self.aUV)
 
         # set vertex and UV buffers
         # vert_buffers = VertexBuffers()
@@ -371,23 +396,31 @@ class GLImageViewerShaders(GLImageViewerBase):
         # vert_buffers.tex_coord_buffer = tex_coord_buffer
         # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
 
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
-        gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-        gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
-        gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
+        _gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
+        _gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
-        gl.glEnable(gl.GL_TEXTURE_2D)
+        if self._image and self._image.channels == ImageFormat.CH_YUV420:
+            _gl.glActiveTexture(gl.GL_TEXTURE0)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
+            _gl.glActiveTexture(gl.GL_TEXTURE1)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
+            _gl.glActiveTexture(gl.GL_TEXTURE2)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
+        else:
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+        _gl.glEnable(gl.GL_TEXTURE_2D)
 
         # draw
-        gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+        _gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
 
         # disable attribute arrays
-        gl.glDisableVertexAttribArray(self.aVert)
-        gl.glDisableVertexAttribArray(self.aUV)
-        gl.glDisable(gl.GL_TEXTURE_2D)
+        _gl.glDisableVertexAttribArray(self.aVert)
+        _gl.glDisableVertexAttribArray(self.aUV)
+        _gl.glDisable(gl.GL_TEXTURE_2D)
 
         shaders.glUseProgram(0)
 
