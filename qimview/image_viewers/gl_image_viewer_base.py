@@ -176,7 +176,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 self.textureY = gl.GL_TEXTURE0
                 # self.textureY = _gl.glGenTextures(1,[self.textureY])
                 _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
@@ -191,7 +191,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 # if self.textureU is not None: gl.glDeleteTextures(np.array([self.textureU]))
                 self.textureU =  gl.GL_TEXTURE1
                 _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
@@ -203,7 +203,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 # if self.textureV is not None: gl.glDeleteTextures(np.array([self.textureV]))
                 self.textureV = gl.GL_TEXTURE2
                 _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
