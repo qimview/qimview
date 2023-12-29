@@ -171,9 +171,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             # Set Y, U and V
             try:
                 # Y
-                # if self.textureY is not None:
-                #     gl.glDeleteTextures(np.array([self.textureY]))
-                self.textureY = gl.GL_TEXTURE0
+                if self.textureY is not None: gl.glDeleteTextures(np.array([self.textureY]))
+                self.textureY = gl.glGenTextures(1)
                 # self.textureY = _gl.glGenTextures(1,[self.textureY])
                 _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
@@ -188,8 +187,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 self.tex_width, self.tex_height = img_width, img_height
 
                 # U
-                # if self.textureU is not None: gl.glDeleteTextures(np.array([self.textureU]))
-                self.textureU =  gl.GL_TEXTURE1
+                if self.textureU is not None: gl.glDeleteTextures(np.array([self.textureU]))
+                self.textureU = gl.glGenTextures(1)
                 _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
@@ -200,8 +199,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                                 0, gl.GL_LUMINANCE, gl_type, self._image.u)
 
                 # V
-                # if self.textureV is not None: gl.glDeleteTextures(np.array([self.textureV]))
-                self.textureV = gl.GL_TEXTURE2
+                if self.textureV is not None: gl.glDeleteTextures(np.array([self.textureV]))
+                self.textureV = gl.glGenTextures(1)
                 _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
                 _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
