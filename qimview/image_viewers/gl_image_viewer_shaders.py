@@ -317,7 +317,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         """
         if self._image is not None:
             if self._image.channels == ImageFormat.CH_YUV420:
-                if self.textureY is None or not self.isValid():
+                if self.texture_yuv is None or not self.isValid():
                     print("paintGL() not ready")
                     return
             else:
@@ -412,13 +412,13 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
-        if self._image and self._image.channels == ImageFormat.CH_YUV420:
+        if self._image and self._image.channels == ImageFormat.CH_YUV420 and self.texture_yuv:
             _gl.glActiveTexture(gl.GL_TEXTURE0)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureY)
             _gl.glActiveTexture(gl.GL_TEXTURE2)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureU)
             _gl.glActiveTexture(gl.GL_TEXTURE4)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureV)
         else:
             if self.texture_rgb:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_rgb.textureID)

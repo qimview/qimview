@@ -35,12 +35,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         self.setFormat(_format)
 
-        # self.setFormat()
-        self.textureID  = None
-        self.textureY   = None
-        self.textureU   = None
-        self.textureV   = None
         self.texture_rgb : GLTexture | None = None
+        self.texture_yuv : GLTexture | None = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
         self.current_text = None
@@ -77,8 +73,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                                         channels = self._image.channels)
             print(self._image.data.shape)
 
-        if changed:  # and self.textureID is not None:
-            # print(f"self.textureID {self.textureID}")
+        if changed:
             if self.setTexture():
                 self.show()
                 self.update()
@@ -139,50 +134,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         if self._image.channels == ImageFormat.CH_YUV420:
             # Set Y, U and V
-            try:
-                # Y
-                if self.textureY is not None: gl.glDeleteTextures(np.array([self.textureY]))
-                self.textureY = gl.glGenTextures(1)
-                # self.textureY = _gl.glGenTextures(1,[self.textureY])
-                _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-                _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
-                                gl.GL_LUMINANCE,
-                                img_width, img_height,
-                            0, gl.GL_LUMINANCE, gl_type, self._image.data)
-                self.tex_width, self.tex_height = img_width, img_height
-
-                # U
-                if self.textureU is not None: gl.glDeleteTextures(np.array([self.textureU]))
-                self.textureU = gl.glGenTextures(1)
-                _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-                _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, gl.GL_LUMINANCE, int(img_width/2), int(img_height/2),
-                                0, gl.GL_LUMINANCE, gl_type, self._image.u)
-
-                # V
-                if self.textureV is not None: gl.glDeleteTextures(np.array([self.textureV]))
-                self.textureV = gl.glGenTextures(1)
-                _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-                _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,  gl.GL_LUMINANCE, int(img_width/2), int(img_height/2),
-                                0, gl.GL_LUMINANCE, gl_type, self._image.v)
-
-            except Exception as e:
-                print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
-                return False
+            if self.texture_yuv is None:
+                self.texture_yuv = GLTexture(_gl)
+            self.texture_yuv.create_texture_gl(self._image)
+            self.tex_width, self.tex_height = self.texture_yuv.tex_width, self.texture_yuv.tex_height
         else:
             if self.texture_rgb is None:
                 # QtGui.QOpenGLContext.currentContext().functions()
@@ -214,8 +169,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 print(f"paintGL()** not ready {self.texture_rgb} isValid = {self.isValid()} isVisible {self.isVisible()}")
                 return
         else:
-            if self.textureY is None or not self.isValid() or not self.isVisible():
-                print(f"paintGL()** not ready {self.textureY} isValid = {self.isValid()} isVisible {self.isVisible()}")
+            if self.texture_yuv is None or not self.isValid() or not self.isVisible():
+                print(f"paintGL()** not ready {self.texture_yuv} isValid = {self.isValid()} isVisible {self.isVisible()}")
                 return
         # No need for makeCurrent() since it is called from PaintGL() only ?
         # self.makeCurrent()
