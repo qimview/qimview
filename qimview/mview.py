@@ -11,7 +11,7 @@ from qimview.image_viewers    import MultiView, ViewerType
 def get_filenames():
     filenames = []
     # Ask for input file
-    selected_files =  QtWidgets.QFileDialog.getOpenFileNames(caption="miview: Select  one or various input images")
+    selected_files =  QtWidgets.QFileDialog.getOpenFileNames(caption="mview: Select one or various input images")
     filenames.extend(selected_files[0])
     return filenames
 
@@ -22,12 +22,14 @@ def main():
     parser.add_argument('-v', '--viewer', type=str, choices={'gl', 'qt', 'shader'}, default='qt',
                         help="Viewer mode, qt: standard qt display, gl: use opengl,  shader: enable opengl with "
                              "shaders")
-    parser.add_argument('-l', '--layout', type=str, default='0', help='Set the layout (number of images in comparison on the window), if 0 try to use the number of input images')
+    parser.add_argument('-l', '--layout', type=str, default='0', 
+                        help='Set the layout (number of images in comparison on the window),'
+                        ' if 0 try to use the number of input images')
 
     args = parser.parse_args()
     _params = vars(args)
 
-    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationDisplayName('mview ' + ' '.join(sys.argv[1:]))
 

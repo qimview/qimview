@@ -11,6 +11,7 @@ from qimview.image_viewers.qt_image_viewer import QTImageViewer
 from qimview.image_viewers.gl_image_viewer_shaders import GLImageViewerShaders
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from qimview.utils.thread_pool import ThreadPool
+from qimview.video_player.video_scheduler import VideoScheduler
 
 class AverageTime:
     def __init__(self):
@@ -447,231 +448,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._timer.timeout.connect(self._timer_cmds)
         self._timer.start(5)
 
-class Scheduler:
-    """ Create a timer to schedule frame extraction and display """
-    def __init__(self, interval=5):
-        self._players          : List[VideoPlayerAV]  = []
-        self._interval         : int                  = interval # intervals in ms
-        self._timer            : QtCore.QTimer        = QtCore.QTimer()
-        self._timer_counter    : int                  = 0
-        self._start_clock_time : float                = 0
-        self._skipped          : List[int]            = [0, 0]
-        self._displayed_pts    : List[int]            = [0, 0]
-        self._current_player   : int                  = 0
-
-    def add_player(self, p:VideoPlayerAV):
-        print("add_player")
-        self._players.append(p)
-
-    def _init_player(self, played_idx: int = 0):
-        print("_init_player")
-        assert played_idx>=0 and played_idx<len(self._players), "Wrong player idx"
-        p = self._players[played_idx]
-        if p._container is None:
-            p.init_video_av()
-            # get the first frame which is slower
-            p.get_next_frame()
-            p._display_current_frame()
-
-    def check_next_frame(self, player_idx: int = 0, progress_callback=None):
-        """ Check if we need to get a new frame based on the time spent """
-        self._current_player = (self._current_player + 1) % len(self._players)
-        p : VideoPlayerAV = self._players[self._current_player]
-        # print('==')
-        # st = time.perf_counter()
-        # if self._frame is None: self.get_next_frame()
-        assert p._frame is not None, "No frame available"
-        time_base = float(p._frame.time_base)
-        if p._pause:
-            p._pause_time = float(p._frame.pts * time_base)
-            print(f"paused")
-            return False
-        next_frame_time : float = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
-        time_spent : float = time.perf_counter() - self._start_clock_time
-        print(f"{next_frame_time} {time_spent}")
-
-        if time_spent>next_frame_time:
-            iter = 0
-            while time_spent>next_frame_time and iter<10:
-                if iter>0:
-                    self._skipped[self._current_player] +=1
-                    print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
-                p.get_next_frame()
-                next_frame_time = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
-                time_spent = time.perf_counter() - self._start_clock_time
-                iter +=1
-            return True
-        else:
-            return False
-
-    def _display_frame(self, player_idx: int = 0):
-        p : VideoPlayerAV = self._players[self._current_player]
-        if p._frame and p._frame.pts != self._displayed_pts[self._current_player]:
-            # print(f"*** {p._name} {time.perf_counter():0.4f}", end=' --')
-            frame_time : float = float(p._frame.pts * float(p._frame.time_base)) - p._start_video_time
-            time_spent : float = time.perf_counter() - self._start_clock_time
-            if abs(time_spent-frame_time)>=self._timer.interval()*1000:
-                print(f" frame {frame_time:0.3f} at time {time_spent:0.3f}")
-            p.display_frame(p._frame)
-            # p.widget.context().swapBuffers()
-            # QtCore.QTimer.singleShot(1, loop.exit)
-            # loop.exec()
-            # QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
-
-            # p.repaint()
-            # print("<<===")
-            # if p.viewer_class is GLImageViewerShaders:
-            #     loop = QtCore.QEventLoop()
-            #     loop.processEvents(QtCore.QEventLoop.ProcessEventsFlag.ExcludeUserInputEvents, 1)
-            # print("===>>")
-
-            self._displayed_pts[self._current_player] = p._frame.pts
-
-            # print(f" done {time.perf_counter():0.4f}")
-
-    def _timer_cmds(self):
-        print(f" _timer_cmds() {self._timer_counter} - ")
-        self._timer_counter += 1
-        if time.perf_counter() - self._start_clock_time >= 30:
-            self._timer.stop()
-            for idx in range(len(self._players)):
-                p : VideoPlayerAV = self._players[idx]
-                print(f" player {idx}: skipped = {self._skipped[idx]} {self._displayed_pts[idx]/p._ticks_per_frame}")
-                p.display_times()
-
-        # Without thread pool, it works quite well !
-        if self.check_next_frame():
-            self._display_frame()
-        # self._thread_pool.start_worker()
-        # self._thread_pool.waitForDone()
-        # print(f"time spent {(time.perf_counter()-self._start_clock_time)*1000:0.2f} ms")
-
-    def start_decode(self, player_idx: int = 0):
-        print("start_decode")
-        # self.set_time(start_time, self._container)
-        # self._start_video_time = start_time
-        print(f" nb videos {len(self._players)}")
-        for idx in range(len(self._players)):
-            self._init_player(idx)
-            self._displayed_pts[idx] = -1
-            self._skipped[idx] = 0
-        # Starting time in seconds
-        if self._start_clock_time == 0:
-            self._start_clock_time = time.perf_counter()
-
-        # have a timer within the thread, probably better?
-        # expect format to be YUVJ420P, so values in 0-255
-
-        self._timer : QtCore.QTimer = QtCore.QTimer()
-        self._timer.setTimerType(QtCore.Qt.TimerType.PreciseTimer)
-        self._timer.setInterval(self._interval)
-        self._timer_counter = 0
-
-        # self._thread_pool : ThreadPool = ThreadPool()
-        # self._thread_pool.set_worker(self.check_next_frame)
-        # self._thread_pool.set_autodelete(False)
-        # self._thread_pool.set_worker_callbacks(finished_cb=self._display_frame)
-
-        # Set a 5 ms counter
-        self._timer.timeout.connect(self._timer_cmds)
-        self._timer.start()
-
-# Experimental code, kind of working but not so good
-def sync_frames(player1, player2, frame1, frame2):
-    """ Display frame at the expected time, either skip frames or wait if time does not match """
-    time_base1 = float(frame1.time_base)
-    frame_time1 : float = float(frame1.pts * time_base1) - player1._start_video_time
-    time_base2 = float(frame2.time_base)
-    frame_time2 : float = float(frame2.pts * time_base2) - player2._start_video_time
-    time_spent1 : float = time.perf_counter() - player1._start_clock_time
-    time_spent2 : float = time.perf_counter() - player2._start_clock_time
-    if player1._pause:
-        player1._pause_time = float(frame1.pts * time_base1)
-        print(f"paused")
-        return False
-    if time_spent1>frame_time1 and frame1.pts%(3*player1._ticks_per_frame) != 0:
-
-        while time_spent1>frame_time1 and frame1.pts%(3*player1._ticks_per_frame) != 0:
-            frame1 = next(player1.frame_generator)
-            frame2 = next(player2.frame_generator)
-            player1._skipped +=1
-            frame_time1 = frame1.pts * time_base1 - player1._start_video_time
-            time_spent1 = time.perf_counter() - player1._start_clock_time
-    if time_spent1<frame_time1:
-        # wait a little bit
-        while(time_spent1<frame_time1):
-            # loop = QtCore.QEventLoop()
-            # QtCore.QTimer.singleShot(4, loop.exit)
-            # loop.exec()
-            QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 2)
-            time_spent1 = time.perf_counter() - player1._start_clock_time
-
-    # player1.widget.makeCurrent()
-    player1.display_frame(frame1)
-    QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
-    # player2.widget.makeCurrent()
-    player2.display_frame(frame2)
-    QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
-
-    ## Allow 1 ms
-    if frame1.pts%(6*player1._ticks_per_frame)==0:
-        loop = QtCore.QEventLoop()
-        QtCore.QTimer.singleShot(2, loop.exit)
-        loop.exec()
-        # QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
-    if frame1.pts%(100*player1._ticks_per_frame) == 0:
-        print(f"frame {int(frame1.pts/player1._ticks_per_frame+0.5)}, skipped {player1._skipped}")
-        print(f"{float(frame1.pts * time_base1):0.2f} vs "
-                f"time spent {time.perf_counter() - player1._start_clock_time + player1._start_video_time:0.2f}")
-    return True
-
-def pause_play(player1, player2):
-    player1._pause = not player1._pause
-    player2._pause = player1._pause
-    print(f"player1._pause = {player1._pause}")
-    if not player1._pause:
-        if player1._container is None:
-            player1.init_video_av()
-        if player2._container is None:
-            player2.init_video_av()
-        player1.set_time(player1._pause_time, player1._container)
-        player1._start_video_time = player1._pause_time
-        player2.set_time(player1._pause_time, player2._container)
-        player2._start_video_time = player1._pause_time
-
-        # Starting time in seconds
-        player1._start_clock_time = time.perf_counter()
-        player1._skipped = 0
-        player2._start_clock_time = time.perf_counter()
-        player2._skipped = 0
-        for frame1,frame2 in zip(player1._container.decode(video=0), player2._container.decode(video=0)):
-            ok = sync_frames(player1, player2, frame1, frame2)
-            if not ok: break
-
-def pause_play_v0(player1, player2):
-    player1._pause = not player1._pause
-    player2._pause = player1._pause
-    print(f"player1._pause = {player1._pause}")
-    if not player1._pause:
-        if player1._container is None:
-            player1.init_video_av()
-        if player2._container is None:
-            player2.init_video_av()
-        player1.set_time(player1._pause_time, player1._container)
-        player1._start_video_time = player1._pause_time
-        player2.set_time(player1._pause_time, player2._container)
-        player2._start_video_time = player1._pause_time
-
-        # Starting time in seconds
-        player1._start_clock_time = time.perf_counter()
-        player1._skipped = 0
-        player2._start_clock_time = time.perf_counter()
-        player2._skipped = 0
-        for frame1,frame2 in zip(player1._container.decode(video=0), player2._container.decode(video=0)):
-            ok = player1.sync_frame(frame1)
-            if not ok: break
-            ok = player2.sync_frame(frame2)
-            if not ok: break
 
 def main():
     import argparse
@@ -692,7 +468,7 @@ def main():
     # height = int(video_stream['height'])
     # print(f" width x height = {width}x{height}")
 
-    QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+    QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
     # These 3 lines solve a flickering issue by allowing immediate repaint
     # of QOpenGLWidget objects (see https://forum.qt.io/topic/99824/qopenglwidget-immediate-opengl-repaint/3)
     format = QtGui.QSurfaceFormat.defaultFormat()
@@ -717,9 +493,9 @@ def main():
 
     button_pauseplay = QtWidgets.QPushButton(">||")
     main_layout.addWidget(button_pauseplay)
-    button_pauseplay.clicked.connect(lambda: pause_play(player1, player2))
+    # button_pauseplay.clicked.connect(lambda: pause_play(player1, player2))
 
-    sch = Scheduler(10)
+    sch = VideoScheduler(10)
     sch.add_player(player1)
     if len(args.input_video) == 2:
         sch.add_player(player2)
