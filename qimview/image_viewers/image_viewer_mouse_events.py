@@ -135,7 +135,8 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         # print(f"{event.angleDelta(), event.deviceType(), event.source()}")
         delta = event.angleDelta()
         if im := self._widget.get_image():
-            self._widget.mouse_displ = delta
+            # Reduce wheel delta for smaller translations
+            self._widget.mouse_displ = delta/3
             # Update current displacement
             self._widget.current_dx = int(self._widget.check_translation()[0])
             self._widget.current_dy = int(self._widget.check_translation()[1])
@@ -150,7 +151,7 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         # print(f"{event.angleDelta(), event.deviceType(), event.source()}")
         delta = event.angleDelta()
         # To translation horizontally using wheel mouse
-        delta.setX(delta.y())
+        delta.setX(delta.y()/3)
         delta.setY(0)
         if im := self._widget.get_image():
             self._widget.mouse_displ = delta
