@@ -192,7 +192,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         super().__init__(parent)
 
         self.setAutoFillBackground(False)
-        self.textureID = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = False
         self.pMatrix  = np.identity(4, dtype=np.float32)
@@ -209,9 +208,9 @@ class GLImageViewerShaders(GLImageViewerBase):
             fs = shaders.compileShader(self.fragmentShader_RGB, gl.GL_FRAGMENT_SHADER)
             try:
                 self.program_RGB = shaders.compileProgram(vs, fs, validate=False)
-                print("\n***** self.program_RGB = {} *****\n".format(self.program_RGB))
+                self.print_log(f"\n***** self.program_RGB = {self.program_RGB} *****\n")
             except Exception as e:
-                print('failed RGB shaders.compileProgram() {}'.format(e))
+                print(f'failed RGB shaders.compileProgram() {e}')
             shaders.glDeleteShader(vs)
             shaders.glDeleteShader(fs)
 
@@ -220,9 +219,9 @@ class GLImageViewerShaders(GLImageViewerBase):
             fs = shaders.compileShader(self.fragmentShader_YUV420, gl.GL_FRAGMENT_SHADER)
             try:
                 self.program_YUV420 = shaders.compileProgram(vs, fs, validate=False)
-                print("\n***** self.program_RGB = {} *****\n".format(self.program_YUV420))
+                self.print_log(f"\n***** self.program_YUV420 = {self.program_YUV420} *****\n")
             except Exception as e:
-                print('failed RGB shaders.compileProgram() {}'.format(e))
+                print(f'failed RGB shaders.compileProgram() {e}')
             shaders.glDeleteShader(vs)
             shaders.glDeleteShader(fs)
 
@@ -231,9 +230,9 @@ class GLImageViewerShaders(GLImageViewerBase):
             fs = shaders.compileShader(self.fragmentShader_RAW, gl.GL_FRAGMENT_SHADER)
             try:
                 self.program_RAW = shaders.compileProgram(vs, fs, validate=False)
-                print("\n***** self.program_RAW = {} *****\n".format(self.program_RAW))
+                self.print_log(f"\n***** self.program_RAW = {self.program_RAW} *****\n")
             except Exception as e:
-                print('failed RAW shaders.compileProgram() {}'.format(e))
+                print(f'failed RAW shaders.compileProgram() {e}')
             shaders.glDeleteShader(vs)
             shaders.glDeleteShader(fs)
 
@@ -322,7 +321,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                     print("paintGL() not ready")
                     return
             else:
-                if self.textureID is None or not self.isValid():
+                if self.texture_rgb is None or not self.isValid():
                     print("paintGL() not ready")
                     return
         else:
@@ -421,7 +420,8 @@ class GLImageViewerShaders(GLImageViewerBase):
             _gl.glActiveTexture(gl.GL_TEXTURE4)
             _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
         else:
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+            if self.texture_rgb:
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_rgb.textureID)
         _gl.glEnable(gl.GL_TEXTURE_2D)
 
         # draw

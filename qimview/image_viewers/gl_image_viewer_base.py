@@ -5,16 +5,16 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
-
+import traceback
+from typing import Optional, Tuple
+import numpy as np
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
-import traceback
-import numpy as np
-from typing import Optional, Tuple
 
+from .gltexture import GLTexture
+from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method
 
@@ -27,12 +27,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.setAutoFillBackground(False)
 
         _format = QtGui.QSurfaceFormat()
-        print('profile is {}'.format(_format.profile()))
-        print('version is {}'.format(_format.version()))
+        print(f'profile is {_format.profile()}')
+        print(f'version is {_format.version()}')
         # _format.setDepthBufferSize(24)
         # _format.setVersion(4,0)
         # _format.setProfile(PySide2.QtGui.QSurfaceFormat.CoreProfile)
-        _format.setProfile(QtGui.QSurfaceFormat.CompatibilityProfile)
+        _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         self.setFormat(_format)
 
         # self.setFormat()
@@ -40,6 +40,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.textureY   = None
         self.textureU   = None
         self.textureV   = None
+        self.texture_rgb : GLTexture | None = None
         self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
         self.current_text = None
@@ -59,10 +60,6 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             'float32': gl.GL_FLOAT,
             'float64': gl.GL_DOUBLE
         }
-
-    # def __del__(self):
-    #     if self.textureID is not None:
-    #         gl.glDeleteTextures(np.array([self.textureID]))
 
     def set_image(self, image):
         if self.trace_calls:
@@ -138,34 +135,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             return False
 
         img_height, img_width = self._image.data.shape[:2]
-
         gl_type = self._gl_types[self._image.data.dtype.name]
-
-        # It seems that the dimension in X should be even
-
-        # Not sure what is the right parameter for internal format of 2D texture based
-        # on the input data type uint8, uint16, ...
-        # need to test with different DXR images
-        internal_format = gl.GL_RGB
-        if len(self._image.data.shape) == 3:
-            if self._image.data.shape[2] == 3:
-                if self._image.precision == 8:
-                    internal_format = gl.GL_RGB
-                if self._image.precision == 10:
-                    internal_format = gl.GL_RGB10
-                if self._image.precision == 12:
-                    internal_format = gl.GL_RGB12
-            if self._image.data.shape[2] == 4:
-                if self._image.precision == 8:
-                    internal_format = gl.GL_RGBA
-                else:
-                    if self._image.precision <= 12:
-                        internal_format = gl.GL_RGBA12
-                    else:
-                        if self._image.precision <= 16:
-                            internal_format = gl.GL_RGBA16
-                        else:
-                            internal_format = gl.GL_RGBA32F
 
         if self._image.channels == ImageFormat.CH_YUV420:
             # Set Y, U and V
@@ -214,48 +184,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
                 return False
         else:
-            channels2format = {
-                ImageFormat.CH_RGB    : gl.GL_RGB,
-                ImageFormat.CH_BGR    : gl.GL_BGR,
-                ImageFormat.CH_Y      : gl.GL_RED, # not sure about this one
-                ImageFormat.CH_RGGB   : gl.GL_RGBA, # we save 4 component data
-                ImageFormat.CH_GRBG   : gl.GL_RGBA,
-                ImageFormat.CH_GBRG   : gl.GL_RGBA,
-                ImageFormat.CH_BGGR   : gl.GL_RGBA
-            }
-            texture_pixel_format = channels2format[self._image.channels]
-
-            if (self.tex_width,self.tex_height) != (img_width,img_height):
-                try:
-                    if self.textureID is not None:
-                        gl.glDeleteTextures(np.array([self.textureID]))
-                    self.textureID = gl.glGenTextures(1)
-                    _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
-                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-                    # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
-                    # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                    # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
-                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-                    _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-                    _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0,
-                                    internal_format,
-                                    img_width, img_height,
-                                0, texture_pixel_format, gl_type, self._image.data)
-                    # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
-                    self.tex_width, self.tex_height = img_width, img_height
-                except Exception as e:
-                    print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
-                    return False
-            else:
-                try:
-                    _gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, img_width, img_height,
-                                texture_pixel_format, gl_type, self._image.data)
-                    # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
-                except Exception as e:
-                    print("setTexture failed shape={}: {}".format(self._image.data.shape, e))
-                    return False
+            if self.texture_rgb is None:
+                # QtGui.QOpenGLContext.currentContext().functions()
+                self.texture_rgb = GLTexture(_gl)
+            self.texture_rgb.create_texture_gl(self._image)
+            self.tex_width, self.tex_height = self.texture_rgb.tex_width, self.texture_rgb.tex_height
 
         self.print_timing(add_total=True)
         self.opengl_error()
@@ -277,12 +210,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self._image is None:
             return
         if self._image.channels != ImageFormat.CH_YUV420:
-            if self.textureID is None or not self.isValid() or not self.isVisible():
-                print("paintGL()** not ready {} {}".format(self.textureID, self.isValid()))
+            if self.texture_rgb is None or not self.isValid() or not self.isVisible():
+                print(f"paintGL()** not ready {self.texture_rgb} isValid = {self.isValid()} isVisible {self.isVisible()}")
                 return
         else:
             if self.textureY is None or not self.isValid() or not self.isVisible():
-                print("paintGL()** not ready {} {}".format(self.textureID, self.isValid()))
+                print(f"paintGL()** not ready {self.textureY} isValid = {self.isValid()} isVisible {self.isVisible()}")
                 return
         # No need for makeCurrent() since it is called from PaintGL() only ?
         # self.makeCurrent()
