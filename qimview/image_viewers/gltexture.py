@@ -1,15 +1,17 @@
-from qimview.utils.qt_imports import  QtGui, QOpenGLTexture
 
+from types import ModuleType
+import numpy as np
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
-import numpy as np
+from qimview.utils.qt_imports   import QtGui, QOpenGLTexture
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 
 
 class GLTexture:
     """ Deal with OpenGL textures """
-    def __init__(self):
+    def __init__(self, _gl: QtGui.QOpenGLFunctions | ModuleType | None):
+        self._gl = _gl if _gl else gl
         self.texture : QOpenGLTexture | None = None
         self.textureY  = None
         self.textureU  = None
@@ -26,13 +28,13 @@ class GLTexture:
             'float64': gl.GL_DOUBLE
         }
         self._channels2format = {
-                ImageFormat.CH_RGB    : gl.GL_RGB,
-                ImageFormat.CH_BGR    : gl.GL_BGR,
-                ImageFormat.CH_Y      : gl.GL_RED, # not sure about this one
-                ImageFormat.CH_RGGB   : gl.GL_RGBA, # we save 4 component data
-                ImageFormat.CH_GRBG   : gl.GL_RGBA,
-                ImageFormat.CH_GBRG   : gl.GL_RGBA,
-                ImageFormat.CH_BGGR   : gl.GL_RGBA
+                ImageFormat.CH_RGB : gl.GL_RGB,
+                ImageFormat.CH_BGR : gl.GL_BGR,
+                ImageFormat.CH_Y   : gl.GL_RED, # not sure about this one
+                ImageFormat.CH_RGGB: gl.GL_RGBA, # we save 4 component data
+                ImageFormat.CH_GRBG: gl.GL_RGBA,
+                ImageFormat.CH_GBRG: gl.GL_RGBA,
+                ImageFormat.CH_BGGR: gl.GL_RGBA
             }
         self.tex_width  : int = 0
         self.tex_height : int = 0
@@ -74,59 +76,60 @@ class GLTexture:
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionS, QOpenGLTexture.WrapMode.Repeat)
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionT, QOpenGLTexture.WrapMode.Repeat)
 
-    def set_default_parameters(self, _gl: QtGui.QOpenGLFunctions):
+    def set_default_parameters(self, texture):
         """ Default texture parameters using OpenGL functions """
-        _gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-        # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
-        _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-        _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
-        _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-        # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
-        # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        # _gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
-        # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+        self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+        self._gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
+        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+        # self._gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
 
-    def create_texture_gl(self, _gl: QtGui.QOpenGLFunctions, image : ViewerImage):
+    def new_texture(self, texture):
+        if self.texture is not None: gl.glDeleteTextures(np.array([self.texture]))
+        return gl.glGenTextures(1)
+
+    def create_texture_gl(self, image: ViewerImage):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
         height, width = image.data.shape[:2]
         gl_type = self._gl_types[image.data.dtype.name]
         if image.channels == ImageFormat.CH_YUV420:
-            self.textureY = gl.GL_TEXTURE0
+            self.textureY = self.new_texture(self.textureY)
             LUM = gl.GL_LUMINANCE
-            self.set_default_parameters(_gl)
-            # self.textureY = _gl.glGenTextures(1,[self.textureY])
-            _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, width, height, 0, LUM, gl_type, image.data)
+            self.set_default_parameters(self.textureY)
+            self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, width, height, 0, LUM, gl_type, image.data)
             self.tex_width, self.tex_height = width, height
             # U
-            # if self.textureU is not None: gl.glDeleteTextures(np.array([self.textureU]))
-            self.textureU =  gl.GL_TEXTURE1
-            self.set_default_parameters(_gl)
-            _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, int(width/2), int(height/2), 0, LUM, gl_type, image.u)
+            self.textureU = self.new_texture(self.textureU)
+            self.set_default_parameters(self.textureU)
+            self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, int(width/2), int(height/2), 0, LUM, gl_type, image.u)
             # V
-            # if self.textureV is not None: gl.glDeleteTextures(np.array([self.textureV]))
-            self.textureV = gl.GL_TEXTURE2
-            self.set_default_parameters(_gl)
-            _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, int(width/2), int(height/2), 0,LUM, gl_type, image.v)
+            self.textureV = self.new_texture(self.textureY)
+            self.set_default_parameters(self.textureV)
+            self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, int(width/2), int(height/2), 0,LUM, gl_type, image.v)
         else:
-            texture_pixel_format = self._channels2format[image.channels]
+            # Texture pixel format
+            pix_fmt = self._channels2format[image.channels]
 
             if (self.tex_width,self.tex_height) != (width,height):
                 try:
-                    if self.textureID is not None:
-                        gl.glDeleteTextures(np.array([self.textureID]))
+                    if self.textureID is not None: gl.glDeleteTextures(np.array([self.textureID]))
                     self.textureID = gl.glGenTextures(1)
-                    self.set_default_parameters(_gl)
+                    self.set_default_parameters(self.textureID)
                     # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
                     format = self._internal_format(image)
-                    _gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, width, height, 0, texture_pixel_format, gl_type, image.data)
+                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, width, height, 0, pix_fmt, gl_type, image.data)
                     self.tex_width, self.tex_height = width, height
                 except Exception as e:
                     print(f"setTexture failed shape={image.data.shape}: {e}")
                     return False
             else:
                 try:
-                    _gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, width, height, texture_pixel_format, gl_type, image.data)
+                    self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, width, height, pix_fmt, gl_type, image.data)
                     # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
                 except Exception as e:
                     print(f"setTexture glTexSubImage2D() failed shape={image.data.shape}: {e}")
