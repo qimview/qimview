@@ -98,19 +98,31 @@ class GLTexture:
         height, width = image.data.shape[:2]
         gl_type = self._gl_types[image.data.dtype.name]
         if image.channels == ImageFormat.CH_YUV420:
-            self.textureY = self.new_texture(self.textureY)
+            # TODO: check if this condition is sufficient
             LUM = gl.GL_LUMINANCE
-            self.set_default_parameters(self.textureY)
-            self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, width, height, 0, LUM, gl_type, image.data)
-            self.tex_width, self.tex_height = width, height
-            # U
-            self.textureU = self.new_texture(self.textureU)
-            self.set_default_parameters(self.textureU)
-            self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, int(width/2), int(height/2), 0, LUM, gl_type, image.u)
-            # V
-            self.textureV = self.new_texture(self.textureY)
-            self.set_default_parameters(self.textureV)
-            self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, int(width/2), int(height/2), 0,LUM, gl_type, image.v)
+            w, h = width, height
+            w2, h2 = int(w/2), int(h/2)
+            if (self.tex_width,self.tex_height) != (width,height) or self.textureY is None or \
+                  self.textureU is None or self.textureV is None:
+                self.textureY = self.new_texture(self.textureY)
+                self.set_default_parameters(self.textureY)
+                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, w, h, 0, LUM, gl_type, image.data)
+                self.tex_width, self.tex_height = width, height
+                # U
+                self.textureU = self.new_texture(self.textureU)
+                self.set_default_parameters(self.textureU)
+                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, w2, h2, 0, LUM, gl_type, image.u)
+                # V
+                self.textureV = self.new_texture(self.textureY)
+                self.set_default_parameters(self.textureV)
+                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, w2, h2, 0,LUM, gl_type, image.v)
+            else:
+                self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
+                self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, LUM, gl_type, image.data)
+                self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
+                self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, LUM, gl_type, image.u)
+                self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
+                self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, LUM, gl_type, image.v)
         else:
             # Texture pixel format
             pix_fmt = self._channels2format[image.channels]
