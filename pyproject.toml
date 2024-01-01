@@ -14,7 +14,7 @@ authors = [
 ]
 description = "Library for multiple image visualization and comparison"
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
