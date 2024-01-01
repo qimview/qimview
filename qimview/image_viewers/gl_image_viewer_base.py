@@ -191,9 +191,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         painter.endNativePainting()
         # status = _gl.glGetError()
 
-        draw_text = True
-        if draw_text:
-            # adapt scale depending on the ratio image / viewport
+        # adapt scale depending on the ratio image / viewport
+        if self._show_text:
             scale *= self._width/self._image.data.shape[1]
             self.display_text(painter, self.display_message(im_pos, scale))
 
