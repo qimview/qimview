@@ -1,9 +1,9 @@
 
 # required to install codecs to work well on windows, I installed K-Lite standard codecs
 
-from ..utils.qt_imports import QtGui, QtCore, QtWidgets, QtMultimedia, QtMultimediaWidgets
-from ..parameters.numeric_parameter import  NumericParameter
-from ..parameters.numeric_parameter_gui import NumericParameterGui
+from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets, QtMultimedia, QtMultimediaWidgets
+from qimview.parameters.numeric_parameter import  NumericParameter
+from qimview.parameters.numeric_parameter_gui import NumericParameterGui
 
 import sys
 
