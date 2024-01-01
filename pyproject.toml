@@ -37,6 +37,8 @@ extra = [
     "rawpy>=0.16.0",
     "python_vlc>=3.0.11115",
     "PyTurboJPEG>=1.4.1",
+    "PyOpenGL_accelerate", 
+    "PyAV",
 ]
 
 [project.urls]
