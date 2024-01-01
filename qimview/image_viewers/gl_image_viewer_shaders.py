@@ -192,15 +192,17 @@ class GLImageViewerShaders(GLImageViewerBase):
         super().__init__(parent)
 
         self.setAutoFillBackground(False)
-        self.tex_width, self.tex_height = 0, 0
-        self.opengl_debug = False
-        self.pMatrix  = np.identity(4, dtype=np.float32)
-        self.mvMatrix = np.identity(4, dtype=np.float32)
-        self.program_RGB = None
-        self.program_YUV420 = None
-        self.program_RAW = None
-        self.program = None
-        self.vertexBuffer = None
+        self.tex_width, self.tex_height                  = 0, 0
+        self.opengl_debug                                = False
+        self.pMatrix                                     = np.identity(4, dtype=np.float32)
+        self.mvMatrix                                    = np.identity(4, dtype=np.float32)
+        self.program_RGB                                 = None
+        self.program_YUV420                              = None
+        self.program_RAW                                 = None
+        self.program                                     = None
+        self._vertex_buffer       : QOpenGLBuffer | None = None
+        self._vertex_buffer_param                        = None
+        self._transform_param                            = None
 
     def set_shaders(self):
         if self.program_RGB is None:
@@ -244,21 +246,24 @@ class GLImageViewerShaders(GLImageViewerBase):
             print(" Failed image_centered_position() {}".format(e))
             x0, x1, y0, y1 = 0, 100, 0, 100
             # set background vertices
-        backgroundVertices = [
-            x0, y1, 0.0,
-            x0, y0, 0.0,
-            x1, y1, 0.0,
-            x1, y1, 0.0,
-            x0, y0, 0.0,
-            x1, y0, 0.0]
-        vertexData = np.array(backgroundVertices, np.float32)
+        new_vb_params = [x0,x1,y0,y1]
+        if self._vertex_buffer_param != new_vb_params:
+            backgroundVertices = [
+                x0, y1, 0.0,
+                x0, y0, 0.0,
+                x1, y1, 0.0,
+                x1, y1, 0.0,
+                x0, y0, 0.0,
+                x1, y0, 0.0]
+            vertexData = np.array(backgroundVertices, np.float32)
 
-        if self.vertexBuffer is not None:
-            self.vertexBuffer.destroy()
-        self.vertexBuffer = QOpenGLBuffer()
-        self.vertexBuffer.create()
-        self.vertexBuffer.bind()
-        self.vertexBuffer.allocate(vertexData, 4 * len(vertexData))
+            if self._vertex_buffer is not None:
+                self._vertex_buffer.destroy()
+            self._vertex_buffer = QOpenGLBuffer()
+            self._vertex_buffer.create()
+            self._vertex_buffer.bind()
+            self._vertex_buffer.allocate(vertexData, 4 * len(vertexData))
+            self._vertex_buffer_param = new_vb_params
 
     def setBufferData(self):
         # set background UV
@@ -405,7 +410,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         # vert_buffers.tex_coord_buffer = tex_coord_buffer
         # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
 
-        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.vertexBuffer.bufferId())
+        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vertex_buffer.bufferId())
         gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
         _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
         gl.glVertexAttribPointer(self.aUV, 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
@@ -441,25 +446,28 @@ class GLImageViewerShaders(GLImageViewerBase):
             t = trace_method(self.tab)
         if self.display_timing:
             start_time = get_time()
-        self.makeCurrent()
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
         # Deduce new scale from mouse vertical displacement
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.tex_height)
-        # update the window size
-        gl.glMatrixMode(gl.GL_PROJECTION)
-        gl.glLoadIdentity()
-        translation_unit = min(w, h)/2
-        gl.glScale(scale, scale, scale)
-        gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
-        # the window corner OpenGL coordinates are (-+1, -+1)
-        gl.glOrtho(0, w, 0, h, -1, 1)
-        self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
+        new_transform_params = [w,h,dx,dy,scale]
+        if self._transform_param != new_transform_params:
+            # update the window size
+            self.makeCurrent()
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadIdentity()
+            translation_unit = min(w, h)/2
+            gl.glScale(scale, scale, scale)
+            gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+            # the window corner OpenGL coordinates are (-+1, -+1)
+            gl.glOrtho(0, w, 0, h, -1, 1)
+            self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
 
-        gl.glMatrixMode(gl.GL_MODELVIEW)
-        gl.glLoadIdentity()
-        self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadIdentity()
+            self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+            self._transform_param = new_transform_params
         if self.display_timing:
             self.print_log('updateTransforms time {:0.1f} ms'.format((get_time()-start_time)*1000))
         return scale
