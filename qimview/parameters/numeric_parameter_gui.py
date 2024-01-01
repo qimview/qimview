@@ -46,9 +46,19 @@ class NumericParameterGui(QtWidgets.QSlider):
     def reset(self):
         self.setValue(self.param.default_value)
 
+    def updateSlider(self):
+        self.setValue(self.param.int)
+
+    def updateText(self):
+        self.label.setText(f"{self.name} {self.param.float:0.{self.decimals}f}")
+
+    def updateGui(self):
+        self.updateSlider()
+        self.updateText()
+
     def changed(self, callback=None):
         self.param.int = int(self.value())
-        self.label.setText(f"{self.name} {self.param.float:0.{self.decimals}f}")
+        self.updateText()
         if callback is not None:
             callback()
 
