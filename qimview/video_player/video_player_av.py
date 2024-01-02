@@ -115,10 +115,13 @@ class VideoPlayerAV(QtWidgets.QWidget):
         # TODO: move this variable to __init__()
         self.play_position = NumericParameter()
         self.play_position.float_scale = 1000
-        self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position,
-                                                     callback=self.set_play_position)
+        self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position)
         self.play_position_gui.decimals = 3
-        self.play_position_gui.create(moved_callback=True)
+        self.play_position_gui.set_pressed_callback(self.pause)
+        self.play_position_gui.set_moved_callback(self.set_play_position)
+        self.play_position_gui.set_released_callback(self.play)
+        self.play_position_gui.set_valuechanged_callback(lambda: self.play_position_gui.changed())
+        self.play_position_gui.create()
         self.play_position_gui.add_to_layout(hor_layout)
 
         # is show required here?
@@ -169,7 +172,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._scheduler.play()
 
     def set_play_position(self):
-        self._scheduler.pause()
         print(f"self.play_position {self.play_position.float}")
         self.set_time(self.play_position.float)
         self._pause_time = self.play_position.float
