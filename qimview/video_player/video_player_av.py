@@ -4,7 +4,7 @@ import numpy as np
 import av
 from av import container, VideoFrame # type: ignore
 from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
-import fastremap
+# import fastremap
 
 from qimview.utils.qt_imports import QtWidgets, QtCore, QtGui
 from qimview.image_viewers.qt_image_viewer import QTImageViewer
@@ -337,7 +337,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._container.streams.video[0].thread_count = 4
         self._video_stream = self._container.streams.video[0]
         framerate = float(self._video_stream.average_rate) # get the frame rate
-        print(f"framerate {framerate}")
+        print(f"framerate {framerate} {self._video_stream.width}x{self._video_stream.height}")
 
         duration = float(self._video_stream.duration * self._video_stream.time_base)
         print(f"duration = {duration} seconds")
@@ -381,8 +381,8 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
 def main():
     import argparse
-    import ffmpeg
-    import pprint
+    # import ffmpeg
+    # import pprint
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_video', nargs='+', help='input image (if not specified, will open file dialog)')
