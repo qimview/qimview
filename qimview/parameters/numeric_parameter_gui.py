@@ -81,11 +81,15 @@ class NumericParameterGui(QtWidgets.QSlider):
         self.updateSlider()
         self.updateText()
 
-    def changed(self, callback=None):
-        self.param.int = int(self.value())
-        self.updateText()
-        if callback is not None:
-            callback()
+    def changed(self, callback=None) -> bool:
+        new_value = int(self.value())
+        if self.param.int != new_value:
+            self.param.int = int(self.value())
+            self.updateText()
+            if callback is not None:
+                callback()
+            return True
+        return False
 
     def mouseDoubleClickEvent(self, evt):
         self.reset()

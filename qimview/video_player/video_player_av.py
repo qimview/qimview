@@ -119,8 +119,8 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.play_position_gui.decimals = 3
         self.play_position_gui.set_pressed_callback(self.pause)
         self.play_position_gui.set_moved_callback(self.set_play_position)
-        self.play_position_gui.set_released_callback(self.play)
-        self.play_position_gui.set_valuechanged_callback(lambda: self.play_position_gui.changed())
+        self.play_position_gui.set_released_callback(self.reset_play)
+        self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
         self.play_position_gui.create()
         self.play_position_gui.add_to_layout(hor_layout)
 
@@ -166,10 +166,22 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._pause = False
 
     def pause(self):
+        self._was_active = self._scheduler._timer.isActive()
         self._scheduler.pause()
     
+    def reset_play(self):
+        if self._was_active:
+            self._scheduler.play()
+
     def play(self):
         self._scheduler.play()
+
+    def slider_value_changed(self):
+        if self.play_position_gui.changed():
+            print("changed")
+            self.set_play_position()
+        else:
+            print("not changed")
 
     def set_play_position(self):
         print(f"self.play_position {self.play_position.float}")
@@ -321,7 +333,8 @@ class VideoPlayerAV(QtWidgets.QWidget):
             self._scheduler.pause()
         print(f"filename = {self.filename}")
         self._container : container.InputContainer = av.open(self.filename)
-        self._container.streams.video[0].thread_type = "AUTO"
+        self._container.streams.video[0].thread_type = "FRAME"
+        self._container.streams.video[0].thread_count = 4
         self._video_stream = self._container.streams.video[0]
         framerate = float(self._video_stream.average_rate) # get the frame rate
         print(f"framerate {framerate}")
