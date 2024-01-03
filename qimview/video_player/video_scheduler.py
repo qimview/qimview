@@ -79,7 +79,7 @@ class VideoScheduler:
 
         if time_spent>next_frame_time:
             iter = 0
-            while time_spent>next_frame_time and iter<10:
+            while time_spent>next_frame_time and iter<30:
                 if iter>0:
                     self._skipped[self._current_player] +=1
                     # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
