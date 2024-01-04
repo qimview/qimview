@@ -51,10 +51,10 @@ class VideoScheduler:
     def play(self):
         """ play videos """
         if not self._timer.isActive():
-            self._start_clock_time = time.perf_counter()
             for p in self._players:
                 p.set_play()
             self._timer.start()
+            self._start_clock_time = time.perf_counter()
         else:
             print("timer already active")
 
@@ -79,7 +79,7 @@ class VideoScheduler:
 
         if time_spent>next_frame_time:
             iter = 0
-            while time_spent>next_frame_time and iter<30:
+            while time_spent>next_frame_time and iter<p._max_skip:
                 if iter>0:
                     self._skipped[self._current_player] +=1
                     # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")

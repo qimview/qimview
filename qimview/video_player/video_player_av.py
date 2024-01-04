@@ -98,16 +98,11 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.widget._show_text = False
         self.setGeometry(0, 0, self.widget.width(), self.widget.height())
         hor_layout = QtWidgets.QHBoxLayout()
-        button_start = QtWidgets.QPushButton("Start")
-        button_pause = QtWidgets.QPushButton()
-        icon_pause = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPause)
-        button_pause.setIcon(icon_pause)
-        button_play  = QtWidgets.QPushButton()
-        icon_play = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay)
-        button_play.setIcon(icon_play)
-        hor_layout.addWidget(button_start)
-        hor_layout.addWidget(button_pause)
-        hor_layout.addWidget(button_play)
+        self._button_play_pause = QtWidgets.QPushButton()
+        self._icon_play = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay)
+        self._icon_pause = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPause)
+        self._button_play_pause.setIcon(self._icon_play)
+        hor_layout.addWidget(self._button_play_pause)
         vertical_layout.addWidget(self.widget)
         vertical_layout.addLayout(hor_layout)
 
@@ -118,7 +113,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position)
         self.play_position_gui.decimals = 3
         self.play_position_gui.set_pressed_callback(self.pause)
-        self.play_position_gui.set_moved_callback(self.set_play_position)
         self.play_position_gui.set_released_callback(self.reset_play)
         self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
         self.play_position_gui.create()
@@ -129,14 +123,11 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._im = None
         self._pause_time : float = 0
         self._pause = False
-        button_start.clicked.connect(self.start_decode)
-        button_pause.clicked.connect(self.pause)
-        button_play .clicked.connect(self.play)
+        self._button_play_pause.clicked.connect(self.play_pause)
         self._container : container.InputContainer | None = None
         self._video_stream = None
 
         self._scheduler : VideoScheduler = VideoScheduler()
-        self._start_clock_time : float = 0
         self._start_video_time : float = 0
         self._skipped : int = 0
         self._frame = None
@@ -148,6 +139,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._t3 : AverageTime = AverageTime()
         self._t4 : AverageTime = AverageTime()
         self._t5 : AverageTime = AverageTime()
+        self._max_skip : int = 5
 
     def set_name(self, n:str):
         self._name = n
@@ -162,8 +154,13 @@ class VideoPlayerAV(QtWidgets.QWidget):
     def set_play(self):
         self.set_time(self._pause_time)
         self._start_video_time = self._pause_time
-        self._start_clock_time = time.perf_counter()
         self._pause = False
+
+    def start_decode(self):
+        if self._scheduler._timer.isActive():
+            self._scheduler.pause()
+        self._scheduler.set_players([self])
+        self._scheduler.start_decode()
 
     def pause(self):
         self._was_active = self._scheduler._timer.isActive()
@@ -173,15 +170,21 @@ class VideoPlayerAV(QtWidgets.QWidget):
         if self._was_active:
             self._scheduler.play()
 
-    def play(self):
-        self._scheduler.play()
+    def play_pause(self):
+        if len(self._scheduler._players) == 0:
+            self._button_play_pause.setIcon(self._icon_pause)
+            self.start_decode()
+        else:
+            if self._scheduler._timer.isActive():
+                self._was_active = self._scheduler._timer.isActive()
+                self._scheduler.pause()
+                self._button_play_pause.setIcon(self._icon_play)
+            else:
+                self._button_play_pause.setIcon(self._icon_pause)
+                self._scheduler.play()
 
     def slider_value_changed(self):
-        if self.play_position_gui.changed():
-            print("changed")
-            self.set_play_position()
-        else:
-            print("not changed")
+        self.set_play_position()
 
     def set_play_position(self):
         print(f"self.play_position {self.play_position.float}")
@@ -193,7 +196,10 @@ class VideoPlayerAV(QtWidgets.QWidget):
         current_time = float(self._frame.pts * self._frame.time_base)
         if abs(self.play_position.float-current_time)>precision:
             self.play_position.float = current_time
+            # Block signals to avoid calling changedValue signal
+            self.play_position_gui.blockSignals(True)
             self.play_position_gui.updateGui()
+            self.play_position_gui.blockSignals(False)
 
     def set_image(self, np_array, im_name, force_new=False):
         if self._im is None or force_new:
@@ -239,21 +245,28 @@ class VideoPlayerAV(QtWidgets.QWidget):
             framerate = self._video_stream.average_rate # get the frame rate
             frame_num = int(time_pos*framerate+0.5)
             time_base = float(self._video_stream.time_base) # get the time base
-            # seek to that nearest timestamp
-            self._container.seek(int(time_pos*1000000), whence='time', backward=True)
-            self._frame_generator = self._container.decode(video=0)
-            # get the next available frame
-            frame = next(self._frame_generator)
-            # get the proper key frame number of that timestamp
-            sec_frame = int(frame.pts * float(time_base) * framerate)
 
-            print(f"got frame at {float(frame.pts * time_base)}, expected {time_pos}")
+            sec_frame = int(self._frame.pts * float(time_base) * framerate)
+            # print(f"{sec_frame} -> {frame_num}")
+            if frame_num == sec_frame: return
+            # if we look for a frame slightly after, don't use seek()
+            if frame_num<sec_frame or frame_num > sec_frame + 10:
+                # seek to that nearest timestamp
+                self._container.seek(int(time_pos*1000000), whence='time', backward=True)
+                # get the next available frame
+                frame = next(self._frame_generator)
+                # get the proper key frame number of that timestamp
+                sec_frame = int(frame.pts * float(time_base) * framerate)
+                # print(f"got frame at {float(frame.pts * time_base)}, expected {time_pos}")
             # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
             for _ in range(sec_frame, frame_num):
                 frame = next(self._frame_generator)
             sec_frame = int(frame.pts * time_base * framerate)
             print(f"-> got frame at {float(frame.pts * time_base)}, expected {time_pos}")
             self._frame = frame
+            # Update pause time
+            if not self._scheduler._timer.isActive():
+                self._pause_time = float(self._frame.pts * self._frame.time_base)
 
     def display_frame_RGB(self, frame: av.VideoFrame):
         """ Convert YUV to RGB and display RGB frame """
@@ -339,10 +352,21 @@ class VideoPlayerAV(QtWidgets.QWidget):
         framerate = float(self._video_stream.average_rate) # get the frame rate
         print(f"framerate {framerate} {self._video_stream.width}x{self._video_stream.height}")
 
-        duration = float(self._video_stream.duration * self._video_stream.time_base)
-        print(f"duration = {duration} seconds")
+        fps = self._video_stream.base_rate
+        time_base = self._video_stream.time_base
+        self._ticks_per_frame = int((1/fps) / time_base)
+        duration = float((self._video_stream.duration-self._ticks_per_frame) * time_base)
+
+        print(f"duration = {duration} seconds {self._video_stream.duration}")
+        slider_single_step = int(self._ticks_per_frame*time_base*self.play_position.float_scale+0.5)
+        slider_page_step   = int(self.play_position.float_scale+0.5)
+        self.play_position_gui.setSingleStep(slider_single_step)
+        self.play_position_gui.setPageStep(slider_page_step)
         self.play_position.range = [0, int(duration*self.play_position.float_scale)]
-        self.play_position_gui.setRange(0, int(duration*self.play_position.float_scale))
+        print(f"range = {self.play_position.range}")
+        self.play_position_gui.setRange(0, self.play_position.range[1])
+        self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.play_position_gui.update()
         self.play_position_gui.changed()
 
         # fps = eval(probe['streams'][0]['r_frame_rate'])
@@ -350,9 +374,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
         # width = int(video_stream['width'])
         # height = int(video_stream['height'])
 
-        fps = self._video_stream.base_rate
-        time_base = self._video_stream.time_base
-        self._ticks_per_frame = int((1/fps) / time_base)
         print(f"ticks_per_frame {self._ticks_per_frame}")
 
         self._frame_generator : Generator = self._container.decode(video=0)
@@ -372,12 +393,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
         if verbose:
             if s != 'gen P': print(s)
             else: print(s)
-
-    def start_decode(self):
-        if self._scheduler._timer.isActive():
-            self._scheduler.pause()
-        self._scheduler.set_players([self])
-        self._scheduler.start_decode()
 
 def main():
     import argparse
@@ -417,8 +432,11 @@ def main():
     main_widget.setLayout(main_layout)
     player1 = VideoPlayerAV(main_widget)
     video_layout.addWidget(player1, 1)
-    player2 = VideoPlayerAV(main_widget)
-    video_layout.addWidget(player2, 1)
+    if len(args.input_video) == 2:
+        player2 = VideoPlayerAV(main_widget)
+        video_layout.addWidget(player2, 1)
+    else:
+        player2 = None
     main_layout.addLayout(video_layout)
 
     # button_pauseplay = QtWidgets.QPushButton(">||")
@@ -427,7 +445,7 @@ def main():
 
     sch = VideoScheduler(10)
     sch.add_player(player1)
-    if len(args.input_video) == 2:
+    if player2:
         sch.add_player(player2)
 
     button_scheduler = QtWidgets.QPushButton("Scheduler")
@@ -437,17 +455,15 @@ def main():
     player1.set_video(args.input_video[0])
     player1.show()
 
-    if len(args.input_video) == 2:
+    if player2:
         player2.set_video(args.input_video[1])
         player2.show()
-    else:
-        player2.hide()
 
     player1.set_name('player1')
     player1.init_video_av()
     player1.get_next_frame()
 
-    if len(args.input_video) == 2:
+    if player2:
         player2.set_name('player2')
         player2.init_video_av()
         player2.get_next_frame()

@@ -25,6 +25,7 @@ class NumericParameterGui(QtWidgets.QSlider):
         self.decimals = 2
         if layout is not None:
             self.create()
+            self.updateText()
             self.add_to_layout(layout)
 
     def set_event_recorder(self, evtrec):
@@ -47,13 +48,15 @@ class NumericParameterGui(QtWidgets.QSlider):
     def set_released_callback(self,cb:Callable):
         self._released_callback = cb
 
-    def create(self, moved_callback=False):
-        self.label = QtWidgets.QLabel("")
+    def create(self):
+        self.label = QtWidgets.QLabel(f"{self.name}")
         self.setRange(self.param.range[0], self.param.range[1])
         self.setValue(self.param.value)
         self.changed()
-        if self._moved_callback: 
-            self.sliderMoved.connect(lambda: self.changed(self._moved_callback))
+        if self._moved_callback:
+            # Move callback is used only if tracking is off, so set it to off here
+            self.setTracking(False)
+            self.sliderMoved.connect(self._moved_callback)
         if self._valuechanged_callback:
             self.valueChanged.connect(lambda: self.changed(self._valuechanged_callback))
         if self._pressed_callback:
@@ -81,15 +84,11 @@ class NumericParameterGui(QtWidgets.QSlider):
         self.updateSlider()
         self.updateText()
 
-    def changed(self, callback=None) -> bool:
-        new_value = int(self.value())
-        if self.param.int != new_value:
-            self.param.int = int(self.value())
-            self.updateText()
-            if callback is not None:
-                callback()
-            return True
-        return False
+    def changed(self, callback=None):
+        self.param.int = self.value()
+        self.updateText()
+        if callback is not None:
+            callback()
 
     def mouseDoubleClickEvent(self, evt):
         self.reset()
