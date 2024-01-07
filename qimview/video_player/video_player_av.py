@@ -107,8 +107,26 @@ class VideoPlayerAV(QtWidgets.QWidget):
         vertical_layout.addWidget(self.widget)
         vertical_layout.addLayout(hor_layout)
 
-        # create slider
-        # TODO: move this variable to __init__()
+        # Playback speed slider
+        self.playback_speed = NumericParameter()
+        self.playback_speed.float_scale = 10
+        self.playback_speed_gui = NumericParameterGui(name="x", param=self.playback_speed)
+        self.playback_speed_gui.decimals = 1
+        self.playback_speed_gui.set_pressed_callback(self.pause)
+        self.playback_speed_gui.set_released_callback(self.reset_play)
+        self.playback_speed_gui.set_valuechanged_callback(self.speed_value_changed)
+        self.playback_speed_gui.create()
+        self.playback_speed_gui.setTextFormat(lambda p: f"{pow(2,p.float):0.2f}")
+        self.playback_speed_gui.setRange(-30, 30)
+        self.playback_speed_gui.update()
+        self.playback_speed_gui.updateText()
+        self.playback_speed_gui.add_to_layout(hor_layout,1)
+        self.playback_speed_gui.setSingleStep(1)
+        self.playback_speed_gui.setPageStep(10)
+        self.playback_speed_gui.setTickInterval(10)
+        self.playback_speed_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+
+        # Position slider
         self.play_position = NumericParameter()
         self.play_position.float_scale = 1000
         self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position)
@@ -117,7 +135,8 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.play_position_gui.set_released_callback(self.reset_play)
         self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
         self.play_position_gui.create()
-        self.play_position_gui.add_to_layout(hor_layout)
+        self.play_position_gui.add_to_layout(hor_layout,5)
+
 
         # is show required here?
         self.show()
@@ -199,6 +218,10 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.set_time(self.play_position.float)
         self._pause_time = self.play_position.float
         self.display_frame(self._frame)
+
+    def speed_value_changed(self):
+        print(f"New speed value {self.playback_speed.float}")
+        self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
     def update_position(self, precision=0.02):
         current_time = float(self._frame.pts * self._frame.time_base)

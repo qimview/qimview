@@ -23,6 +23,7 @@ class NumericParameterGui(QtWidgets.QSlider):
         self.widget_name = f"slider_{self.parent_name}_{self.name}"
         self.created = False
         self.decimals = 2
+        self._text_format : Callable | None = None
         if layout is not None:
             self.create()
             self.updateText()
@@ -65,11 +66,14 @@ class NumericParameterGui(QtWidgets.QSlider):
             self.sliderReleased.connect(self._released_callback)
         self.created = True
 
-    def add_to_layout(self, layout):
+    def add_to_layout(self, layout, stretch=0):
         if not self.created:
             self.create()
         layout.addWidget(self.label)
-        layout.addWidget(self)
+        if stretch!=0:
+            layout.addWidget(self, stretch)
+        else:
+            layout.addWidget(self)
 
     def reset(self):
         self.setValue(self.param.default_value)
@@ -77,8 +81,15 @@ class NumericParameterGui(QtWidgets.QSlider):
     def updateSlider(self):
         self.setValue(self.param.int)
 
+    def setTextFormat(self, _format: Callable):
+        self._text_format = _format
+
     def updateText(self):
-        self.label.setText(f"{self.name} {self.param.float:0.{self.decimals}f}")
+        if self._text_format:
+            text = self._text_format(self.param)
+        else:
+            text = f"{self.param.float:0.{self.decimals}f}"
+        self.label.setText(f"{self.name} {text}")
 
     def updateGui(self):
         self.updateSlider()
