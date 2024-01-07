@@ -134,6 +134,8 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._displayed_pts : int = -1
         self._timer : Optional[QtCore.QTimer] = None
         self._name : str = "video player"
+        self._duration : float = 0
+        self._end_time : float = 0
         self._t1 : AverageTime = AverageTime()
         self._t2 : AverageTime = AverageTime()
         self._t3 : AverageTime = AverageTime()
@@ -239,6 +241,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def set_time(self, time_pos : float):
         """ set time position in seconds """
+        print(f"set_time {time_pos} , _end_time={self._end_time}")
         if self._container is None:
             print("Video not initialized")
         else:
@@ -246,27 +249,39 @@ class VideoPlayerAV(QtWidgets.QWidget):
             frame_num = int(time_pos*framerate+0.5)
             time_base = float(self._video_stream.time_base) # get the time base
 
-            sec_frame = int(self._frame.pts * float(time_base) * framerate)
+            current_frame_time = self._frame.pts * float(time_base)
+            sec_frame   = int(self._frame.pts * float(time_base) * framerate)
+            initial_pos = float(self._frame.pts * time_base)
             # print(f"{sec_frame} -> {frame_num}")
             if frame_num == sec_frame: return
             # if we look for a frame slightly after, don't use seek()
-            if frame_num<sec_frame or frame_num > sec_frame + 10:
-                # seek to that nearest timestamp
-                self._container.seek(int(time_pos*1000000), whence='time', backward=True)
-                # get the next available frame
-                frame = next(self._frame_generator)
-                # get the proper key frame number of that timestamp
-                sec_frame = int(frame.pts * float(time_base) * framerate)
-                # print(f"got frame at {float(frame.pts * time_base)}, expected {time_pos}")
-            # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
-            for _ in range(sec_frame, frame_num):
-                frame = next(self._frame_generator)
-            sec_frame = int(frame.pts * time_base * framerate)
-            print(f"-> got frame at {float(frame.pts * time_base)}, expected {time_pos}")
-            self._frame = frame
-            # Update pause time
-            if not self._scheduler._timer.isActive():
-                self._pause_time = float(self._frame.pts * self._frame.time_base)
+            try:
+                if frame_num<sec_frame or frame_num > sec_frame + 10:
+                    # seek to that nearest timestamp
+                    self._container.seek(int(time_pos*1000000), whence='time', backward=True)
+                    # It seems that the frame generator is not automatically updated
+                    # if we are at the end of the video, we don't want to call next()
+                    if current_frame_time>=self._end_time:
+                        self._frame_generator = self._container.decode(video=0)
+                    # get the next available frame
+                    frame = next(self._frame_generator)
+                    # get the proper key frame number of that timestamp
+                    sec_frame = int(frame.pts * float(time_base) * framerate)
+                    initial_pos = float(frame.pts * time_base)
+                # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
+                for _ in range(sec_frame, frame_num):
+                    frame = next(self._frame_generator)
+            except StopIteration:
+                print(f"Reached end of video stream")
+                # Reset valid generator
+                self._frame_generator = self._container.decode(video=0)
+            else:
+                sec_frame = int(frame.pts * time_base * framerate)
+                print(f"Frame at {initial_pos:0.3f}->{float(frame.pts * time_base):0.3f} request {time_pos}")
+                self._frame = frame
+                # Update pause time
+                if not self._scheduler._timer.isActive():
+                    self._pause_time = float(self._frame.pts * self._frame.time_base)
 
     def display_frame_RGB(self, frame: av.VideoFrame):
         """ Convert YUV to RGB and display RGB frame """
@@ -345,7 +360,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
         if self._scheduler._timer.isActive():
             self._scheduler.pause()
         print(f"filename = {self.filename}")
-        self._container : container.InputContainer = av.open(self.filename)
+        self._container = av.open(self.filename)
         self._container.streams.video[0].thread_type = "FRAME"
         self._container.streams.video[0].thread_count = 4
         self._video_stream = self._container.streams.video[0]
@@ -355,14 +370,15 @@ class VideoPlayerAV(QtWidgets.QWidget):
         fps = self._video_stream.base_rate
         time_base = self._video_stream.time_base
         self._ticks_per_frame = int((1/fps) / time_base)
-        duration = float((self._video_stream.duration-self._ticks_per_frame) * time_base)
+        self._duration = float(self._video_stream.duration * time_base)
+        self._end_time = float((self._video_stream.duration-self._ticks_per_frame) * time_base)
 
-        print(f"duration = {duration} seconds {self._video_stream.duration}")
+        print(f"duration = {self._duration} seconds")
         slider_single_step = int(self._ticks_per_frame*time_base*self.play_position.float_scale+0.5)
         slider_page_step   = int(self.play_position.float_scale+0.5)
         self.play_position_gui.setSingleStep(slider_single_step)
         self.play_position_gui.setPageStep(slider_page_step)
-        self.play_position.range = [0, int(duration*self.play_position.float_scale)]
+        self.play_position.range = [0, int(self._end_time*self.play_position.float_scale)]
         print(f"range = {self.play_position.range}")
         self.play_position_gui.setRange(0, self.play_position.range[1])
         self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
@@ -380,19 +396,29 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.frame_number = -1
         self.yuv_array = np.empty((1), dtype=np.uint8)
 
-    def get_next_frame(self, verbose=False):
+    def get_next_frame(self, verbose=False) -> bool:
         t = time.perf_counter()
-        self._frame = next(self._frame_generator)
-        self.frame_number += 1
-        d = time.perf_counter()-t
-        s = 'gen '
-        s += 'key ' if self._frame.key_frame else ''
-        s += f'{d:0.3f} ' if d>=0.001 else ''
-        s += f'{self._frame.pict_type}'
-        s += f' {self._frame.pts}'
-        if verbose:
-            if s != 'gen P': print(s)
-            else: print(s)
+        try:
+            self._frame = next(self._frame_generator)
+            self.frame_number += 1
+        except (StopIteration, av.EOFError) as e:
+            print(f"Reached end of video stream: Exception {e}")
+            # Reset valid generator
+            if self._scheduler._timer.isActive():
+                self.play_pause()
+            self._frame_generator : Generator = self._container.decode(video=0)
+            return False
+        else:
+            d = time.perf_counter()-t
+            s = 'gen '
+            s += 'key ' if self._frame.key_frame else ''
+            s += f'{d:0.3f} ' if d>=0.001 else ''
+            s += f'{self._frame.pict_type}'
+            s += f' {self._frame.pts}'
+            if verbose:
+                if s != 'gen P': print(s)
+                else: print(s)
+            return True
 
 def main():
     import argparse
@@ -404,14 +430,6 @@ def main():
     args = parser.parse_args()
     # _params = vars(args)
     print(args)
-
-    # probe = ffmpeg.probe(args.input_video[0])
-    # pp = pprint.PrettyPrinter(indent=4)
-    # pp.pprint(probe)
-    # video_stream = next((stream for stream in probe['streams'] if stream['codec_type'] == 'video'), None)
-    # width = int(video_stream['width'])
-    # height = int(video_stream['height'])
-    # print(f" width x height = {width}x{height}")
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
     # These 3 lines solve a flickering issue by allowing immediate repaint
@@ -448,9 +466,9 @@ def main():
     if player2:
         sch.add_player(player2)
 
-    button_scheduler = QtWidgets.QPushButton("Scheduler")
-    main_layout.addWidget(button_scheduler)
-    button_scheduler.clicked.connect(sch.start_decode)
+    # button_scheduler = QtWidgets.QPushButton("Scheduler")
+    # main_layout.addWidget(button_scheduler)
+    # button_scheduler.clicked.connect(sch.start_decode)
 
     player1.set_video(args.input_video[0])
     player1.show()

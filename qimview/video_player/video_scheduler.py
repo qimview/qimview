@@ -62,9 +62,6 @@ class VideoScheduler:
         """ Check if we need to get a new frame based on the time spent """
         self._current_player = (self._current_player + 1) % len(self._players)
         p : 'VideoPlayerAV' = self._players[self._current_player]
-        # print('==')
-        # st = time.perf_counter()
-        # if self._frame is None: self.get_next_frame()
         assert p._frame is not None, "No frame available"
         time_base = float(p._frame.time_base)
         if p._pause:
@@ -79,14 +76,16 @@ class VideoScheduler:
 
         if time_spent>next_frame_time:
             iter = 0
-            while time_spent>next_frame_time and iter<p._max_skip:
+            ok = True
+            while time_spent>next_frame_time and iter<p._max_skip and ok:
                 if iter>0:
                     self._skipped[self._current_player] +=1
                     # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
-                p.get_next_frame()
-                next_frame_time = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
-                time_spent = time.perf_counter() - self._start_clock_time
-                iter +=1
+                ok = p.get_next_frame()
+                if ok:
+                    next_frame_time = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
+                    time_spent = time.perf_counter() - self._start_clock_time
+                    iter +=1
             if iter>1:
                 print(f" skipped {iter-1} frames {self._skipped[self._current_player]} / {p.frame_number},")
             return True
