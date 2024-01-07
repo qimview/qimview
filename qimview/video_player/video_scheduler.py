@@ -42,6 +42,7 @@ class VideoScheduler:
             self._timer.stop()
             for idx, p in enumerate(self._players):
                 p.set_pause()
+                p.update_position()
                 print(f" player {idx}: "
                     f"skipped = {self._skipped[idx]} {self._displayed_pts[idx]/p._ticks_per_frame}")
                 p.display_times()
@@ -107,7 +108,8 @@ class VideoScheduler:
 
             # p.repaint()
             self._displayed_pts[self._current_player] = p._frame.pts
-            p.update_position()
+            if p._frame.key_frame:
+                p.update_position()
             # print(f" done {time.perf_counter():0.4f}")
 
     def _timer_cmds(self):

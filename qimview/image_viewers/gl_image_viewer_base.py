@@ -181,7 +181,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         scale  = 1
         try:
             self.updateViewPort()
-            scale = self.updateTransforms()
+            scale = self.updateTransforms(make_current=False)
             self.myPaintGL()
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
@@ -214,7 +214,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         Sets the image position from the cursor in proportion of the image dimension
         :return:
         """
-        self.updateTransforms()
+        self.updateTransforms(make_current=True, force=True)
         ratio = self.screen().devicePixelRatio()
         self.print_log("ratio {}".format(ratio))
         pos_x = cursor_x * ratio
@@ -295,11 +295,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.print_log(" failed glViewport {}".format(e))
         self.print_timing(add_total=True)
 
-    def updateTransforms(self) -> float:
+    def updateTransforms(self, make_current=True, force=True) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
-        self.makeCurrent()
+        if make_current:
+            self.makeCurrent()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
         w = self._width
@@ -346,9 +347,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
     def get_mouse_gl_coordinates(self, x, y):
         modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
+        # print(f"modelview {modelview}")
         projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
+        # print(f"projection {projection}")
         viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
+        # print(f"viewport {viewport}")
         posX, posY, posZ = glu.gluUnProject(x, y, 0, modelview, projection, viewport)
+        # print(f"get_mouse_gl_coordinates({x},{y}) -> {posX} {posY}")
         return posX, posY
 
     # def paintEvent(self, event):

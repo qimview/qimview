@@ -206,6 +206,15 @@ class ImageViewer:
     def display_timing(self, v):
         self._display_timing = v
 
+    # --- show_text
+    @property
+    def show_text(self):
+        return self._show_text
+
+    @show_text.setter
+    def show_text(self, v):
+        self._show_text = v
+
     # --- verbose
     @property
     def verbose(self):

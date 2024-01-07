@@ -24,6 +24,7 @@ class ImageViewerKeyEvents:
                 'I'     : self.toggleIntensityLine,
                 'O'     : self.toggleOverlay,
                 'S'     : self.toggleStats,
+                'T'     : self.toggleText,
                 'F1'    : self.helpDialog,
                 'F11'   : self.toggleFullScreen,
                 'Esc'   : self.exitFullScreen,
@@ -160,17 +161,22 @@ class ImageViewerKeyEvents:
     
     def toggleOverlay(self) ->bool:
         """ Toggle overlay display """
-        self._viewer._show_overlay   = not self._viewer._show_overlay
+        self._viewer._show_overlay = not self._viewer._show_overlay
         return self.updateAndAccept()
     
     def toggleCursor(self) ->bool:
         """ Toggle cursor display """
-        self._viewer.show_cursor    = not self._viewer.show_cursor
+        self._viewer.show_cursor = not self._viewer.show_cursor
         return self.updateAndAccept()
     
     def toggleStats(self) ->bool:
         """ Toggle stats display """
-        self._viewer.show_stats     = not self._viewer.show_stats
+        self._viewer.show_stats = not self._viewer.show_stats
+        return self.updateAndAccept()
+
+    def toggleText(self) ->bool:
+        """ Toggle text/info display """
+        self._viewer.show_text = not self._viewer.show_text
         return self.updateAndAccept()
 
     def toggleDifferences(self) ->bool: 

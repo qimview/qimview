@@ -381,7 +381,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
 
-        _gl.glUniform1i( self.channels_location, self._image.channels)
+        _gl.glUniform1i( self.channels_location, self._image.channels.value)
 
         # set color transformation parameters
         self.print_log("levels {} {}".format(self.filter_params.black_level.value,
@@ -441,7 +441,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         self.print_timing(force=True)
 
-    def updateTransforms(self) -> float:
+    def updateTransforms(self, make_current=False, force=True) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         if self.display_timing:
@@ -452,9 +452,10 @@ class GLImageViewerShaders(GLImageViewerBase):
         # Deduce new scale from mouse vertical displacement
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.tex_height)
         new_transform_params = [w,h,dx,dy,scale]
-        if self._transform_param != new_transform_params:
+        if self._transform_param != new_transform_params or force:
             # update the window size
-            self.makeCurrent()
+            if make_current:
+                self.makeCurrent()
             gl.glMatrixMode(gl.GL_PROJECTION)
             gl.glLoadIdentity()
             translation_unit = min(w, h)/2
