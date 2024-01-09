@@ -52,6 +52,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         size_policy.setVerticalPolicy  (QtWidgets.QSizePolicy.Policy.Ignored)
         self.setSizePolicy(size_policy)
         # self.setAlignment(QtCore.Qt.AlignCenter )
+        # output crop [ width min, height min, width max, height max]
         self.output_crop = np.array([0., 0., 1., 1.], dtype=np.float32)
         self.zoom_center = np.array([0.5, 0.5, 0.5, 0.5])
         self.setFocusPolicy(QtCore.Qt.FocusPolicy.ClickFocus)

@@ -203,6 +203,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         self._vertex_buffer       : QOpenGLBuffer | None = None
         self._vertex_buffer_param                        = None
         self._transform_param                            = None
+        # output crop [ width min, height min, width max, height max]
+        self._output_crop                                = np.array([0., 0., 1., 1.], dtype=np.float32)
 
     def set_shaders(self):
         if self.program_RGB is None:
@@ -238,6 +240,10 @@ class GLImageViewerShaders(GLImageViewerBase):
             shaders.glDeleteShader(vs)
             shaders.glDeleteShader(fs)
 
+    def set_crop(self, crop):
+        self._output_crop = crop
+        self.setBufferData()
+
     def setVerticesBufferData(self):
         try:
             x0, x1, y0, y1 = self.image_centered_position()
@@ -266,14 +272,17 @@ class GLImageViewerShaders(GLImageViewerBase):
             self._vertex_buffer_param = new_vb_params
 
     def setBufferData(self):
+        # To crop the texture, we may want to change these values
+        # For example, in video frames we may need to crop at the right
         # set background UV
         backgroundUV = [
-            0.0, 0.0,
-            0.0, 1.0,
-            1.0, 0.0,
-            1.0, 0.0,
-            0.0, 1.0,
-            1.0, 1.0]
+            self._output_crop[0], self._output_crop[1],
+            self._output_crop[0], self._output_crop[3],
+            self._output_crop[2], self._output_crop[1],
+            self._output_crop[2], self._output_crop[1],
+            self._output_crop[0], self._output_crop[3],
+            self._output_crop[2], self._output_crop[3],
+            ]
         uvData = np.array(backgroundUV, np.float32)
 
         self.uvBuffer = QOpenGLBuffer()

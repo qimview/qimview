@@ -383,6 +383,12 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.set_image_YUV420(y,u,v, f"{self._basename}: {self.get_frame_number()}")
         # update is not immediate
         # self.widget.viewer_update()
+        pl = frame.planes[0]
+        if pl.line_size != pl.width and self.viewer_class == GLImageViewerShaders:
+            # Apply crop on the right
+            self.widget.set_crop(np.array([0,0,pl.width/pl.line_size,1], dtype=np.float32))
+        else:
+            self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()
         # self.widget.repaint()
 
