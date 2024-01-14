@@ -1,16 +1,10 @@
 
 from typing import Optional
 import time
+import av
 from av import container, VideoFrame
 from av.container import streams
-from qimview.video_player.video_frame_buffer import VideoFrameBuffer
-
-
-class EndOfVideo(Exception):
-    """Exception raised when end of video is reached.  """
-    def __init__(self, message="End of video reached"):
-        self.message = message
-        super().__init__(self.message)
+from qimview.video_player.video_frame_buffer import VideoFrameBuffer, EndOfVideo
 
 
 class VideoFrameProvider:
@@ -144,9 +138,6 @@ class VideoFrameProvider:
         except (StopIteration, av.EOFError) as e:
             print(f"Reached end of video stream: Exception {e}")
             # Reset valid generator
-            # TODO
-            # if self._scheduler._timer.isActive():
-            #     self.play_pause()
             self._frame_buffer.reset()
             raise EndOfVideo() from e
         else:

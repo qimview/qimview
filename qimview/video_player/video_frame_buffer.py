@@ -2,9 +2,16 @@ from typing import Optional, Iterator
 import queue
 import time
 import threading
+import av
 from av import container, VideoFrame
 from av.frame import Frame
 
+
+class EndOfVideo(Exception):
+    """Exception raised when end of video is reached.  """
+    def __init__(self, message="End of video reached"):
+        self.message = message
+        super().__init__(self.message)
 
 class VideoFrameBuffer:
     def __init__(self, container: container.InputContainer, maxsize = 10):
@@ -27,16 +34,17 @@ class VideoFrameBuffer:
                 if self._frame_generator:
                     try:
                         item = next(self._frame_generator)
-                    except StopIteration as e:
+                    except (StopIteration, av.EOFError):
                         self._running = False
-                        self._frame_generator = None
-                        raise StopIteration from e
+                        # Reset generator ?
+                        self._frame_generator = self._container.decode(video=0)
+                        # raise StopIteration from e
             if item is not None:
                 try:
                     self._queue.put_nowait(item)
                     # print(f"added item, qsize = {self._queue.qsize()}")
                 except queue.Full:
-                    print("*", end="")
+                    # print("*", end="")
                     pass
                 else:
                     item = None
@@ -72,10 +80,10 @@ class VideoFrameBuffer:
             try:
                 res = next(self._frame_generator)
                 return res
-            except StopIteration as e:
+            except (StopIteration, av.EOFError) as e:
                 self._running = False
                 self._frame_generator = None
-                raise StopIteration from e
+                raise EndOfVideo from e
         else:
             return None
 

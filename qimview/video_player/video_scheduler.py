@@ -1,6 +1,7 @@
 from typing import List, TYPE_CHECKING
 import time
 from qimview.utils.qt_imports import QtCore
+from qimview.video_player.video_frame_provider import EndOfVideo
 if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
@@ -42,7 +43,7 @@ class VideoScheduler:
                 p.set_pause()
                 p.update_position()
                 print(f" player {idx}: "
-                     f"skipped = {self._skipped[idx]}"
+                     f"skipped = {self._skipped[idx]} "
                      f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
                 p.display_times()
         else:
@@ -51,9 +52,9 @@ class VideoScheduler:
     def play(self):
         """ play videos """
         if not self._timer.isActive():
+            self._start_clock_time = time.perf_counter()
             for p in self._players:
                 p.set_play()
-            self._start_clock_time = time.perf_counter()
             self._timer.start()
         else:
             print("timer already active")
@@ -85,7 +86,6 @@ class VideoScheduler:
             self.pause()
             return False
         # assert p._frame is not None, "No frame available"
-        time_base = p._frame_provider._time_base
         if p._pause:
             print(f"paused")
             return False
@@ -105,7 +105,12 @@ class VideoScheduler:
                     if iter>0:
                         self._skipped[self._current_player] +=1
                         # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
-                    ok = p._frame_provider.get_next_frame()
+                    try:
+                        ok = p._frame_provider.get_next_frame()
+                    except EndOfVideo as e:
+                        if self._timer.isActive():
+                            p.play_pause()
+                        raise EndOfVideo from e
                     if ok:
                         next_frame_time = p._frame_provider.get_time() \
                                           + p._frame_provider._frame_duration \
@@ -151,7 +156,7 @@ class VideoScheduler:
         try:
             if self.check_next_frame():
                 self._display_frame()
-        except StopIteration:
+        except EndOfVideo:
             print("End of video")
             self.pause()
 
