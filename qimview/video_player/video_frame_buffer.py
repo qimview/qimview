@@ -7,7 +7,7 @@ from av.frame import Frame
 
 
 class VideoFrameBuffer:
-    def __init__(self, container, maxsize = 10):
+    def __init__(self, container: container.InputContainer, maxsize = 10):
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
         self._maxsize : int = maxsize
         self._queue = queue.Queue(maxsize=self._maxsize)
@@ -40,7 +40,7 @@ class VideoFrameBuffer:
                     pass
                 else:
                     item = None
-            time.sleep(3/1000)
+            time.sleep(1/1000)
 
     def set_generator(self, g):
         self._frame_generator = g
@@ -93,6 +93,3 @@ class VideoFrameBuffer:
         else:
             print("Cannot start already running thread")
 
-# fb = VideoFrameBuffer()
-# # Turn-on the worker thread.
-# threading.Thread(target=fb.worker, daemon=True).start()
