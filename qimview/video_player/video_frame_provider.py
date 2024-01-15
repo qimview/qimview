@@ -50,7 +50,8 @@ class VideoFrameProvider:
     def set_input_container(self, container: container.InputContainer):
         self._container = container
         self._frame_buffer = VideoFrameBuffer(container)
-
+        self._frame = None
+        
         self._container.streams.video[0].thread_type = "FRAME"
         self._container.streams.video[0].thread_count = 4
         self._video_stream = self._container.streams.video[0]

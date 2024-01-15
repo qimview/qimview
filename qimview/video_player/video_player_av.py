@@ -36,21 +36,28 @@ class AverageTime:
 class VideoPlayerAV(QtWidgets.QWidget):
 
     @staticmethod
-    def useful_array_uint8(plane, crop=True):
+    def useful_array(plane, crop=True, dtype=np.uint8):
         """
         Return the useful part of the VideoPlane as a single dimensional array.
 
         We are simply discarding any padding which was added for alignment.
         """
-        total_line_size = abs(plane.line_size)
-        arr = np.frombuffer(plane, np.uint8).reshape(-1, total_line_size)
+        total_line_size = int(abs(plane.line_size)/dtype().itemsize)
+        arr = np.frombuffer(plane, dtype).reshape(-1, total_line_size)
         if crop:
             arr = arr[:,:plane.width]
         return np.ascontiguousarray(arr)
 
     @staticmethod
     def to_ndarray_v1(frame, yuv_array: np.ndarray, crop=False) -> Optional[np.ndarray]:
-        if frame.format.name in ('yuv420p', 'yuvj420p'):
+        match frame.format.name:
+            case ('yuv420p', 'yuvj420p'):
+                dtype = np.uint8
+            case 'yuv420p10le':
+                dtype = np.uint16
+            case _:
+                dtype = None
+        if dtype is not None:
             # assert frame.width % 2 == 0
             # assert frame.height % 2 == 0
             # assert frame.planes[0].line_size == 2*frame.planes[1].line_size
@@ -58,12 +65,12 @@ class VideoPlayerAV(QtWidgets.QWidget):
             # assert frame.planes[1].line_size == frame.planes[2].line_size
             # assert frame.planes[1].width     == frame.planes[2].width
             width = frame.planes[0].line_size
-            v0 = VideoPlayerAV.useful_array_uint8(frame.planes[0], crop=crop).ravel()
-            v1 = VideoPlayerAV.useful_array_uint8(frame.planes[1], crop=crop).ravel()
-            v2 = VideoPlayerAV.useful_array_uint8(frame.planes[2], crop=crop).ravel()
+            v0 = VideoPlayerAV.useful_array(frame.planes[0], crop=crop, dtype=dtype).ravel()
+            v1 = VideoPlayerAV.useful_array(frame.planes[1], crop=crop, dtype=dtype).ravel()
+            v2 = VideoPlayerAV.useful_array(frame.planes[2], crop=crop, dtype=dtype).ravel()
             total_size = v0.size+ v1.size + v2.size
             if yuv_array.size != total_size:
-                output_array = np.empty((total_size,), dtype=np.uint8)
+                output_array = np.empty((total_size,), dtype=dtype)
             else:
                 output_array = yuv_array
             output_array[0:v0.size]                                   = v0
@@ -78,10 +85,17 @@ class VideoPlayerAV(QtWidgets.QWidget):
             return None
 
     def to_yuv(frame) -> Optional[List[np.ndarray]]:
-        if frame.format.name in ('yuv420p', 'yuvj420p'):
-            y = VideoPlayerAV.useful_array_uint8(frame.planes[0], crop=False)
-            u = VideoPlayerAV.useful_array_uint8(frame.planes[1], crop=False)
-            v = VideoPlayerAV.useful_array_uint8(frame.planes[2], crop=False)
+        match frame.format.name:
+            case ('yuv420p', 'yuvj420p'):
+                dtype = np.uint8
+            case 'yuv420p10le':
+                dtype = np.uint16
+            case _:
+                dtype = None
+        if dtype is not None:
+            y = VideoPlayerAV.useful_array(frame.planes[0], crop=False, dtype=dtype)
+            u = VideoPlayerAV.useful_array(frame.planes[1], crop=False, dtype=dtype)
+            v = VideoPlayerAV.useful_array(frame.planes[2], crop=False, dtype=dtype)
             return [y,u,v]
         else:
             return None
@@ -171,6 +185,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
     def set_video(self, filename):
         self._filename = filename
         self._basename = os.path.basename(self._filename)
+        self._initialized = False
 
     def set_pause(self):
         """ Method called from scheduler """
@@ -238,9 +253,16 @@ class VideoPlayerAV(QtWidgets.QWidget):
         return False
 
     def set_image(self, np_array, im_name, force_new=False):
+        prec = 8
+        match np_array.dtype:
+            case np.uint8:  prec=8
+            case np.uint16:
+                np_array = (np_array/4).astype(np.uint8)
+                prec=8
+
         if self._im is None or force_new:
             format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-            self._im = ViewerImage(np_array, channels = format)
+            self._im = ViewerImage(np_array, channels = format, precision=prec)
             self.widget.set_image_fast(self._im)
         else:
             if self._im.data.shape == np_array.shape:
@@ -248,12 +270,21 @@ class VideoPlayerAV(QtWidgets.QWidget):
                 self.widget.image_id += 1
             else:
                 format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-                self._im = ViewerImage(np_array, channels = format)
+                self._im = ViewerImage(np_array, channels = format, precision=prec)
                 self.widget.set_image_fast(self._im)
         self.widget.image_name = im_name
 
     def set_image_YUV420(self, y, u, v, im_name):
-        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420)
+        prec = 8
+        match y.dtype:
+            case np.uint8:  prec=8
+            case np.uint16:
+                y = (y/4).astype(np.uint8)
+                u = (u/4).astype(np.uint8)
+                v = (v/4).astype(np.uint8)
+                prec = 8
+
+        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
         self._im.u = u
         self._im.v = v
         self.widget.set_image_fast(self._im)
