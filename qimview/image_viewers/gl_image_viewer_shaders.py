@@ -79,6 +79,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform sampler2D YTex;
         uniform sampler2D UTex;
         uniform sampler2D VTex;
+        uniform float texture_scale;
         uniform int channels; // channel representation
         uniform float white_level;
         uniform float black_level;
@@ -91,9 +92,9 @@ class GLImageViewerShaders(GLImageViewerBase):
         out vec3 colour;
     
         void main() {
-          y = texture(YTex, UV).r;
-          u = texture(UTex, UV).r;
-          v = texture(VTex, UV).r;
+          y = texture(YTex, UV).r*texture_scale;
+          u = texture(UTex, UV).r*texture_scale;
+          v = texture(VTex, UV).r*texture_scale;
 
           y = 1.1643*(y-0.0625);
           u = u-0.5;
@@ -115,7 +116,7 @@ class GLImageViewerShaders(GLImageViewerBase):
           colour.rgb = vec3(r,g,b);
 
           // black level
-          colour.rgb = colour.rgb/max_value*max_type;
+          colour.rgb = colour.rgb/(max_value*texture_scale)*max_type;
           colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
 
           // white balance
@@ -365,6 +366,7 @@ class GLImageViewerShaders(GLImageViewerBase):
             self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
             self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
             self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+            self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
         else:
             self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
         self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
@@ -387,6 +389,13 @@ class GLImageViewerShaders(GLImageViewerBase):
             _gl.glUniform1i(self.uYTex, 0)
             _gl.glUniform1i(self.uUTex, 2)
             _gl.glUniform1i(self.uVTex, 4)
+            match self._image.data.dtype:
+                case np.uint8:  texture_scale = 1
+                # Normalize image to full intensity range
+                case np.uint16: texture_scale = 1<<(16-self._image.precision)
+                case _: texture_scale = 1
+            # print(f"-- texture_scale = {texture_scale}")
+            _gl.glUniform1f( self.texture_scale_location, texture_scale)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
 

@@ -46,12 +46,14 @@ class VideoPlayerAV(QtWidgets.QWidget):
         arr = np.frombuffer(plane, dtype).reshape(-1, total_line_size)
         if crop:
             arr = arr[:,:plane.width]
-        return np.ascontiguousarray(arr)
+            return np.ascontiguousarray(arr)
+        else:
+            return arr
 
     @staticmethod
     def to_ndarray_v1(frame, yuv_array: np.ndarray, crop=False) -> Optional[np.ndarray]:
         match frame.format.name:
-            case ('yuv420p', 'yuvj420p'):
+            case 'yuv420p' | 'yuvj420p':
                 dtype = np.uint8
             case 'yuv420p10le':
                 dtype = np.uint16
@@ -64,7 +66,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
             # assert frame.planes[0].width     == 2*frame.planes[1].width
             # assert frame.planes[1].line_size == frame.planes[2].line_size
             # assert frame.planes[1].width     == frame.planes[2].width
-            width = frame.planes[0].line_size
+            # width = frame.planes[0].line_size
             v0 = VideoPlayerAV.useful_array(frame.planes[0], crop=crop, dtype=dtype).ravel()
             v1 = VideoPlayerAV.useful_array(frame.planes[1], crop=crop, dtype=dtype).ravel()
             v2 = VideoPlayerAV.useful_array(frame.planes[2], crop=crop, dtype=dtype).ravel()
@@ -86,11 +88,12 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def to_yuv(frame) -> Optional[List[np.ndarray]]:
         match frame.format.name:
-            case ('yuv420p', 'yuvj420p'):
+            case 'yuv420p' | 'yuvj420p':
                 dtype = np.uint8
             case 'yuv420p10le':
                 dtype = np.uint16
             case _:
+                print(f"Unknow format {frame.format.name}")
                 dtype = None
         if dtype is not None:
             y = VideoPlayerAV.useful_array(frame.planes[0], crop=False, dtype=dtype)
@@ -254,11 +257,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def set_image(self, np_array, im_name, force_new=False):
         prec = 8
-        match np_array.dtype:
-            case np.uint8:  prec=8
-            case np.uint16:
-                np_array = (np_array/4).astype(np.uint8)
-                prec=8
 
         if self._im is None or force_new:
             format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
@@ -278,11 +276,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
         prec = 8
         match y.dtype:
             case np.uint8:  prec=8
-            case np.uint16:
-                y = (y/4).astype(np.uint8)
-                u = (u/4).astype(np.uint8)
-                v = (v/4).astype(np.uint8)
-                prec = 8
+            case np.uint16: prec=10
 
         self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
         self._im.u = u
@@ -368,9 +362,10 @@ class VideoPlayerAV(QtWidgets.QWidget):
         # update is not immediate
         # self.widget.viewer_update()
         pl = frame.planes[0]
-        if pl.line_size != pl.width and self.viewer_class == GLImageViewerShaders:
+        im_width = y.data.shape[1]
+        if im_width != pl.width and self.viewer_class == GLImageViewerShaders:
             # Apply crop on the right
-            self.widget.set_crop(np.array([0,0,pl.width/pl.line_size,1], dtype=np.float32))
+            self.widget.set_crop(np.array([0,0,im_width/pl.line_size,1], dtype=np.float32))
         else:
             self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()

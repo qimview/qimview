@@ -52,8 +52,8 @@ class VideoFrameProvider:
         self._frame_buffer = VideoFrameBuffer(container)
         self._frame = None
         
-        self._container.streams.video[0].thread_type = "FRAME"
-        self._container.streams.video[0].thread_count = 4
+        self._container.streams.video[0].thread_type = "AUTO"
+        self._container.streams.video[0].thread_count = 8
         self._video_stream = self._container.streams.video[0]
         print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
 

@@ -28,12 +28,18 @@ class VideoFrameBuffer:
 
     def _worker(self):
         item  = None
+        nb = 0
+        total_time = 0
         while self._running:
             if item is None:
                 # compute the item
                 if self._frame_generator:
                     try:
+                        st = time.perf_counter()
                         item = next(self._frame_generator)
+                        extract_time = time.perf_counter() - st
+                        total_time += extract_time
+                        nb += 1
                     except (StopIteration, av.EOFError):
                         self._running = False
                         # Reset generator ?
@@ -43,6 +49,8 @@ class VideoFrameBuffer:
                 try:
                     self._queue.put_nowait(item)
                     # print(f"added item, qsize = {self._queue.qsize()}")
+                    if nb%30 == 0:
+                        print(f" {nb} Av extraction time: {total_time/nb:0.3f} queue: {self._queue.qsize()}")
                 except queue.Full:
                     # print("*", end="")
                     pass
