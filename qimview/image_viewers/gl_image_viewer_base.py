@@ -129,9 +129,6 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print("self._image is None")
             return False
 
-        img_height, img_width = self._image.data.shape[:2]
-        gl_type = self._gl_types[self._image.data.dtype.name]
-
         if self._image.channels == ImageFormat.CH_YUV420:
             # Set Y, U and V
             if self.texture_yuv is None:

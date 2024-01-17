@@ -100,22 +100,29 @@ class GLTexture:
         if image.channels == ImageFormat.CH_YUV420:
             # TODO: check if this condition is sufficient
             LUM = gl.GL_LUMINANCE
+            match image.data.dtype:
+                case np.uint8:  format = gl.GL_R8
+                # TODO: check if SHORT or UNSIGNED_SHORT
+                case np.uint16: format = gl.GL_R16
+                case _:
+                    print(f"create_texture_gl(): Image format not supported {image.data.dtype}")
+                    format = gl.GL_R8
             w, h = width, height
             w2, h2 = int(w/2), int(h/2)
             if (self.tex_width,self.tex_height) != (width,height) or self.textureY is None or \
                   self.textureU is None or self.textureV is None:
                 self.textureY = self.new_texture(self.textureY)
                 self.set_default_parameters(self.textureY)
-                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, w, h, 0, LUM, gl_type, image.data)
+                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
                 self.tex_width, self.tex_height = width, height
                 # U
                 self.textureU = self.new_texture(self.textureU)
                 self.set_default_parameters(self.textureU)
-                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, w2, h2, 0, LUM, gl_type, image.u)
+                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
                 # V
                 self.textureV = self.new_texture(self.textureY)
                 self.set_default_parameters(self.textureV)
-                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, LUM, w2, h2, 0,LUM, gl_type, image.v)
+                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
                 self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
                 self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, LUM, gl_type, image.data)

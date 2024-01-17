@@ -1,6 +1,7 @@
 from typing import List, TYPE_CHECKING
 import time
 from qimview.utils.qt_imports import QtCore
+from qimview.video_player.video_frame_provider import EndOfVideo
 if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
@@ -32,10 +33,7 @@ class VideoScheduler:
         print("_init_player")
         assert played_idx>=0 and played_idx<len(self._players), "Wrong player idx"
         p = self._players[played_idx]
-        p.init_video_av()
-        # get the first frame which is slower
-        p.get_next_frame()
-        p.display_frame(p._frame)
+        p.init_and_display()
 
     def pause(self):
         """ pause all playing videos """
@@ -45,7 +43,8 @@ class VideoScheduler:
                 p.set_pause()
                 p.update_position()
                 print(f" player {idx}: "
-                    f"skipped = {self._skipped[idx]} {self._displayed_pts[idx]/p._ticks_per_frame}")
+                     f"skipped = {self._skipped[idx]} "
+                     f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
                 p.display_times()
         else:
             print("timer not active")
@@ -53,10 +52,10 @@ class VideoScheduler:
     def play(self):
         """ play videos """
         if not self._timer.isActive():
+            self._start_clock_time = time.perf_counter()
             for p in self._players:
                 p.set_play()
             self._timer.start()
-            self._start_clock_time = time.perf_counter()
         else:
             print("timer already active")
 
@@ -71,58 +70,82 @@ class VideoScheduler:
         if self._playback_speed != 1:
             time_spent = time_spent*self._playback_speed
         return time_spent
+    
+    def reset_time(self, player: 'VideoPlayerAV', expected_time: float):
+        # Not working well to set time during playing
+        # player.set_time(expected_time, exact=False)
+        # TODO: does it work for several players, or _start_clock_time should be per player?
+        self._start_clock_time = time.perf_counter()
+        player._start_video_time = player._frame_provider.get_time()
 
-    def check_next_frame(self, player_idx: int = 0, progress_callback=None):
+    def check_next_frame(self, player_idx: int = 0, progress_callback=None) -> bool:
         """ Check if we need to get a new frame based on the time spent """
         self._current_player = (self._current_player + 1) % len(self._players)
         p : 'VideoPlayerAV' = self._players[self._current_player]
-        assert p._frame is not None, "No frame available"
-        time_base = float(p._frame.time_base)
+        if not p._frame_provider.frame:
+            self.pause()
+            return False
+        # assert p._frame is not None, "No frame available"
         if p._pause:
-            p._pause_time = float(p._frame.pts * time_base)
             print(f"paused")
             return False
-        next_frame_time : float = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
+        next_frame_time : float = p._frame_provider.get_time() \
+                                  + p._frame_provider._frame_duration \
+                                  - p._start_video_time
         time_spent = self.get_time_spent()
         # if time_spent >= 10:
         #     self.pause()
         # print(f"{next_frame_time} {time_spent}")
 
         if time_spent>next_frame_time:
-            iter = 0
-            ok = True
-            while time_spent>next_frame_time and iter<p._max_skip and ok:
-                if iter>0:
-                    self._skipped[self._current_player] +=1
-                    # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
-                ok = p.get_next_frame()
-                if ok:
-                    next_frame_time = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
-                    time_spent = self.get_time_spent()
-                    iter +=1
-            if iter>1:
-                print(f" skipped {iter-1} frames {self._skipped[self._current_player]} / {p.frame_number},")
-            return True
+            if time_spent-next_frame_time<1:
+                iter = 0
+                ok = True
+                while time_spent>next_frame_time and iter<p._max_skip*self._playback_speed and ok:
+                    if iter>0:
+                        self._skipped[self._current_player] +=1
+                        # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
+                    try:
+                        ok = p._frame_provider.get_next_frame()
+                    except EndOfVideo as e:
+                        if self._timer.isActive():
+                            p.play_pause()
+                        raise EndOfVideo from e
+                    if ok:
+                        next_frame_time = p._frame_provider.get_time() \
+                                          + p._frame_provider._frame_duration \
+                                          - p._start_video_time
+                        time_spent = self.get_time_spent()
+                        iter +=1
+                # if iter>1:
+                #     print(f" skipped {iter-1} frames {self._skipped[self._current_player]} / {p.frame_number},")
+                return True
+            else:
+                self.reset_time(p, next_frame_time)
+                return False
         else:
             return False
 
     def _display_frame(self):
         p : 'VideoPlayerAV' = self._players[self._current_player]
-        if p._frame and p._frame.pts != self._displayed_pts[self._current_player]:
+        if p._frame_provider._frame and \
+            p._frame_provider._frame.pts != self._displayed_pts[self._current_player]:
             # print(f"*** {p._name} {time.perf_counter():0.4f}", end=' --')
-            frame_time : float = float(p._frame.pts * float(p._frame.time_base)) - p._start_video_time
+            frame_time : float = p._frame_provider.get_time() - p._start_video_time
             time_spent = self.get_time_spent()
-            if abs(time_spent-frame_time)>= 0.04: # self._timer.interval()/1000*2:
+            if abs(time_spent-frame_time)>= 0.2: # self._timer.interval()/1000*2:
                 print(f" frame {frame_time:0.3f} at time {time_spent:0.3f}")
-            p.display_frame(p._frame)
+            p.display_frame()
             # QtCore.QTimer.singleShot(1, loop.exit)
             # loop.exec()
             # QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
 
             # p.repaint()
-            self._displayed_pts[self._current_player] = p._frame.pts
-            if p._frame.key_frame:
+            self._displayed_pts[self._current_player] = p._frame_provider._frame.pts
+            diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
+            if p._frame_provider._frame.key_frame or diff>1:
                 p.update_position()
+
             # print(f" done {time.perf_counter():0.4f}")
 
     def _timer_cmds(self):
@@ -133,7 +156,7 @@ class VideoScheduler:
         try:
             if self.check_next_frame():
                 self._display_frame()
-        except StopIteration:
+        except EndOfVideo:
             print("End of video")
             self.pause()
 
@@ -141,8 +164,8 @@ class VideoScheduler:
         # self._thread_pool.waitForDone()
         # print(f"time spent {(time.perf_counter()-self._start_clock_time)*1000:0.2f} ms")
 
-    def start_decode(self, start_time=0):
-        print("start_decode")
+    def start_decode(self, start_time : float =0):
+        print(f"start_decode({start_time:0.3f})")
         # self.set_time(start_time, self._container)
         print(f" nb videos {len(self._players)}")
         for idx, p  in enumerate(self._players):
@@ -169,4 +192,5 @@ class VideoScheduler:
 
         # Set a 5 ms counter
         self._timer.timeout.connect(self._timer_cmds)
-        self._timer.start()
+        self.play()
+        # self._timer.start()

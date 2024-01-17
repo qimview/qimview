@@ -12,9 +12,11 @@ from qimview.image_viewers.qt_image_viewer import QTImageViewer
 from qimview.image_viewers.gl_image_viewer_shaders import GLImageViewerShaders
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from qimview.utils.thread_pool import ThreadPool
-from qimview.video_player.video_scheduler     import VideoScheduler
-from qimview.parameters.numeric_parameter     import NumericParameter
-from qimview.parameters.numeric_parameter_gui import NumericParameterGui
+from qimview.video_player.video_scheduler      import VideoScheduler
+from qimview.parameters.numeric_parameter      import NumericParameter
+from qimview.parameters.numeric_parameter_gui  import NumericParameterGui
+from qimview.video_player.video_frame_buffer   import VideoFrameBuffer
+from qimview.video_player.video_frame_provider import VideoFrameProvider
 
 
 class AverageTime:
@@ -34,34 +36,43 @@ class AverageTime:
 class VideoPlayerAV(QtWidgets.QWidget):
 
     @staticmethod
-    def useful_array_uint8(plane, crop=True):
+    def useful_array(plane, crop=True, dtype=np.uint8):
         """
         Return the useful part of the VideoPlane as a single dimensional array.
 
         We are simply discarding any padding which was added for alignment.
         """
-        total_line_size = abs(plane.line_size)
-        arr = np.frombuffer(plane, np.uint8).reshape(-1, total_line_size)
+        total_line_size = int(abs(plane.line_size)/dtype().itemsize)
+        arr = np.frombuffer(plane, dtype).reshape(-1, total_line_size)
         if crop:
             arr = arr[:,:plane.width]
-        return np.ascontiguousarray(arr)
+            return np.ascontiguousarray(arr)
+        else:
+            return arr
 
     @staticmethod
     def to_ndarray_v1(frame, yuv_array: np.ndarray, crop=False) -> Optional[np.ndarray]:
-        if frame.format.name in ('yuv420p', 'yuvj420p'):
+        match frame.format.name:
+            case 'yuv420p' | 'yuvj420p':
+                dtype = np.uint8
+            case 'yuv420p10le':
+                dtype = np.uint16
+            case _:
+                dtype = None
+        if dtype is not None:
             # assert frame.width % 2 == 0
             # assert frame.height % 2 == 0
             # assert frame.planes[0].line_size == 2*frame.planes[1].line_size
             # assert frame.planes[0].width     == 2*frame.planes[1].width
             # assert frame.planes[1].line_size == frame.planes[2].line_size
             # assert frame.planes[1].width     == frame.planes[2].width
-            width = frame.planes[0].line_size
-            v0 = VideoPlayerAV.useful_array_uint8(frame.planes[0], crop=crop).ravel()
-            v1 = VideoPlayerAV.useful_array_uint8(frame.planes[1], crop=crop).ravel()
-            v2 = VideoPlayerAV.useful_array_uint8(frame.planes[2], crop=crop).ravel()
+            # width = frame.planes[0].line_size
+            v0 = VideoPlayerAV.useful_array(frame.planes[0], crop=crop, dtype=dtype).ravel()
+            v1 = VideoPlayerAV.useful_array(frame.planes[1], crop=crop, dtype=dtype).ravel()
+            v2 = VideoPlayerAV.useful_array(frame.planes[2], crop=crop, dtype=dtype).ravel()
             total_size = v0.size+ v1.size + v2.size
             if yuv_array.size != total_size:
-                output_array = np.empty((total_size,), dtype=np.uint8)
+                output_array = np.empty((total_size,), dtype=dtype)
             else:
                 output_array = yuv_array
             output_array[0:v0.size]                                   = v0
@@ -76,10 +87,18 @@ class VideoPlayerAV(QtWidgets.QWidget):
             return None
 
     def to_yuv(frame) -> Optional[List[np.ndarray]]:
-        if frame.format.name in ('yuv420p', 'yuvj420p'):
-            y = VideoPlayerAV.useful_array_uint8(frame.planes[0], crop=False)
-            u = VideoPlayerAV.useful_array_uint8(frame.planes[1], crop=False)
-            v = VideoPlayerAV.useful_array_uint8(frame.planes[2], crop=False)
+        match frame.format.name:
+            case 'yuv420p' | 'yuvj420p':
+                dtype = np.uint8
+            case 'yuv420p10le':
+                dtype = np.uint16
+            case _:
+                print(f"Unknow format {frame.format.name}")
+                dtype = None
+        if dtype is not None:
+            y = VideoPlayerAV.useful_array(frame.planes[0], crop=False, dtype=dtype)
+            u = VideoPlayerAV.useful_array(frame.planes[1], crop=False, dtype=dtype)
+            v = VideoPlayerAV.useful_array(frame.planes[2], crop=False, dtype=dtype)
             return [y,u,v]
         else:
             return None
@@ -141,31 +160,27 @@ class VideoPlayerAV(QtWidgets.QWidget):
         # is show required here?
         self.show()
         self._im = None
-        self._pause_time : float = 0
         self._pause = False
         self._button_play_pause.clicked.connect(self.play_pause)
         self._container : container.InputContainer | None = None
-        self._video_stream = None
 
         self._scheduler : VideoScheduler = VideoScheduler()
         self._start_video_time : float = 0
         self._skipped : int = 0
-        self._frame : Optional[av.VideoFrame] = None
-        self._frame_generator : Optional[Iterator[Frame]] = None
+        self._frame_provider : VideoFrameProvider = VideoFrameProvider()
         self._displayed_pts : int = -1
         self._timer : Optional[QtCore.QTimer] = None
         self._name : str = "video player"
-        self._duration : float = 0
-        self._end_time : float = 0
         self._t1 : AverageTime = AverageTime()
         self._t2 : AverageTime = AverageTime()
         self._t3 : AverageTime = AverageTime()
         self._t4 : AverageTime = AverageTime()
         self._t5 : AverageTime = AverageTime()
-        self._max_skip : int = 5
+        self._max_skip : int = 10
 
         self._filename : str = "none"
         self._basename : str = "none"
+        self._initialized : bool = False
 
     def set_name(self, n:str):
         self._name = n
@@ -173,29 +188,34 @@ class VideoPlayerAV(QtWidgets.QWidget):
     def set_video(self, filename):
         self._filename = filename
         self._basename = os.path.basename(self._filename)
+        self._initialized = False
 
     def set_pause(self):
+        """ Method called from scheduler """
         self._pause = True
-        self._pause_time = float(self._frame.pts * self._frame.time_base)
+        self._frame_provider.playing = False
+
+    def pause(self):
+        """ Method called from video player """
+        self._was_active = self._scheduler._timer.isActive()
+        self._scheduler.pause()
     
     def set_play(self):
-        self.set_time(self._pause_time)
-        self._start_video_time = self._pause_time
+        """ Method called from scheduler """
+        self._frame_provider.playing = True
+        self._start_video_time = self._frame_provider.get_time()
+        print(f"set_play _start_video_time = {self._start_video_time:0.3f}")
         self._pause = False
+
+    def reset_play(self):
+        if self._was_active:
+            self._scheduler.play()
 
     def start_decode(self):
         if self._scheduler._timer.isActive():
             self._scheduler.pause()
         self._scheduler.set_players([self])
-        self._scheduler.start_decode()
-
-    def pause(self):
-        self._was_active = self._scheduler._timer.isActive()
-        self._scheduler.pause()
-    
-    def reset_play(self):
-        if self._was_active:
-            self._scheduler.play()
+        self._scheduler.start_decode(self._frame_provider.get_time())
 
     def play_pause(self):
         if len(self._scheduler._players) == 0:
@@ -203,8 +223,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
             self.start_decode()
         else:
             if self._scheduler._timer.isActive():
-                self._was_active = self._scheduler._timer.isActive()
-                self._scheduler.pause()
+                self.pause()
                 self._button_play_pause.setIcon(self._icon_play)
             else:
                 self._button_play_pause.setIcon(self._icon_pause)
@@ -215,27 +234,33 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def set_play_position(self):
         print(f"self.play_position {self.play_position.float}")
-        self.set_time(self.play_position.float)
-        self._pause_time = self.play_position.float
-        self.display_frame(self._frame)
+        if self._frame_provider.frame_buffer:
+            self._frame_provider.frame_buffer.reset()
+        self._frame_provider.set_time(self.play_position.float)
+        self._start_video_time = self.play_position.float
+        self.display_frame(self._frame_provider.frame)
 
     def speed_value_changed(self):
         print(f"New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
-    def update_position(self, precision=0.02):
-        current_time = float(self._frame.pts * self._frame.time_base)
+    def update_position(self, precision=0.02) -> bool:
+        current_time = self._frame_provider.get_time()
         if abs(self.play_position.float-current_time)>precision:
             self.play_position.float = current_time
             # Block signals to avoid calling changedValue signal
             self.play_position_gui.blockSignals(True)
             self.play_position_gui.updateGui()
             self.play_position_gui.blockSignals(False)
+            return True
+        return False
 
     def set_image(self, np_array, im_name, force_new=False):
+        prec = 8
+
         if self._im is None or force_new:
             format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-            self._im = ViewerImage(np_array, channels = format)
+            self._im = ViewerImage(np_array, channels = format, precision=prec)
             self.widget.set_image_fast(self._im)
         else:
             if self._im.data.shape == np_array.shape:
@@ -243,12 +268,17 @@ class VideoPlayerAV(QtWidgets.QWidget):
                 self.widget.image_id += 1
             else:
                 format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-                self._im = ViewerImage(np_array, channels = format)
+                self._im = ViewerImage(np_array, channels = format, precision=prec)
                 self.widget.set_image_fast(self._im)
         self.widget.image_name = im_name
 
     def set_image_YUV420(self, y, u, v, im_name):
-        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420)
+        prec = 8
+        match y.dtype:
+            case np.uint8:  prec=8
+            case np.uint16: prec=10
+
+        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
         self._im.u = u
         self._im.v = v
         self.widget.set_image_fast(self._im)
@@ -267,58 +297,6 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def set_synchronize(self, viewer):
         self.synchronize_viewer = viewer
-
-    def get_frame_number(self) -> int:
-        if self._frame:
-            return int(self._frame.pts * float(self._frame.time_base) * float(self._video_stream.average_rate))
-        else:
-            return -1
-
-    def set_time(self, time_pos : float):
-        """ set time position in seconds """
-        print(f"set_time {time_pos} , _end_time={self._end_time}")
-        if self._container is None:
-            print("Video not initialized")
-        else:
-            framerate = self._video_stream.average_rate # get the frame rate
-            frame_num = int(time_pos*framerate+0.5)
-            time_base = float(self._video_stream.time_base) # get the time base
-
-            current_frame_time = self._frame.pts * float(time_base)
-            sec_frame   = int(self._frame.pts * float(time_base) * framerate)
-            initial_pos = float(self._frame.pts * time_base)
-            # print(f"{sec_frame} -> {frame_num}")
-            if frame_num == sec_frame:
-                print(f"Current frame is at the requested position {frame_num} {sec_frame}")
-                return
-            # if we look for a frame slightly after, don't use seek()
-            try:
-                if frame_num<sec_frame or frame_num > sec_frame + 10:
-                    # seek to that nearest timestamp
-                    self._container.seek(int(time_pos*1000000), whence='time', backward=True)
-                    # It seems that the frame generator is not automatically updated
-                    # if we are at the end of the video, we don't want to call next()
-                    if current_frame_time>=self._end_time:
-                        self._frame_generator = self._container.decode(video=0)
-                    # get the next available frame
-                    frame = next(self._frame_generator)
-                    # get the proper key frame number of that timestamp
-                    sec_frame = int(frame.pts * float(time_base) * framerate)
-                    initial_pos = float(frame.pts * time_base)
-                # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
-                for _ in range(sec_frame, frame_num):
-                    frame = next(self._frame_generator)
-            except StopIteration:
-                print(f"Reached end of video stream")
-                # Reset valid generator
-                self._frame_generator = self._container.decode(video=0)
-            else:
-                sec_frame = int(frame.pts * time_base * framerate)
-                print(f"Frame at {initial_pos:0.3f}->{float(frame.pts * time_base):0.3f} request {time_pos}")
-                self._frame = frame
-                # Update pause time
-                if not self._scheduler._timer.isActive():
-                    self._pause_time = float(self._frame.pts * self._frame.time_base)
 
     def display_frame_RGB(self, frame: av.VideoFrame):
         """ Convert YUV to RGB and display RGB frame """
@@ -380,13 +358,14 @@ class VideoPlayerAV(QtWidgets.QWidget):
         # print("display YUV")
         y,u,v = VideoPlayerAV.to_yuv(frame)
         # print(f"y min {np.min(y)} y max {np.max(y)}")
-        self.set_image_YUV420(y,u,v, f"{self._basename}: {self.get_frame_number()}")
+        self.set_image_YUV420(y,u,v, f"{self._basename}: {self._frame_provider.get_frame_number()}")
         # update is not immediate
         # self.widget.viewer_update()
         pl = frame.planes[0]
-        if pl.line_size != pl.width and self.viewer_class == GLImageViewerShaders:
+        im_width = y.data.shape[1]
+        if im_width != pl.width and self.viewer_class == GLImageViewerShaders:
             # Apply crop on the right
-            self.widget.set_crop(np.array([0,0,pl.width/pl.line_size,1], dtype=np.float32))
+            self.widget.set_crop(np.array([0,0,im_width/pl.line_size,1], dtype=np.float32))
         else:
             self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()
@@ -394,7 +373,9 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def display_frame(self, frame=None):
         if frame is None:
-            frame = self._frame
+            frame = self._frame_provider._frame
+        if frame is None:
+            return
         if self.viewer_class is GLImageViewerShaders:
             self.display_frame_YUV420(frame)
         else:
@@ -402,79 +383,45 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
     def init_video_av(self):
         """ Initialize the container and frame generator """
+        if not self._initialized:
+            print("--- init_video_av() ")
+        else:
+            print("--- init_video_av() video already intialized")
+            return
+        
         if self._scheduler._timer.isActive():
             self._scheduler.pause()
         print(f"filename = {self._filename}")
         self._container = av.open(self._filename)
-        self._container.streams.video[0].thread_type = "FRAME"
-        self._container.streams.video[0].thread_count = 4
-        self._video_stream = self._container.streams.video[0]
-        framerate = float(self._video_stream.average_rate) # get the frame rate
-        print(f"framerate {framerate} {self._video_stream.width}x{self._video_stream.height}")
+        self._frame_provider.set_input_container(self._container)
 
-        fps = self._video_stream.base_rate
-        time_base = self._video_stream.time_base
-        self._ticks_per_frame = int((1/fps) / time_base)
-        self._duration = float(self._video_stream.duration * time_base)
-        self._end_time = float((self._video_stream.duration-self._ticks_per_frame) * time_base)
-
-        print(f"duration = {self._duration} seconds")
-        slider_single_step = int(self._ticks_per_frame*time_base*self.play_position.float_scale+0.5)
+        print(f"duration = {self._frame_provider._duration} seconds")
+        slider_single_step = int(self._frame_provider._ticks_per_frame*
+                                 self._frame_provider._time_base*
+                                 self.play_position.float_scale+0.5)
         slider_page_step   = int(self.play_position.float_scale+0.5)
         self.play_position_gui.setSingleStep(slider_single_step)
         self.play_position_gui.setPageStep(slider_page_step)
-        self.play_position.range = [0, int(self._end_time*self.play_position.float_scale)]
+        self.play_position.range = [0, int(self._frame_provider._end_time*
+                                           self.play_position.float_scale)]
         print(f"range = {self.play_position.range}")
         self.play_position_gui.setRange(0, self.play_position.range[1])
         self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         self.play_position_gui.update()
         self.play_position_gui.changed()
 
-        # fps = eval(probe['streams'][0]['r_frame_rate'])
-        # print(f"fps={fps}")
-        # width = int(video_stream['width'])
-        # height = int(video_stream['height'])
-
-        print(f"ticks_per_frame {self._ticks_per_frame}")
-
-        self._frame_generator = self._container.decode(video=0)
-        self.frame_number = -1
+        print(f"ticks_per_frame {self._frame_provider._ticks_per_frame}")
         self.yuv_array = np.empty((1), dtype=np.uint8)
-
-    def get_next_frame(self, verbose=False) -> bool:
-        t = time.perf_counter()
-        if not self._frame_generator:
-            return False
-        try:
-            self._frame = next(self._frame_generator)
-            self.frame_number += 1
-        except (StopIteration, av.EOFError) as e:
-            print(f"Reached end of video stream: Exception {e}")
-            # Reset valid generator
-            if self._scheduler._timer.isActive():
-                self.play_pause()
-            self._frame_generator = self._container.decode(video=0)
-            return False
-        else:
-            d = time.perf_counter()-t
-            s = 'gen '
-            s += 'key ' if self._frame.key_frame else ''
-            s += f'{d:0.3f} ' if d>=0.001 else ''
-            s += f'{self._frame.pict_type}'
-            s += f' {self._frame.pts}'
-            if verbose:
-                if s != 'gen P': print(s)
-                else: print(s)
-            return True
+        self._initialized = True
 
     def init_and_display(self):
-        self.init_video_av()
-        if self.get_next_frame():
-            self.set_time(0)
+        if not self._initialized:
+            self.init_video_av()
+            self._frame_provider.set_time(0)
             self.update_position()
             self.display_frame()
         else:
-            print("Failed to get next frame")
+            print(" --- video alread initialized")
 
 def main():
     import argparse
