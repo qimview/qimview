@@ -242,8 +242,9 @@ class GLImageViewerShaders(GLImageViewerBase):
             shaders.glDeleteShader(fs)
 
     def set_crop(self, crop):
-        self._output_crop = crop
-        self.setBufferData()
+        if not np.array_equal(crop,self._output_crop):
+            self._output_crop = crop
+            self.setBufferData()
 
     def setVerticesBufferData(self):
         try:
