@@ -49,8 +49,6 @@ class VideoFrameProvider:
 
     def set_input_container(self, container: container.InputContainer):
         self._container = container
-        self._frame_buffer = VideoFrameBuffer(container)
-        self._frame = None
         
         self._container.streams.video[0].thread_type = "AUTO"
         self._container.streams.video[0].thread_count = 8
@@ -68,6 +66,9 @@ class VideoFrameProvider:
         self._ticks_per_frame = int(self._frame_duration / self._time_base)
         self._duration        = float(st.duration * self._time_base)
         self._end_time        = float(self._duration-self._frame_duration)
+
+        self._frame_buffer = VideoFrameBuffer(container)
+        self._frame = None
 
     def get_time(self) -> float:
         if self._frame:
@@ -104,10 +105,10 @@ class VideoFrameProvider:
                     # self.playing = False
                     self._container.seek(int(time_pos*1000000), whence='time', backward=True)
                     # It seems that the frame generator is not automatically updated
-                    # if we are at the end of the video, we don't want to call next()
-                    # if current_frame_time>=self._end_time:
+                    if time_pos==0:
+                        self.frame_buffer.reset()
                     # get the next available frame
-                    frame = self.frame_buffer.get()
+                    frame = self.frame_buffer.get_frame(timeout=10)
                     # get the proper key frame number of that timestamp
                     sec_frame = int(frame.pts * self._time_base * self._framerate)
                     initial_pos = float(frame.pts * self._time_base)
@@ -115,9 +116,9 @@ class VideoFrameProvider:
                 # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
                 if not frame or exact:
                     for _ in range(sec_frame, frame_num):
-                        frame = self.frame_buffer.get()
+                        frame = self.frame_buffer.get_frame()
             except StopIteration as e:
-                print(f"Reached end of video stream")
+                print(f"set_time(): Reached end of video stream")
                 # Reset valid generator
                 self.frame_buffer.reset()
                 raise EndOfVideo() from e
@@ -135,9 +136,9 @@ class VideoFrameProvider:
             print("Video Frame Buffer not created")
             return False
         try:
-            self._frame = self._frame_buffer.get()
-        except (StopIteration, av.EOFError) as e:
-            print(f"Reached end of video stream: Exception {e}")
+            self._frame = self._frame_buffer.get_frame()
+        except (StopIteration, av.EOFError, EndOfVideo) as e:
+            print(f"get_next_frame(): Reached end of video stream: Exception {e}")
             # Reset valid generator
             self._frame_buffer.reset()
             raise EndOfVideo() from e
@@ -152,26 +153,3 @@ class VideoFrameProvider:
                 if s != 'gen P': 
                     print(s)
             return True
-
-    def get_frame(self, _time: float ) -> VideoFrame:
-        """ Get closest frame to given time """
-        # TODO
-        # if time_spent>_time:
-        #     if time_spent-_time<1:
-        #         iter = 0
-        #         ok = True
-        #         while time_spent>_time and iter<p._max_skip*self._playback_speed and ok:
-        #             if iter>0:
-        #                 self._skipped[self._current_player] +=1
-        #             ok = self.get_next_frame()
-        #             if ok:
-        #                 _time = float((p._frame.pts+p._ticks_per_frame) * time_base) - p._start_video_time
-        #                 time_spent = self.get_time_spent()
-        #                 iter +=1
-        #         return True
-        #     else:
-        #         self.reset_time(p, next_frame_time)
-        #         return False
-        # else:
-        #     return False
-

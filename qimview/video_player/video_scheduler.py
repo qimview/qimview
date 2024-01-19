@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING
 import time
 from qimview.utils.qt_imports import QtCore
-from qimview.video_player.video_frame_provider import EndOfVideo
+from qimview.video_player.video_frame_buffer import EndOfVideo, TimeOut
 if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
@@ -46,15 +46,18 @@ class VideoScheduler:
                      f"skipped = {self._skipped[idx]} "
                      f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
                 p.display_times()
+            # Reset skipped counters
+            self._skipped = [0,0]
         else:
             print("timer not active")
 
     def play(self):
         """ play videos """
         if not self._timer.isActive():
-            self._start_clock_time = time.perf_counter()
             for p in self._players:
                 p.set_play()
+            # Set _start_clock_time after starting the players to avoid rushing them
+            self._start_clock_time = time.perf_counter()
             self._timer.start()
         else:
             print("timer already active")
@@ -111,6 +114,11 @@ class VideoScheduler:
                         if self._timer.isActive():
                             p.play_pause()
                         raise EndOfVideo from e
+                    except TimeOut:
+                        if self._timer.isActive():
+                            p.play_pause()
+                        print("Pausing video due to timeout")
+                        ok = False
                     if ok:
                         next_frame_time = p._frame_provider.get_time() \
                                           + p._frame_provider._frame_duration \
@@ -169,8 +177,8 @@ class VideoScheduler:
         # self.set_time(start_time, self._container)
         print(f" nb videos {len(self._players)}")
         for idx, p  in enumerate(self._players):
-            p._start_video_time = start_time
             self._init_player(idx)
+            p._start_video_time = start_time
             self._displayed_pts[idx] = -1
             self._skipped[idx] = 0
         # Starting time in seconds

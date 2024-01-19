@@ -363,9 +363,10 @@ class VideoPlayerAV(QtWidgets.QWidget):
         # self.widget.viewer_update()
         pl = frame.planes[0]
         im_width = y.data.shape[1]
+        # print(f"frame.planes[0].width = {pl.width} y.data.shape[1] = {im_width}")
         if im_width != pl.width and self.viewer_class == GLImageViewerShaders:
             # Apply crop on the right
-            self.widget.set_crop(np.array([0,0,im_width/pl.line_size,1], dtype=np.float32))
+            self.widget.set_crop(np.array([0,0,pl.width/im_width,1], dtype=np.float32))
         else:
             self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()
