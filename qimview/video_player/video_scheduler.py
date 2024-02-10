@@ -6,7 +6,9 @@ if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
 class VideoScheduler:
-    """ Create a timer to schedule frame extraction and display """
+    """ Create a timer to schedule frame extraction and display 
+        Can schedule 2 videos by playing each of them alternatively (TODO: remove this feature?)
+    """
     def __init__(self, interval=5):
         self._players          : List['VideoPlayerAV']  = []
         self._interval         : int                  = interval # intervals in ms
@@ -17,6 +19,10 @@ class VideoScheduler:
         self._displayed_pts    : List[int]            = [0, 0]
         self._current_player   : int                  = 0
         self._playback_speed   : float                = 1
+        # _speed_ok: Check current frame queue for each video, True if queue size > 1
+        # if all active videos are ok, speed might be increased
+        # if any active video is not ok, speed will be decreased by 2%
+        self._speed_ok         : List[bool]           = [True, True]
 
     def set_interval(self, interval: int):
         """ Set scheduler interval in ms """
@@ -81,18 +87,18 @@ class VideoScheduler:
         self._start_clock_time = time.perf_counter()
         player._start_video_time = player._frame_provider.get_time()
 
-    def check_next_frame(self, player_idx: int = 0, progress_callback=None) -> bool:
+    def check_next_frame(self) -> bool:
         """ Check if we need to get a new frame based on the time spent """
         self._current_player = (self._current_player + 1) % len(self._players)
         p : 'VideoPlayerAV' = self._players[self._current_player]
-        if not p._frame_provider.frame:
+        if p.frame_provider is None or not p.frame_provider.frame:
             self.pause()
             return False
         # assert p._frame is not None, "No frame available"
         if p._pause:
             print(f"paused")
             return False
-        next_frame_time : float = p._frame_provider.get_time() \
+        next_frame_time : float = p.frame_provider.get_time() \
                                   + p._frame_provider._frame_duration \
                                   - p._start_video_time
         time_spent = self.get_time_spent()
@@ -109,7 +115,7 @@ class VideoScheduler:
                         self._skipped[self._current_player] +=1
                         # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
                     try:
-                        ok = p._frame_provider.get_next_frame()
+                        ok = p.frame_provider.get_next_frame()
                     except EndOfVideo as e:
                         if self._timer.isActive():
                             p.play_pause()
@@ -120,13 +126,15 @@ class VideoScheduler:
                         print("Pausing video due to timeout")
                         ok = False
                     if ok:
-                        next_frame_time = p._frame_provider.get_time() \
-                                          + p._frame_provider._frame_duration \
+                        next_frame_time = p.frame_provider.get_time() \
+                                          + p.frame_provider._frame_duration \
                                           - p._start_video_time
                         time_spent = self.get_time_spent()
                         iter +=1
                 # if iter>1:
                 #     print(f" skipped {iter-1} frames {self._skipped[self._current_player]} / {p.frame_number},")
+                if p.frame_provider.frame_buffer:
+                    self._speed_ok[self._current_player] = p.frame_provider.frame_buffer.size()>1
                 return True
             else:
                 self.reset_time(p, next_frame_time)
@@ -164,6 +172,20 @@ class VideoScheduler:
         try:
             if self.check_next_frame():
                 self._display_frame()
+            slow_down = not self._speed_ok[self._current_player]
+            if slow_down:
+                # self._playback_speed *= 0.98
+                p : 'VideoPlayerAV' = self._players[self._current_player]
+                # since speed is in log2, 2**0.5 = 1.035 approx, so decreasing by 3.5% approx.
+                print(f"p.playback_speed.float {p.playback_speed.float}")
+                p.playback_speed.float  = p.playback_speed.float - 0.05 # = self._playback_speed
+                print(f"  -> p.playback_speed.float {p.playback_speed.float}")
+                p.playback_speed_gui.updateGui()
+                p.speed_value_changed()
+                print(f"    -> p.playback_speed.float {p.playback_speed.float}")
+                # print(f"new playback speed {self._playback_speed}")
+                # Reset speed_ok to True
+                self._speed_ok[self._current_player] = True
         except EndOfVideo:
             print("End of video")
             self.pause()

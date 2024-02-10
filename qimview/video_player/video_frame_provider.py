@@ -9,7 +9,7 @@ from qimview.video_player.video_frame_buffer import VideoFrameBuffer, EndOfVideo
 
 class VideoFrameProvider:
     def __init__(self):
-        self._frame_buffer    : Optional[VideoFrameBuffer | None]  = None
+        self._frame_buffer    : Optional[VideoFrameBuffer]         = None
         self._container       : Optional[container.InputContainer] = None
         self._playing         : bool                               = False
         self._frame           : Optional[VideoFrame]               = None
@@ -22,7 +22,7 @@ class VideoFrameProvider:
         self._end_time        : float                              = 0
 
     @property
-    def frame_buffer(self) -> Optional[VideoFrameBuffer | None]:
+    def frame_buffer(self) -> Optional[VideoFrameBuffer]:
         return self._frame_buffer
     
     @property
@@ -50,8 +50,9 @@ class VideoFrameProvider:
     def set_input_container(self, container: container.InputContainer):
         self._container = container
         
-        self._container.streams.video[0].thread_type = "AUTO"
+        self._container.streams.video[0].thread_type = "FRAME"
         self._container.streams.video[0].thread_count = 8
+        # self._container.streams.video[0].fast = True
         self._video_stream = self._container.streams.video[0]
         print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
 

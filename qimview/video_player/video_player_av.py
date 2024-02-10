@@ -2,6 +2,9 @@ import os
 import time
 from typing import Union, Generator, List, Optional, Iterator
 import numpy as np
+import os
+# os.add_dll_directory("c:\\ffmpeg\\bin")
+os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
 import av
 from av import container, VideoFrame # type: ignore
 from av.frame import Frame
@@ -128,7 +131,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
 
         # Playback speed slider
         self.playback_speed = NumericParameter()
-        self.playback_speed.float_scale = 10
+        self.playback_speed.float_scale = 100
         self.playback_speed_gui = NumericParameterGui(name="x", param=self.playback_speed)
         self.playback_speed_gui.decimals = 1
         self.playback_speed_gui.set_pressed_callback(self.pause)
@@ -136,7 +139,7 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self.playback_speed_gui.set_valuechanged_callback(self.speed_value_changed)
         self.playback_speed_gui.create()
         self.playback_speed_gui.setTextFormat(lambda p: f"{pow(2,p.float):0.2f}")
-        self.playback_speed_gui.setRange(-30, 30)
+        self.playback_speed_gui.setRange(-300, 300)
         self.playback_speed_gui.update()
         self.playback_speed_gui.updateText()
         self.playback_speed_gui.add_to_layout(hor_layout,1)
@@ -181,6 +184,10 @@ class VideoPlayerAV(QtWidgets.QWidget):
         self._filename : str = "none"
         self._basename : str = "none"
         self._initialized : bool = False
+
+    @property
+    def frame_provider(self) -> Optional[VideoFrameProvider]:
+        return self._frame_provider
 
     def set_name(self, n:str):
         self._name = n
@@ -393,6 +400,8 @@ class VideoPlayerAV(QtWidgets.QWidget):
         if self._scheduler._timer.isActive():
             self._scheduler.pause()
         print(f"filename = {self._filename}")
+        if self._container is not None:
+            self._container.close()
         self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container)
 

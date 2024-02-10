@@ -64,12 +64,15 @@ class VideoFrameBuffer:
                     # print(f"added item, qsize = {self._queue.qsize()}")
                     if nb%30 == 0:
                         print(f" {nb} Av extraction time: {total_time/nb:0.3f} queue: {self._queue.qsize()}")
+                        total_time = 0
+                        nb = 0
                 except queue.Full:
                     # print("*", end="")
                     pass
                 else:
                     item = None
-            time.sleep(1/1000)
+            if self._queue.qsize() != 0:
+                time.sleep(1/2000)
 
     def set_generator(self, g):
         self._frame_generator = g
@@ -89,6 +92,9 @@ class VideoFrameBuffer:
         self.reset_queue()
         self._frame_generator = self._container.decode(video=0)
         self._end_of_video = False
+
+    def size(self) -> int:
+        return self._queue.qsize()
 
     def get_frame(self, timeout=6) -> VideoFrame:
         if self._running or self._queue.qsize()>0:
