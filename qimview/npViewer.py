@@ -9,8 +9,8 @@ import numpy as np
 from typing import List
 
 from qimview.utils.qt_imports import QApplication
-from qimview.image_viewers.MultiView import MultiView
-from qimview.image_viewers.MultiView import ViewerType
+from qimview.image_viewers.multi_view import MultiView
+from qimview.image_viewers.multi_view import ViewerType
 
 
 # May need to use multiprocessing
@@ -110,7 +110,7 @@ class npViewer(Process):
         mv.resize(1000, 800)
         nb_inputs = len(images)
         if nb_inputs>=1 and nb_inputs<=9:
-            mv.update_viewer_layout(f'{nb_inputs}')
+            mv.set_number_of_viewers(nb_inputs)
             mv.viewer_grid_layout.update()
             mv.update_image()
             mv.setFocus()
