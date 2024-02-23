@@ -50,6 +50,8 @@ class VideoFrameProvider:
     def set_input_container(self, container: container.InputContainer):
         self._container = container
         
+        nb_videos = len(self._container.streams.video)
+        print(f"Found {nb_videos} videos")
         self._container.streams.video[0].thread_type = "FRAME"
         self._container.streams.video[0].thread_count = 8
         # self._container.streams.video[0].fast = True

@@ -3,8 +3,9 @@ import time
 from typing import Union, Generator, List, Optional, Iterator
 import numpy as np
 import os
-# os.add_dll_directory("c:\\ffmpeg\\bin")
-os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
+if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
+    os.add_dll_directory("c:\\ffmpeg\\bin")
+    #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
 import av
 from av import container, VideoFrame # type: ignore
 from av.frame import Frame

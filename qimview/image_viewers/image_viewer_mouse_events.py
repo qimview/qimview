@@ -115,7 +115,7 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         return True
 
     def wheel_zoom(self, event: QtGui.QWheelEvent) -> bool:
-        """ Zoom in/out based on wheel angle """
+        """ Zoom in/out based on wheel angle, works with touchpad 2 fingers """
         # Zoom by applying a factor to the distances to the sides
         # print(f"{event.angleDelta(), event.deviceType(), event.source()}")
         delta = event.angleDelta().y()
