@@ -20,8 +20,6 @@ from .multi_view_mouse_events           import MultiViewMouseEvents
 
 # Class that derives from ImageViewer
 ImageViewerClass = NewType('ImageViewerClass', ImageViewer)
-from os import path as osp
-import numpy as np
 
 class ViewerType(Enum):
     """ Different flavors of ImageViewer """
