@@ -48,114 +48,10 @@ extern "C" {
 #define NB_FRAMES 200
 using namespace std::chrono;
 
-static AVBufferRef *hw_device_ctx = NULL;
-static enum AVPixelFormat hw_pix_fmt;
 
-static int hw_decoder_init(AVCodecContext *ctx, const enum AVHWDeviceType type)
-{
-  int err = 0;
-
-  if ((err = av_hwdevice_ctx_create(&hw_device_ctx, type,
-    NULL, NULL, 0)) < 0) {
-    fprintf(stderr, "Failed to create specified HW device.\n");
-    return err;
-  }
-  ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
-
-  return err;
-}
-
-static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
-  const enum AVPixelFormat *pix_fmts)
-{
-  const enum AVPixelFormat *p;
-
-  for (p = pix_fmts; *p != -1; p++) {
-    if (*p == hw_pix_fmt)
-      return *p;
-  }
-
-  fprintf(stderr, "Failed to get HW surface format.\n");
-  return AV_PIX_FMT_NONE;
-}
-
-static int decode_write(AVCodecContext *avctx, AVPacket *packet)
-{
-  AVFrame *frame = NULL, *sw_frame = NULL;
-  AVFrame *tmp_frame = NULL;
-  uint8_t *buffer = NULL;
-  int size;
-  int ret = 0;
-
-  ret = avcodec_send_packet(avctx, packet);
-  if (ret < 0) {
-    fprintf(stderr, "Error during decoding\n");
-    return ret;
-  }
-
-  while (1) {
-    if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc())) {
-      fprintf(stderr, "Can not alloc frame\n");
-      ret = AVERROR(ENOMEM);
-      goto fail;
-    }
-
-    ret = avcodec_receive_frame(avctx, frame);
-    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-      av_frame_free(&frame);
-      av_frame_free(&sw_frame);
-      return 0;
-    }
-    else if (ret < 0) {
-      fprintf(stderr, "Error while decoding\n");
-      goto fail;
-    }
-
-    if (frame->format == hw_pix_fmt) {
-      /* retrieve data from GPU to CPU */
-      //auto prev = high_resolution_clock::now();
-      if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
-        fprintf(stderr, "Error transferring the data to system memory\n");
-        goto fail;
-      }
-      //auto curr = high_resolution_clock::now();
-      //auto duration = duration_cast<microseconds>(curr - prev);
-      //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
-      tmp_frame = sw_frame;
-    }
-    else
-      tmp_frame = frame;
-
-    //size = av_image_get_buffer_size((AVPixelFormat)tmp_frame->format, tmp_frame->width, tmp_frame->height, 1);
-    //buffer = (uint8_t*) av_malloc(size);
-    //if (!buffer) {
-    //  fprintf(stderr, "Can not alloc buffer\n");
-    //  ret = AVERROR(ENOMEM);
-    //  goto fail;
-    //}
-    //ret = av_image_copy_to_buffer(buffer, size,
-    //  (const uint8_t * const *)tmp_frame->data,
-    //  (const int *)tmp_frame->linesize, (AVPixelFormat)tmp_frame->format,
-    //  tmp_frame->width, tmp_frame->height, 1);
-    //if (ret < 0) {
-    //  fprintf(stderr, "Can not copy image to buffer\n");
-    //  goto fail;
-    //}
-
-    // Don't write to file here
-    //if ((ret = fwrite(buffer, 1, size, output_file)) < 0) {
-    //  fprintf(stderr, "Failed to dump raw data.\n");
-    //  goto fail;
-    //}
-
-  fail:
-    av_frame_free(&frame);
-    av_frame_free(&sw_frame);
-    av_freep(&buffer);
-    if (ret < 0)
-      return ret;
-  }
-}
+//-------------------------------------------------------------------------------------------------
+// decode SW
+//-------------------------------------------------------------------------------------------------
 
 bool load_frame(const char* filename, int* width_out, int* height_out, unsigned char** data_out) {
 
@@ -290,6 +186,120 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
   return true;
 }
 
+//-------------------------------------------------------------------------------------------------
+// decode HW
+//-------------------------------------------------------------------------------------------------
+
+static AVBufferRef *hw_device_ctx = NULL;
+static enum AVPixelFormat hw_pix_fmt;
+
+
+static enum AVPixelFormat get_hw_format(AVCodecContext *ctx,
+  const enum AVPixelFormat *pix_fmts)
+{
+  const enum AVPixelFormat *p;
+
+  for (p = pix_fmts; *p != -1; p++) {
+    if (*p == hw_pix_fmt)
+      return *p;
+  }
+
+  fprintf(stderr, "Failed to get HW surface format.\n");
+  return AV_PIX_FMT_NONE;
+}
+
+static int hw_decoder_init(AVCodecContext *ctx, const enum AVHWDeviceType type)
+{
+  int err = 0;
+
+  if ((err = av_hwdevice_ctx_create(&hw_device_ctx, type,
+    NULL, NULL, 0)) < 0) {
+    fprintf(stderr, "Failed to create specified HW device.\n");
+    return err;
+  }
+  ctx->hw_device_ctx = av_buffer_ref(hw_device_ctx);
+
+  return err;
+}
+
+static int decode_write(AVCodecContext *avctx, AVPacket *packet)
+{
+  AVFrame *frame = NULL, *sw_frame = NULL;
+  AVFrame *tmp_frame = NULL;
+  uint8_t *buffer = NULL;
+  int size;
+  int ret = 0;
+
+  ret = avcodec_send_packet(avctx, packet);
+  if (ret < 0) {
+    fprintf(stderr, "Error during decoding\n");
+    return ret;
+  }
+
+  while (1) {
+    if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc())) {
+      fprintf(stderr, "Can not alloc frame\n");
+      ret = AVERROR(ENOMEM);
+      goto fail;
+    }
+
+    ret = avcodec_receive_frame(avctx, frame);
+    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
+      av_frame_free(&frame);
+      av_frame_free(&sw_frame);
+      return 0;
+    }
+    else if (ret < 0) {
+      fprintf(stderr, "Error while decoding\n");
+      goto fail;
+    }
+
+    if (frame->format == hw_pix_fmt) {
+      /* retrieve data from GPU to CPU */
+      //auto prev = high_resolution_clock::now();
+      if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
+        fprintf(stderr, "Error transferring the data to system memory\n");
+        goto fail;
+      }
+      //auto curr = high_resolution_clock::now();
+      //auto duration = duration_cast<microseconds>(curr - prev);
+      //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
+      tmp_frame = sw_frame;
+    }
+    else
+      tmp_frame = frame;
+
+    //size = av_image_get_buffer_size((AVPixelFormat)tmp_frame->format, tmp_frame->width, tmp_frame->height, 1);
+    //buffer = (uint8_t*) av_malloc(size);
+    //if (!buffer) {
+    //  fprintf(stderr, "Can not alloc buffer\n");
+    //  ret = AVERROR(ENOMEM);
+    //  goto fail;
+    //}
+    //ret = av_image_copy_to_buffer(buffer, size,
+    //  (const uint8_t * const *)tmp_frame->data,
+    //  (const int *)tmp_frame->linesize, (AVPixelFormat)tmp_frame->format,
+    //  tmp_frame->width, tmp_frame->height, 1);
+    //if (ret < 0) {
+    //  fprintf(stderr, "Can not copy image to buffer\n");
+    //  goto fail;
+    //}
+
+    // Don't write to file here
+    //if ((ret = fwrite(buffer, 1, size, output_file)) < 0) {
+    //  fprintf(stderr, "Failed to dump raw data.\n");
+    //  goto fail;
+    //}
+
+  fail:
+    av_frame_free(&frame);
+    av_frame_free(&sw_frame);
+    av_freep(&buffer);
+    if (ret < 0)
+      return ret;
+  }
+}
+
 bool load_frame_hw(const char* device_type, const char* filename)
 {
   AVFormatContext *input_ctx = NULL;
@@ -419,36 +429,6 @@ bool load_frame_hw(const char* device_type, const char* filename)
 }
 
 
-int main(int argc, char **argv)
-{
-    if ((argc <= 1)||(argc>3)) {
-        fprintf(stderr, "Usage: %s [hw_device_type] <input file>\n"
-                , argv[0]);
-        exit(0);
-    }
-    if (argc == 2) {
-      std::string filename(argv[1]);
-      int frame_width, frame_height;
-      unsigned char* frame_data;
-      if (!load_frame(filename.c_str(), &frame_width, &frame_height, &frame_data))
-      {
-        printf("Couldn't load video frame\n");
-        return 1;
-      }
-    }
-    else if (argc == 3)
-    {
-      std::string hwdevice(argv[1]);
-      std::string filename(argv[2]);
-      if (!load_frame_hw(hwdevice.c_str(), filename.c_str()))
-      {
-        printf("Couldn't load video frame with hw decoder\n");
-        return 1;
-      }
-    }
-
-}
-
 #define INBUF_SIZE 4096
  
 static void pgm_save(unsigned char *buf, int wrap, int xsize, int ysize,
@@ -496,116 +476,36 @@ static void decode(AVCodecContext *dec_ctx, AVFrame *frame, AVPacket *pkt,
     }
 }
 
-//int main(int argc, char **argv)
-//{
-//    const char *filename, *outfilename;
-//    const AVCodec *codec;
-//    AVCodecParserContext *parser;
-//    AVCodecContext *c= NULL;
-//    FILE *f;
-//    AVFrame *frame;
-//    uint8_t inbuf[INBUF_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
-//    uint8_t *data;
-//    size_t   data_size;
-//    int ret;
-//    int eof;
-//    AVPacket *pkt;
-// 
-//    if (argc <= 2) {
-//        fprintf(stderr, "Usage: %s <input file> <output file>\n"
-//                "And check your input file is encoded by mpeg1video please.\n", argv[0]);
-//        exit(0);
-//    }
-//    filename    = argv[1];
-//    outfilename = argv[2];
-// 
-//    pkt = av_packet_alloc();
-//    if (!pkt)
-//        exit(1);
-// 
-//    /* set end of buffer to 0 (this ensures that no overreading happens for damaged MPEG streams) */
-//    memset(inbuf + INBUF_SIZE, 0, AV_INPUT_BUFFER_PADDING_SIZE);
-// 
-//    /* find the MPEG-1 video decoder */
-//    codec = avcodec_find_decoder(AV_CODEC_ID_HEVC);
-//    if (!codec) {
-//        fprintf(stderr, "Codec not found\n");
-//        exit(1);
-//    }
-// 
-//    parser = av_parser_init(codec->id);
-//    if (!parser) {
-//        fprintf(stderr, "parser not found\n");
-//        exit(1);
-//    }
-// 
-//    c = avcodec_alloc_context3(codec);
-//    if (!c) {
-//        fprintf(stderr, "Could not allocate video codec context\n");
-//        exit(1);
-//    }
-// 
-//    /* For some codecs, such as msmpeg4 and mpeg4, width and height
-//       MUST be initialized there because this information is not
-//       available in the bitstream. */
-// 
-//    /* open it */
-//    if (avcodec_open2(c, codec, NULL) < 0) {
-//        fprintf(stderr, "Could not open codec\n");
-//        exit(1);
-//    }
-// 
-//    f = fopen(filename, "rb");
-//    if (!f) {
-//        fprintf(stderr, "Could not open %s\n", filename);
-//        exit(1);
-//    }
-// 
-//    frame = av_frame_alloc();
-//    if (!frame) {
-//        fprintf(stderr, "Could not allocate video frame\n");
-//        exit(1);
-//    }
-// 
-//    int n = 0;
-//    do {
-//        /* read raw data from the input file */
-//        data_size = fread(inbuf, 1, INBUF_SIZE, f);
-//        if (ferror(f))
-//            break;
-//        eof = !data_size;
-// 
-//        /* use the parser to split the data into frames */
-//        data = inbuf;
-//        while (data_size > 0 || eof) {
-//            ret = av_parser_parse2(parser, c, &pkt->data, &pkt->size,
-//                                   data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
-//            if (ret < 0) {
-//                fprintf(stderr, "Error while parsing\n");
-//                exit(1);
-//            }
-//            data      += ret;
-//            data_size -= ret;
-// 
-//            if (pkt->size) {
-//              decode(c, frame, pkt, outfilename);
-//              n++;
-//              if (n > 30) break;
-//            }
-//            else if (eof)
-//                break;
-//        }
-//    } while (!eof);
-// 
-//    /* flush the decoder */
-//    decode(c, frame, NULL, outfilename);
-// 
-//    fclose(f);
-// 
-//    av_parser_close(parser);
-//    avcodec_free_context(&c);
-//    av_frame_free(&frame);
-//    av_packet_free(&pkt);
-// 
-//    return 0;
-//}
+//-------------------------------------------------------------------------------------------------
+// main
+//-------------------------------------------------------------------------------------------------
+int main(int argc, char **argv)
+{
+  if ((argc <= 1) || (argc > 3)) {
+    fprintf(stderr, "Usage: %s [hw_device_type] <input file>\n"
+      , argv[0]);
+    exit(0);
+  }
+  if (argc == 2) {
+    std::string filename(argv[1]);
+    int frame_width, frame_height;
+    unsigned char* frame_data;
+    if (!load_frame(filename.c_str(), &frame_width, &frame_height, &frame_data))
+    {
+      printf("Couldn't load video frame\n");
+      return 1;
+    }
+  }
+  else if (argc == 3)
+  {
+    std::string hwdevice(argv[1]);
+    std::string filename(argv[2]);
+    if (!load_frame_hw(hwdevice.c_str(), filename.c_str()))
+    {
+      printf("Couldn't load video frame with hw decoder\n");
+      return 1;
+    }
+  }
+
+}
+
