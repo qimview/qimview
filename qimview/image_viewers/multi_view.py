@@ -455,18 +455,29 @@ class MultiView(QtWidgets.QWidget):
         # print(f"get_output_image({im_string_id}) ")
         start = get_time()
 
-        image_filename = self.image_dict[im_string_id]
-        image_transform = None
-        self.print_log(f"MultiView.get_output_image() image_filename:{image_filename}")
+        #
+        image_data = None
+        img = self.image_dict[im_string_id]
+        # if osp.isfile(img):
+        if True:
+            image_filename = img
+            # Allow to pass a string or a numpy array
+            image_transform = None
+            self.print_log(f"MultiView.get_output_image() image_filename:{image_filename}")
 
-        image_data, _ = self.cache.get_image(image_filename, self.read_size, verbose=self.show_timing_detailed(),
-                                             use_RGB=not self.use_opengl, image_transform=image_transform)
+            image_data, _ = self.cache.get_image(image_filename, self.read_size, verbose=self.show_timing_detailed(),
+                                                use_RGB=not self.use_opengl, image_transform=image_transform)
+        # elif isinstance(img, np.ndarray):
+        #     if len(img.shape) == 3 and img.shape[2]==3:
+        #         image_data = ViewerImage(img)
+        #     elif len(img.shape) == 2:
+        #         image_data = ViewerImage(img, channels=CH_Y)
 
         if image_data is not None:
             self.output_image_label[im_string_id] = image_filename
             output_image = image_data
         else:
-            print(f"failed to get image {im_string_id}: {image_filename}")
+            print(f"failed to get image {im_string_id}")
             return None
 
         if self.show_timing_detailed():
