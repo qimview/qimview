@@ -535,6 +535,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
                 self._image_ref is not self._image and \
                 self._image_ref is not None and self._image is not None and \
                 self._image.data.shape == self._image_ref.data.shape
+                
+        # TODO: show overlay with different filters applied on each image?
         if self._show_overlay_possible:
             self._show_overlay_possible = True
             # to create the overlay rapidly, we will mix the two images based on the current cursor position

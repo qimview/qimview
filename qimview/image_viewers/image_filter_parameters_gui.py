@@ -42,11 +42,13 @@ class ImageFilterParametersGui:
         self.g_b_gui.set_event_recorder(self.event_recorder)
 
     def add_saturation(self, layout, callback):
-        self.saturation_gui = NumericParameterGui("Saturation", self.params.saturation, callback, layout, self.name)
+        self.saturation_gui = NumericParameterGui("Sat", self.params.saturation, callback, layout, self.name)
+        self.saturation_gui.set_tooltip("Image Saturation")
         self.saturation_gui.set_event_recorder(self.event_recorder)
 
     def add_imdiff_factor(self, layout, callback):
-        self.imdiff_factor_gui = NumericParameterGui("Image diff factor", self.params.imdiff_factor, callback, layout, self.name)
+        self.imdiff_factor_gui = NumericParameterGui("Imdiff x", self.params.imdiff_factor, callback, layout, self.name)
+        self.imdiff_factor_gui.set_tooltip("Image differences display factor")
         self.imdiff_factor_gui.set_event_recorder(self.event_recorder)
 
     def register_event_player(self, event_player):
@@ -58,4 +60,11 @@ class ImageFilterParametersGui:
         for v in vars(self):
             if 'gui' in v:
                 self.__dict__[v].reset()
+
+    def updateGui(self):
+        # Call updateGui for all members that contain this method
+        for v in vars(self):
+          if ug := getattr(self.__dict__[v],'updateGui',False):
+              if callable(ug):
+                  ug()
 

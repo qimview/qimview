@@ -261,9 +261,13 @@ class MultiView(QtWidgets.QWidget):
         self.print_log('update_image_parameters')
         update_start = get_time()
 
-        for n in range(self.nb_viewers_used):
-            self.image_viewers[n].filter_params.copy_from(self.filter_params)
-            self.image_viewers[n].widget.update()
+        if self.sync_filters.isChecked():
+            for n in range(self.nb_viewers_used):
+                self.image_viewers[n].filter_params.copy_from(self.filter_params)
+                self.image_viewers[n].widget.update()
+        else:
+            self._active_viewer.filter_params.copy_from(self.filter_params)
+            self._active_viewer.widget.update()
 
         if self.show_timing():
             time_spent = get_time() - update_start
@@ -376,17 +380,16 @@ class MultiView(QtWidgets.QWidget):
         vertical_layout.addWidget(self.button_widget, 0, QtCore.Qt.AlignmentFlag.AlignTop)
 
     def layout_parameters(self, parameters_layout):
-        # Add Profiles and keep zoom options
-        self.display_profiles = QtWidgets.QCheckBox("Profiles")
-        self.display_profiles.stateChanged.connect(self.toggle_display_profiles)
-        self.display_profiles.setChecked(False)
-        parameters_layout.addWidget(self.display_profiles)
-        self.keep_zoom = QtWidgets.QCheckBox("Keep zoom")
-        self.keep_zoom.setChecked(False)
-        parameters_layout.addWidget(self.keep_zoom)
+        # Sync filter and keep zoom options
+        self.sync_filters = QtWidgets.QCheckBox("Sync")
+        self.sync_filters.setToolTip("Synchronize image filters on all images")
+        self.sync_filters.setChecked(True)
+        parameters_layout.addWidget(self.sync_filters)
 
         # Reset button
-        self.reset_button = QtWidgets.QPushButton("reset")
+        self.reset_button = QtWidgets.QPushButton()
+        self.reset_button.setIcon(self.style().standardIcon(QtWidgets.QStyle.SP_BrowserReload))
+        self.reset_button.setToolTip("Reset filters to default values")
         parameters_layout.addWidget(self.reset_button)
         self.reset_button.clicked.connect(self.reset_intensities)
 
@@ -429,21 +432,8 @@ class MultiView(QtWidgets.QWidget):
         self.set_number_of_viewers(1)
         vertical_layout.addLayout(self.viewer_grid_layout, 1)
 
-        self.figures_widget = QtWidgets.QWidget()
-        self.figures_layout = QtWidgets.QHBoxLayout()
-        self.figures_layout.setSizeConstraint(QtWidgets.QLayout.SizeConstraint.SetMinimumSize)
-        # for the moment ignore this
-        # self.figures_layout.addWidget(self.value_in_range_canvas)
-        # self.figures_widget.setLayout(self.figures_layout)
-
-        vertical_layout.addWidget(self.figures_widget)
-        self.toggle_display_profiles()
         self.setLayout(vertical_layout)
         print("update_layout done")
-
-    def toggle_display_profiles(self):
-        self.figures_widget.setVisible(self.display_profiles.isChecked())
-        self.update_image()
 
     def get_output_image(self, im_string_id : str):
         """
@@ -533,6 +523,9 @@ class MultiView(QtWidgets.QWidget):
     def on_active(self, viewer : ImageViewerClass) -> None:
         # Activation requested for a given viewer
         self._active_viewer = viewer
+        # Update filters
+        self.filter_params.copy_from(viewer.filter_params)
+        self.filter_params_gui.updateGui()
         self.update_image(viewer.image_name)
  
     def on_synchronize(self, viewer : ImageViewerClass) -> None:

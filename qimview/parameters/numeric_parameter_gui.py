@@ -66,6 +66,9 @@ class NumericParameterGui(QtWidgets.QSlider):
             self.sliderReleased.connect(self._released_callback)
         self.created = True
 
+    def set_tooltip(self, mess):
+        self.label.setToolTip(mess)
+
     def add_to_layout(self, layout, stretch=0):
         if not self.created:
             self.create()
