@@ -48,6 +48,164 @@ extern "C" {
 #define NB_FRAMES 200
 using namespace std::chrono;
 
+namespace AV
+{
+  //-----------------------------------------------------------------------------------------------
+  class Packet
+  {
+  public:
+    Packet()
+    {
+      _packet = av_packet_alloc();
+      if (!_packet) {
+        printf("Couldn't allocate AVPacket\n");
+        _packet = nullptr;
+      }
+    }
+
+    ~Packet()
+    {
+      if (_packet != nullptr) {
+        av_packet_free(&_packet);
+        _packet = nullptr;
+      }
+    }
+
+    void unRef()
+    {
+      if (_packet != nullptr)
+        av_packet_unref(_packet);
+    }
+
+    AVPacket* get() { return _packet; }
+
+  private:
+    AVPacket* _packet;
+  };
+
+  //-----------------------------------------------------------------------------------------------
+  class FormatContext
+  {
+  public:
+    FormatContext(const char* filename=nullptr) {
+      _format_ctx = avformat_alloc_context();
+      if (!_format_ctx) {
+        printf("Couldn't create AVFormatContext\n");
+        _format_ctx = nullptr;
+      }
+      _file_opened = false;
+      if (filename != nullptr)
+        openFile(filename);
+    }
+
+    ~FormatContext() {
+      if (_file_opened) {
+        avformat_close_input(&_format_ctx);
+        _file_opened = false;
+      }
+      if (_format_ctx != nullptr) {
+        avformat_free_context(_format_ctx);
+        _format_ctx = nullptr;
+      }
+    }
+    AVFormatContext* get() {
+      return _format_ctx;
+    }
+    AVFormatContext** getPtr() {
+      return &_format_ctx;
+    }
+
+    void openFile(const char* filename)
+    {
+      if (avformat_open_input(&_format_ctx, filename, NULL, NULL) != 0) {
+        printf("Couldn't open video file\n");
+        _file_opened = false;
+      }
+      else
+        _file_opened = true;
+    }
+
+    bool fileOpened() const { return _file_opened; }
+
+    int findFirstValidVideoStream()
+    {
+      // Find the first valid video stream
+      int stream_index = -1;
+      AVCodecParameters* av_codec_params;
+      const AVCodec*     av_codec;
+
+      for (int i = 0; i < _format_ctx->nb_streams; ++i) {
+        av_codec_params = getCodecParams(i);
+        av_codec = findDecoder(i);
+        if (!av_codec) continue;
+        if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
+          stream_index = i;
+          break;
+        }
+      }
+      return stream_index;
+    }
+
+    AVCodecParameters* getCodecParams(const int& stream_index)
+    {
+      return _format_ctx->streams[stream_index]->codecpar;
+    }
+
+    const AVCodec* findDecoder(const int& stream_index)
+    {
+      return avcodec_find_decoder(getCodecParams(stream_index)->codec_id);
+    }
+
+  private:
+    AVFormatContext* _format_ctx;
+    bool             _file_opened;
+
+  };
+
+  //-----------------------------------------------------------------------------------------------
+  class CodecContext
+  {
+  public:
+    CodecContext(const AVCodec* codec)
+    {
+      _error_msg = "";
+      _codec_ctx = avcodec_alloc_context3(codec);
+      if (_codec_ctx == nullptr)
+        _error_msg = "Couldn't create AVCodecContext\n";
+    }
+    ~CodecContext()
+    {
+      if (_codec_ctx != nullptr) {
+        avcodec_free_context(&_codec_ctx);
+        _codec_ctx = nullptr;
+      }
+    }
+
+    int initFromParam(const AVCodecParameters* params) {
+      int averror = avcodec_parameters_to_context(_codec_ctx, params);
+      if (averror < 0) {
+        char err[256];
+        av_strerror(averror, err, 256);
+        _error_msg = "AV::CodeContext: "+ std::string(err) +"\n" ;
+      }
+      return averror;
+    }
+
+    AVCodecContext* get() {
+      return _codec_ctx;
+    }
+
+    std::string errorMsg() { return _error_msg;  }
+
+  private:
+    AVCodecContext* _codec_ctx;
+    std::string _error_msg;
+  };
+
+} // end namespace AV
+
+#define CHECK_RETURN(condition, message, returnvalue) if(!(condition)) { fprintf(stderr, message); return returnvalue; }
+
 
 //-------------------------------------------------------------------------------------------------
 // decode SW
@@ -56,56 +214,29 @@ using namespace std::chrono;
 bool load_frame(const char* filename, int* width_out, int* height_out, unsigned char** data_out) {
 
   // Open the file using libavformat
-  AVFormatContext* av_format_ctx = avformat_alloc_context();
-  if (!av_format_ctx){
-    printf("Couldn't create AVFormatContext\n");
-    return false;
-  }
-  if (avformat_open_input(&av_format_ctx, filename, NULL, NULL) != 0) {
-    printf("Couldn't open video file\n");
-    return false;
-  }
+  AV::FormatContext av_format_ctx(filename);
+  CHECK_RETURN(av_format_ctx.fileOpened(), "Couldn't open video file\n", false);
 
   // Find the first valid video stream
-  int video_stream_index = -1;
-  AVCodecParameters* av_codec_params;
-  const AVCodec*     av_codec;
+  int video_stream_index = av_format_ctx.findFirstValidVideoStream();
+  CHECK_RETURN(video_stream_index != -1, "Couldn't find a video stream \n", false);
 
-  for (int i = 0; i < av_format_ctx->nb_streams; ++i) {
-    auto stream = av_format_ctx->streams[i];
-    av_codec_params = av_format_ctx->streams[i]->codecpar;
-    av_codec = avcodec_find_decoder(av_codec_params->codec_id);
-
-    if (!av_codec) continue;
-    if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
-      video_stream_index = i;
-      break;
-    }
-  }
-
-  if (video_stream_index == -1) {
-    printf("Couldn't find a video stream \n");
-    return false;
-  }
+  auto av_codec_params = av_format_ctx.getCodecParams(video_stream_index);
+  auto av_codec = av_format_ctx.findDecoder(video_stream_index);
 
   // Set up the codec contex for the decoder
-  AVCodecContext* av_codec_ctx = avcodec_alloc_context3(av_codec);
-  if (!av_codec_ctx) {
-    printf("Couldn't create AVCodecContext\n");
-    return false;
-  }
+  AV::CodecContext codec_ctx(av_codec);
+  CHECK_RETURN(codec_ctx.get(), codec_ctx.errorMsg().c_str(), false);
 
-  if (avcodec_parameters_to_context(av_codec_ctx, av_codec_params)<0) {
-    printf("Couldn't initialize AVCodecContext\n");
-    return false;
-  }
+  int res = codec_ctx.initFromParam(av_codec_params);
+  CHECK_RETURN(res >= 0, codec_ctx.errorMsg().c_str(), false);
 
-  av_codec_ctx->thread_count = 8;
-  av_codec_ctx->thread_type = FF_THREAD_FRAME;
-  //av_codec_ctx->pix_fmt = mpeg_get_pixelformat(av_codec_ctx);
-  //av_codec_ctx->hwaccel = ff_find_hwaccel(av_codec_ctx->codec->id, av_codec_ctx->pix_fmt);
+  codec_ctx.get()->thread_count = 8;
+  codec_ctx.get()->thread_type = FF_THREAD_FRAME;
+  //codec_ctx->pix_fmt = mpeg_get_pixelformat(codec_ctx);
+  //codec_ctx->hwaccel = ff_find_hwaccel(codec_ctx->codec->id, codec_ctx->pix_fmt);
 
-  if (avcodec_open2(av_codec_ctx, av_codec, NULL) < 0) {
+  if (avcodec_open2(codec_ctx.get(), av_codec, NULL) < 0) {
     printf("Couldn't open codec\n");
     return false;
   }
@@ -115,11 +246,7 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
     printf("Couldn't allocate AVFrame\n");
     return false;
   }
-  AVPacket* av_packet = av_packet_alloc();
-  if (!av_packet) {
-    printf("Couldn't allocate AVPacket\n");
-    return false;
-  }
+  AV::Packet av_packet;
 
   int response;
   int framenum = 0;
@@ -128,18 +255,18 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
   auto curr  = high_resolution_clock::now();
   auto start = curr;
 
-  while ((av_read_frame(av_format_ctx, av_packet) >= 0)&&(framenum<NB_FRAMES)) {
-    if (av_packet->stream_index != video_stream_index) {
+  while ((av_read_frame(av_format_ctx.get(), av_packet.get()) >= 0)&&(framenum<NB_FRAMES)) {
+    if (av_packet.get()->stream_index != video_stream_index) {
       continue;
     }
-    response = avcodec_send_packet(av_codec_ctx, av_packet);
+    response = avcodec_send_packet(codec_ctx.get(), av_packet.get());
     if (response < 0) {
       char error_message[255];
       av_strerror(response, error_message, 255);
       printf("Failed to decode packet: %s \n", error_message);
       return false;
     }
-    response = avcodec_receive_frame(av_codec_ctx, av_frame);
+    response = avcodec_receive_frame(codec_ctx.get(), av_frame);
     if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
       continue;
     }
@@ -159,7 +286,7 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
     }
     
     framenum++;
-    av_packet_unref(av_packet);
+    av_packet.unRef();
   }
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
@@ -177,11 +304,7 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
   *height_out = av_frame->height;
   *data_out   = data;
 
-  avformat_close_input(&av_format_ctx);
-  avformat_free_context(av_format_ctx);
   av_frame_free(&av_frame);
-  av_packet_free(&av_packet);
-  avcodec_free_context(&av_codec_ctx);
 
   return true;
 }
@@ -302,12 +425,9 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet)
 
 bool load_frame_hw(const char* device_type, const char* filename)
 {
-  AVFormatContext *input_ctx = NULL;
   int video_stream, ret;
   AVStream *video = NULL;
-  AVCodecContext *decoder_ctx = NULL;
   const AVCodec *decoder = NULL;
-  AVPacket *packet = NULL;
   enum AVHWDeviceType type;
   int i;
 
@@ -323,25 +443,20 @@ bool load_frame_hw(const char* device_type, const char* filename)
     return false;
   }
 
-  packet = av_packet_alloc();
-  if (!packet) {
-    fprintf(stderr, "Failed to allocate AVPacket\n");
-    return false;
-  }
+  AV::Packet packet;
+  CHECK_RETURN(packet.get(), "Failed to allocate AVPacket\n", false);
 
   /* open the input file */
-  if (avformat_open_input(&input_ctx, filename, NULL, NULL) != 0) {
-    fprintf(stderr, "Cannot open input file '%s'\n", filename);
-    return false;
-  }
+  AV::FormatContext input_ctx(filename);
+  CHECK_RETURN(input_ctx.fileOpened(), "Cannot open input file", false);
 
-  if (avformat_find_stream_info(input_ctx, NULL) < 0) {
+  if (avformat_find_stream_info(input_ctx.get(), NULL) < 0) {
     fprintf(stderr, "Cannot find input stream information.\n");
     return false;
   }
 
   /* find the video stream information */
-  ret = av_find_best_stream(input_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, &decoder, 0);
+  ret = av_find_best_stream(input_ctx.get(), AVMEDIA_TYPE_VIDEO, -1, -1, &decoder, 0);
   if (ret < 0) {
     fprintf(stderr, "Cannot find a video stream in the input file\n");
     return false;
@@ -362,21 +477,21 @@ bool load_frame_hw(const char* device_type, const char* filename)
     }
   }
 
-  if (!(decoder_ctx = avcodec_alloc_context3(decoder)))
-    return AVERROR(ENOMEM);
+  AV::CodecContext codec_ctx(decoder);
+  CHECK_RETURN(codec_ctx.get(), codec_ctx.errorMsg().c_str(), false);
 
-  video = input_ctx->streams[video_stream];
-  if (avcodec_parameters_to_context(decoder_ctx, video->codecpar) < 0)
+  video = input_ctx.get()->streams[video_stream];
+  int res = codec_ctx.initFromParam(video->codecpar);
+  CHECK_RETURN(res >= 0, codec_ctx.errorMsg().c_str(), false);
+
+  codec_ctx.get()->get_format = get_hw_format;
+
+  if (hw_decoder_init(codec_ctx.get(), type) < 0)
     return false;
 
-  decoder_ctx->get_format = get_hw_format;
-
-  if (hw_decoder_init(decoder_ctx, type) < 0)
-    return false;
-
-  decoder_ctx->thread_count = 4; // Best value???
-  decoder_ctx->thread_type = FF_THREAD_FRAME;
-  if ((ret = avcodec_open2(decoder_ctx, decoder, NULL)) < 0) {
+  codec_ctx.get()->thread_count = 4; // Best value???
+  codec_ctx.get()->thread_type = FF_THREAD_FRAME;
+  if ((ret = avcodec_open2(codec_ctx.get(), decoder, NULL)) < 0) {
     fprintf(stderr, "Failed to open codec for stream #%u\n", video_stream);
     return false;
   }
@@ -392,11 +507,11 @@ bool load_frame_hw(const char* device_type, const char* filename)
   auto start = curr;
 
   while ((ret >= 0)&&(framenum <NB_FRAMES)) {
-    if ((ret = av_read_frame(input_ctx, packet)) < 0)
+    if ((ret = av_read_frame(input_ctx.get(), packet.get())) < 0)
       break;
 
-    if (video_stream == packet->stream_index) {
-      ret = decode_write(decoder_ctx, packet);
+    if (video_stream == packet.get()->stream_index) {
+      ret = decode_write(codec_ctx.get(), packet.get());
       if (frame_timer) {
         curr = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(curr - prev);
@@ -406,7 +521,7 @@ bool load_frame_hw(const char* device_type, const char* filename)
       }
       framenum++;
     }
-    av_packet_unref(packet);
+    packet.unRef();
   }
   auto end = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(end - start);
@@ -415,14 +530,11 @@ bool load_frame_hw(const char* device_type, const char* filename)
 
 
   /* flush the decoder */
-  ret = decode_write(decoder_ctx, NULL);
+  ret = decode_write(codec_ctx.get(), NULL);
 
   //if (output_file)
   //  fclose(output_file);
 
-  av_packet_free(&packet);
-  avcodec_free_context(&decoder_ctx);
-  avformat_close_input(&input_ctx);
   av_buffer_unref(&hw_device_ctx);
 
   return true;
