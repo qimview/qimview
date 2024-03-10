@@ -292,8 +292,8 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
     codec_ctx.setThreading(8, FF_THREAD_FRAME);
     codec_ctx.open(codec);
 
-    AVFrame* av_frame = av_frame_alloc();
-    if (!av_frame) {
+    AVFrame* frame = av_frame_alloc();
+    if (!frame) {
       printf("Couldn't allocate AVFrame\n");
       return false;
     }
@@ -317,7 +317,7 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
         printf("Failed to decode packet: %s \n", error_message);
         return false;
       }
-      response = avcodec_receive_frame(codec_ctx.get(), av_frame);
+      response = avcodec_receive_frame(codec_ctx.get(), frame);
       if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
         continue;
       }
@@ -343,19 +343,19 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
     auto duration = duration_cast<microseconds>(end - start);
     std::cout << " decode first " << NB_FRAMES << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
 
-    unsigned char* data = new unsigned char[av_frame->width*av_frame->height * 3];
-    for (int x = 0; x < av_frame->width; ++x) {
-      for (int y = 0; y < av_frame->height; ++y) {
-        data[y*av_frame->width * 3 + x * 3] = (unsigned char)0xff;
-        data[y*av_frame->width * 3 + x * 3 + 1] = (unsigned char)0x00;
-        data[y*av_frame->width * 3 + x * 3 + 2] = (unsigned char)0x00;
+    unsigned char* data = new unsigned char[frame->width*frame->height * 3];
+    for (int x = 0; x < frame->width; ++x) {
+      for (int y = 0; y < frame->height; ++y) {
+        data[y*frame->width * 3 + x * 3] = (unsigned char)0xff;
+        data[y*frame->width * 3 + x * 3 + 1] = (unsigned char)0x00;
+        data[y*frame->width * 3 + x * 3 + 2] = (unsigned char)0x00;
       }
     }
-    *width_out = av_frame->width;
-    *height_out = av_frame->height;
+    *width_out = frame->width;
+    *height_out = frame->height;
     *data_out = data;
 
-    av_frame_free(&av_frame);
+    av_frame_free(&frame);
 
     return true;
   }
@@ -428,12 +428,6 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet, const enum AVPi
   uint8_t *buffer = NULL;
   int size;
   int ret = 0;
-
-  ret = avcodec_send_packet(avctx, packet);
-  if (ret < 0) {
-    fprintf(stderr, "Error during decoding\n");
-    return ret;
-  }
 
   while (1) {
     if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc())) {
@@ -541,12 +535,62 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     auto prev = high_resolution_clock::now();
     auto curr = high_resolution_clock::now();
     auto start = curr;
+    int  response;
+
+    AVFrame *tmp_frame = NULL;
+    //uint8_t *buffer = NULL;
+    int size;
+    int ret = 0;
+
+    AVFrame* frame = av_frame_alloc();
+    if (!frame) {
+      printf("Couldn't allocate AVFrame frame\n");
+      return false;
+    }
+    AVFrame* sw_frame = av_frame_alloc();
+    if (!sw_frame) {
+      printf("Couldn't allocate AVFrame sw_frame\n");
+      return false;
+    }
 
     while ((av_read_frame(format_ctx.get(), packet.get()) >= 0) && (framenum < NB_FRAMES)) {
       if (packet.get()->stream_index != video_stream_index) 
         continue;
 
-      decode_write(codec_ctx.get(), packet.get(), hw_pix_fmt);
+      response = avcodec_send_packet(codec_ctx.get(), packet.get());
+      if (response < 0) {
+        char error_message[255];
+        av_strerror(response, error_message, 255);
+        printf("Failed to decode packet: %s \n", error_message);
+        return false;
+      }
+
+      // decode_write(codec_ctx.get(), packet.get(), hw_pix_fmt);
+
+      response = avcodec_receive_frame(codec_ctx.get(), frame);
+      if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
+        continue;
+      }
+      else if (response < 0) {
+        char error_message[255];
+        av_strerror(response, error_message, 255);
+        printf("Failed to decode packet: %s", error_message);
+        return false;
+      }
+
+      if (frame->format == hw_pix_fmt) {
+        /* retrieve data from GPU to CPU */
+        //auto prev = high_resolution_clock::now();
+        if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0)
+          throw AV::AVException("Error transferring the data to system memory");
+        //auto curr = high_resolution_clock::now();
+        //auto duration = duration_cast<microseconds>(curr - prev);
+        //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
+        tmp_frame = sw_frame;
+      }
+      else
+        tmp_frame = frame;
+
       if (frame_timer) {
         curr = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(curr - prev);
@@ -554,10 +598,12 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
         std::cout << "took " << duration.count() / 1000.0f << " ms" << std::endl;
         prev = curr;
       }
-      framenum++;
 
+      framenum++;
       packet.unRef();
-    }
+
+    } // end while
+
     auto end = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(end - start);
     std::cout << " decode first " << NB_FRAMES << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
@@ -570,6 +616,8 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     //if (output_file)
     //  fclose(output_file);
 
+    av_frame_free(&frame);
+    av_frame_free(&sw_frame);
 
     return true;
   }
