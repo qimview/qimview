@@ -193,6 +193,18 @@ namespace AV
       return ret;
     }
 
+    bool readVideoFrame(AVPacket* pkt, int video_stream_index)
+    {
+      while (av_read_frame(_format_ctx, pkt) >= 0) {
+        if (pkt->stream_index != video_stream_index) {
+          // need to unRef pkt?
+          continue;
+        }
+        else
+          return true; // success
+      }
+      return false; // failure
+    }
   private:
     AVFormatContext* _format_ctx;
     bool             _file_opened;
@@ -260,8 +272,45 @@ namespace AV
       return _codec_ctx;
     }
 
+    int receiveFrame(const AVPacket* pkt, AVFrame* frame)
+    {
+      int response = avcodec_send_packet(_codec_ctx, pkt);
+      if (response < 0) {
+        char error_message[255];
+        av_strerror(response, error_message, 255);
+        std::cerr << "Failed to send packet: " << error_message << std::endl;
+        return response;
+      }
+      response = avcodec_receive_frame(_codec_ctx, frame);
+      if ((response < 0)&&(response!=AVERROR(EAGAIN))&&(response != AVERROR_EOF)) {
+        char error_message[255];
+        av_strerror(response, error_message, 255);
+        std::cerr << "Failed to receive frame: " << error_message << std::endl;
+      }
+      return response;
+    }
+
   private:
     AVCodecContext* _codec_ctx;
+  };
+
+  class Frame
+  {
+  public:
+    Frame()
+    {
+      _frame = av_frame_alloc();
+      if (!_frame) {
+        throw AVException("Failed to allocate AVFrame.");
+      }
+    }
+    ~Frame()
+    {
+      av_frame_free(&_frame);
+    }
+    AVFrame* get() { return _frame; }
+  private:
+    AVFrame* _frame;
   };
 
 } // end namespace AV
@@ -292,41 +341,19 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
     codec_ctx.setThreading(8, FF_THREAD_FRAME);
     codec_ctx.open(codec);
 
-    AVFrame* frame = av_frame_alloc();
-    if (!frame) {
-      printf("Couldn't allocate AVFrame\n");
-      return false;
-    }
+    AV::Frame frame;
     AV::Packet packet;
 
-    int response;
     int framenum = 0;
     bool frame_timer = false;
     auto prev = high_resolution_clock::now();
     auto curr = high_resolution_clock::now();
     auto start = curr;
 
-    while ((av_read_frame(format_ctx.get(), packet.get()) >= 0) && (framenum < NB_FRAMES)) {
-      if (packet.get()->stream_index != video_stream_index) {
-        continue;
-      }
-      response = avcodec_send_packet(codec_ctx.get(), packet.get());
-      if (response < 0) {
-        char error_message[255];
-        av_strerror(response, error_message, 255);
-        printf("Failed to decode packet: %s \n", error_message);
-        return false;
-      }
-      response = avcodec_receive_frame(codec_ctx.get(), frame);
-      if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
-        continue;
-      }
-      else if (response < 0) {
-        char error_message[255];
-        av_strerror(response, error_message, 255);
-        printf("Failed to decode packet: %s", error_message);
-        return false;
-      }
+    while (format_ctx.readVideoFrame(packet.get(), video_stream_index) && (framenum < NB_FRAMES)) {
+      int response = codec_ctx.receiveFrame(packet.get(), frame.get());
+      if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
+      else if (response < 0) return false;
 
       if (frame_timer) {
         curr = high_resolution_clock::now();
@@ -343,19 +370,18 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
     auto duration = duration_cast<microseconds>(end - start);
     std::cout << " decode first " << NB_FRAMES << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
 
-    unsigned char* data = new unsigned char[frame->width*frame->height * 3];
-    for (int x = 0; x < frame->width; ++x) {
-      for (int y = 0; y < frame->height; ++y) {
-        data[y*frame->width * 3 + x * 3] = (unsigned char)0xff;
-        data[y*frame->width * 3 + x * 3 + 1] = (unsigned char)0x00;
-        data[y*frame->width * 3 + x * 3 + 2] = (unsigned char)0x00;
+    unsigned char* data = new unsigned char[frame.get()->width*frame.get()->height * 3];
+    for (int x = 0; x < frame.get()->width; ++x) {
+      for (int y = 0; y < frame.get()->height; ++y) {
+        data[y*frame.get()->width * 3 + x * 3] = (unsigned char)0xff;
+        data[y*frame.get()->width * 3 + x * 3 + 1] = (unsigned char)0x00;
+        data[y*frame.get()->width * 3 + x * 3 + 2] = (unsigned char)0x00;
       }
     }
-    *width_out = frame->width;
-    *height_out = frame->height;
+    *width_out = frame.get()->width;
+    *height_out = frame.get()->height;
     *data_out = data;
 
-    av_frame_free(&frame);
 
     return true;
   }
@@ -499,7 +525,6 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
   try {
 
     const AVCodec *codec = NULL;
-    AV::Packet packet;
     AV::FormatContext format_ctx(filename);
     format_ctx.findStreamInfo();
 
@@ -530,66 +555,38 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     //output_file = fopen(argv[3], "w+b");
 
     /* actual decoding and dump the raw data */
-    int framenum = 0;
     bool frame_timer = false;
     auto prev = high_resolution_clock::now();
     auto curr = high_resolution_clock::now();
     auto start = curr;
-    int  response;
 
     AVFrame *tmp_frame = NULL;
     //uint8_t *buffer = NULL;
     int size;
     int ret = 0;
 
-    AVFrame* frame = av_frame_alloc();
-    if (!frame) {
-      printf("Couldn't allocate AVFrame frame\n");
-      return false;
-    }
-    AVFrame* sw_frame = av_frame_alloc();
-    if (!sw_frame) {
-      printf("Couldn't allocate AVFrame sw_frame\n");
-      return false;
-    }
+    AV::Frame frame;
+    AV::Frame sw_frame;
+    AV::Packet packet;
+    int framenum = 0;
 
-    while ((av_read_frame(format_ctx.get(), packet.get()) >= 0) && (framenum < NB_FRAMES)) {
-      if (packet.get()->stream_index != video_stream_index) 
-        continue;
+    while (format_ctx.readVideoFrame(packet.get(), video_stream_index) && (framenum < NB_FRAMES)) {
+      int response = codec_ctx.receiveFrame(packet.get(), frame.get());
+      if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
+      else if (response < 0) return false;
 
-      response = avcodec_send_packet(codec_ctx.get(), packet.get());
-      if (response < 0) {
-        char error_message[255];
-        av_strerror(response, error_message, 255);
-        printf("Failed to decode packet: %s \n", error_message);
-        return false;
-      }
-
-      // decode_write(codec_ctx.get(), packet.get(), hw_pix_fmt);
-
-      response = avcodec_receive_frame(codec_ctx.get(), frame);
-      if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) {
-        continue;
-      }
-      else if (response < 0) {
-        char error_message[255];
-        av_strerror(response, error_message, 255);
-        printf("Failed to decode packet: %s", error_message);
-        return false;
-      }
-
-      if (frame->format == hw_pix_fmt) {
+      if (frame.get()->format == hw_pix_fmt) {
         /* retrieve data from GPU to CPU */
         //auto prev = high_resolution_clock::now();
-        if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0)
+        if ((ret = av_hwframe_transfer_data(sw_frame.get(), frame.get(), 0)) < 0)
           throw AV::AVException("Error transferring the data to system memory");
         //auto curr = high_resolution_clock::now();
         //auto duration = duration_cast<microseconds>(curr - prev);
         //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
-        tmp_frame = sw_frame;
+        tmp_frame = sw_frame.get();
       }
       else
-        tmp_frame = frame;
+        tmp_frame = frame.get();
 
       if (frame_timer) {
         curr = high_resolution_clock::now();
@@ -608,17 +605,11 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     auto duration = duration_cast<microseconds>(end - start);
     std::cout << " decode first " << NB_FRAMES << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
 
-
-
     /* flush the decoder */
     decode_write(codec_ctx.get(), NULL, hw_pix_fmt);
 
     //if (output_file)
     //  fclose(output_file);
-
-    av_frame_free(&frame);
-    av_frame_free(&sw_frame);
-
     return true;
   }
   catch (AV::AVException except) {
