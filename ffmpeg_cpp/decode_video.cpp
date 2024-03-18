@@ -47,6 +47,7 @@ extern "C" {
 #include <iostream>
 #include <exception>
 
+#include "decode_video.hpp"
 
 #define NB_FRAMES 200
 using namespace std::chrono;
@@ -55,29 +56,26 @@ using namespace std::chrono;
 namespace AV
 {
 
-  //-----------------------------------------------------------------------------------------------
-  class AVException : public std::exception {
-  public:
-    AVException(const char* msg)
+    //-----------------------------------------------------------------------------------------------
+    // AVException
+    //-----------------------------------------------------------------------------------------------
+    AVException::AVException(const char* msg)
+    {
+        _message = msg;
+    }
+
+    AVException::AVException(const std::string& msg)
     {
       _message = msg;
     }
-    AVException(const std::string& msg)
-    {
-      _message = msg;
-    }
-    const char * what() const{
+    const char * AVException::what() const{
       return _message.c_str();
     }
-  private:
-    std::string _message;
-  };
 
-  //-----------------------------------------------------------------------------------------------
-  class Packet
-  {
-  public:
-    Packet()
+    //-----------------------------------------------------------------------------------------------
+    // Packet
+    //-----------------------------------------------------------------------------------------------
+    Packet::Packet()
     {
       _packet = av_packet_alloc();
       if (!_packet) {
@@ -86,7 +84,7 @@ namespace AV
       }
     }
 
-    ~Packet()
+    Packet::~Packet()
     {
       if (_packet != nullptr) {
         av_packet_free(&_packet);
@@ -94,23 +92,16 @@ namespace AV
       }
     }
 
-    void unRef()
+    void Packet::unRef()
     {
       if (_packet != nullptr)
         av_packet_unref(_packet);
     }
 
-    AVPacket* get() { return _packet; }
-
-  private:
-    AVPacket* _packet;
-  };
-
-  //-----------------------------------------------------------------------------------------------
-  class FormatContext
-  {
-  public:
-    FormatContext(const char* filename=nullptr) {
+    //-----------------------------------------------------------------------------------------------
+    // FormatContext
+    //-----------------------------------------------------------------------------------------------
+    FormatContext::FormatContext(const char* filename) {
       _format_ctx = avformat_alloc_context();
       if (!_format_ctx) {
         _format_ctx = nullptr;
@@ -121,7 +112,7 @@ namespace AV
         openFile(filename);
     }
 
-    ~FormatContext() {
+    FormatContext::~FormatContext() {
       if (_file_opened) {
         avformat_close_input(&_format_ctx);
         _file_opened = false;
@@ -131,14 +122,8 @@ namespace AV
         _format_ctx = nullptr;
       }
     }
-    AVFormatContext* get() {
-      return _format_ctx;
-    }
-    AVFormatContext** getPtr() {
-      return &_format_ctx;
-    }
 
-    void openFile(const char* filename)
+    void FormatContext::openFile(const char* filename)
     {
       if (avformat_open_input(&_format_ctx, filename, NULL, NULL) != 0) {
         _file_opened = false;
@@ -148,9 +133,7 @@ namespace AV
         _file_opened = true;
     }
 
-    bool fileOpened() const { return _file_opened; }
-
-    int findFirstValidVideoStream()
+    int FormatContext::findFirstValidVideoStream()
     {
       // Find the first valid video stream
       int stream_index = -1;
@@ -170,30 +153,30 @@ namespace AV
       return stream_index;
     }
 
-    AVCodecParameters* getCodecParams(const int& stream_index)
+    AVCodecParameters* FormatContext::getCodecParams(const int& stream_index)
     {
       return _format_ctx->streams[stream_index]->codecpar;
     }
 
-    const AVCodec* findDecoder(const int& stream_index)
+    const AVCodec* FormatContext::findDecoder(const int& stream_index)
     {
       return avcodec_find_decoder(getCodecParams(stream_index)->codec_id);
     }
 
-    void findStreamInfo()
+    void FormatContext::findStreamInfo()
     {
       if (avformat_find_stream_info(_format_ctx, NULL) < 0)
         throw AVException("Failed to find input stream information");
     }
 
-    int findBestVideoStream(const AVCodec** codec) {
+    int FormatContext::findBestVideoStream(const AVCodec** codec) {
       int ret = av_find_best_stream(_format_ctx, AVMEDIA_TYPE_VIDEO, -1, -1, codec, 0);
       if (ret < 0)
         throw AVException("Cannot find a video stream in the input file");
       return ret;
     }
 
-    bool readVideoFrame(AVPacket* pkt, int video_stream_index)
+    bool FormatContext::readVideoFrame(AVPacket* pkt, int video_stream_index)
     {
       while (av_read_frame(_format_ctx, pkt) >= 0) {
         if (pkt->stream_index != video_stream_index) {
@@ -205,23 +188,17 @@ namespace AV
       }
       return false; // failure
     }
-  private:
-    AVFormatContext* _format_ctx;
-    bool             _file_opened;
 
-  };
-
-  //-----------------------------------------------------------------------------------------------
-  class CodecContext
-  {
-  public:
-    CodecContext(const AVCodec* codec)
+    //-----------------------------------------------------------------------------------------------
+    // CodecContext
+    //-----------------------------------------------------------------------------------------------
+    CodecContext::CodecContext(const AVCodec* codec)
     {
       _codec_ctx = avcodec_alloc_context3(codec);
       if (_codec_ctx == nullptr)
         throw AVException("Failed to create AVCodecContext");
     }
-    ~CodecContext()
+    CodecContext::~CodecContext()
     {
       if (_codec_ctx != nullptr) {
         avcodec_free_context(&_codec_ctx);
@@ -229,7 +206,7 @@ namespace AV
       }
     }
 
-    int initFromParam(const AVCodecParameters* params) {
+    int CodecContext::initFromParam(const AVCodecParameters* params) {
       int averror = avcodec_parameters_to_context(_codec_ctx, params);
       if (averror < 0) {
         char err[256];
@@ -240,13 +217,13 @@ namespace AV
       return averror;
     }
 
-    void setThreading( int count=8, int type = FF_THREAD_FRAME)
+    void CodecContext::setThreading( int count, int type)
     {
       _codec_ctx->thread_count = count;
       _codec_ctx->thread_type  = type;
     }
 
-    int initHw(const enum AVHWDeviceType type)
+    int CodecContext::initHw(const enum AVHWDeviceType type)
     {
       int err = 0;
       AVBufferRef* ctx;
@@ -261,18 +238,14 @@ namespace AV
       return err;
     }
 
-    void open(const AVCodec* codec, AVDictionary** options=nullptr)
+    void CodecContext::open(const AVCodec* codec, AVDictionary** options)
     {
       if (avcodec_open2(_codec_ctx, codec, options) < 0) {
         throw AVException("Failed to open codec");
       }
     }
 
-    AVCodecContext* get() {
-      return _codec_ctx;
-    }
-
-    int receiveFrame(const AVPacket* pkt, AVFrame* frame)
+    int CodecContext::receiveFrame(const AVPacket* pkt, AVFrame* frame)
     {
       int response = avcodec_send_packet(_codec_ctx, pkt);
       if (response < 0) {
@@ -290,31 +263,26 @@ namespace AV
       return response;
     }
 
-  private:
-    AVCodecContext* _codec_ctx;
-  };
-
-  class Frame
-  {
-  public:
-    Frame()
+    //-----------------------------------------------------------------------------------------------
+    // CodecContext
+    //-----------------------------------------------------------------------------------------------
+    Frame::Frame()
     {
       _frame = av_frame_alloc();
       if (!_frame) {
         throw AVException("Failed to allocate AVFrame.");
       }
     }
-    ~Frame()
+    Frame::~Frame()
     {
       av_frame_free(&_frame);
     }
-    AVFrame* get() { return _frame; }
 
     /**
       if the current frame is of hw_pix_format, convert it to CPU frame in the cpu_frame argument variable
       return the converted or initial frame pointer
     */
-    AVFrame* gpu2Cpu(const AVPixelFormat& hw_pix_fmt, AV::Frame& cpu_frame)
+    AVFrame* Frame::gpu2Cpu(const AVPixelFormat& hw_pix_fmt, AV::Frame& cpu_frame)
     {
       bool timing = false;
       if (_frame->format == hw_pix_fmt) {
@@ -331,19 +299,12 @@ namespace AV
       return _frame;
     }
 
-  private:
-    AVFrame* _frame;
-  };
-
 } // end namespace AV
-
-#define CHECK_RETURN(condition, message, returnvalue) if(!(condition)) { fprintf(stderr, message); return returnvalue; }
-
 
 //-------------------------------------------------------------------------------------------------
 // decode SW
 //-------------------------------------------------------------------------------------------------
-
+/*
 bool load_frame(const char* filename, int* width_out, int* height_out, unsigned char** data_out) {
 
   try
@@ -414,6 +375,7 @@ bool load_frame(const char* filename, int* width_out, int* height_out, unsigned 
 
 
 }
+*/
 
 //-------------------------------------------------------------------------------------------------
 // decode HW
@@ -434,7 +396,7 @@ namespace AV {
         if (*p == pixel_format)
           return *p;
       }
-      fprintf(stderr, "Failed to get HW surface format.\n");
+      std::cerr << "Failed to get HW surface format." << std::endl;
       return AV_PIX_FMT_NONE;
     }
 
@@ -495,7 +457,7 @@ namespace AV {
     //}
 // }
 
-bool load_frame_hw(const char* device_type_name, const char* filename)
+bool load_frame(const char* filename, const char* device_type_name = nullptr)
 {
   try {
 
@@ -507,23 +469,33 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     int video_stream_index = format_ctx.findBestVideoStream(&codec);
 
     static enum AVPixelFormat hw_pix_fmt;
+    AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 
-    auto hw_device_type = AV::HW::get_device_type(device_type_name);
-    if (hw_device_type == AV_HWDEVICE_TYPE_NONE)  return false;
+    if (device_type_name != nullptr) {
+      std::cout << "check HW" << std::endl;
+      hw_device_type = AV::HW::get_device_type(device_type_name);
+      if (hw_device_type == AV_HWDEVICE_TYPE_NONE)  return false;
 
-    auto* hwconfig = AV::HW::get_codec_hwconfig(codec, hw_device_type);
-    if (hwconfig == nullptr) return false;
-    hw_pix_fmt = hwconfig->pix_fmt;
+      auto* hwconfig = AV::HW::get_codec_hwconfig(codec, hw_device_type);
+      if (hwconfig == nullptr) return false;
+      hw_pix_fmt = hwconfig->pix_fmt;
+    }
+    bool use_hw = (hw_pix_fmt != AV_PIX_FMT_NONE) && (hw_device_type != AV_HWDEVICE_TYPE_NONE);
+    std::cout << " use_hw = " << use_hw  << " " << (hw_pix_fmt != AV_PIX_FMT_NONE) << " " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
 
     AV::CodecContext codec_ctx(codec);
 
     AVStream *video = format_ctx.get()->streams[video_stream_index];
     codec_ctx.initFromParam(video->codecpar);
 
-    // Use lambda to create a callback that captures hw_pix_fmt
-    codec_ctx.get()->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {return AV::HW::get_hw_format(ctx, pix_fmts, hw_pix_fmt); };
-    codec_ctx.initHw(hw_device_type);
-    codec_ctx.setThreading(4, FF_THREAD_FRAME); // 4, best value ?
+    int num_threads = 8;
+    if (use_hw) {
+      // Use lambda to create a callback that captures hw_pix_fmt
+      codec_ctx.get()->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {return AV::HW::get_hw_format(ctx, pix_fmts, hw_pix_fmt); };
+      codec_ctx.initHw(hw_device_type);
+      num_threads = 4; // 4, best value ?
+    }
+    codec_ctx.setThreading(num_threads, FF_THREAD_FRAME);
     codec_ctx.open(codec);
 
     /* open the file to dump raw data */
@@ -535,13 +507,13 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     auto curr = high_resolution_clock::now();
     auto start = curr;
 
-    AVFrame *tmp_frame = NULL;
     //uint8_t *buffer = NULL;
     int size;
     int ret = 0;
 
     AV::Frame frame;
     AV::Frame sw_frame;
+    AVFrame *tmp_frame = NULL;
     AV::Packet packet;
     int framenum = 0;
 
@@ -555,7 +527,7 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
       if (frame_timer) {
         curr = high_resolution_clock::now();
         auto duration = duration_cast<microseconds>(curr - prev);
-        printf("got frame %d \n", framenum);
+        std::cout << " got frame " << framenum << std::endl;
         std::cout << "took " << duration.count() / 1000.0f << " ms" << std::endl;
         prev = curr;
       }
@@ -640,11 +612,11 @@ int main(int argc, char **argv)
       , argv[0]);
     exit(0);
   }
+  std::string filename(argv[1]);
   if (argc == 2) {
-    std::string filename(argv[1]);
-    int frame_width, frame_height;
-    unsigned char* frame_data;
-    if (!load_frame(filename.c_str(), &frame_width, &frame_height, &frame_data))
+    //int frame_width, frame_height;
+    //unsigned char* frame_data;
+    if (!load_frame(filename.c_str()))
     {
       printf("Couldn't load video frame\n");
       return 1;
@@ -652,9 +624,8 @@ int main(int argc, char **argv)
   }
   else if (argc == 3)
   {
-    std::string hwdevice(argv[1]);
-    std::string filename(argv[2]);
-    if (!load_frame_hw(hwdevice.c_str(), filename.c_str()))
+    std::string hwdevice(argv[2]);
+    if (!load_frame(filename.c_str(), hwdevice.c_str()))
     {
       printf("Couldn't load video frame with hw decoder\n");
       return 1;

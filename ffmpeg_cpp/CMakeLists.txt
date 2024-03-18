@@ -21,7 +21,7 @@ else()
     message(FATAL_ERROR "FFMPEG not found")
 endif()
 
-add_executable(decode_video decode_video.cpp)
+add_executable(decode_video decode_video.cpp decode_video.hpp)
 
 target_link_libraries(
         decode_video
