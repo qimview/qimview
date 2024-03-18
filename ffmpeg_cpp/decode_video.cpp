@@ -309,6 +309,28 @@ namespace AV
       av_frame_free(&_frame);
     }
     AVFrame* get() { return _frame; }
+
+    /**
+      if the current frame is of hw_pix_format, convert it to CPU frame in the cpu_frame argument variable
+      return the converted or initial frame pointer
+    */
+    AVFrame* gpu2Cpu(const AVPixelFormat& hw_pix_fmt, AV::Frame& cpu_frame)
+    {
+      bool timing = false;
+      if (_frame->format == hw_pix_fmt) {
+        // retrieve data from GPU to CPU 
+        //auto prev = high_resolution_clock::now();
+        auto ret = av_hwframe_transfer_data(cpu_frame.get(), _frame, 0);
+        if (ret < 0)
+          throw AV::AVException("Error transferring the data to system memory");
+        //auto curr = high_resolution_clock::now();
+        //auto duration = duration_cast<microseconds>(curr - prev);
+        //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
+        return cpu_frame.get();
+      }
+      return _frame;
+    }
+
   private:
     AVFrame* _frame;
   };
@@ -447,47 +469,9 @@ namespace AV {
   }
 }
 
-static int decode_write(AVCodecContext *avctx, AVPacket *packet, const enum AVPixelFormat& hw_pix_fmt)
-{
-  AVFrame *frame = NULL, *sw_frame = NULL;
-  AVFrame *tmp_frame = NULL;
-  uint8_t *buffer = NULL;
-  int size;
-  int ret = 0;
-
-  while (1) {
-    if (!(frame = av_frame_alloc()) || !(sw_frame = av_frame_alloc())) {
-      fprintf(stderr, "Can not alloc frame\n");
-      ret = AVERROR(ENOMEM);
-      goto fail;
-    }
-
-    ret = avcodec_receive_frame(avctx, frame);
-    if (ret == AVERROR(EAGAIN) || ret == AVERROR_EOF) {
-      av_frame_free(&frame);
-      av_frame_free(&sw_frame);
-      return 0;
-    }
-    else if (ret < 0) {
-      fprintf(stderr, "Error while decoding\n");
-      goto fail;
-    }
-
-    if (frame->format == hw_pix_fmt) {
-      /* retrieve data from GPU to CPU */
-      //auto prev = high_resolution_clock::now();
-      if ((ret = av_hwframe_transfer_data(sw_frame, frame, 0)) < 0) {
-        fprintf(stderr, "Error transferring the data to system memory\n");
-        goto fail;
-      }
-      //auto curr = high_resolution_clock::now();
-      //auto duration = duration_cast<microseconds>(curr - prev);
-      //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
-      tmp_frame = sw_frame;
-    }
-    else
-      tmp_frame = frame;
-
+// static int decode_write(AVCodecContext *avctx, AVPacket *packet, const enum AVPixelFormat& hw_pix_fmt)
+// {
+// ...
     //size = av_image_get_buffer_size((AVPixelFormat)tmp_frame->format, tmp_frame->width, tmp_frame->height, 1);
     //buffer = (uint8_t*) av_malloc(size);
     //if (!buffer) {
@@ -509,16 +493,7 @@ static int decode_write(AVCodecContext *avctx, AVPacket *packet, const enum AVPi
     //  fprintf(stderr, "Failed to dump raw data.\n");
     //  goto fail;
     //}
-
-  fail:
-    //std::cout << "fail" << std::endl;
-    av_frame_free(&frame);
-    av_frame_free(&sw_frame);
-    av_freep(&buffer);
-    if (ret < 0)
-      return ret;
-  }
-}
+// }
 
 bool load_frame_hw(const char* device_type_name, const char* filename)
 {
@@ -575,18 +550,7 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
       if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
       else if (response < 0) return false;
 
-      if (frame.get()->format == hw_pix_fmt) {
-        /* retrieve data from GPU to CPU */
-        //auto prev = high_resolution_clock::now();
-        if ((ret = av_hwframe_transfer_data(sw_frame.get(), frame.get(), 0)) < 0)
-          throw AV::AVException("Error transferring the data to system memory");
-        //auto curr = high_resolution_clock::now();
-        //auto duration = duration_cast<microseconds>(curr - prev);
-        //std::cout << " GPU --> CPU took " << duration.count() / 1000.0f << " ms" << std::endl;
-        tmp_frame = sw_frame.get();
-      }
-      else
-        tmp_frame = frame.get();
+      tmp_frame = frame.gpu2Cpu(hw_pix_fmt, sw_frame);
 
       if (frame_timer) {
         curr = high_resolution_clock::now();
@@ -606,7 +570,7 @@ bool load_frame_hw(const char* device_type_name, const char* filename)
     std::cout << " decode first " << NB_FRAMES << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
 
     /* flush the decoder */
-    decode_write(codec_ctx.get(), NULL, hw_pix_fmt);
+    // TODO: decode_write(codec_ctx.get(), NULL, hw_pix_fmt);
 
     //if (output_file)
     //  fclose(output_file);
