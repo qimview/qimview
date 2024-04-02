@@ -10,8 +10,15 @@ extern "C" {
 #include <libavutil/opt.h>
 #include <libavutil/avassert.h>
 #include <libavutil/imgutils.h>
+#include <libavutil/pixfmt.h>
 }
 
+#include <pybind11/pybind11.h>
+#include <pybind11/numpy.h>
+#include <vector>
+#include <tuple>
+
+namespace py = pybind11;
 
 namespace AV
 {
@@ -64,8 +71,10 @@ namespace AV
   class CodecContext
   {
   public:
+    CodecContext();
     CodecContext(const AVCodec* codec);
     ~CodecContext();
+    void alloc(const AVCodec* codec);
     AVCodecContext* get() { return _codec_ctx; }
     int initFromParam(const AVCodecParameters* params);
     void setThreading( int count=8, int type = FF_THREAD_FRAME);
@@ -84,11 +93,31 @@ namespace AV
     Frame();
     ~Frame();
     AVFrame* get() { return _frame; }
+    AVPixelFormat getFormat() { return (AVPixelFormat) _frame->format;  }
+    std::vector<int> getLinesize() {
+      std::vector<int> res;
+      int pos = 0;
+      while ((_frame->linesize[pos] != 0) && (pos < AV_NUM_DATA_POINTERS))
+      {
+        res.push_back(_frame->linesize[pos]);
+        pos++;
+      }
+      return res;
+    }
+
+    std::tuple<int, int> getShape() {
+      return std::tuple<int, int>(_frame->height, _frame->width);
+    }
     /**
       if the current frame is of hw_pix_format, convert it to CPU frame in the cpu_frame argument variable
       return the converted or initial frame pointer
     */
-    AVFrame* gpu2Cpu(const AVPixelFormat& hw_pix_fmt, AV::Frame& cpu_frame);
+    Frame*   gpu2Cpu(const AVPixelFormat& hw_pix_fmt, Frame* cpu_frame);
+    /**
+      Returns python memoryview from the frame data
+      currently only the Y channel
+    */
+    py::object getData(const int& channel, const int& height, const int& width,  bool verbose=false);
   private:
     AVFrame* _frame;
   };
@@ -116,4 +145,43 @@ namespace AV {
 
     const AVCodecHWConfig* get_codec_hwconfig(const AVCodec *codec, const AVHWDeviceType & device_type);
   }
+}
+
+namespace AV {
+  class VideoDecoder
+  {
+  public:
+    VideoDecoder(): _stream_index(-1), _framenum(0) {}
+    bool open(const char* filename, const char* device_type_name = nullptr);
+    bool nextFrame(bool convert=true);
+    int  frameNumber() { return _framenum; }
+
+    AV::Frame* getFrame() const;
+
+    AVStream* getStream( int idx=-1) 
+    { 
+      idx = std::min(idx,(int)_format_ctx.get()->nb_streams-1);
+      return _format_ctx.get()->streams[((idx<0)?_stream_index:idx)]; 
+    }
+
+    AVFormatContext* getFormatContext()
+    {
+      return _format_ctx.get();
+    }
+
+    static AVPixelFormat hw_pix_fmt;
+
+  private:
+    std::string       _filename;
+    AV::FormatContext _format_ctx;
+    AV::CodecContext  _codec_ctx;
+    int               _stream_index;
+    AV::Frame         _frame;
+    AV::Frame         _sw_frame;
+    AV::Packet        _packet;
+    int               _framenum;
+    AV::Frame*        _current_frame;
+  };
+
+  bool load_frame(const char* filename, const char* device_type_name = nullptr);
 }

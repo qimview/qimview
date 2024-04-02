@@ -16,7 +16,9 @@ class GLTexture:
         self.textureY  = None
         self.textureU  = None
         self.textureV  = None
+        self.textureUV = None
         self.textureID = None
+        self.interlaced_uv = False
         self._gl_types = {
             'int8'   : gl.GL_BYTE,
             'uint8'  : gl.GL_UNSIGNED_BYTE,
@@ -90,8 +92,12 @@ class GLTexture:
         # self._gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
 
     def new_texture(self, texture):
-        if self.texture is not None: gl.glDeleteTextures(np.array([self.texture]))
+        # if texture is not None: gl.glDeleteTextures(np.array([texture]))
         return gl.glGenTextures(1)
+    
+    def texSubImage(self, textureY, w, h, LUM, gl_type, data):
+        self._gl.glBindTexture(  gl.GL_TEXTURE_2D, textureY)
+        self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, LUM, gl_type, data)
 
     def create_texture_gl(self, image: ViewerImage):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
@@ -107,29 +113,53 @@ class GLTexture:
                 case _:
                     print(f"create_texture_gl(): Image format not supported {image.data.dtype}")
                     format = gl.GL_R8
+            self.interlaced_uv = image.uv is not None
+            if self.interlaced_uv:
+                RG = gl.GL_RG
+                match image.data.dtype:
+                    case np.uint8:  format_uv = gl.GL_RG8
+                    # TODO: check if SHORT or UNSIGNED_SHORT
+                    case np.uint16: format_uv = gl.GL_RG16
+                    case _:
+                        print(f"create_texture_gl(): Image format not supported {image.data.dtype}")
+                        format_uv = gl.GL_R8
+            
             w, h = width, height
             w2, h2 = int(w/2), int(h/2)
-            if (self.tex_width,self.tex_height) != (width,height) or self.textureY is None or \
-                  self.textureU is None or self.textureV is None:
+            if (self.tex_width,self.tex_height) != (width,height) or self.textureY is None:
                 self.textureY = self.new_texture(self.textureY)
                 self.set_default_parameters(self.textureY)
                 self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
                 self.tex_width, self.tex_height = width, height
-                # U
-                self.textureU = self.new_texture(self.textureU)
-                self.set_default_parameters(self.textureU)
-                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
-                # V
-                self.textureV = self.new_texture(self.textureY)
-                self.set_default_parameters(self.textureV)
-                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
+                if self.interlaced_uv:
+                    # UV
+                    self.textureUV = self.new_texture(self.textureUV)
+                    self.set_default_parameters(self.textureUV)
+                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format_uv, w2, h2, 0, RG, gl_type, image.uv)
+                else:
+                    # U
+                    self.textureU = self.new_texture(self.textureU)
+                    self.set_default_parameters(self.textureU)
+                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
+                    # V
+                    self.textureV = self.new_texture(self.textureY)
+                    self.set_default_parameters(self.textureV)
+                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
-                self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureY)
-                self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, LUM, gl_type, image.data)
-                self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureU)
-                self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, LUM, gl_type, image.u)
-                self._gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureV)
-                self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, LUM, gl_type, image.v)
+                self.texSubImage(self.textureY, w,h,LUM, gl_type, image.data)
+                # self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureY)
+                # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, LUM, gl_type, image.data)
+                if self.interlaced_uv:
+                    assert self.textureUV is not None, "textureUV should not be None"
+                    self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureUV)
+                    self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, RG, gl_type, image.uv)
+                else:
+                    assert self.textureU is not None and self.textureV is not None, \
+                            "textureV and textureV should not be None"
+                    self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureU)
+                    self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, LUM, gl_type, image.u)
+                    self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureV)
+                    self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, LUM, gl_type, image.v)
         else:
             # Texture pixel format
             pix_fmt = self._channels2format[image.channels]

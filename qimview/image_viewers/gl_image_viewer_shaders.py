@@ -71,31 +71,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         }
     """
 
-    # fragment shader program
-    fragmentShader_YUV420 = """
-        #version 330 core
-    
-        in vec2 UV;
-        uniform sampler2D YTex;
-        uniform sampler2D UTex;
-        uniform sampler2D VTex;
-        uniform float texture_scale;
-        uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
-        float y,u,v, r, g, b;
-        out vec3 colour;
-    
-        void main() {
-          y = texture(YTex, UV).r*texture_scale;
-          u = texture(UTex, UV).r*texture_scale;
-          v = texture(VTex, UV).r*texture_scale;
-
+    fragmentShader_YUV420_common = """
           y = 1.1643*(y-0.0625);
           u = u-0.5;
           v = v-0.5;
@@ -128,6 +104,64 @@ class GLImageViewerShaders(GLImageViewerBase):
           
           // apply gamma
           colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
+    """
+
+    # fragment shader program
+    fragmentShader_YUV420 = """
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D YTex;
+        uniform sampler2D UTex;
+        uniform sampler2D VTex;
+        uniform float texture_scale;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        float y,u,v, r, g, b;
+        out vec3 colour;
+    
+        void main() {
+          y = texture(YTex, UV).r*texture_scale;
+          u = texture(UTex, UV).r*texture_scale;
+          v = texture(VTex, UV).r*texture_scale;
+    """ + \
+        fragmentShader_YUV420_common  + \
+    """
+        }
+    """
+
+    fragmentShader_YUV420_interlaced = """
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D YTex;
+        uniform sampler2D UVTex;
+        uniform float texture_scale;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        float y,u,v, r, g, b;
+        out vec3 colour;
+    
+        void main() {
+          y  = texture(YTex,  UV).r*texture_scale;
+          u  = texture(UVTex, UV).r*texture_scale;
+          v  = texture(UVTex, UV).g*texture_scale;
+
+    """ + \
+        fragmentShader_YUV420_common  + \
+    """
 
         }
     """
@@ -199,6 +233,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.mvMatrix                                    = np.identity(4, dtype=np.float32)
         self.program_RGB                                 = None
         self.program_YUV420                              = None
+        self.program_YUV420_interlaced                   = None
         self.program_RAW                                 = None
         self.program                                     = None
         self._vertex_buffer       : QOpenGLBuffer | None = None
@@ -225,6 +260,17 @@ class GLImageViewerShaders(GLImageViewerBase):
             try:
                 self.program_YUV420 = shaders.compileProgram(vs, fs, validate=False)
                 self.print_log(f"\n***** self.program_YUV420 = {self.program_YUV420} *****\n")
+            except Exception as e:
+                print(f'failed RGB shaders.compileProgram() {e}')
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+        if self.program_YUV420_interlaced is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_YUV420_interlaced, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_YUV420_interlaced = shaders.compileProgram(vs, fs, validate=False)
+                self.print_log(f"\n***** self.program_YUV420_interlaced = {self.program_YUV420_interlaced} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
             shaders.glDeleteShader(vs)
@@ -343,6 +389,10 @@ class GLImageViewerShaders(GLImageViewerBase):
         else:
             print("Image is None")
             return
+
+        # Asserts that avoid syntax highlighting errors
+        assert self.texture_yuv is not None
+
         self.opengl_error()
         self.start_timing()
 
@@ -353,7 +403,10 @@ class GLImageViewerShaders(GLImageViewerBase):
         if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
             self.program = self.program_RAW
         elif self._image and self._image.channels == ImageFormat.CH_YUV420:
-            self.program = self.program_YUV420
+            if self.texture_yuv.interlaced_uv:
+                self.program = self.program_YUV420_interlaced
+            else:
+                self.program = self.program_YUV420
         else:
             # TODO: check for other types: scalar ...
             self.program = self.program_RGB
@@ -365,8 +418,11 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
-            self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
-            self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+            if self.texture_yuv.interlaced_uv:
+                self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
+            else:
+                self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
+                self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
             self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
         else:
             self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
@@ -388,8 +444,11 @@ class GLImageViewerShaders(GLImageViewerBase):
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glUniform1i(self.uYTex, 0)
-            _gl.glUniform1i(self.uUTex, 2)
-            _gl.glUniform1i(self.uVTex, 4)
+            if self.texture_yuv.interlaced_uv:
+                _gl.glUniform1i(self.uUVTex, 2)
+            else:
+                _gl.glUniform1i(self.uUTex, 2)
+                _gl.glUniform1i(self.uVTex, 4)
             match self._image.data.dtype:
                 case np.uint8:  texture_scale = 1
                 # Normalize image to full intensity range
@@ -439,10 +498,14 @@ class GLImageViewerShaders(GLImageViewerBase):
         if self._image and self._image.channels == ImageFormat.CH_YUV420 and self.texture_yuv:
             _gl.glActiveTexture(gl.GL_TEXTURE0)
             _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureY)
-            _gl.glActiveTexture(gl.GL_TEXTURE2)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureU)
-            _gl.glActiveTexture(gl.GL_TEXTURE4)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureV)
+            if self.texture_yuv.interlaced_uv:
+                _gl.glActiveTexture(gl.GL_TEXTURE2)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureUV)
+            else:
+                _gl.glActiveTexture(gl.GL_TEXTURE2)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureU)
+                _gl.glActiveTexture(gl.GL_TEXTURE4)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureV)
         else:
             if self.texture_rgb:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_rgb.textureID)

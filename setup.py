@@ -50,6 +50,17 @@ setup_args = dict(
             # define_macros = [('VERSION_INFO', __version__)],
             include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
             ),
+        Pybind11Extension("ffmpeg_cpp",
+            ["ffmpeg_cpp/decode_video.pybind.cpp"],
+            depends = [ 
+                'qimview/cpp_bind/image_histogram.hpp',
+                'qimview/cpp_bind/image_resize.hpp',
+                'qimview/cpp_bind/image_to_rgb.hpp',
+                ],
+            # Example: passing in the version to the compiled code
+            # define_macros = [('VERSION_INFO', __version__)],
+            include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
+            ),
     ],
     cmdclass = {'build_ext': build_ext_subclass } 
 )

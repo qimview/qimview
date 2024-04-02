@@ -71,8 +71,10 @@ class ViewerImage:
         self.data_reduced_2 = None
         self.data_reduced_4 = None
         # For YUV format, _data contains Y and _u and _v contain U and V
-        self._u : Optional[np.ndarray] = None
-        self._v : Optional[np.ndarray] = None
+        self._u  : Optional[np.ndarray] = None
+        self._v  : Optional[np.ndarray] = None
+        # For YUV format, _uv contains interlaced UV data
+        self._uv : Optional[np.ndarray] = None
 
 
     @property
@@ -98,6 +100,14 @@ class ViewerImage:
     @v.setter
     def v(self, d : np.ndarray):
         self._v = d
+
+    @property
+    def uv(self) -> Optional[np.ndarray] :
+        return self._uv
+
+    @uv.setter
+    def uv(self, d : np.ndarray):
+        self._uv = d
 
     @property
     def data(self) -> np.ndarray :
