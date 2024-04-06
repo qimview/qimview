@@ -38,8 +38,8 @@ class GLTexture:
                 ImageFormat.CH_GBRG: gl.GL_RGBA,
                 ImageFormat.CH_BGGR: gl.GL_RGBA
             }
-        self.tex_width  : int = 0
-        self.tex_height : int = 0
+        self.width  : int = 0
+        self.height : int = 0
 
     def _internal_format(self, image):
         # Not sure what is the right parameter for internal format of 2D texture based
@@ -126,11 +126,11 @@ class GLTexture:
             
             w, h = width, height
             w2, h2 = int(w/2), int(h/2)
-            if (self.tex_width,self.tex_height) != (width,height) or self.textureY is None:
+            if (self.width,self.height) != (width,height) or self.textureY is None:
                 self.textureY = self.new_texture(self.textureY)
                 self.set_default_parameters(self.textureY)
                 self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
-                self.tex_width, self.tex_height = width, height
+                self.width, self.height = width, height
                 if self.interlaced_uv:
                     # UV
                     self.textureUV = self.new_texture(self.textureUV)
@@ -164,7 +164,7 @@ class GLTexture:
             # Texture pixel format
             pix_fmt = self._channels2format[image.channels]
 
-            if (self.tex_width,self.tex_height) != (width,height):
+            if (self.width,self.height) != (width,height):
                 try:
                     if self.textureID is not None: gl.glDeleteTextures(np.array([self.textureID]))
                     self.textureID = gl.glGenTextures(1)
@@ -172,7 +172,7 @@ class GLTexture:
                     # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
                     format = self._internal_format(image)
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, width, height, 0, pix_fmt, gl_type, image.data)
-                    self.tex_width, self.tex_height = width, height
+                    self.width, self.height = width, height
                 except Exception as e:
                     print(f"setTexture failed shape={image.data.shape}: {e}")
                     return False
@@ -181,5 +181,5 @@ class GLTexture:
                     self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, width, height, pix_fmt, gl_type, image.data)
                     # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
                 except Exception as e:
-                    print(f"setTexture glTexSubImage2D() failed shape={image.data.shape}: {e}")
+                    print(f"setTexture glTexSubImage2D() failed shape={image.data.shape} {self.height, self.width}: {e}")
                     return False
