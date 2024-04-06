@@ -395,7 +395,7 @@ namespace AV
         std::cout << "scalar_size=" << scalar_size << std::endl;
       }
 
-      if (scalar_size == 2)
+      if ((scalar_size == 2)||(scalar_size==1))
       {
         return py::memoryview::from_memory(
           _frame->data[channel],
@@ -403,7 +403,7 @@ namespace AV
         );
       }
       else {
-        std::cout << "Only scalar size of 2 is available "  << std::endl;
+        std::cout << "Only scalar size of 1 or 2 byte(s) are available, scalar_size="  << scalar_size << std::endl;
         return py::none();
       }
     }
