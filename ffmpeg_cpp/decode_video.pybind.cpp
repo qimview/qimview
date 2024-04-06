@@ -252,6 +252,18 @@ PYBIND11_MODULE(decode_video_py, m) {
   ;
     //.export_values();
 
+#define ADD_ENUM(_class,v) .value(#v, _class::v)
+
+  py::enum_<AVPictureType>(m, "AVPictureType")
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_NONE)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_I)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_P)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_B)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_S)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_SI)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_SP)
+    ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_BI)
+    ;
 
 #define RO(_class, member) .def_readonly(#member, &_class::member)
 #define RW(_class, member) .def_readwrite(#member, &_class::member)
@@ -261,6 +273,7 @@ PYBIND11_MODULE(decode_video_py, m) {
     RO(AVFrame, width)
     RO(AVFrame, height)
     RO(AVFrame, format)
+    RO(AVFrame, pict_type)
     ;
 
   py::class_<AVRational>(m, "AVRational")
@@ -271,8 +284,6 @@ PYBIND11_MODULE(decode_video_py, m) {
       return std::to_string(self.num) + "/" + std::to_string(self.den);  
     })
     ;
-
-#define ADD_ENUM(_class,v) .value(#v, _class::v)
 
   py::enum_<AVMediaType>(m, "AVMediaType")
     ADD_ENUM(AVMediaType, AVMEDIA_TYPE_UNKNOWN)
@@ -332,7 +343,7 @@ PYBIND11_MODULE(decode_video_py, m) {
 
   py::class_<AV::Frame>(m, "Frame")
     .def(py::init<>()) // constructor
-    .def("get",         &AV::Frame::get)
+    .def("get",         &AV::Frame::get, py::return_value_policy::reference)
     .def("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width), ARG(verbose) = false)
     .def("getFormat",   &AV::Frame::getFormat)
     .def("getShape",    &AV::Frame::getShape)
