@@ -52,6 +52,9 @@ testpaths = [
     "qimview/pytests",
 ]
 
+[tool.setuptools]
+packages = ["qimview"]
+
 [tool.setuptools.dynamic]
 version = {attr = "qimview.__version__"}
 
