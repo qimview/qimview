@@ -10,9 +10,10 @@ from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParamet
 
 
 class TestVideoPlayer(QtWidgets.QMainWindow):
-    def __init__(self, filename, device_type) -> None:
+    def __init__(self, filename1, filename2, device_type) -> None:
         super().__init__()
-        self.filename = filename
+        self.filename1 = filename1
+        self.filename2 = filename2
         self.device_type = device_type
 
         self.main_widget = QtWidgets.QWidget()
@@ -54,7 +55,8 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self._pause = True
         self._button_play_pause.clicked.connect(self.play_pause)
 
-        self.video_decoder = None
+        self.video_decoder1 = None
+        self.video_decoder2 = None
         self.show()
 
     def update_image_intensity_event(self):
@@ -63,21 +65,23 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self.widget.viewer_update()
 
     def play_pause(self):
-        if self.video_decoder is None:
+        if self.video_decoder1 is None:
             # device_type = "cuda" for HW decoding
-            self.open_video( self.filename, self.device_type)
+            self.open_video1( self.filename1, self.device_type)
+            if self.filename2:
+                self.open_video2( self.filename2, self.device_type)
         self.decode()
 
-    def open_video(self, filename, device_type : str|None):
-        self.video_decoder = decode_lib.VideoDecoder()
-        self.video_decoder.open(filename, device_type)
+    def open_video1(self, filename, device_type : str|None):
+        self.video_decoder1 = decode_lib.VideoDecoder()
+        self.video_decoder1.open(filename, device_type)
 
-        self._video_stream = self.video_decoder.getStream()
-        codecpar = self._video_stream.codecpar
+        self._video_stream1 = self.video_decoder1.getStream()
+        codecpar = self._video_stream1.codecpar
         shape = (codecpar.height, codecpar.width)
         print(f"Video dimensions (h,w)={shape}")
 
-        st = self._video_stream
+        st = self._video_stream1
         # Assume all frame have the same time base as the video stream
         # fps = self.stream.base_rate, base_rate vs average_rate
         print(f"FPS avg:{st.avg_frame_rate} base:{st.r_frame_rate}")
@@ -89,9 +93,13 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self._duration        = float(st.duration * self._time_base)
         self._end_time        = float(self._duration-self._frame_duration)
 
+    def open_video2(self, filename, device_type : str|None):
+        self.video_decoder2 = decode_lib.VideoDecoder()
+        self.video_decoder2.open(filename, device_type)
+
     def decode(self):
 
-        assert self.video_decoder is not None
+        assert self.video_decoder1 is not None
         self.st = time.perf_counter()
 
         self.display_frames(0,0)
@@ -101,13 +109,21 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
     def display_frames(self, current, max):
         # if current%10==0:
         #     print(f"{current}")
-        assert self.video_decoder is not None
+        assert self.video_decoder1 is not None
         if current%1 == 0:
-            self.video_decoder.nextFrame(convert=True)
-            self.frame = self.video_decoder.getFrame()
-            self.display_frame()
+            self.video_decoder1.nextFrame(convert=True)
+            self.frame1 = self.video_decoder1.getFrame()
+            # print(self.frame1.get().pict_type)
+            if self.video_decoder2:
+                self.video_decoder2.nextFrame(convert=True)
+                self.frame2 = self.video_decoder2.getFrame()
+            else:
+                self.frame2 = None
+            self.display_frame(current)
         else:
-            self.video_decoder.nextFrame(convert=False)
+            self.video_decoder1.nextFrame(convert=False)
+            if self.video_decoder2:
+                self.video_decoder2.nextFrame(convert=False)
         if current<max:
             QtCore.QTimer.singleShot(1, lambda : self.display_frames(current+1, max))
         else:
@@ -117,50 +133,82 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
     def display_frames2(self, current, max):
         # if current%10==0:
         #     print(f"{current}")
-        assert self.video_decoder is not None
+        assert self.video_decoder1 is not None
         for i in range(current, max+1):
-            self.video_decoder.nextFrame()
-            self.frame = self.video_decoder.getFrame()
-            self.display_frame()
+            self.video_decoder1.nextFrame()
+            self.frame1 = self.video_decoder1.getFrame()
+            self.display_frame(i)
             QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
         duration = time.perf_counter()-self.st
         print(f"took {duration:0.3f} sec {max/duration:0.2f} fps")
 
+    def display_frame(self, frame_nb):
 
-
-    def display_frame(self):
-
-        def getArray(index, height, width, dtype):
+        def getArray(frame, index, height, width, dtype):
             dtype_size = np.dtype(dtype).itemsize
-            mem = self.frame.getData(index, height, width)
-            linesize = int(self.frame.getLinesize()[index]/dtype_size)
+            mem = frame.getData(index, height, width)
+            linesize = int(frame.getLinesize()[index]/dtype_size)
             array = np.frombuffer(mem, dtype=dtype).reshape(-1, linesize)
             return mem, array
 
-        height, width = self.frame.getShape()
-        match self.frame.getFormat():
+        height1, width1 = self.frame1.getShape()
+        if self.frame2:
+            height2, width2 = self.frame2.getShape()
+            assert self.frame1.getFormat() == self.frame2.getFormat(), "Videos have different frame formats"
+        match self.frame1.getFormat():
             case decode_lib.AVPixelFormat.AV_PIX_FMT_P010LE:
                 # Create numpy array from Y and UV
-                self.memY,  self.Y  = getArray(0, height,    width, np.uint16)
-                self.memUV, self.UV = getArray(1, height//2, width, np.uint16)
+                self.memY1,  self.Y1  = getArray(self.frame1, 0, height1,    width1, np.uint16)
+                self.memUV1, self.UV1 = getArray(self.frame1, 1, height1//2, width1, np.uint16)
 
                 prec=16
-                self._im = ViewerImage(self.Y, channels = ImageFormat.CH_YUV420, precision=prec)
-                self._im.uv = self.UV
-            case  decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P10LE:
+                self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
+                self._im1.uv = self.UV1
+                self._im2 = None
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P10LE:
                 # Create numpy array from Y, U and V
-                self.memY, self.Y = getArray(0, height,    width,    np.uint16)
-                self.memU, self.U = getArray(1, height//2, width//2, np.uint16)
-                self.memV, self.V = getArray(2, height//2, width//2, np.uint16)
+                self.memY1, self.Y1 = getArray(self.frame1, 0, height1,    width1,    np.uint16)
+                self.memU1, self.U1 = getArray(self.frame1, 1, height1//2, width1//2, np.uint16)
+                self.memV1, self.V1 = getArray(self.frame1, 2, height1//2, width1//2, np.uint16)
 
                 prec=10
-                self._im = ViewerImage(self.Y, channels = ImageFormat.CH_YUV420, precision=prec)
-                self._im.u = self.U
-                self._im.v = self.V
-            case _:
-                assert False, f"frame format {self.frame.getFormat()} not available"
+                self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
+                self._im1.u = self.U1
+                self._im1.v = self.V1
+                self._im2 = None
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_YUVJ420P:
+                # Create numpy array from Y, U and V
+                self.memY1, self.Y1 = getArray(self.frame1, 0, height1,    width1,    np.uint8)
+                self.memU1, self.U1 = getArray(self.frame1, 1, height1//2, width1//2, np.uint8)
+                self.memV1, self.V1 = getArray(self.frame1, 2, height1//2, width1//2, np.uint8)
 
-        self.widget.set_image_fast(self._im)
+                prec=8
+                self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
+                self._im1.u = self.U1
+                self._im1.v = self.V1
+                self._im2 = None
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_NV12:
+                self.memY1,  self.Y1  = getArray(self.frame1, 0, height1,    width1, np.uint8)
+                self.memUV1, self.UV1 = getArray(self.frame1, 1, height1//2, width1, np.uint8)
+
+                prec=8
+                self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
+                self._im1.uv = self.UV1
+
+                if self.frame2:
+                    self.memY2,  self.Y2  = getArray(self.frame2, 0, height2,    width2, np.uint8)
+                    self.memUV2, self.UV2 = getArray(self.frame2, 1, height2//2, width2, np.uint8)
+
+                    prec=8
+                    self._im2 = ViewerImage(self.Y2, channels = ImageFormat.CH_YUV420, precision=prec)
+                    self._im2.uv = self.UV2
+                else:
+                    self._im2 = None
+
+            case _:
+                assert False, f"frame format {self.frame1.getFormat()} not available"
+
+        self.widget.set_image_fast(self._im1, image_ref=self._im2)
         self.widget.image_name = "Test frame"
         self.widget.viewer_update()
 
@@ -168,7 +216,7 @@ def main():
 
     import argparse
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('input_video', help='input video')
+    parser.add_argument('input_videos', help='input videos',  nargs='+')
     parser.add_argument('-c','--cuda', action='store_true', help='use cuda hardware')
     args = parser.parse_args()
 
@@ -180,7 +228,12 @@ def main():
     app = QtWidgets.QApplication()
 
     device_type = "cuda" if args.cuda else None
-    window = TestVideoPlayer(args.input_video, device_type)
+    if len(args.input_videos)>2:
+        print("Warning: Using only first 2 videos ...")
+    if len(args.input_videos)==1:
+        window = TestVideoPlayer(args.input_videos[0], None, device_type)
+    else:
+        window = TestVideoPlayer(args.input_videos[0], args.input_videos[1], device_type)
     window.show()
 
     app.exec()
