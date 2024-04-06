@@ -75,29 +75,19 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         if changed:
             if self.setTexture():
-                self.show()
-                self.update()
+                # self.show()
+                # self.update()
+                pass
             else:
                 print("setTexture() return False")
 
-    def set_image_fast(self, image):
-        self._image = image
+    def set_image_fast(self, image, image_ref=None):
+        self._image     = image
+        self._image_ref = image_ref
         self.image_id += 1
-        # super(GLImageViewerBase, self).set_image_fast(image)
-        # img_width = self._image.data.shape[1]
-        # if img_width % 4 != 0:
-        #     print("Image is resized to a multiple of 4 dimension in X")
-        #     img_width = ((img_width >> 4) << 4)
-        #     im = np.ascontiguousarray(self._image.data[:,:img_width, :])
-        #     self._image = ViewerImage(im, precision = self._image.precision, downscale = 1,
-        #                                 channels = self._image.channels)
-        #     print(self._image.data.shape)
-        if self.setTexture():
-            return
-            # self.show()
-            # self.update()
-        else:
-            print("setTexture() return False")
+        res = self.setTexture()
+        if not res: print("setTexture() returned False")
+
 
     def synchronize_data(self, other_viewer):
         super(GLImageViewerBase, self).synchronize_data(other_viewer)
@@ -134,6 +124,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.texture = GLTexture(_gl)
         self.texture.create_texture_gl(self._image)
         # Set image_ref if available and compatible
+        if self._image_ref and self._image_ref.channels == self._image.channels:
+            if self.texture_ref is None:
+                self.texture_ref = GLTexture(_gl)
+            self.texture_ref.create_texture_gl(self._image_ref)
 
         self.print_timing(add_total=True)
         self.opengl_error()
@@ -353,7 +347,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self._mouse_events.mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
-        if self.show_cursor:
+        if self.show_cursor or self._show_overlay:
             self.set_cursor_image_position(event.x(), event.y())
         self._mouse_events.mouse_move_event(event)
 

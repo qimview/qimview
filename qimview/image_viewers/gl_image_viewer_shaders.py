@@ -166,6 +166,47 @@ class GLImageViewerShaders(GLImageViewerBase):
         }
     """
 
+    # Version with 2 textures
+    fragmentShader_YUV420_interlaced_twotex = """
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D YTex;
+        uniform sampler2D UVTex;
+        uniform sampler2D YTex2;
+        uniform sampler2D UVTex2;
+        uniform float overlap_ratio;
+        uniform float texture_scale;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        float y,u,v, r, g, b;
+        out vec3 colour;
+    
+        void main() {
+          // Put 2 images side by side?
+          if (UV.x<=overlap_ratio) {
+            y  = texture(YTex,  UV).r*texture_scale;
+            u  = texture(UVTex, UV).r*texture_scale;
+            v  = texture(UVTex, UV).g*texture_scale;
+          } else {
+            y  = texture(YTex2,  UV).r*texture_scale;
+            u  = texture(UVTex2, UV).r*texture_scale;
+            v  = texture(UVTex2, UV).g*texture_scale;
+          }
+
+    """ + \
+        fragmentShader_YUV420_common  + \
+    """
+
+        }
+    """
+
     fragmentShader_RAW = """
         #version 330 core
         
@@ -227,13 +268,13 @@ class GLImageViewerShaders(GLImageViewerBase):
         super().__init__(parent)
 
         self.setAutoFillBackground(False)
-        self.tex_width, self.tex_height                  = 0, 0
         self.opengl_debug                                = False
         self.pMatrix                                     = np.identity(4, dtype=np.float32)
         self.mvMatrix                                    = np.identity(4, dtype=np.float32)
         self.program_RGB                                 = None
         self.program_YUV420                              = None
         self.program_YUV420_interlaced                   = None
+        self.program_YUV420_interlaced_twotex            = None
         self.program_RAW                                 = None
         self.program                                     = None
         self._vertex_buffer       : QOpenGLBuffer | None = None
@@ -271,6 +312,17 @@ class GLImageViewerShaders(GLImageViewerBase):
             try:
                 self.program_YUV420_interlaced = shaders.compileProgram(vs, fs, validate=False)
                 self.print_log(f"\n***** self.program_YUV420_interlaced = {self.program_YUV420_interlaced} *****\n")
+            except Exception as e:
+                print(f'failed RGB shaders.compileProgram() {e}')
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
+        if self.program_YUV420_interlaced_twotex is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_YUV420_interlaced_twotex, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_YUV420_interlaced_twotex = shaders.compileProgram(vs, fs, validate=False)
+                self.print_log(f"\n***** self.program_YUV420_interlaced_twotex = {self.program_YUV420_interlaced_twotex} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
             shaders.glDeleteShader(vs)
@@ -395,11 +447,16 @@ class GLImageViewerShaders(GLImageViewerBase):
         _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
+        twotex = self.texture_ref is not None and self.texture.interlaced_uv \
+            and self.texture_ref.interlaced_uv and self._show_overlay
         if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
             self.program = self.program_RAW
         elif self._image and self._image.channels == ImageFormat.CH_YUV420:
             if self.texture.interlaced_uv:
-                self.program = self.program_YUV420_interlaced
+                if twotex:
+                    self.program = self.program_YUV420_interlaced_twotex
+                else:
+                    self.program = self.program_YUV420_interlaced
             else:
                 self.program = self.program_YUV420
         else:
@@ -413,11 +470,17 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
-            if self.texture_yuv.interlaced_uv:
+            if twotex:
+                self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
+            if self.texture.interlaced_uv:
                 self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
+                if twotex:
+                    self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
             else:
                 self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
                 self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+            if twotex:
+                self.texture_overlap_ratio = shaders.glGetUniformLocation(self.program, "overlap_ratio")
             self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
         else:
             self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
@@ -439,8 +502,12 @@ class GLImageViewerShaders(GLImageViewerBase):
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glUniform1i(self.uYTex, 0)
-            if self.texture_yuv.interlaced_uv:
+            if twotex:
+                _gl.glUniform1i(self.uYTex2, 1)
+            if self.texture.interlaced_uv:
                 _gl.glUniform1i(self.uUVTex, 2)
+                if twotex:
+                    _gl.glUniform1i(self.uUVTex2, 3)
             else:
                 _gl.glUniform1i(self.uUTex, 2)
                 _gl.glUniform1i(self.uVTex, 4)
@@ -450,6 +517,8 @@ class GLImageViewerShaders(GLImageViewerBase):
                 case np.uint16: texture_scale = 1<<(16-self._image.precision)
                 case _: texture_scale = 1
             # print(f"-- texture_scale = {texture_scale}")
+            if twotex:
+                _gl.glUniform1f( self.texture_overlap_ratio, self.cursor_imx_ratio)
             _gl.glUniform1f( self.texture_scale_location, texture_scale)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
@@ -490,12 +559,18 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
-        if self._image and self._image.channels == ImageFormat.CH_YUV420 and self.texture_yuv:
+        if self._image and self._image.channels == ImageFormat.CH_YUV420 and self.texture:
             _gl.glActiveTexture(gl.GL_TEXTURE0)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureY)
-            if self.texture_yuv.interlaced_uv:
+            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureY)
+            if twotex:
+                _gl.glActiveTexture(gl.GL_TEXTURE1)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureY)
+            if self.texture.interlaced_uv:
                 _gl.glActiveTexture(gl.GL_TEXTURE2)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureUV)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureUV)
+                if twotex:
+                    _gl.glActiveTexture(gl.GL_TEXTURE3)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureUV)
             else:
                 _gl.glActiveTexture(gl.GL_TEXTURE2)
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
