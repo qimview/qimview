@@ -378,20 +378,15 @@ class GLImageViewerShaders(GLImageViewerBase):
         """Paint the scene.
         """
         if self._image is not None:
-            if self._image.channels == ImageFormat.CH_YUV420:
-                if self.texture_yuv is None or not self.isValid():
-                    print("paintGL() not ready")
-                    return
-            else:
-                if self.texture_rgb is None or not self.isValid():
-                    print("paintGL() not ready")
-                    return
+            if self.texture is None or not self.isValid():
+                print("paintGL() not ready")
+                return
         else:
             print("Image is None")
             return
 
         # Asserts that avoid syntax highlighting errors
-        assert self.texture_yuv is not None
+        assert self.texture is not None
 
         self.opengl_error()
         self.start_timing()
@@ -403,7 +398,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
             self.program = self.program_RAW
         elif self._image and self._image.channels == ImageFormat.CH_YUV420:
-            if self.texture_yuv.interlaced_uv:
+            if self.texture.interlaced_uv:
                 self.program = self.program_YUV420_interlaced
             else:
                 self.program = self.program_YUV420
@@ -503,12 +498,12 @@ class GLImageViewerShaders(GLImageViewerBase):
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureUV)
             else:
                 _gl.glActiveTexture(gl.GL_TEXTURE2)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureU)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
                 _gl.glActiveTexture(gl.GL_TEXTURE4)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_yuv.textureV)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureV)
         else:
-            if self.texture_rgb:
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_rgb.textureID)
+            if self.texture:
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
         _gl.glEnable(gl.GL_TEXTURE_2D)
 
         # draw
@@ -532,7 +527,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         h = self._height
         dx, dy = self.new_translation()
         # Deduce new scale from mouse vertical displacement
-        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.tex_height)
+        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
         new_transform_params = [w,h,dx,dy,scale]
         if self._transform_param != new_transform_params or force:
             # update the window size

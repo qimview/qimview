@@ -35,9 +35,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         self.setFormat(_format)
 
-        self.texture_rgb : GLTexture | None = None
-        self.texture_yuv : GLTexture | None = None
-        self.tex_width, self.tex_height = 0, 0
+        self.texture     : GLTexture | None = None
+        # YUV texture of reference image
+        self.texture_ref : GLTexture | None = None
         self.opengl_debug = True
         self.current_text = None
         self.cursor_imx_ratio = 0.5
@@ -129,18 +129,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print("self._image is None")
             return False
 
-        if self._image.channels == ImageFormat.CH_YUV420:
-            # Set Y, U and V
-            if self.texture_yuv is None:
-                self.texture_yuv = GLTexture(_gl)
-            self.texture_yuv.create_texture_gl(self._image)
-            self.tex_width, self.tex_height = self.texture_yuv.tex_width, self.texture_yuv.tex_height
-        else:
-            if self.texture_rgb is None:
-                # QtGui.QOpenGLContext.currentContext().functions()
-                self.texture_rgb = GLTexture(_gl)
-            self.texture_rgb.create_texture_gl(self._image)
-            self.tex_width, self.tex_height = self.texture_rgb.tex_width, self.texture_rgb.tex_height
+        # Set Y, U and V
+        if self.texture is None:
+            self.texture = GLTexture(_gl)
+        self.texture.create_texture_gl(self._image)
+        # Set image_ref if available and compatible
 
         self.print_timing(add_total=True)
         self.opengl_error()
@@ -161,14 +154,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             t = trace_method(self.tab)
         if self._image is None:
             return
-        if self._image.channels != ImageFormat.CH_YUV420:
-            if self.texture_rgb is None or not self.isValid() or not self.isVisible():
-                print(f"paintGL()** not ready {self.texture_rgb} isValid = {self.isValid()} isVisible {self.isVisible()}")
-                return
-        else:
-            if self.texture_yuv is None or not self.isValid() or not self.isVisible():
-                print(f"paintGL()** not ready {self.texture_yuv} isValid = {self.isValid()} isVisible {self.isVisible()}")
-                return
+        if self.texture is None or not self.isValid() or not self.isVisible():
+            print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
+            return
         # No need for makeCurrent() since it is called from PaintGL() only ?
         # self.makeCurrent()
         painter = QtGui.QPainter()
@@ -231,11 +219,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         x0, x1, y0, y1 = self.image_centered_position()
 
-        im_x = int(self.cursor_imx_ratio*self.tex_width)
-        im_y = int(self.cursor_imy_ratio*self.tex_height)
+        im_x = int(self.cursor_imx_ratio*self.texture.width)
+        im_y = int(self.cursor_imy_ratio*self.texture.height)
 
-        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.tex_width + x0
-        glpos_from_im_y = (self.tex_height - (im_y+0.5))*(y1-y0)/self.tex_height+y0
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.texture.width + x0
+        glpos_from_im_y = (self.texture.height - (im_y+0.5))*(y1-y0)/self.texture.height+y0
 
         # get image coordinates
         length = 20 # /self.current_scale
@@ -248,7 +236,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
         gl.glEnd()
-        if im_x>=0 and im_x<self.tex_width and im_y>=0 and im_y<=self.tex_height:
+        if im_x>=0 and im_x<self.texture.width and im_y>=0 and im_y<=self.texture.height:
             return (im_x, im_y)
         return None
 
@@ -256,11 +244,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     def image_centered_position(self):
         w = self._width
         h = self._height
-        self.print_log(f'self width height {self._width} {self._height} tex {self.tex_width} {self.tex_height}')
-        if self.tex_width == 0 or self.tex_height == 0:
+        self.print_log(f'self width height {self._width} {self._height} tex {self.texture.width} {self.texture.height}')
+        if self.texture.width == 0 or self.texture.height == 0:
             return 0, w, 0, h
         # self.print_log(' {}x{}'.format(w, h))
-        image_ratio = float(self.tex_width)/float(self.tex_height)
+        image_ratio = float(self.texture.width)/float(self.texture.height)
         if h*image_ratio < w:
             view_width  = int(h*image_ratio+0.5)
             view_height = h
@@ -303,7 +291,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
-        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.tex_height)
+        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
         print(f"updateTransforms scale {scale}")
         try:
             # print("current context ", QtOpenGL.QGLContext.currentContext())

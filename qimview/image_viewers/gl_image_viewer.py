@@ -23,7 +23,6 @@ class GLImageViewer(GLImageViewerBase):
         self.event_recorder = event_recorder
         super().__init__(parent)
         self.setAutoFillBackground(False)
-        self.tex_width, self.tex_height = 0, 0
         self.opengl_debug = True
         self.trace_calls  = False
 
@@ -45,12 +44,14 @@ class GLImageViewer(GLImageViewerBase):
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
-        if self.texture_rgb is None:
-            print("GLImageViewer paintGL texture_rgb not set")
+        if self.texture is None:
+            print("GLImageViewer paintGL texture not set")
             return
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_rgb.textureID)
+        # TODO: fix textureID will only work for RGB textures, not YUV
+        assert self.texture.textureID is not None, "RGB texture not initialized"
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
         # gl.glGenerateMipmap (gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBegin(gl.GL_QUADS)
