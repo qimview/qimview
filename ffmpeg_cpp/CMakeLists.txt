@@ -2,12 +2,11 @@
 cmake_minimum_required(VERSION 3.21)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-project(decode_video)
+project(decode_video LANGUAGES CXX)
 
 # set(CMAKE_C_STANDARD 99)
 find_package(Python COMPONENTS Interpreter Development)
 find_package(pybind11 CONFIG)
-
 
 find_package(FFMPEG COMPONENTS avcodec avdevice avfilter avformat avutil)
 
