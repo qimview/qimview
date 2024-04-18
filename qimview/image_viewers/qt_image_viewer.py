@@ -780,11 +780,14 @@ class QTImageViewer(ImageViewer, BaseWidget):
         """
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
-        self.evt_width = event.size().width()
-        self.evt_height = event.size().height()
-        BaseWidget.resizeEvent(self, event)
-        self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
+        try:
+            self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
+            self.evt_width = event.size().width()
+            self.evt_height = event.size().height()
+            BaseWidget.resizeEvent(self, event)
+            self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
+        except Exception as e:
+            print(f"Exception {e}")
 
     def mousePressEvent  (self, event:  QtGui.QMouseEvent) -> None: 
         self._mouse_events.mouse_press_event(event)
