@@ -1,5 +1,5 @@
 
-from build.Release import decode_video_py as decode_lib
+import decode_video_py as decode_lib
 import numpy as np
 import time
 from qimview.utils.qt_imports import QtWidgets, QtCore, QtGui

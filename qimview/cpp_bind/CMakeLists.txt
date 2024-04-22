@@ -20,6 +20,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(qimview_cpp PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
+install(TARGETS qimview_cpp DESTINATION .)
+
         #     ["qimview/cpp_bind/qimview_cpp.cpp"],
         #     depends = [ 
         #         'qimview/cpp_bind/image_histogram.hpp',

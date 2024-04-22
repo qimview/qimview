@@ -67,15 +67,16 @@ class CMakeBuild(build_ext):
         # EXAMPLE_VERSION_INFO shows you how to pass a value into the C++ code
         # from Python.
         cmake_args = [
-            f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
+            # f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={extdir}{os.sep}",
             f"-DPYTHON_EXECUTABLE={sys.executable}",
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
         ]
         build_args = []
-        # TODO: fix this part
-        FFMPEG_DIR="c:/ffmpeg"
-        if FFMPEG_DIR:
-            cmake_args.append(f"-DFFMPEG_ROOT={FFMPEG_DIR}")
+        if sys.platform == 'win32':
+            # TODO: fix this part
+            FFMPEG_DIR="c:/ffmpeg"
+            if FFMPEG_DIR:
+                cmake_args.append(f"-DFFMPEG_ROOT={FFMPEG_DIR}")
 
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
@@ -150,6 +151,12 @@ class CMakeBuild(build_ext):
         subprocess.run(
             ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
         )
+        print("running cmake --install")
+        print(f"editable_mode={self.editable_mode}")
+        install_dir = Path.cwd() if self.editable_mode else extdir
+        subprocess.run(
+            ["cmake", "--install", ".", "--prefix", f"{install_dir}"], cwd=build_temp, check=True
+        )
 
 
 class build_ext_subclass( build_ext ):
@@ -192,8 +199,8 @@ setup_args = dict(
         #     # define_macros = [('VERSION_INFO', __version__)],
         #     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
         #     ),
-        CMakeExtension(name="qimview_cpp",sourcedir="qimview/cpp_bind"),
-        # CMakeExtension(name="ffmpeg_cpp", sourcedir="qimview/ffmpeg_cpp"),
+        CMakeExtension(name="qimview_cpp",     sourcedir="qimview/cpp_bind"),
+        # CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"),
     ],
     cmdclass = {'build_ext': CMakeBuild
                  # build_ext_subclass 

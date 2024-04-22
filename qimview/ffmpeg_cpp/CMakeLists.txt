@@ -59,3 +59,5 @@ target_link_libraries(
         decode_video_py PRIVATE  pybind11::module 
         decode_video_lib
 )
+
+install(TARGETS decode_video_py DESTINATION .)

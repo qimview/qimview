@@ -1,9 +1,10 @@
 [build-system]
 requires = [
-  "setuptools", 
-  "pybind11>=2.10.0",
-  "cmake>=3.21",
-  "wheel"
+    "setuptools>=60",
+    "setuptools-scm>=8.0",
+    "pybind11>=2.10.0",
+    "cmake>=3.21",
+    "wheel"
 ]
 build-backend = "setuptools.build_meta"
 
@@ -22,6 +23,8 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
+
+
 
 dependencies = [
     "numpy>=1.21.0",
@@ -55,7 +58,11 @@ testpaths = [
 ]
 
 [tool.setuptools]
-packages = ["qimview", "qimview.image_viewers"]
+packages = ["qimview"]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"*" = ["CMakeLists.txt"]
 
 [tool.setuptools.dynamic]
 version = {attr = "qimview.__version__"}
