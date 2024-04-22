@@ -35,7 +35,7 @@ dependencies = [
     "PySide6_Addons>=6.5.1.1",
     "PySide6_Essentials>=6.5.1.1",
     "simplejpeg>=1.4.0",
-    "pybind11[global]",
+    "pybind11",
 ]
 
 [project.optional-dependencies]
