@@ -2,7 +2,7 @@ from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
 from typing import TYPE_CHECKING, List, Tuple
 from qimview.utils.tab_dialog import TabDialog
 if TYPE_CHECKING:
-    from .image_viewer import ImageViewer
+    from .image_viewer import (ImageViewer, OverlayMode)
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
@@ -23,6 +23,7 @@ class ImageViewerKeyEvents:
                 'H'     : self.toggleHistogram,
                 'I'     : self.toggleIntensityLine,
                 'O'     : self.toggleOverlay,
+                'Alt+O' : self.toggleOverlayMode,
                 'S'     : self.toggleStats,
                 'T'     : self.toggleText,
                 'F1'    : self.helpDialog,
@@ -162,6 +163,13 @@ class ImageViewerKeyEvents:
     def toggleOverlay(self) ->bool:
         """ Toggle overlay display """
         self._viewer._show_overlay = not self._viewer._show_overlay
+        return self.updateAndAccept()
+    
+    def toggleOverlayMode(self) ->bool:
+        """ Toggle overlay mode (Horizontal/Vertical) """
+        match self._viewer._overlay_mode:
+            case OverlayMode.Horizontal: self._viewer._overlay_mode = OverlayMode.Vertical
+            case OverlayMode.Vertical:   self._viewer._overlay_mode = OverlayMode.Horizontal
         return self.updateAndAccept()
     
     def toggleCursor(self) ->bool:

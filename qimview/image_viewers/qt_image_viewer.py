@@ -32,7 +32,7 @@ else:
 print("Do we have cpp binding ? {}".format(HAS_CPPBIND))
 
 from qimview.image_viewers import ImageFilterParameters
-from .image_viewer import (ImageViewer, trace_method,)
+from .image_viewer import (ImageViewer, trace_method, OverlayMode)
 
 
 # the opengl version is a bit slow for the moment, due to the texture generation
@@ -309,17 +309,31 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
     def draw_overlay_separation(self, cropped_image_shape, rect : QtCore.QRect, painter):
         (height, width) = cropped_image_shape[:2]
-        im_x = int((self.mouse_pos.x() - rect.x())/rect.width()*width)
-        im_x = max(0, min(width - 1, im_x))
-        # Set position at the beginning of the pixel
-        pos_from_im_x = int(im_x*rect.width()/width + rect.x())
-        pen_width = 2
-        color = QtGui.QColor(255, 255, 0 , 128)
-        pen = QtGui.QPen()
-        pen.setColor(color)
-        pen.setWidth(pen_width)
-        painter.setPen(pen)
-        painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
+        match self._overlay_mode:
+            case OverlayMode.Horizontal:
+                im_x = int((self.mouse_pos.x() - rect.x())/rect.width()*width)
+                im_x = max(0, min(width - 1, im_x))
+                # Set position at the beginning of the pixel
+                pos_from_im_x = int(im_x*rect.width()/width + rect.x())
+                pen_width = 2
+                color = QtGui.QColor(255, 255, 0 , 128)
+                pen = QtGui.QPen()
+                pen.setColor(color)
+                pen.setWidth(pen_width)
+                painter.setPen(pen)
+                painter.drawLine(pos_from_im_x, rect.y(), pos_from_im_x, rect.y() + rect.height())
+            case OverlayMode.Vertical:
+                im_y = int((self.mouse_pos.y() - rect.y())/rect.height()*height)
+                im_y = max(0, min(height - 1, im_y))
+                # Set position at the beginning of the pixel
+                pos_from_im_y = int(im_y*rect.height()/height + rect.y())
+                pen_width = 2
+                color = QtGui.QColor(255, 255, 0 , 128)
+                pen = QtGui.QPen()
+                pen.setColor(color)
+                pen.setWidth(pen_width)
+                painter.setPen(pen)
+                painter.drawLine(rect.x(), pos_from_im_y, rect.x()+rect.width(), pos_from_im_y)
 
     def draw_cursor(self, 
                     cropped_image_shape, 
@@ -542,15 +556,27 @@ class QTImageViewer(ImageViewer, BaseWidget):
             # to create the overlay rapidly, we will mix the two images based on the current cursor position
             # 1. convert cursor position to image position
             (height, width) = cropped_image_shape[:2]
-            # compute rect
-            rect = QtCore.QRect(0, 0, display_width, display_height)
-            devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
-            rect.moveCenter(devRect.center())
-            im_x = int((self.mouse_pos.x() - rect.x()) / rect.width() * width)
-            im_x = max(0,min(width-1, im_x))
-            # We need to have a copy here .. slow, better option???
-            image_data = np.copy(image_data)
-            image_data[:, :im_x] = self._image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+            match self._overlay_mode:
+                case OverlayMode.Horizontal:
+                    # compute rect
+                    rect = QtCore.QRect(0, 0, display_width, display_height)
+                    devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+                    rect.moveCenter(devRect.center())
+                    im_x = int((self.mouse_pos.x() - rect.x()) / rect.width() * width)
+                    im_x = max(0,min(width-1, im_x))
+                    # We need to have a copy here .. slow, better option???
+                    image_data = np.copy(image_data)
+                    image_data[:, :im_x] = self._image_ref.data[crop_ymin:crop_ymax, crop_xmin:(crop_xmin+im_x)]
+                case OverlayMode.Vertical:
+                    # compute rect
+                    rect = QtCore.QRect(0, 0, display_width, display_height)
+                    devRect = QtCore.QRect(0, 0, self.evt_width, self.evt_height)
+                    rect.moveCenter(devRect.center())
+                    im_y = int((self.mouse_pos.y() - rect.y()) / rect.height() * height)
+                    im_y = max(0,min(height-1, im_y))
+                    # We need to have a copy here .. slow, better option???
+                    image_data = np.copy(image_data)
+                    image_data[:im_y, :] = self._image_ref.data[crop_ymin:(crop_ymin+im_y), crop_xmin:crop_ymax]
 
         resize_applied = False
         if not use_cache:

@@ -8,6 +8,7 @@ from abc    import abstractmethod
 from typing import Optional, Tuple, Callable
 import cv2
 import numpy as np
+from enum import Enum, auto
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils        import get_time
@@ -15,6 +16,11 @@ from qimview.utils.qt_imports   import QtGui, QtCore, QtWidgets
 from .fullscreen_helper         import FullScreenHelper
 from .image_viewer_key_events   import ImageViewerKeyEvents
 from .image_viewer_mouse_events import ImageViewerMouseEvents
+
+class OverlayMode(Enum):
+    """ Different types of overlay """
+    Horizontal  = auto()
+    Vertical    = auto()
 
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
@@ -154,6 +160,7 @@ class ImageViewer:
         self._key_events.add_help_tab("ImageViewer Mouse", self._mouse_events.markdown_help())
 
         self._show_overlay          : bool = False
+        self._overlay_mode          : OverlayMode = OverlayMode.Horizontal
         self._show_overlay_possible : bool = False
         self._show_text             : bool = True
 
