@@ -23,9 +23,16 @@ pybind11_add_module(qimview_cpp SHARED
         image_to_rgb.hpp
 )
 
+MESSAGE("Python_Development.Embed_FOUND ${Python_Development.Embed_FOUND}")
+MESSAGE("Python_INCLUDE_DIRS ${Python_INCLUDE_DIRS}")
+
 target_link_libraries(
     qimview_cpp PRIVATE  pybind11::module 
 )
+
+MESSAGE("pybind11_INCLUDE_DIR = ${pybind11_INCLUDE_DIR}")
+target_include_directories(qimview_cpp PUBLIC ${pybind11_INCLUDE_DIR})
+
 if(OpenMP_CXX_FOUND)
     target_link_libraries(qimview_cpp PUBLIC OpenMP::OpenMP_CXX)
 endif()

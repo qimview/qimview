@@ -2,7 +2,6 @@
 requires = [
     "setuptools>=60",
     "setuptools-scm>=8.0",
-    "pybind11>=2.10.0",
     "cmake>=3.21",
     "wheel"
 ]
@@ -23,9 +22,6 @@ classifiers = [
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: OS Independent",
 ]
-
-
-
 dependencies = [
     "numpy>=1.21.0",
     "opencv_python>=4.2",
@@ -35,7 +31,7 @@ dependencies = [
     "PySide6_Addons>=6.5.1.1",
     "PySide6_Essentials>=6.5.1.1",
     "simplejpeg>=1.4.0",
-    "pybind11[global]",
+    "pybind11>=2.12.0",
 ]
 
 [project.optional-dependencies]
