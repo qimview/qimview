@@ -4,8 +4,20 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(decode_video LANGUAGES CXX)
 
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 # set(CMAKE_C_STANDARD 99)
 find_package(Python COMPONENTS Interpreter Development)
+
+# find pybind11 path from python script
+execute_process(
+	COMMAND ${Python_EXECUTABLE} -c "import pybind11; print(pybind11.get_include(), end='')"
+	OUTPUT_VARIABLE pybind11_path
+)
+
+set(pybind11_DIR "${pybind11_path}/../share/cmake/pybind11")
+MESSAGE(" pybind11_DIR ${pybind11_DIR}")
+
 find_package(pybind11 CONFIG)
 
 find_package(FFMPEG COMPONENTS avcodec avdevice avfilter avformat avutil)
@@ -24,12 +36,14 @@ else()
 endif()
 
 add_library(decode_video_lib decode_video.cpp decode_video.hpp)
+MESSAGE(" Python libs ${Python_Development_FOUND} ${Python_LIBRARIES}")
 
 target_link_libraries( decode_video_lib PUBLIC
         FFMPEG::avutil
         FFMPEG::avcodec
         FFMPEG::avformat
         pybind11::module
+        ${Python_LIBRARIES}
 )
 
 
