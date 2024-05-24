@@ -28,12 +28,6 @@ PLAT_TO_CMAKE = {
     "win-arm64": "ARM64",
 }
 
-FFMPEG_DIR = None
-for i, arg in enumerate(sys.argv):
-    if arg.startswith("--ffmpeg-dir="):
-        FFMPEG_DIR = arg.split("=")[1]
-        del sys.argv[i]
-
        
 # A CMakeExtension needs a sourcedir instead of a file list.
 # The name must be the _single_ output extension from the CMake build.
@@ -74,9 +68,9 @@ class CMakeBuild(build_ext):
         build_args = []
         if sys.platform == 'win32':
             # TODO: fix this part
-            FFMPEG_DIR="c:/ffmpeg"
-            if FFMPEG_DIR:
-                cmake_args.append(f"-DFFMPEG_ROOT={FFMPEG_DIR}")
+            if os.environ['FFMPEG_ROOT']:
+                print(f"Adding FFMPEG_ROOT as {os.environ['FFMPEG_ROOT']}")
+                cmake_args.append(f"-DFFMPEG_ROOT={os.environ['FFMPEG_ROOT']}")
 
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
@@ -200,7 +194,7 @@ setup_args = dict(
         #     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
         #     ),
         CMakeExtension(name="qimview_cpp",     sourcedir="qimview/cpp_bind"),
-        # CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"),
+        CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"),
     ],
     cmdclass = {'build_ext': CMakeBuild
                  # build_ext_subclass 
