@@ -28,7 +28,7 @@ namespace AV
   public:
     AVException(const char* msg);
     AVException(const std::string& msg);
-    const char * what() const;
+    const char * what() const noexcept;
   private:
     std::string _message;
   };

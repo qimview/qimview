@@ -68,7 +68,7 @@ namespace AV
     {
       _message = msg;
     }
-    const char * AVException::what() const{
+    const char * AVException::what() const noexcept {
       return _message.c_str();
     }
 
@@ -577,6 +577,7 @@ bool AV::VideoDecoder::nextFrame(bool convert)
     else
       return false;
   }
+  return false;
 
 }
 
