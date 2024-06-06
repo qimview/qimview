@@ -33,6 +33,7 @@ dependencies = [
     "PySide6_Essentials>=6.5.1.1",
     "simplejpeg>=1.4.0",
     "pybind11>=2.12.0",
+    "PyAV",
 ]
 
 [project.optional-dependencies]
@@ -41,7 +42,6 @@ extra = [
     "python_vlc>=3.0.11115",
     "PyTurboJPEG>=1.4.1",
     "PyOpenGL_accelerate", 
-    "PyAV",
 ]
 
 [project.urls]
