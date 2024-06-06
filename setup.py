@@ -68,7 +68,7 @@ class CMakeBuild(build_ext):
         build_args = []
         if sys.platform == 'win32':
             # TODO: fix this part
-            if os.environ['FFMPEG_ROOT']:
+            if os.environ.get('FFMPEG_ROOT', False):
                 print(f"Adding FFMPEG_ROOT as {os.environ['FFMPEG_ROOT']}")
                 cmake_args.append(f"-DFFMPEG_ROOT={os.environ['FFMPEG_ROOT']}")
 
