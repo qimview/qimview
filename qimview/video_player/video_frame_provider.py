@@ -106,10 +106,7 @@ class VideoFrameProvider:
                     # seek to that nearest timestamp
                     # is_playing = self.playing
                     # self.playing = False
-                    if int(av.__version__.split('.')[0]) < 7:
-                        self._container.seek(int(time_pos*1000000), whence='time', backward=True)
-                    else:
-                        self._container.seek(int(time_pos*1000000), backward=True)
+                    self._container.seek(int(time_pos*1000000), backward=True)
                     # It seems that the frame generator is not automatically updated
                     if time_pos==0:
                         self.frame_buffer.reset()
