@@ -1,7 +1,9 @@
 
 import os
-if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
-    os.add_dll_directory("c:\\ffmpeg\\bin")
+
+ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
+if os.name == 'nt' and os.path.isdir(ffmpeg_path):
+    os.add_dll_directory(ffmpeg_path)
 
 import decode_video_py as decode_lib
 import numpy as np

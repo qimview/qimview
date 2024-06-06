@@ -66,11 +66,9 @@ class CMakeBuild(build_ext):
             f"-DCMAKE_BUILD_TYPE={cfg}",  # not used on MSVC, but no harm
         ]
         build_args = []
-        if sys.platform == 'win32':
-            # TODO: fix this part
-            if os.environ.get('FFMPEG_ROOT', False):
-                print(f"Adding FFMPEG_ROOT as {os.environ['FFMPEG_ROOT']}")
-                cmake_args.append(f"-DFFMPEG_ROOT={os.environ['FFMPEG_ROOT']}")
+        if os.environ.get('FFMPEG_ROOT', False):
+            print(f"Adding FFMPEG_ROOT as {os.environ['FFMPEG_ROOT']}")
+            cmake_args.append(f"-DFFMPEG_ROOT={os.environ['FFMPEG_ROOT']}")
 
         # Adding CMake arguments set as environment variable
         # (needed e.g. to build for ARM OSx on conda-forge)
@@ -200,5 +198,10 @@ setup_args = dict(
                  # build_ext_subclass 
                  },
 )
+
+if os.environ.get('FFMPEG_ROOT', False):
+    setup_args['ext_modules'].append(
+        CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"))
+
 
 setup(**setup_args)
