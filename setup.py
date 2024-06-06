@@ -194,7 +194,7 @@ setup_args = dict(
         #     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
         #     ),
         CMakeExtension(name="qimview_cpp",     sourcedir="qimview/cpp_bind"),
-        CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"),
+        # CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"),
     ],
     cmdclass = {'build_ext': CMakeBuild
                  # build_ext_subclass 
