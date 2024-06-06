@@ -60,7 +60,7 @@ packages = ["qimview"]
 include-package-data = true
 
 [tool.setuptools.package-data]
-"*" = ["CMakeLists.txt"]
+"*" = ["CMakeLists.txt", "*.cmake"]
 
 [tool.setuptools.dynamic]
 version = {attr = "qimview.__version__"}
@@ -70,3 +70,5 @@ version = {attr = "qimview.__version__"}
 imview = "qimview.imview:main"
 # Mutiple image viewer
 mview  = "qimview.mview:main"
+# Test Video player
+vplay  = "qimview.ffmpeg_cpp.test_video_player:main"

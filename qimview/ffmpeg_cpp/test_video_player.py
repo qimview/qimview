@@ -1,4 +1,8 @@
 
+import os
+if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
+    os.add_dll_directory("c:\\ffmpeg\\bin")
+
 import decode_video_py as decode_lib
 import numpy as np
 import time
