@@ -167,6 +167,7 @@ class ImageViewerKeyEvents:
     
     def toggleOverlayMode(self) ->bool:
         """ Toggle overlay mode (Horizontal/Vertical) """
+        from .image_viewer import OverlayMode
         match self._viewer._overlay_mode:
             case OverlayMode.Horizontal: self._viewer._overlay_mode = OverlayMode.Vertical
             case OverlayMode.Vertical:   self._viewer._overlay_mode = OverlayMode.Horizontal

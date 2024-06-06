@@ -576,7 +576,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                     im_y = max(0,min(height-1, im_y))
                     # We need to have a copy here .. slow, better option???
                     image_data = np.copy(image_data)
-                    image_data[:im_y, :] = self._image_ref.data[crop_ymin:(crop_ymin+im_y), crop_xmin:crop_ymax]
+                    image_data[:im_y, :] = self._image_ref.data[crop_ymin:(crop_ymin+im_y), crop_xmin:crop_xmax]
 
         resize_applied = False
         if not use_cache:
