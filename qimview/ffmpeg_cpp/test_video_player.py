@@ -36,6 +36,9 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params, name="TestViewer")
 
         hor_layout = QtWidgets.QHBoxLayout()
+        # Add color difference slider
+        self.filter_params_gui.add_imdiff_factor(hor_layout, self.update_image_intensity_event)
+
         self.filter_params_gui.add_blackpoint(hor_layout, self.update_image_intensity_event)
         # white point adjustment
         self.filter_params_gui.add_whitepoint(hor_layout, self.update_image_intensity_event)
@@ -63,7 +66,13 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
 
         self.video_decoder1 = None
         self.video_decoder2 = None
+        
+        self.slow_down = 1
+        
         self.show()
+        
+    def setSlowDown(self,s):
+        self.slow_down = s
 
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
@@ -131,7 +140,7 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
             if self.video_decoder2:
                 self.video_decoder2.nextFrame(convert=False)
         if current<max:
-            QtCore.QTimer.singleShot(1, lambda : self.display_frames(current+1, max))
+            QtCore.QTimer.singleShot(self.slow_down, lambda : self.display_frames(current+1, max))
         else:
             duration = time.perf_counter()-self.st
             print(f"took {duration:0.3f} sec {max/duration:0.2f} fps")
@@ -182,30 +191,34 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
                 self._im1.u = self.U1
                 self._im1.v = self.V1
                 self._im2 = None
-            case decode_lib.AVPixelFormat.AV_PIX_FMT_YUVJ420P:
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_YUVJ420P | decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P:
                 # Create numpy array from Y, U and V
+                prec=8
                 self.memY1, self.Y1 = getArray(self.frame1, 0, height1,    width1,    np.uint8)
                 self.memU1, self.U1 = getArray(self.frame1, 1, height1//2, width1//2, np.uint8)
                 self.memV1, self.V1 = getArray(self.frame1, 2, height1//2, width1//2, np.uint8)
-
-                prec=8
                 self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
                 self._im1.u = self.U1
                 self._im1.v = self.V1
-                self._im2 = None
+                if self.frame2:
+                    self.memY2, self.Y2 = getArray(self.frame2, 0, height2,    width2,    np.uint8)
+                    self.memU2, self.U2 = getArray(self.frame2, 1, height2//2, width2//2, np.uint8)
+                    self.memV2, self.V2 = getArray(self.frame2, 2, height2//2, width2//2, np.uint8)
+                    self._im2 = ViewerImage(self.Y2, channels = ImageFormat.CH_YUV420, precision=prec)
+                    self._im2.u = self.U2
+                    self._im2.v = self.V2
+                else:
+                    self._im2 = None
             case decode_lib.AVPixelFormat.AV_PIX_FMT_NV12:
+                prec=8
                 self.memY1,  self.Y1  = getArray(self.frame1, 0, height1,    width1, np.uint8)
                 self.memUV1, self.UV1 = getArray(self.frame1, 1, height1//2, width1, np.uint8)
-
-                prec=8
                 self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
                 self._im1.uv = self.UV1
 
                 if self.frame2:
                     self.memY2,  self.Y2  = getArray(self.frame2, 0, height2,    width2, np.uint8)
                     self.memUV2, self.UV2 = getArray(self.frame2, 1, height2//2, width2, np.uint8)
-
-                    prec=8
                     self._im2 = ViewerImage(self.Y2, channels = ImageFormat.CH_YUV420, precision=prec)
                     self._im2.uv = self.UV2
                 else:
@@ -224,6 +237,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_videos', help='input videos',  nargs='+')
     parser.add_argument('-c','--cuda', action='store_true', help='use cuda hardware')
+    parser.add_argument('-s','--slow', type=int, help='slow down time in ms between frames')
     args = parser.parse_args()
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
@@ -240,6 +254,7 @@ def main():
         window = TestVideoPlayer(args.input_videos[0], None, device_type)
     else:
         window = TestVideoPlayer(args.input_videos[0], args.input_videos[1], device_type)
+    window.setSlowDown(args.slow)
     window.show()
 
     app.exec()
