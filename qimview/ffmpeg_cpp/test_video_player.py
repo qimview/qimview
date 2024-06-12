@@ -237,7 +237,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_videos', help='input videos',  nargs='+')
     parser.add_argument('-c','--cuda', action='store_true', help='use cuda hardware')
-    parser.add_argument('-s','--slow', type=int, help='slow down time in ms between frames')
+    parser.add_argument('-s','--slow', type=int, default=1, help='slow down time in ms between frames')
     args = parser.parse_args()
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
