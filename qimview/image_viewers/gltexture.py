@@ -90,6 +90,8 @@ class GLTexture:
         # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
         # self._gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+        # Antialiasing?
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP, gl.GL_TRUE)
 
     def new_texture(self, texture):
         # if texture is not None: gl.glDeleteTextures(np.array([texture]))
