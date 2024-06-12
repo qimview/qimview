@@ -35,6 +35,8 @@ else()
     message(FATAL_ERROR "FFMPEG not found")
 endif()
 
+list(APPEND CMAKE_BUILD_RPATH ${FFMPEG_ROOT}/lib)
+
 add_library(decode_video_lib decode_video.cpp decode_video.hpp)
 MESSAGE(" Python libs ${Python_Development_FOUND} ${Python_LIBRARIES}")
 
