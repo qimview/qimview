@@ -35,8 +35,58 @@ class GLImageViewerShaders(GLImageViewerBase):
           UV = uV;
         }
         """
+
+    fragmentShader_apply_filters = """
+          vec3 apply_filters(const vec3 input_rgb,
+              float max_value, float texture_scale, float max_type, float black_level,
+              float g_r_coeff, float g_b_coeff,
+              float white_level, float gamma)
+          {
+            vec3 res = input_rgb;
+
+            /// Black level
+            res = res/(max_value*texture_scale)*max_type;
+            res = max((res-vec3(black_level).rgb),0);
+
+            /// White balance
+            res.r = res.r*g_r_coeff;
+            res.b = res.b*g_b_coeff;
+
+            /// Rescale to white level as saturation level
+            res = res/(white_level-black_level);
+            
+            /// Apply gamma
+            res = pow(res, vec3(1.0/gamma).rgb);
+            
+            return res;
+          }
+        """
+
+    fragmentShader_yuv2rgb = """
+          vec3 yuv2rgb(const vec3 yuv)
+          {
+            float y = 1.1643*(yuv[0]-0.0625);
+            float u = yuv[1]-0.5;
+            float v = yuv[2]-0.5;
+
+            float r = y+1.5958*v;
+            float g = y-0.39173*u-0.81290*v;
+            float b = y+2.017*u;
+            return vec3(r,g,b);
+          }
+        """
+
+        #   Another version
+        #   r = y+1.13983*v;
+        #   g = y-0.39465*u-0.5806*v;
+        #   b = y+2.03211*u;
+
+        #   r = y+1.28033*v;
+        #   g = y-0.21482*u-0.38059*v;
+        #   b = y+2.12798*u;
+
     # fragment shader program
-    fragmentShader_RGB = """
+    fragmentShader_RGB = f"""
         #version 330 core
     
         in vec2 UV;
@@ -51,63 +101,20 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float gamma;
         out vec3 colour;
     
-        void main() {
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
           colour = texture(backgroundTexture, UV).rgb;
-
-          // black level
-          colour.rgb = colour.rgb/max_value*max_type;
-          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
-
-          // white balance
-          colour.r = colour.r*g_r_coeff;
-          colour.b = colour.b*g_b_coeff;
-
-          // rescale to white level as saturation level
-          colour.rgb = colour.rgb/(white_level-black_level);
-          
-          // apply gamma
-          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
-
-        }
+          colour = apply_filters(colour,max_value
+              , 1 // texture_scale
+              , max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+        }}
     """
 
-    fragmentShader_YUV420_common = """
-          y = 1.1643*(y-0.0625);
-          u = u-0.5;
-          v = v-0.5;
-
-          r = y+1.5958*v;
-          g = y-0.39173*u-0.81290*v;
-          b = y+2.017*u;
-          
-          // r = y+1.13983*v;
-          // g = y-0.39465*u-0.5806*v;
-          // b = y+2.03211*u;
-
-          //r = y+1.28033*v;
-          //g = y-0.21482*u-0.38059*v;
-          //b = y+2.12798*u;
-
-          // first version greyscale 
-          colour.rgb = vec3(r,g,b);
-
-          // black level
-          colour.rgb = colour.rgb/(max_value*texture_scale)*max_type;
-          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
-
-          // white balance
-          colour.r = colour.r*g_r_coeff;
-          colour.b = colour.b*g_b_coeff;
-
-          // rescale to white level as saturation level
-          colour.rgb = colour.rgb/(white_level-black_level);
-          
-          // apply gamma
-          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
-    """
 
     # fragment shader program
-    fragmentShader_YUV420 = """
+    fragmentShader_YUV420 = f"""
         #version 330 core
     
         in vec2 UV;
@@ -125,56 +132,31 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float gamma;
         float y,u,v, r, g, b;
         out vec3 colour;
-    
-        void main() {
+        
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
           y = texture(YTex, UV).r*texture_scale;
           u = texture(UTex, UV).r*texture_scale;
           v = texture(VTex, UV).r*texture_scale;
-    """ + \
-        fragmentShader_YUV420_common  + \
-    """
-        }
+
+          vec3 rgb = yuv2rgb(vec3(y,u,v));
+          colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+        }}
     """
 
-    fragmentShader_YUV420_interlaced = """
+    fragmentShader_YUV420_twotex = f"""
         #version 330 core
     
         in vec2 UV;
         uniform sampler2D YTex;
-        uniform sampler2D UVTex;
-        uniform float texture_scale;
-        uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
-        float y,u,v, r, g, b;
-        out vec3 colour;
-    
-        void main() {
-          y  = texture(YTex,  UV).r*texture_scale;
-          u  = texture(UVTex, UV).r*texture_scale;
-          v  = texture(UVTex, UV).g*texture_scale;
-
-    """ + \
-        fragmentShader_YUV420_common  + \
-    """
-
-        }
-    """
-
-    # Version with 2 textures
-    fragmentShader_YUV420_interlaced_twotex = """
-        #version 330 core
-    
-        in vec2 UV;
-        uniform sampler2D YTex;
-        uniform sampler2D UVTex;
+        uniform sampler2D UTex;
+        uniform sampler2D VTex;
         uniform sampler2D YTex2;
-        uniform sampler2D UVTex2;
+        uniform sampler2D UTex2;
+        uniform sampler2D VTex2;
+        uniform float difference_scaling;
         uniform float overlap_ratio;
         uniform float texture_scale;
         uniform int channels; // channel representation
@@ -188,26 +170,124 @@ class GLImageViewerShaders(GLImageViewerBase):
         float y,u,v, r, g, b;
         out vec3 colour;
     
-        void main() {
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
+          float epsilon = 1.5f/textureSize(YTex,0).x;
+          if ((UV.x>overlap_ratio-epsilon)&&(UV.x<overlap_ratio+epsilon)) {{
+              colour = vec3(0.9,0.2,0.2);
+          }} else {{
+              if (difference_scaling>0) {{
+                float y2 = texture(YTex2, UV).r*texture_scale;
+                float u2 = texture(UTex2, UV).r*texture_scale;
+                float v2 = texture(VTex2, UV).r*texture_scale;
+                    if (UV.x<=overlap_ratio) {{
+                        y = texture(YTex, UV).r*texture_scale;
+                        u = texture(UTex, UV).r*texture_scale;
+                        v = texture(VTex, UV).r*texture_scale;
+                        vec3 rgb1 = yuv2rgb(vec3(y,u,v));
+                        vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
+                        vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
+        	            colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+                    }} else {{
+                        vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
+                        colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+                    }}
+              }} else {{
+                if (UV.x<=overlap_ratio) {{
+                    y = texture(YTex, UV).r*texture_scale;
+                    u = texture(UTex, UV).r*texture_scale;
+                    v = texture(VTex, UV).r*texture_scale;
+                }} else {{
+                    y = texture(YTex2, UV).r*texture_scale;
+                    u = texture(UTex2, UV).r*texture_scale;
+                    v = texture(VTex2, UV).r*texture_scale;
+                }}
+                vec3 rgb = yuv2rgb(vec3(y,u,v));
+                colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+              }}
+          }}
+        }}
+    """
+
+    fragmentShader_YUV420_interlaced = f"""
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D YTex;
+        uniform sampler2D UVTex;
+        uniform float texture_scale;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        float y,u,v, r, g, b;
+        out vec3 colour;
+    
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
+          y  = texture(YTex,  UV).r*texture_scale;
+          u  = texture(UVTex, UV).r*texture_scale;
+          v  = texture(UVTex, UV).g*texture_scale;
+
+          vec3 rgb = yuv2rgb(vec3(y,u,v));
+          colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+
+        }}
+    """
+
+    # Version with 2 textures
+    fragmentShader_YUV420_interlaced_twotex = f"""
+        #version 330 core
+    
+        in vec2 UV;
+        uniform sampler2D YTex;
+        uniform sampler2D UVTex;
+        uniform sampler2D YTex2;
+        uniform sampler2D UVTex2;
+        uniform float difference_scaling;
+        uniform float overlap_ratio;
+        uniform float texture_scale;
+        uniform int channels; // channel representation
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        float y,u,v, r, g, b;
+        out vec3 colour;
+    
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
           // Put 2 images side by side?
-          if (UV.x<=overlap_ratio) {
+          if (UV.x<=overlap_ratio) {{
             y  = texture(YTex,  UV).r*texture_scale;
             u  = texture(UVTex, UV).r*texture_scale;
             v  = texture(UVTex, UV).g*texture_scale;
-          } else {
+          }} else {{
             y  = texture(YTex2,  UV).r*texture_scale;
             u  = texture(UVTex2, UV).r*texture_scale;
             v  = texture(UVTex2, UV).g*texture_scale;
-          }
+          }}
 
-    """ + \
-        fragmentShader_YUV420_common  + \
+          vec3 rgb = yuv2rgb(vec3(y,u,v));
+          colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+ 
+        }}
     """
 
-        }
-    """
-
-    fragmentShader_RAW = """
+    fragmentShader_RAW = f"""
         #version 330 core
         
         in vec2 UV;
@@ -222,7 +302,9 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float gamma;
         out vec3 colour;
 
-        void main() {
+        {fragmentShader_apply_filters}
+
+        void main() {{
 
            const int CH_RGGB = 4; // phase 0, bayer 2
            const int CH_GRBG = 5; // phase 1, bayer 3 (Boilers)
@@ -232,13 +314,13 @@ class GLImageViewerShaders(GLImageViewerBase):
           vec4 bayer = texture(backgroundTexture, UV);
           // transform bayer data to RGB
           int r,gr,gb,b;
-          switch (channels) {
+          switch (channels) {{
             case 4:   r = 0; gr = 1; gb = 2; b = 3;  break; // CH_RGGB = 4 phase 0, bayer 2
             case 5:   r = 1; gr = 0; gb = 3; b = 2;  break; // CH_GRBG = 5 phase 1, bayer 3 (Boilers)
             case 6:   r = 2; gr = 3; gb = 0; b = 1;  break; // CH_GBRG = 6 phase 2, bayer 0
             case 7:   r = 3; gr = 2; gb = 1; b = 0;  break; // CH_BGGR = 7 phase 3, bayer 1 (Coconuts)
             default:        r = 0; gr = 1; gb = 2; b = 3;  break; // this should not happen
-          }
+          }}
 
           // first retreive black point to get the coefficients right ...
           // 5% of dynamics?
@@ -248,20 +330,10 @@ class GLImageViewerShaders(GLImageViewerBase):
           colour.g = (bayer[gr]+bayer[gb])/2.0;
           colour.b = bayer[b];
 
-          // black level
-          colour.rgb = colour.rgb/max_value*max_type;
-          colour.rgb = max((colour.rgb-vec3(black_level).rgb),0);
-          
-          // white balance
-          colour.r = colour.r*g_r_coeff;
-          colour.b = colour.b*g_b_coeff;
-
-          // rescale to white level as saturation level
-          colour.rgb = colour.rgb/(white_level-black_level);
-          
-          // apply gamma
-          colour.rgb = pow(colour.rgb, vec3(1.0/gamma).rgb);
-        }
+          colour = apply_filters(colour,max_value, 
+              1, // texture_scale set to 1 
+              max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+        }}
     """
 
     def __init__(self, parent=None):
@@ -273,6 +345,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.mvMatrix                                    = np.identity(4, dtype=np.float32)
         self.program_RGB                                 = None
         self.program_YUV420                              = None
+        self.program_YUV420_twotex                       = None
         self.program_YUV420_interlaced                   = None
         self.program_YUV420_interlaced_twotex            = None
         self.program_RAW                                 = None
@@ -305,6 +378,18 @@ class GLImageViewerShaders(GLImageViewerBase):
                 print(f'failed RGB shaders.compileProgram() {e}')
             shaders.glDeleteShader(vs)
             shaders.glDeleteShader(fs)
+
+        if self.program_YUV420_twotex is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_YUV420_twotex, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_YUV420_twotex = shaders.compileProgram(vs, fs, validate=False)
+                self.print_log(f"\n***** self.program_YUV420_twotex = {self.program_YUV420_twotex} *****\n")
+            except Exception as e:
+                print(f'failed RGB shaders.compileProgram() {e}')
+            shaders.glDeleteShader(vs)
+            shaders.glDeleteShader(fs)
+
 
         if self.program_YUV420_interlaced is None:
             vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
@@ -447,18 +532,14 @@ class GLImageViewerShaders(GLImageViewerBase):
         _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        twotex = self.texture_ref is not None and self.texture.interlaced_uv \
-            and self.texture_ref.interlaced_uv and self._show_overlay
+        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlay or self._show_image_differences)
         if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
             self.program = self.program_RAW
         elif self._image and self._image.channels == ImageFormat.CH_YUV420:
             if self.texture.interlaced_uv:
-                if twotex:
-                    self.program = self.program_YUV420_interlaced_twotex
-                else:
-                    self.program = self.program_YUV420_interlaced
+                self.program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
             else:
-                self.program = self.program_YUV420
+                self.program = self.program_YUV420_twotex if twotex else self.program_YUV420
         else:
             # TODO: check for other types: scalar ...
             self.program = self.program_RGB
@@ -479,7 +560,11 @@ class GLImageViewerShaders(GLImageViewerBase):
             else:
                 self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
                 self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+                if twotex:
+                    self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
+                    self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
             if twotex:
+                self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
                 self.texture_overlap_ratio = shaders.glGetUniformLocation(self.program, "overlap_ratio")
             self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
         else:
@@ -511,6 +596,9 @@ class GLImageViewerShaders(GLImageViewerBase):
             else:
                 _gl.glUniform1i(self.uUTex, 2)
                 _gl.glUniform1i(self.uVTex, 4)
+                if twotex:
+                    _gl.glUniform1i(self.uUTex2, 3)
+                    _gl.glUniform1i(self.uVTex2, 5)
             match self._image.data.dtype:
                 case np.uint8:  texture_scale = 1
                 # Normalize image to full intensity range
@@ -518,7 +606,8 @@ class GLImageViewerShaders(GLImageViewerBase):
                 case _: texture_scale = 1
             # print(f"-- texture_scale = {texture_scale}")
             if twotex:
-                _gl.glUniform1f( self.texture_overlap_ratio, self.cursor_imx_ratio)
+                _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
+                _gl.glUniform1f( self.texture_overlap_ratio, self.cursor_imx_ratio                  if self._show_overlay           else 1 )
             _gl.glUniform1f( self.texture_scale_location, texture_scale)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
@@ -576,6 +665,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
                 _gl.glActiveTexture(gl.GL_TEXTURE4)
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureV)
+                if twotex:
+                    _gl.glActiveTexture(gl.GL_TEXTURE3)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureU)
+                    _gl.glActiveTexture(gl.GL_TEXTURE5)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
         else:
             if self.texture:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
