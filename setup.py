@@ -145,10 +145,12 @@ class CMakeBuild(build_ext):
         )
         print("running cmake --install")
         print(f"editable_mode={self.editable_mode}")
-        install_dir = Path.cwd() if self.editable_mode else extdir
+        install_dir = extdir # Path.cwd() if self.editable_mode else extdir
+        print(f"{extdir=} {install_dir=} {build_temp=}")
         subprocess.run(
             ["cmake", "--install", ".", "--prefix", f"{install_dir}"], cwd=build_temp, check=True
         )
+        print("done")
 
 
 class build_ext_subclass( build_ext ):
