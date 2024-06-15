@@ -8,10 +8,12 @@ if os.name == 'nt' and os.path.isdir(ffmpeg_path):
 import decode_video_py as decode_lib
 import numpy as np
 import time
-from qimview.utils.qt_imports import QtWidgets, QtCore, QtGui
-from qimview.image_viewers.gl_image_viewer_shaders import GLImageViewerShaders
-from qimview.utils.viewer_image import ViewerImage, ImageFormat
-from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
+from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
+from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
+from qimview.utils.viewer_image                        import ViewerImage, ImageFormat
+from qimview.parameters.numeric_parameter              import NumericParameter
+from qimview.parameters.numeric_parameter_gui          import NumericParameterGui
+from qimview.image_viewers.image_filter_parameters     import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 
 
@@ -32,33 +34,15 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self.setGeometry(0, 0, self.widget.width(), self.widget.height())
         self.setCentralWidget(self.main_widget)
 
-        self.filter_params = ImageFilterParameters()
-        self.filter_params_gui = ImageFilterParametersGui(self.filter_params, name="TestViewer")
+        filters_layout = self._add_filters()
 
         hor_layout = QtWidgets.QHBoxLayout()
-        # Add color difference slider
-        self.filter_params_gui.add_imdiff_factor(hor_layout, self.update_image_intensity_event)
+        self._add_play_pause_button(       hor_layout)
+        self._add_playback_speed_slider(   hor_layout)
+        self._add_playback_position_slider(hor_layout)
 
-        self.filter_params_gui.add_blackpoint(hor_layout, self.update_image_intensity_event)
-        # white point adjustment
-        self.filter_params_gui.add_whitepoint(hor_layout, self.update_image_intensity_event)
-        # Gamma adjustment
-        self.filter_params_gui.add_gamma(hor_layout, self.update_image_intensity_event)
-        # G_R adjustment
-        self.filter_params_gui.add_g_r(hor_layout, self.update_image_intensity_event)
-        # G_B adjustment
-        self.filter_params_gui.add_g_b(hor_layout, self.update_image_intensity_event)
-
-        vertical_layout.addLayout(hor_layout)
+        vertical_layout.addLayout(filters_layout)
         vertical_layout.addWidget(self.widget)
-
-        # Add play button
-        hor_layout = QtWidgets.QHBoxLayout()
-        self._button_play_pause = QtWidgets.QPushButton()
-        self._icon_play = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay)
-        self._icon_pause = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPause)
-        self._button_play_pause.setIcon(self._icon_play)
-        hor_layout.addWidget(self._button_play_pause)
         vertical_layout.addLayout(hor_layout)
 
         self._pause = True
@@ -74,10 +58,80 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
     def setSlowDown(self,s):
         self.slow_down = s
 
+    def _add_filters(self):
+        self.filter_params = ImageFilterParameters()
+        self.filter_params_gui = ImageFilterParametersGui(self.filter_params, name="TestViewer")
+
+        filters_layout = QtWidgets.QHBoxLayout()
+        # Add color difference slider
+        self.filter_params_gui.add_imdiff_factor(filters_layout, self.update_image_intensity_event)
+
+        self.filter_params_gui.add_blackpoint(filters_layout, self.update_image_intensity_event)
+        # white point adjustment
+        self.filter_params_gui.add_whitepoint(filters_layout, self.update_image_intensity_event)
+        # Gamma adjustment
+        self.filter_params_gui.add_gamma(filters_layout, self.update_image_intensity_event)
+        # G_R adjustment
+        self.filter_params_gui.add_g_r(filters_layout, self.update_image_intensity_event)
+        # G_B adjustment
+        self.filter_params_gui.add_g_b(filters_layout, self.update_image_intensity_event)
+
+        return filters_layout
+
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
         # print(f"parameters {self.filter_params}")
         self.widget.viewer_update()
+
+    def _add_play_pause_button(self, hor_layout):
+        self._button_play_pause = QtWidgets.QPushButton()
+        self._icon_play = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay)
+        self._icon_pause = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPause)
+        self._button_play_pause.setIcon(self._icon_play)
+        hor_layout.addWidget(self._button_play_pause)
+
+    def _add_playback_speed_slider(self, hor_layout):
+        # Playback speed slider
+        self.playback_speed = NumericParameter()
+        self.playback_speed.float_scale = 100
+        self.playback_speed_gui = NumericParameterGui(name="x", param=self.playback_speed)
+        self.playback_speed_gui.decimals = 1
+        self.playback_speed_gui.set_pressed_callback(self.pause)
+        self.playback_speed_gui.set_released_callback(self.reset_play)
+        self.playback_speed_gui.set_valuechanged_callback(self.speed_value_changed)
+        self.playback_speed_gui.create()
+        self.playback_speed_gui.setTextFormat(lambda p: f"{pow(2,p.float):0.2f}")
+        self.playback_speed_gui.setRange(-300, 300)
+        self.playback_speed_gui.update()
+        self.playback_speed_gui.updateText()
+        self.playback_speed_gui.add_to_layout(hor_layout,1)
+        self.playback_speed_gui.setSingleStep(1)
+        self.playback_speed_gui.setPageStep(10)
+        self.playback_speed_gui.setTickInterval(10)
+        self.playback_speed_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+
+    def _add_playback_position_slider(self, hor_layout):
+        # Position slider
+        self.play_position = NumericParameter()
+        self.play_position.float_scale = 1000
+        self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position)
+        self.play_position_gui.decimals = 3
+        self.play_position_gui.set_pressed_callback(self.pause)
+        self.play_position_gui.set_released_callback(self.reset_play)
+        self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
+        self.play_position_gui.create()
+        self.play_position_gui.add_to_layout(hor_layout,5)
+
+    def pause(self):
+        """ Method called from video player """
+        # self._was_active = self._scheduler._timer.isActive()
+        # self._scheduler.pause()
+        pass
+
+    def reset_play(self):
+        # if self._was_active:
+        #     self._scheduler.play()
+        pass
 
     def play_pause(self):
         if self.video_decoder1 is None:
@@ -86,6 +140,21 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
             if self.filename2:
                 self.open_video2( self.filename2, self.device_type)
         self.decode()
+
+    def slider_value_changed(self):
+        self.set_play_position()
+
+    def set_play_position(self):
+        print(f"self.play_position {self.play_position.float}")
+        # if self._frame_provider.frame_buffer:
+        #     self._frame_provider.frame_buffer.reset()
+        # self._frame_provider.set_time(self.play_position.float)
+        # self._start_video_time = self.play_position.float
+        # self.display_frame(self._frame_provider.frame)
+
+    def speed_value_changed(self):
+        print(f"New speed value {self.playback_speed.float}")
+        # self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
     def open_video1(self, filename, device_type : str|None):
         self.video_decoder1 = decode_lib.VideoDecoder()
