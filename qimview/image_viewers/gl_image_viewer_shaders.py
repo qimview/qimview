@@ -62,6 +62,16 @@ class GLImageViewerShaders(GLImageViewerBase):
           }
         """
 
+    fragmentShader_declare_filter_params = """
+        uniform float white_level;
+        uniform float black_level;
+        uniform float g_r_coeff;
+        uniform float g_b_coeff;
+        uniform float max_value; // maximal value based on image precision
+        uniform float max_type;  // maximal value based on image type (uint8, etc...)
+        uniform float gamma;
+        """
+
     fragmentShader_yuv2rgb = """
           vec3 yuv2rgb(const vec3 yuv)
           {
@@ -92,13 +102,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         in vec2 UV;
         uniform sampler2D backgroundTexture;
         uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
+        {fragmentShader_declare_filter_params}
         out vec3 colour;
     
         {fragmentShader_apply_filters}
@@ -123,13 +127,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform sampler2D VTex;
         uniform float texture_scale;
         uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
+        {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
         out vec3 colour;
         
@@ -160,13 +158,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float overlap_ratio;
         uniform float texture_scale;
         uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
+        {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
         out vec3 colour;
     
@@ -219,13 +211,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform sampler2D UVTex;
         uniform float texture_scale;
         uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
+        {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
         out vec3 colour;
     
@@ -256,13 +242,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float overlap_ratio;
         uniform float texture_scale;
         uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
+        {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
         out vec3 colour;
     
@@ -317,13 +297,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         in vec2 UV;
         uniform sampler2D backgroundTexture;
         uniform int channels; // channel representation
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
+        {fragmentShader_declare_filter_params}
         out vec3 colour;
 
         {fragmentShader_apply_filters}
