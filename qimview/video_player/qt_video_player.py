@@ -39,7 +39,7 @@ class myVideoWidget(QtMultimediaWidgets.QVideoWidget):
         #       self.width(), self.height()))
         # event.ignore()
 
-class VideoPlayer(QtWidgets.QWidget):
+class QtVideoPlayer(QtWidgets.QWidget):
     def __init__(self, parent, open_button=False):
         super().__init__(parent)
 
@@ -223,6 +223,6 @@ class VideoPlayer(QtWidgets.QWidget):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    window = VideoPlayer(open_button=True)
+    window = QtVideoPlayer(open_button=True)
     window.show()
     sys.exit(app.exec_())
