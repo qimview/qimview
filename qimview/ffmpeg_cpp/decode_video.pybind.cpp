@@ -355,6 +355,7 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def("open",             &AV::VideoDecoder::open, "Open decoder", ARG(filename), ARG(devide_type_name) = nullptr)
     .def("nextFrame",        &AV::VideoDecoder::nextFrame, "Decode next video frame", ARG(convert) = true)
     .def("getFrame",         &AV::VideoDecoder::getFrame)
+    .def("seek",             &AV::VideoDecoder::seek)
     .def("getStream",        &AV::VideoDecoder::getStream, "Get stream", ARG(idx) = -1)
     .def("getFormatContext", &AV::VideoDecoder::getFormatContext)
     ;

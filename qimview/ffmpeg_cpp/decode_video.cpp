@@ -542,6 +542,14 @@ bool AV::VideoDecoder::open(const char* filename, const char* device_type_name)
 
 }
 
+bool AV::VideoDecoder::seek(float sec)
+{
+    int64_t seekTarget = sec*AV_TIME_BASE;
+    int ret = avformat_seek_file(_format_ctx.get(),_stream_index,INT64_MIN,seekTarget,INT64_MAX,0);
+    return ret>=0;
+}
+
+
 bool AV::VideoDecoder::nextFrame(bool convert)
 {
   bool frame_timer = false;

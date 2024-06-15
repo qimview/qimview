@@ -153,6 +153,7 @@ namespace AV {
   public:
     VideoDecoder(): _stream_index(-1), _framenum(0) {}
     bool open(const char* filename, const char* device_type_name = nullptr);
+    bool seek(float sec);
     bool nextFrame(bool convert=true);
     int  frameNumber() { return _framenum; }
 
