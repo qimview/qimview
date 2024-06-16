@@ -9,17 +9,14 @@ import decode_video_py as decode_lib
 import numpy as np
 import time
 from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
-from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
 from qimview.utils.viewer_image                        import ViewerImage, ImageFormat
-from qimview.parameters.numeric_parameter              import NumericParameter
-from qimview.parameters.numeric_parameter_gui          import NumericParameterGui
-from qimview.image_viewers.image_filter_parameters     import ImageFilterParameters
-from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
+from qimview.video_player.video_player_base            import VideoPlayerBase
+from qimview.video_player.video_frame_buffer_cpp       import VideoFrameBufferCpp
 
 
-class TestVideoPlayer(QtWidgets.QMainWindow):
-    def __init__(self, filename1, filename2, device_type) -> None:
-        super().__init__()
+class TestVideoPlayer(VideoPlayerBase):
+    def __init__(self, parent, filename1, filename2, device_type) -> None:
+        super().__init__(parent)
         self.filename1 = filename1
         self.filename2 = filename2
         self.device_type = device_type
@@ -28,23 +25,6 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         vertical_layout = QtWidgets.QVBoxLayout()
         self.main_widget.setLayout(vertical_layout)
 
-        self.widget = GLImageViewerShaders()
-        self.widget.show_histogram = False
-        self.widget._show_text = False
-        self.setGeometry(0, 0, self.widget.width(), self.widget.height())
-        self.setCentralWidget(self.main_widget)
-
-        filters_layout = self._add_filters()
-
-        hor_layout = QtWidgets.QHBoxLayout()
-        self._add_play_pause_button(       hor_layout)
-        self._add_playback_speed_slider(   hor_layout)
-        self._add_playback_position_slider(hor_layout)
-
-        vertical_layout.addLayout(filters_layout)
-        vertical_layout.addWidget(self.widget)
-        vertical_layout.addLayout(hor_layout)
-
         self._pause = True
         self._button_play_pause.clicked.connect(self.play_pause)
 
@@ -52,75 +32,14 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self.video_decoder2 = None
         
         self.slow_down = 1
-        
+
+        self._video_framebuffer1 = None
+        self._video_framebuffer2 = None
+                
         self.show()
         
     def setSlowDown(self,s):
         self.slow_down = s
-
-    def _add_filters(self):
-        self.filter_params = ImageFilterParameters()
-        self.filter_params_gui = ImageFilterParametersGui(self.filter_params, name="TestViewer")
-
-        filters_layout = QtWidgets.QHBoxLayout()
-        # Add color difference slider
-        self.filter_params_gui.add_imdiff_factor(filters_layout, self.update_image_intensity_event)
-
-        self.filter_params_gui.add_blackpoint(filters_layout, self.update_image_intensity_event)
-        # white point adjustment
-        self.filter_params_gui.add_whitepoint(filters_layout, self.update_image_intensity_event)
-        # Gamma adjustment
-        self.filter_params_gui.add_gamma(filters_layout, self.update_image_intensity_event)
-        # G_R adjustment
-        self.filter_params_gui.add_g_r(filters_layout, self.update_image_intensity_event)
-        # G_B adjustment
-        self.filter_params_gui.add_g_b(filters_layout, self.update_image_intensity_event)
-
-        return filters_layout
-
-    def update_image_intensity_event(self):
-        self.widget.filter_params.copy_from(self.filter_params)
-        # print(f"parameters {self.filter_params}")
-        self.widget.viewer_update()
-
-    def _add_play_pause_button(self, hor_layout):
-        self._button_play_pause = QtWidgets.QPushButton()
-        self._icon_play = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPlay)
-        self._icon_pause = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_MediaPause)
-        self._button_play_pause.setIcon(self._icon_play)
-        hor_layout.addWidget(self._button_play_pause)
-
-    def _add_playback_speed_slider(self, hor_layout):
-        # Playback speed slider
-        self.playback_speed = NumericParameter()
-        self.playback_speed.float_scale = 100
-        self.playback_speed_gui = NumericParameterGui(name="x", param=self.playback_speed)
-        self.playback_speed_gui.decimals = 1
-        self.playback_speed_gui.set_pressed_callback(self.pause)
-        self.playback_speed_gui.set_released_callback(self.reset_play)
-        self.playback_speed_gui.set_valuechanged_callback(self.speed_value_changed)
-        self.playback_speed_gui.create()
-        self.playback_speed_gui.setTextFormat(lambda p: f"{pow(2,p.float):0.2f}")
-        self.playback_speed_gui.setRange(-300, 300)
-        self.playback_speed_gui.update()
-        self.playback_speed_gui.updateText()
-        self.playback_speed_gui.add_to_layout(hor_layout,1)
-        self.playback_speed_gui.setSingleStep(1)
-        self.playback_speed_gui.setPageStep(10)
-        self.playback_speed_gui.setTickInterval(10)
-        self.playback_speed_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
-
-    def _add_playback_position_slider(self, hor_layout):
-        # Position slider
-        self.play_position = NumericParameter()
-        self.play_position.float_scale = 1000
-        self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position)
-        self.play_position_gui.decimals = 3
-        self.play_position_gui.set_pressed_callback(self.pause)
-        self.play_position_gui.set_released_callback(self.reset_play)
-        self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
-        self.play_position_gui.create()
-        self.play_position_gui.add_to_layout(hor_layout,5)
 
     def pause(self):
         """ Method called from video player """
@@ -146,6 +65,8 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
 
     def set_play_position(self):
         print(f"self.play_position {self.play_position.float}")
+        if self.video_decoder1:
+            self.video_decoder1.seek(self.play_position.float)
         # if self._frame_provider.frame_buffer:
         #     self._frame_provider.frame_buffer.reset()
         # self._frame_provider.set_time(self.play_position.float)
@@ -176,57 +97,83 @@ class TestVideoPlayer(QtWidgets.QMainWindow):
         self._ticks_per_frame = int(self._frame_duration / self._time_base)
         self._duration        = float(st.duration * self._time_base)
         self._end_time        = float(self._duration-self._frame_duration)
+        self._video_framebuffer1 = VideoFrameBufferCpp(self.video_decoder1)
+
+        # TODO: align code, in VideoPlayerAV, some values are in frame_provider
+        print(f"duration = {self._duration} seconds")
+        slider_single_step = int(self._ticks_per_frame*
+                                 self._time_base*
+                                 self.play_position.float_scale+0.5)
+        slider_page_step   = int(self.play_position.float_scale+0.5)
+        self.play_position_gui.setSingleStep(slider_single_step)
+        self.play_position_gui.setPageStep(slider_page_step)
+        self.play_position.range = [0, int(self._end_time*
+                                           self.play_position.float_scale)]
+        print(f"range = {self.play_position.range}")
+        self.play_position_gui.setRange(0, self.play_position.range[1])
+        self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
+        self.play_position_gui.update()
+        self.play_position_gui.changed()
+
+        print(f"ticks_per_frame {self._ticks_per_frame}")
+
 
     def open_video2(self, filename, device_type : str|None):
         self.video_decoder2 = decode_lib.VideoDecoder()
         self.video_decoder2.open(filename, device_type)
+        self._video_framebuffer2 = VideoFrameBufferCpp(self.video_decoder2)
 
     def decode(self):
 
         assert self.video_decoder1 is not None
-        self.st = time.perf_counter()
+        self.start_time = time.perf_counter()
+        self.frame_count = 0
 
-        self.display_frames(0,0)
-        self.display_frames(1,1000)
+        self.get_frames(display=True)
+        self.display_frames()
 
-    
-    def display_frames(self, current, max):
-        # if current%10==0:
-        #     print(f"{current}")
-        assert self.video_decoder1 is not None
-        if current%1 == 0:
-            self.video_decoder1.nextFrame(convert=True)
-            self.frame1 = self.video_decoder1.getFrame()
+
+    def get_frames(self, display=True):
+        if display:
+            self.frame1 = self._video_framebuffer1.get_frame()
             # print(self.frame1.get().pict_type)
             if self.video_decoder2:
-                self.video_decoder2.nextFrame(convert=True)
-                self.frame2 = self.video_decoder2.getFrame()
+                self.frame2 = self._video_framebuffer2.get_frame()
             else:
                 self.frame2 = None
-            self.display_frame(current)
+            self.display_frame()
+            self.frame_count += 1
         else:
             self.video_decoder1.nextFrame(convert=False)
             if self.video_decoder2:
                 self.video_decoder2.nextFrame(convert=False)
-        if current<max:
-            QtCore.QTimer.singleShot(self.slow_down, lambda : self.display_frames(current+1, max))
-        else:
-            duration = time.perf_counter()-self.st
-            print(f"took {duration:0.3f} sec {max/duration:0.2f} fps")
+
+    def display_frames(self):
+        # if current%10==0:
+        #     print(f"{current}")
+        assert self.video_decoder1 is not None
+        try:
+            self.get_frames(display=True)
+            QtCore.QTimer.singleShot(self.slow_down, lambda : self.display_frames())
+        except Exception as e:
+            print(f"Exception: {e}")
+            duration = time.perf_counter()-self.start_time
+            # TODO: get frame number from Frame
+            fps = self.frame_count/duration
+            print(f"took {duration:0.3f} sec  {fps:0.2f} fps")
 
     def display_frames2(self, current, max):
         # if current%10==0:
         #     print(f"{current}")
-        assert self.video_decoder1 is not None
+        assert self._video_framebuffer1 is not None
         for i in range(current, max+1):
-            self.video_decoder1.nextFrame()
-            self.frame1 = self.video_decoder1.getFrame()
+            self.frame1 = self._video_framebuffer1.get_frame()
             self.display_frame(i)
             QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
         duration = time.perf_counter()-self.st
         print(f"took {duration:0.3f} sec {max/duration:0.2f} fps")
 
-    def display_frame(self, frame_nb):
+    def display_frame(self):
 
         def getArray(frame, index, height, width, dtype):
             dtype_size = np.dtype(dtype).itemsize
@@ -315,17 +262,29 @@ def main():
     QtGui.QSurfaceFormat.setDefaultFormat(format)
 
     app = QtWidgets.QApplication()
+    app.setApplicationDisplayName(f'Video comparison: {args.input_videos}')
 
     device_type = "cuda" if args.cuda else None
     if len(args.input_videos)>2:
         print("Warning: Using only first 2 videos ...")
-    if len(args.input_videos)==1:
-        window = TestVideoPlayer(args.input_videos[0], None, device_type)
-    else:
-        window = TestVideoPlayer(args.input_videos[0], args.input_videos[1], device_type)
-    window.setSlowDown(args.slow)
-    window.show()
 
+    main_window = QtWidgets.QMainWindow()
+    main_widget = QtWidgets.QWidget(main_window)
+    main_window.setCentralWidget(main_widget)
+    main_layout  = QtWidgets.QVBoxLayout()
+    video_layout = QtWidgets.QHBoxLayout()
+    main_widget.setLayout(main_layout)
+    main_layout.addLayout(video_layout)
+
+    if len(args.input_videos)==1:
+        player1 = TestVideoPlayer(main_widget, args.input_videos[0], None, device_type)
+    else:
+        player1 = TestVideoPlayer(main_widget, args.input_videos[0], args.input_videos[1], device_type)
+    video_layout.addWidget(player1, 1)
+    player1.setSlowDown(args.slow)
+    player1.show()
+
+    main_window.show()
     app.exec()
 
 
