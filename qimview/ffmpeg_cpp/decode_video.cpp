@@ -49,7 +49,6 @@ extern "C" {
 
 #include "decode_video.hpp"
 
-#define NB_FRAMES 2000
 using namespace std::chrono;
 
 
@@ -70,6 +69,17 @@ namespace AV
     }
     const char * AVException::what() const noexcept {
       return _message.c_str();
+    }
+
+    std::string averror2str(int averror)
+    {
+      std::string error_msg = "";
+      if (averror < 0) {
+        char err[256];
+        av_strerror(averror, err, 256);
+        error_msg = std::string(err);
+      }
+      return error_msg;
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -176,17 +186,18 @@ namespace AV
       return ret;
     }
 
-    bool FormatContext::readVideoFrame(AVPacket* pkt, int video_stream_index)
+    int FormatContext::readVideoFrame(AVPacket* pkt, int video_stream_index)
     {
-      while (av_read_frame(_format_ctx, pkt) >= 0) {
+      int res;
+      while ((res = av_read_frame(_format_ctx, pkt)) >= 0) {
         if (pkt->stream_index != video_stream_index) {
           // need to unRef pkt?
           continue;
         }
         else
-          return true; // success
+          return res; // success
       }
-      return false; // failure
+      return res; // failure
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -550,19 +561,22 @@ bool AV::VideoDecoder::seek(float sec)
 }
 
 
-bool AV::VideoDecoder::nextFrame(bool convert)
+int AV::VideoDecoder::nextFrame(bool convert)
 {
   bool frame_timer = false;
   //auto prev = high_resolution_clock::now();
   //auto curr = high_resolution_clock::now();
   //auto start = curr;
   AVFrame *tmp_frame = NULL;
+  int res;
 
-  while (_framenum < NB_FRAMES) {
-    if (_format_ctx.readVideoFrame(_packet.get(), _stream_index) ) {
+  while (true) 
+  {
+    res =_format_ctx.readVideoFrame(_packet.get(), _stream_index);
+    if (res == 0) {
       int response = _codec_ctx.receiveFrame(_packet.get(), _frame.get());
       if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
-      else if (response < 0) return false;
+      else if (response < 0) return response;
 
       if (convert) {
         _current_frame = _frame.gpu2Cpu(hw_pix_fmt, &_sw_frame);
@@ -580,12 +594,12 @@ bool AV::VideoDecoder::nextFrame(bool convert)
 
       _framenum++;
       _packet.unRef();
-      return true;
+      return response;
     }
     else
-      return false;
+      return res;
   }
-  return false;
+  return res;
 
 }
 
@@ -597,22 +611,22 @@ AV::Frame* AV::VideoDecoder::getFrame() const
 
 AVPixelFormat AV::VideoDecoder::hw_pix_fmt = AV_PIX_FMT_NONE;
 
-bool AV::load_frame(const char* filename, const char* device_type_name)
+bool AV::load_frames(const char* filename, const char* device_type_name, int nb_frames)
 {
   try {
     AV::VideoDecoder decoder;
     decoder.open(filename, device_type_name);
 
     auto start = high_resolution_clock::now();
-    bool ok = true;
+    int res = 0;
     do  {
-      ok = decoder.nextFrame();
+      res = decoder.nextFrame();
       //std::cout << "ok " << ok << std::endl;
-    } while (ok && (decoder.frameNumber() < NB_FRAMES));
+    } while ((res==0) && (decoder.frameNumber() < nb_frames));
 
     auto end = high_resolution_clock::now();
     auto duration = duration_cast<microseconds>(end - start);
-    std::cout << " decode first " << NB_FRAMES << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
+    std::cout << " decode first " << nb_frames << " frames took " << duration.count() / 1000.0f << " ms" << std::endl;
     return true;
   }
   catch (AV::AVException except) {

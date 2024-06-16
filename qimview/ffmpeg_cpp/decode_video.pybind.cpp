@@ -360,7 +360,9 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def("getFormatContext", &AV::VideoDecoder::getFormatContext)
     ;
 
-  m.def("load_frame", &AV::load_frame, "Loads 200 first video frames");
+  m.def("load_frames", &AV::load_frames, "Loads n first video frames");
+
+  m.def("averror2str", &AV::averror2str, "Convert error code to string");
 
   // define all classes
   py::class_<AV::Packet>(m, "Packet")

@@ -19,7 +19,7 @@ int main(int argc, char **argv)
   if (argc == 2) {
     //int frame_width, frame_height;
     //unsigned char* frame_data;
-    if (!AV::load_frame(filename.c_str()))
+    if (!AV::load_frames(filename.c_str()))
     {
       printf("Couldn't load video frame\n");
       return 1;
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
   else if (argc == 3)
   {
     std::string hwdevice(argv[2]);
-    if (!AV::load_frame(filename.c_str(), hwdevice.c_str()))
+    if (!AV::load_frames(filename.c_str(), hwdevice.c_str()))
     {
       printf("Couldn't load video frame with hw decoder\n");
       return 1;

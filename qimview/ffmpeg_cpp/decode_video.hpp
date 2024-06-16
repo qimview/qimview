@@ -33,6 +33,8 @@ namespace AV
     std::string _message;
   };
 
+  std::string averror2str(int averror);
+
   //-----------------------------------------------------------------------------------------------
   class Packet
   {
@@ -61,7 +63,7 @@ namespace AV
     const AVCodec* findDecoder(const int& stream_index);
     void findStreamInfo();
     int findBestVideoStream(const AVCodec** codec);
-    bool readVideoFrame(AVPacket* pkt, int video_stream_index);
+    int readVideoFrame(AVPacket* pkt, int video_stream_index);
   private:
     AVFormatContext* _format_ctx;
     bool             _file_opened;
@@ -154,7 +156,7 @@ namespace AV {
     VideoDecoder(): _stream_index(-1), _framenum(0) {}
     bool open(const char* filename, const char* device_type_name = nullptr);
     bool seek(float sec);
-    bool nextFrame(bool convert=true);
+    int  nextFrame(bool convert=true);
     int  frameNumber() { return _framenum; }
 
     AV::Frame* getFrame() const;
@@ -184,5 +186,7 @@ namespace AV {
     AV::Frame*        _current_frame;
   };
 
-  bool load_frame(const char* filename, const char* device_type_name = nullptr);
+  bool load_frames( const char* filename,
+                    const char* device_type_name = nullptr, 
+                    int nb_frames = 200);
 }
