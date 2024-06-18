@@ -6,11 +6,19 @@ from av import container, VideoFrame
 from av.container import streams
 from qimview.video_player.video_frame_buffer_cpp import VideoFrameBufferCpp, EndOfVideo
 
+import os
+
+ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
+if os.name == 'nt' and os.path.isdir(ffmpeg_path):
+    os.add_dll_directory(ffmpeg_path)
+
+import decode_video_py as decode_lib
 
 class VideoFrameProvider:
     def __init__(self):
-        self._frame_buffer    : Optional[VideoFrameBufferCpp]         = None
-        self._container       : Optional[container.InputContainer] = None
+        self._frame_buffer    : Optional[VideoFrameBufferCpp]      = None
+        # self._container       : Optional[container.InputContainer] = None
+        self._decoder         : decode_lib.VideoDecoder | None     = None
         self._playing         : bool                               = False
         self._frame           : Optional[VideoFrame]               = None
         self._video_stream    : Optional[streams.StreamContainer]  = None
@@ -47,15 +55,22 @@ class VideoFrameProvider:
             else:
                 self._frame_buffer.start_thread()
 
-    def set_input_container(self, container: container.InputContainer):
-        self._container = container
-        
-        nb_videos = len(self._container.streams.video)
+    def set_input_container(self, video_decoder: decode_lib.VideoDecoder ):
+        self._decoder = video_decoder
+
+        assert self._decoder is not None, "No decoder" 
+        nb_streams = self._decoder.getFormatContext().nb_streams
+        video_streams = []
+        for i in range(nb_streams):
+            if self._decoder.getStream(i).codecpar.codec_type == decode_lib.AVMediaType.AVMEDIA_TYPE_VIDEO:
+                video_streams.append(self._decoder.getStream(i))
+        nb_videos = len(video_streams)
         print(f"Found {nb_videos} videos")
-        self._container.streams.video[0].thread_type = "FRAME"
-        self._container.streams.video[0].thread_count = 8
-        # self._container.streams.video[0].fast = True
-        self._video_stream = self._container.streams.video[0]
+        # self._container.streams.video[0].thread_type = "FRAME"
+        # self._container.streams.video[0].thread_count = 8
+        ## self._container.streams.video[0].fast = True
+        assert nb_videos>0, "No video stream found"
+        self._video_stream = video_streams[0]
         print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
 
         st = self.stream
