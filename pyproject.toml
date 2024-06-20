@@ -71,4 +71,5 @@ imview = "qimview.imview:main"
 # Mutiple image viewer
 mview  = "qimview.mview:main"
 # Test Video player
-vplay  = "qimview.ffmpeg_cpp.test_video_player:main"
+vplay    = "qimview.ffmpeg_cpp.test_video_player:main"
+vplayav  = "qimview.video_player.video_player_av:main"
