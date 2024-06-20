@@ -95,7 +95,7 @@ class VideoScheduler:
             self.pause()
             return False
         # assert p._frame is not None, "No frame available"
-        if p._pause:
+        if not p._frame_provider.playing:
             print(f"paused")
             return False
         next_frame_time : float = p.frame_provider.get_time() \

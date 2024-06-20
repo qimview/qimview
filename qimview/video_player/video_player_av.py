@@ -12,12 +12,11 @@ from av.frame import Frame
 from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
 
 from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
-from qimview.image_viewers.qt_image_viewer             import QTImageViewer
 from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
 from qimview.utils.viewer_image                        import ViewerImage, ImageFormat
 from qimview.video_player.video_scheduler              import VideoScheduler
 from qimview.video_player.video_frame_provider         import VideoFrameProvider
-from qimview.video_player.video_player_base            import VideoPlayerBase
+from qimview.video_player.video_player_base            import VideoPlayerBase, ImageViewerClass
 
 class AverageTime:
     def __init__(self):
@@ -110,7 +109,6 @@ class VideoPlayerAV(VideoPlayerBase):
         # is show required here?
         self.show()
         self._im = None
-        self._pause = False
         self._button_play_pause.clicked.connect(self.play_pause)
         self._container : container.InputContainer | None = None
 
@@ -131,10 +129,24 @@ class VideoPlayerAV(VideoPlayerBase):
         self._filename : str = "none"
         self._basename : str = "none"
         self._initialized : bool = False
+        self._compare_players : list[VideoPlayerAV] = []
 
     @property
     def frame_provider(self) -> Optional[VideoFrameProvider]:
         return self._frame_provider
+
+    def compare(self, player):
+        self._compare_players.append(player)
+
+    def on_synchronize(self, viewer : ImageViewerClass) -> None:
+        # Synchronize other viewer to calling viewer
+        copy_filters = True
+        for v in self._compare_players:
+            if v.widget != viewer:
+                 viewer.synchronize_data(v.widget)
+                 if copy_filters:
+                     v.widget.filter_params.copy_from(viewer.filter_params)
+                 v.widget.viewer_update()
 
     def set_name(self, n:str):
         self._name = n
@@ -146,7 +158,6 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def set_pause(self):
         """ Method called from scheduler """
-        self._pause = True
         self._frame_provider.playing = False
 
     def pause(self):
@@ -159,7 +170,6 @@ class VideoPlayerAV(VideoPlayerBase):
         self._frame_provider.playing = True
         self._start_video_time = self._frame_provider.get_time()
         print(f"set_play _start_video_time = {self._start_video_time:0.3f}")
-        self._pause = False
 
     def reset_play(self):
         if self._was_active:
@@ -168,7 +178,9 @@ class VideoPlayerAV(VideoPlayerBase):
     def start_decode(self):
         if self._scheduler._timer.isActive():
             self._scheduler.pause()
-        self._scheduler.set_players([self])
+        players = [self]
+        players.extend(self._compare_players)
+        self._scheduler.set_players(players)
         self._scheduler.start_decode(self._frame_provider.get_time())
 
     def play_pause(self):
@@ -186,19 +198,23 @@ class VideoPlayerAV(VideoPlayerBase):
     def slider_value_changed(self):
         self.set_play_position()
 
-    def set_play_position(self):
+    def set_play_position(self, recursive=True):
         print(f"self.play_position {self.play_position.float}")
         if self._frame_provider.frame_buffer:
             self._frame_provider.frame_buffer.reset()
         self._frame_provider.set_time(self.play_position.float)
         self._start_video_time = self.play_position.float
+        for p in self._compare_players:
+            p.play_position = self.play_position
+            p.set_play_position(recursive=False)
+            p.update_position(recursive=False)
         self.display_frame(self._frame_provider.frame)
 
     def speed_value_changed(self):
         print(f"New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
-    def update_position(self, precision=0.02) -> bool:
+    def update_position(self, precision=0.02, recursive=True) -> bool:
         current_time = self._frame_provider.get_time()
         if abs(self.play_position.float-current_time)>precision:
             self.play_position.float = current_time
@@ -206,6 +222,9 @@ class VideoPlayerAV(VideoPlayerBase):
             self.play_position_gui.blockSignals(True)
             self.play_position_gui.updateGui()
             self.play_position_gui.blockSignals(False)
+            if recursive:
+                for p in self._compare_players:
+                    p.update_position(recursive=False)
             return True
         return False
 
@@ -235,7 +254,11 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
         self._im.u = u
         self._im.v = v
-        self.widget.set_image_fast(self._im)
+        if len(self._compare_players)>0:
+            # Use image from _compare_player as a ref?
+            self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im)
+        else:
+            self.widget.set_image_fast(self._im)
         self.widget.image_name = im_name
 
     def set_image_data(self, np_array):
@@ -445,6 +468,7 @@ def main():
     if player2:
         player2.set_name('player2')
         player2.init_and_display()
+        player1.compare(player2)
 
     app.exec()
     # process(args.input_video, width, height)
