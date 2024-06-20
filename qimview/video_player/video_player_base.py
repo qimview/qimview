@@ -1,4 +1,4 @@
-from typing import Union, Generator, List, Optional, Iterator
+from typing import Union, Generator, List, Optional, Iterator, NewType
 
 from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
 from qimview.image_viewers.qt_image_viewer             import QTImageViewer
@@ -7,6 +7,10 @@ from qimview.parameters.numeric_parameter              import NumericParameter
 from qimview.parameters.numeric_parameter_gui          import NumericParameterGui
 from qimview.image_viewers.image_filter_parameters     import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
+from qimview.image_viewers.image_viewer                import ImageViewer
+
+# Class that derives from ImageViewer
+ImageViewerClass = NewType('ImageViewerClass', ImageViewer)
 
 class VideoPlayerBase(QtWidgets.QWidget):
     def __init__(self, parent=None) -> None:
@@ -17,6 +21,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.viewer_class = GLImageViewerShaders
         self.widget: Union[GLImageViewerShaders, QTImageViewer]
         self.widget = self.viewer_class() # event_recorder = self.event_recorder)
+        self.widget.set_synchronization_callback(self.on_synchronize)
         # don't show the histogram
         self.widget.show_histogram = False
         self.widget._show_text = False
@@ -54,6 +59,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
         # print(f"parameters {self.filter_params}")
+        self.on_synchronize(self.widget)
         self.widget.viewer_update()
 
     def _add_play_pause_button(self, hor_layout):
@@ -94,6 +100,9 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
         self.play_position_gui.create()
         self.play_position_gui.add_to_layout(hor_layout,5)
+
+    def on_synchronize(self, viewer : ImageViewerClass) -> None:
+        pass
 
     def pause(self):
         pass # to override
