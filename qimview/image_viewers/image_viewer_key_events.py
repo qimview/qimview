@@ -2,7 +2,7 @@ from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
 from typing import TYPE_CHECKING, List, Tuple
 from qimview.utils.tab_dialog import TabDialog
 if TYPE_CHECKING:
-    from .image_viewer import (ImageViewer, OverlayMode)
+    from .image_viewer import (ImageViewer, OverlapMode)
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
 
@@ -22,8 +22,8 @@ class ImageViewerKeyEvents:
                 'D'     : self.toggleDifferences,
                 'H'     : self.toggleHistogram,
                 'I'     : self.toggleIntensityLine,
-                'O'     : self.toggleOverlay,
-                'Alt+O' : self.toggleOverlayMode,
+                'O'     : self.toggleOverlap,
+                'Alt+O' : self.toggleOverlapMode,
                 'S'     : self.toggleStats,
                 'T'     : self.toggleText,
                 'F1'    : self.helpDialog,
@@ -160,17 +160,17 @@ class ImageViewerKeyEvents:
         self._viewer.show_histogram = not self._viewer.show_histogram
         return self.updateAndAccept()
     
-    def toggleOverlay(self) ->bool:
-        """ Toggle overlay display """
-        self._viewer._show_overlay = not self._viewer._show_overlay
+    def toggleOverlap(self) ->bool:
+        """ Toggle overlap display """
+        self._viewer._show_overlap = not self._viewer._show_overlap
         return self.updateAndAccept()
     
-    def toggleOverlayMode(self) ->bool:
-        """ Toggle overlay mode (Horizontal/Vertical) """
-        from .image_viewer import OverlayMode
-        match self._viewer._overlay_mode:
-            case OverlayMode.Horizontal: self._viewer._overlay_mode = OverlayMode.Vertical
-            case OverlayMode.Vertical:   self._viewer._overlay_mode = OverlayMode.Horizontal
+    def toggleOverlapMode(self) ->bool:
+        """ Toggle overlap mode (Horizontal/Vertical) """
+        from .image_viewer import OverlapMode
+        match self._viewer._overlap_mode:
+            case OverlapMode.Horizontal: self._viewer._overlap_mode = OverlapMode.Vertical
+            case OverlapMode.Vertical:   self._viewer._overlap_mode = OverlapMode.Horizontal
         return self.updateAndAccept()
     
     def toggleCursor(self) ->bool:

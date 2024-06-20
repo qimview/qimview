@@ -17,10 +17,10 @@ from .fullscreen_helper         import FullScreenHelper
 from .image_viewer_key_events   import ImageViewerKeyEvents
 from .image_viewer_mouse_events import ImageViewerMouseEvents
 
-class OverlayMode(Enum):
-    """ Different types of overlay """
-    Horizontal  = auto()
-    Vertical    = auto()
+class OverlapMode(Enum):
+    """ Different types of overlap """
+    Horizontal  = 0
+    Vertical    = 1
 
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
@@ -110,7 +110,7 @@ class ImageViewer:
     #     'before_max_parent',
     #     'show_histogram',
     #     'show_cursor',
-    #     'show_overlay',
+    #     'show_overlap',
     #     'show_stats',
     #     'show_image_differences',
     #     'show_intensity_line',
@@ -159,9 +159,9 @@ class ImageViewer:
         # Add Mouse help tab
         self._key_events.add_help_tab("ImageViewer Mouse", self._mouse_events.markdown_help())
 
-        self._show_overlay          : bool = False
-        self._overlay_mode          : OverlayMode = OverlayMode.Horizontal
-        self._show_overlay_possible : bool = False
+        self._show_overlap          : bool = False
+        self._overlap_mode          : OverlapMode = OverlapMode.Horizontal
+        self._show_overlap_possible : bool = False
         self._show_text             : bool = True
 
         self._show_image_differences          : bool  = False
@@ -422,8 +422,8 @@ class ImageViewer:
 
         # ref_txt = self.image_ref_name if self.image_ref_name else 'ref'
         ref_txt = 'ref'
-        if self._show_overlay:
-            text += f"\n {ref_txt} | im" if self._show_overlay_possible else "\noverlay not available"
+        if self._show_overlap:
+            text += f"\n {ref_txt} | im" if self._show_overlap_possible else "\noverlap not available"
         if self._show_image_differences:
             if self._show_image_differences_possible:
                 np.set_printoptions(precision=2)

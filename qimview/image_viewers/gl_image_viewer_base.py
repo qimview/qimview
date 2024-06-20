@@ -347,7 +347,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self._mouse_events.mouse_press_event(event)
 
     def mouseMoveEvent(self, event):
-        if self.show_cursor or self._show_overlay:
+        if self.show_cursor or self._show_overlap:
             self.set_cursor_image_position(event.x(), event.y())
         self._mouse_events.mouse_move_event(event)
 
