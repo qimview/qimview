@@ -25,7 +25,6 @@ class TestVideoPlayer(VideoPlayerBase):
         vertical_layout = QtWidgets.QVBoxLayout()
         self.main_widget.setLayout(vertical_layout)
 
-        self._pause = True
         self._button_play_pause.clicked.connect(self.play_pause)
 
         self.video_decoder1 = None

@@ -14,7 +14,7 @@ from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
                               QOpenGLShaderProgram, QOpenGLTexture)
 
 from qimview.utils.qt_imports  import QtWidgets, QtGui
-from .image_viewer             import trace_method, get_time
+from .image_viewer             import trace_method, get_time, OverlapMode
 from .gl_image_viewer_base     import GLImageViewerBase
 from qimview.utils.viewer_image import ImageFormat
 
@@ -155,6 +155,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform sampler2D UTex2;
         uniform sampler2D VTex2;
         uniform float difference_scaling;
+        uniform int   overlap_mode;
         uniform float overlap_ratio;
         uniform float texture_scale;
         uniform int channels; // channel representation
@@ -166,28 +167,29 @@ class GLImageViewerShaders(GLImageViewerBase):
         {fragmentShader_yuv2rgb}
 
         void main() {{
-          float epsilon = 1.5f/textureSize(YTex,0).x;
-          if ((UV.x>overlap_ratio-epsilon)&&(UV.x<overlap_ratio+epsilon)) {{
+          float epsilon     = 1.5f/((overlap_mode==0)?textureSize(YTex,0).x:textureSize(YTex,0).y);
+          float overlap_pos = (overlap_mode==0)?UV.x:UV.y;
+          if ((overlap_pos>overlap_ratio-epsilon)&&(overlap_pos<overlap_ratio+epsilon)) {{
               colour = vec3(0.9,0.2,0.2);
           }} else {{
               if (difference_scaling>0) {{
                 float y2 = texture(YTex2, UV).r*texture_scale;
                 float u2 = texture(UTex2, UV).r*texture_scale;
                 float v2 = texture(VTex2, UV).r*texture_scale;
-                if (UV.x<=overlap_ratio) {{
+                if (overlap_pos<=overlap_ratio) {{
                     y = texture(YTex, UV).r*texture_scale;
                     u = texture(UTex, UV).r*texture_scale;
                     v = texture(VTex, UV).r*texture_scale;
                     vec3 rgb1 = yuv2rgb(vec3(y,u,v));
                     vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
                     vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
-    	            colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+                    colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
                 }} else {{
                     vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
                     colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
                 }}
               }} else {{
-                if (UV.x<=overlap_ratio) {{
+                if (overlap_pos<=overlap_ratio) {{
                     y = texture(YTex, UV).r*texture_scale;
                     u = texture(UTex, UV).r*texture_scale;
                     v = texture(VTex, UV).r*texture_scale;
@@ -239,6 +241,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform sampler2D YTex2;
         uniform sampler2D UVTex2;
         uniform float difference_scaling;
+        uniform int   overlap_mode;
         uniform float overlap_ratio;
         uniform float texture_scale;
         uniform int channels; // channel representation
@@ -254,15 +257,17 @@ class GLImageViewerShaders(GLImageViewerBase):
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
  
-          float epsilon = 1.5f/textureSize(YTex,0).x;
-          if ((UV.x>overlap_ratio-epsilon)&&(UV.x<overlap_ratio+epsilon)) {{
+          float epsilon     = 1.5f/((overlap_mode==0)?textureSize(YTex,0).x:textureSize(YTex,0).y);
+          float overlap_pos = (overlap_mode==0)?UV.x:UV.y;
+
+          if ((overlap_pos>overlap_ratio-epsilon)&&(overlap_pos<overlap_ratio+epsilon)) {{
               colour = vec3(0.9,0.2,0.2);
           }} else {{
               if (difference_scaling>0) {{
                 float y2 = texture(YTex2,  UV).r*texture_scale;
                 float u2 = texture(UVTex2, UV).r*texture_scale;
                 float v2 = texture(UVTex2, UV).g*texture_scale;
-                if (UV.x<=overlap_ratio) {{
+                if (overlap_pos<=overlap_ratio) {{
                     y = texture(YTex,  UV).r*texture_scale;
                     u = texture(UVTex, UV).r*texture_scale;
                     v = texture(UVTex, UV).g*texture_scale;
@@ -275,7 +280,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                     colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
                 }}
               }} else {{
-                if (UV.x<=overlap_ratio) {{
+                if (overlap_pos<=overlap_ratio) {{
                     y = texture(YTex,  UV).r*texture_scale;
                     u = texture(UVTex, UV).r*texture_scale;
                     v = texture(UVTex, UV).g*texture_scale;
@@ -530,7 +535,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlay or self._show_image_differences)
+        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlap or self._show_image_differences)
         if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
             self.program = self.program_RAW
         elif self._image and self._image.channels == ImageFormat.CH_YUV420:
@@ -563,6 +568,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                     self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
             if twotex:
                 self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
+                self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
                 self.texture_overlap_ratio = shaders.glGetUniformLocation(self.program, "overlap_ratio")
             self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
         else:
@@ -605,7 +611,12 @@ class GLImageViewerShaders(GLImageViewerBase):
             # print(f"-- texture_scale = {texture_scale}")
             if twotex:
                 _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
-                _gl.glUniform1f( self.texture_overlap_ratio, self.cursor_imx_ratio                  if self._show_overlay           else 1 )
+                _gl.glUniform1i( self.texture_overlap_mode,  self._overlap_mode.value                                                      )
+                if self._show_overlap:
+                    overlap_ratio = self.cursor_imx_ratio if self._overlap_mode == OverlapMode.Horizontal else self.cursor_imy_ratio
+                else:
+                    overlap_ratio = 1
+                _gl.glUniform1f( self.texture_overlap_ratio, overlap_ratio )
             _gl.glUniform1f( self.texture_scale_location, texture_scale)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
