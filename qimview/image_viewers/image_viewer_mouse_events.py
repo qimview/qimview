@@ -64,7 +64,8 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         # viewer._widget.setAttribute(QtCore.Qt.WidgetAttribute.WA_AcceptTouchEvents)
 
         self._mouse_callback.update({
-            'Left+DblClick on histogram' : self.toogle_histo_size,
+            'Left+DblClick'              : self.toggle_fullscreen,
+            'Left+DblClick on histogram' : self.toggle_histo_size,
             # Touch pad panning will be interpreted as Wheel event
             'Wheel'                      : self.wheel_pan,
             'Shft+Wheel'                 : self.wheel_pan_horizontal,
@@ -108,11 +109,15 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         else:
             event.ignore()
 
-    def toogle_histo_size(self, _)->bool:
+    def toggle_histo_size(self, _)->bool:
         """ Switch histogram scale from 1 to 3 """
         self._widget._histo_scale = (self._widget._histo_scale % 3) + 1 
         self._widget.viewer_update()
         return True
+    
+    def toggle_fullscreen(self, _) -> bool:
+        """ toggle fullscreen mode """
+        return self._widget._fullscreen.toggle_fullscreen(self._widget._widget)
 
     def wheel_zoom(self, event: QtGui.QWheelEvent) -> bool:
         """ Zoom in/out based on wheel angle, works with touchpad 2 fingers """
