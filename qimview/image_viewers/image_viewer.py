@@ -168,6 +168,9 @@ class ImageViewer:
         self._show_image_differences_possible : bool  = False
         self._mean_absolute_difference        : float = 0
 
+        # Possibility to add custom text to display
+        self._custom_text     : str           = ""
+
         # Current mouse information: position, displacement
         self.mouse_displ      : QtCore.QPoint = QtCore.QPoint(0,0)
         self.mouse_pos        : QtCore.QPoint = QtCore.QPoint(0,0)
@@ -221,6 +224,12 @@ class ImageViewer:
     @show_text.setter
     def show_text(self, v):
         self._show_text = v
+
+    # --- Custom text
+    @property
+    def custom_text(self): return self._custom_text
+    @custom_text.setter
+    def custom_text(self,t): self._custom_text = t
 
     # --- verbose
     @property
@@ -433,6 +442,7 @@ class ImageViewer:
                     text += f"\n im - {ref_txt}, SAME IMAGES"
             else:
                 text += "\nimage differences not available"
+        text += self._custom_text
         return text
 
     def display_text(self, painter: QtGui.QPainter, text: str, font_size=-1) -> None:
