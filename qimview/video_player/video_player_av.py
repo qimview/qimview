@@ -127,6 +127,7 @@ class VideoPlayerAV(VideoPlayerBase):
         self._max_skip : int = 10
 
         self._filename : str = "none"
+        self._video_stream_number : int = 0
         self._basename : str = "none"
         self._initialized : bool = False
         self._compare_players : list[VideoPlayerAV] = []
@@ -152,8 +153,15 @@ class VideoPlayerAV(VideoPlayerBase):
         self._name = n
 
     def set_video(self, filename):
+        """ Set input video filename and optionally stream number
+
+        Args:
+            filename (string): filename or filename:stream_number
+        """        
         self._filename = filename
+        self._video_stream_number = int(filename.split(':')[1]) if ':' in filename else 0
         self._basename = os.path.basename(self._filename)
+
         self._initialized = False
 
     def set_pause(self):
@@ -243,6 +251,7 @@ class VideoPlayerAV(VideoPlayerBase):
                 format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
                 self._im = ViewerImage(np_array, channels = format, precision=prec)
                 self.widget.set_image_fast(self._im)
+        self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
     def set_image_YUV420(self, y, u, v, im_name):
@@ -254,6 +263,7 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
         self._im.u = u
         self._im.v = v
+        self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
             self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im)
@@ -354,6 +364,8 @@ class VideoPlayerAV(VideoPlayerBase):
             frame = self._frame_provider._frame
         if frame is None:
             return
+        self.widget._custom_text =  f"\nFPS:     {self._frame_provider._framerate:0.3f}"
+        self.widget._custom_text += f"\nduration:{self._frame_provider._duration:0.3f} sec."
         if self.viewer_class is GLImageViewerShaders:
             self.display_frame_YUV420(frame)
         else:
@@ -373,7 +385,7 @@ class VideoPlayerAV(VideoPlayerBase):
         if self._container is not None:
             self._container.close()
         self._container = av.open(self._filename)
-        self._frame_provider.set_input_container(self._container)
+        self._frame_provider.set_input_container(self._container, self._video_stream_number)
 
         print(f"duration = {self._frame_provider._duration} seconds")
         slider_single_step = int(self._frame_provider._ticks_per_frame*
@@ -409,7 +421,7 @@ def main():
     # import pprint
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument('input_video', nargs='+', help='input image (if not specified, will open file dialog)')
+    parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
     args = parser.parse_args()
     # _params = vars(args)
     print(args)
