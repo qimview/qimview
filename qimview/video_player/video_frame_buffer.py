@@ -23,13 +23,14 @@ class VideoFrameBuffer:
     """ This class uses a thread to store several successive videos frame in a queue
     that is available for the video player
     """
-    def __init__(self, container: container.InputContainer, maxsize = 20):
+    def __init__(self, container: container.InputContainer, maxsize = 20, stream_number = 0):
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
         self._maxsize : int = maxsize
         self._queue = queue.Queue(maxsize=self._maxsize)
         self._running : bool = False
         self._container : container.InputContainer = container
-        self._frame_generator : Optional[Iterator[Frame]] = self._container.decode(video=0)
+        self._stream_number : int = stream_number
+        self._frame_generator : Optional[Iterator[Frame]] = self._container.decode(video=self._stream_number)
         self._thread : Optional[threading.Thread] = None
         self._end_of_video : bool = False
 
@@ -54,7 +55,7 @@ class VideoFrameBuffer:
                         self._running = False
                         self._end_of_video = True
                         # Reset generator ?
-                        self._frame_generator = self._container.decode(video=0)
+                        self._frame_generator = self._container.decode(video=self._stream_number)
                         # raise StopIteration from e
                 else:
                     print("Missing frame generator")
@@ -80,7 +81,7 @@ class VideoFrameBuffer:
     def set_container(self, c):
         self.terminate()
         self._container = c
-        self._frame_generator = self._container.decode(video=0)
+        self._frame_generator = self._container.decode(video=self._stream_number)
 
     def set_max_size(self, m = 10):
         print(f" *** set_max_size {m}")
@@ -90,7 +91,7 @@ class VideoFrameBuffer:
     def reset(self):
         self.terminate()
         self.reset_queue()
-        self._frame_generator = self._container.decode(video=0)
+        self._frame_generator = self._container.decode(video=self._stream_number)
         self._end_of_video = False
 
     def size(self) -> int:
@@ -137,7 +138,7 @@ class VideoFrameBuffer:
         print(f"start_thread {self._thread} running {self._running} generator {self._frame_generator}")
         if self._frame_generator is None:
             print(" *** resetting frame generator ***")
-            self._frame_generator = self._container.decode(video=0)
+            self._frame_generator = self._container.decode(video=self._stream_number)
         if self._thread is None:
             self._thread = threading.Thread(target=self._worker, daemon=True)
             self._running = True

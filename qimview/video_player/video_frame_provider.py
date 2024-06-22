@@ -47,7 +47,7 @@ class VideoFrameProvider:
             else:
                 self._frame_buffer.start_thread()
 
-    def set_input_container(self, container: container.InputContainer):
+    def set_input_container(self, container: container.InputContainer, video_stream_number=0):
         self._container = container
         
         nb_videos = len(self._container.streams.video)
@@ -55,7 +55,7 @@ class VideoFrameProvider:
         self._container.streams.video[0].thread_type = "FRAME"
         self._container.streams.video[0].thread_count = 8
         # self._container.streams.video[0].fast = True
-        self._video_stream = self._container.streams.video[0]
+        self._video_stream = self._container.streams.video[video_stream_number]
         print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
 
         st = self.stream
@@ -70,7 +70,7 @@ class VideoFrameProvider:
         self._duration        = float(st.duration * self._time_base)
         self._end_time        = float(self._duration-self._frame_duration)
 
-        self._frame_buffer = VideoFrameBuffer(container)
+        self._frame_buffer = VideoFrameBuffer(container, maxsize=10, stream_number = video_stream_number)
         self._frame = None
 
     def get_time(self) -> float:
