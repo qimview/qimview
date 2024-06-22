@@ -1,8 +1,8 @@
 import os
+import re
 import time
-from typing import Union, Generator, List, Optional, Iterator
 import numpy as np
-import os
+from typing import Union, Generator, List, Optional, Iterator
 if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
     #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
@@ -158,8 +158,13 @@ class VideoPlayerAV(VideoPlayerBase):
         Args:
             filename (string): filename or filename:stream_number
         """        
-        self._filename = filename
-        self._video_stream_number = int(filename.split(':')[1]) if ':' in filename else 0
+        res = re.match('(.*):(\d+)', filename)
+        if res:
+            self._filename = res.group(1)
+            self._video_stream_number = int(res.group(2))
+        else:
+            self._filename = filename
+            self._video_stream_number = 0
         self._basename = os.path.basename(self._filename)
 
         self._initialized = False

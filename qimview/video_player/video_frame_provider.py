@@ -67,8 +67,12 @@ class VideoFrameProvider:
         self._time_base       = float(st.time_base)
         self._frame_duration  = float(1/self._framerate)
         self._ticks_per_frame = int(self._frame_duration / self._time_base)
-        self._duration        = float(st.duration * self._time_base)
-        self._end_time        = float(self._duration-self._frame_duration)
+        if st.duration:
+            self._duration    = float(st.duration * self._time_base)
+            self._end_time    = float(self._duration-self._frame_duration)
+        else:
+            self._duration    = 0
+            self._end_time    = 0
 
         self._frame_buffer = VideoFrameBuffer(container, maxsize=10, stream_number = video_stream_number)
         self._frame = None
