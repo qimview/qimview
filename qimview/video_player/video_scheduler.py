@@ -17,7 +17,6 @@ class VideoScheduler:
         self._start_clock_time : float                = 0
         self._skipped          : List[int]            = [0, 0]
         self._displayed_pts    : List[int]            = [0, 0]
-        self._current_player   : int                  = 0
         self._playback_speed   : float                = 1
         # _speed_ok: Check current frame queue for each video, True if queue size > 1
         # if all active videos are ok, speed might be increased
@@ -87,10 +86,9 @@ class VideoScheduler:
         self._start_clock_time = time.perf_counter()
         player._start_video_time = player._frame_provider.get_time()
 
-    def check_next_frame(self) -> bool:
+    def check_next_frame(self, player_index:int) -> bool:
         """ Check if we need to get a new frame based on the time spent """
-        self._current_player = (self._current_player + 1) % len(self._players)
-        p : 'VideoPlayerAV' = self._players[self._current_player]
+        p : 'VideoPlayerAV' = self._players[player_index]
         if p.frame_provider is None or not p.frame_provider.frame:
             self.pause()
             return False
@@ -112,8 +110,8 @@ class VideoScheduler:
                 ok = True
                 while time_spent>next_frame_time and iter<p._max_skip*self._playback_speed and ok:
                     if iter>0:
-                        self._skipped[self._current_player] +=1
-                        # print(f" skipped {self._skipped[self._current_player]} / {p.frame_number},")
+                        self._skipped[player_index] +=1
+                        # print(f" skipped {self._skipped[player_index]} / {p.frame_number},")
                     try:
                         ok = p.frame_provider.get_next_frame()
                     except EndOfVideo as e:
@@ -132,9 +130,9 @@ class VideoScheduler:
                         time_spent = self.get_time_spent()
                         iter +=1
                 # if iter>1:
-                #     print(f" skipped {iter-1} frames {self._skipped[self._current_player]} / {p.frame_number},")
+                #     print(f" skipped {iter-1} frames {self._skipped[player_index]} / {p.frame_number},")
                 if p.frame_provider.frame_buffer:
-                    self._speed_ok[self._current_player] = p.frame_provider.frame_buffer.size()>1
+                    self._speed_ok[player_index] = p.frame_provider.frame_buffer.size()>1
                 return True
             else:
                 self.reset_time(p, next_frame_time)
@@ -142,10 +140,10 @@ class VideoScheduler:
         else:
             return False
 
-    def _display_frame(self):
-        p : 'VideoPlayerAV' = self._players[self._current_player]
+    def _display_frame(self, player_index:int):
+        p : 'VideoPlayerAV' = self._players[player_index]
         if p._frame_provider._frame and \
-            p._frame_provider._frame.pts != self._displayed_pts[self._current_player]:
+            p._frame_provider._frame.pts != self._displayed_pts[player_index]:
             # print(f"*** {p._name} {time.perf_counter():0.4f}", end=' --')
             frame_time : float = p._frame_provider.get_time() - p._start_video_time
             time_spent = self.get_time_spent()
@@ -157,7 +155,7 @@ class VideoScheduler:
             # QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 1)
 
             # p.repaint()
-            self._displayed_pts[self._current_player] = p._frame_provider._frame.pts
+            self._displayed_pts[player_index] = p._frame_provider._frame.pts
             diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
             if p._frame_provider._frame.key_frame or diff>1:
                 p.update_position()
@@ -170,12 +168,19 @@ class VideoScheduler:
 
         # Without thread pool, it works quite well !
         try:
-            if self.check_next_frame():
-                self._display_frame()
-            slow_down = not self._speed_ok[self._current_player]
+            ok = True
+            for n in range(len(self._players)):
+                ok = ok and self.check_next_frame(n)
+                if not ok: break
+            if ok:
+                # display player 0 at the end to allow multiple frames on the same display
+                for n in range(1,len(self._players)):
+                    self._display_frame(n)
+                self._display_frame(0)
+            slow_down = not self._speed_ok[0]
             if slow_down:
                 # self._playback_speed *= 0.98
-                p : 'VideoPlayerAV' = self._players[self._current_player]
+                p : 'VideoPlayerAV' = self._players[0]
                 # since speed is in log2, 2**0.5 = 1.035 approx, so decreasing by 3.5% approx.
                 print(f"p.playback_speed.float {p.playback_speed.float}")
                 p.playback_speed.float  = p.playback_speed.float - 0.05 # = self._playback_speed
@@ -185,7 +190,7 @@ class VideoScheduler:
                 print(f"    -> p.playback_speed.float {p.playback_speed.float}")
                 # print(f"new playback speed {self._playback_speed}")
                 # Reset speed_ok to True
-                self._speed_ok[self._current_player] = True
+                self._speed_ok[0] = True
         except EndOfVideo:
             print("End of video")
             self.pause()
