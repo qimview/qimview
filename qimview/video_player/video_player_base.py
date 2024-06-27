@@ -91,9 +91,9 @@ class VideoPlayerBase(QtWidgets.QWidget):
 
     def _add_playback_position_slider(self, hor_layout):
         # Position slider
-        self.play_position = NumericParameter()
-        self.play_position.float_scale = 1000
-        self.play_position_gui = NumericParameterGui(name="sec:", param=self.play_position)
+        self._play_position = NumericParameter()
+        self._play_position.float_scale = 1000
+        self.play_position_gui = NumericParameterGui(name="sec:", param=self._play_position)
         self.play_position_gui.decimals = 3
         self.play_position_gui.set_pressed_callback(self.pause)
         self.play_position_gui.set_released_callback(self.reset_play)

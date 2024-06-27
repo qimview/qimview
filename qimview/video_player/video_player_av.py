@@ -212,13 +212,13 @@ class VideoPlayerAV(VideoPlayerBase):
         self.set_play_position()
 
     def set_play_position(self, recursive=True):
-        print(f"self.play_position {self.play_position.float}")
+        print(f"self._play_position {self._play_position.float}")
         if self._frame_provider.frame_buffer:
             self._frame_provider.frame_buffer.reset()
-        self._frame_provider.set_time(self.play_position.float)
-        self._start_video_time = self.play_position.float
+        self._frame_provider.set_time(self._play_position.float)
+        self._start_video_time = self._play_position.float
         for p in self._compare_players:
-            p.play_position = self.play_position
+            p.play_position = self._play_position
             p.set_play_position(recursive=False)
             p.update_position(recursive=False)
         self.display_frame(self._frame_provider.frame)
@@ -229,8 +229,8 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def update_position(self, precision=0.02, recursive=True) -> bool:
         current_time = self._frame_provider.get_time()
-        if abs(self.play_position.float-current_time)>precision:
-            self.play_position.float = current_time
+        if abs(self._play_position.float-current_time)>precision:
+            self._play_position.float = current_time
             # Block signals to avoid calling changedValue signal
             self.play_position_gui.blockSignals(True)
             self.play_position_gui.updateGui()
@@ -395,14 +395,14 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"duration = {self._frame_provider._duration} seconds")
         slider_single_step = int(self._frame_provider._ticks_per_frame*
                                  self._frame_provider._time_base*
-                                 self.play_position.float_scale+0.5)
-        slider_page_step   = int(self.play_position.float_scale+0.5)
+                                 self._play_position.float_scale+0.5)
+        slider_page_step   = int(self._play_position.float_scale+0.5)
         self.play_position_gui.setSingleStep(slider_single_step)
         self.play_position_gui.setPageStep(slider_page_step)
-        self.play_position.range = [0, int(self._frame_provider._end_time*
-                                           self.play_position.float_scale)]
-        print(f"range = {self.play_position.range}")
-        self.play_position_gui.setRange(0, self.play_position.range[1])
+        self._play_position.range = [0, int(self._frame_provider._end_time*
+                                           self._play_position.float_scale)]
+        print(f"range = {self._play_position.range}")
+        self.play_position_gui.setRange(0, self._play_position.range[1])
         self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         self.play_position_gui.update()
         self.play_position_gui.changed()

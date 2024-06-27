@@ -63,13 +63,13 @@ class TestVideoPlayer(VideoPlayerBase):
         self.set_play_position()
 
     def set_play_position(self):
-        print(f"self.play_position {self.play_position.float}")
+        print(f"self._play_position {self._play_position.float}")
         if self.video_decoder1:
-            self.video_decoder1.seek(self.play_position.float)
+            self.video_decoder1.seek(self._play_position.float)
         # if self._frame_provider.frame_buffer:
         #     self._frame_provider.frame_buffer.reset()
-        # self._frame_provider.set_time(self.play_position.float)
-        # self._start_video_time = self.play_position.float
+        # self._frame_provider.set_time(self._play_position.float)
+        # self._start_video_time = self._play_position.float
         # self.display_frame(self._frame_provider.frame)
 
     def speed_value_changed(self):
@@ -102,14 +102,14 @@ class TestVideoPlayer(VideoPlayerBase):
         print(f"duration = {self._duration} seconds")
         slider_single_step = int(self._ticks_per_frame*
                                  self._time_base*
-                                 self.play_position.float_scale+0.5)
-        slider_page_step   = int(self.play_position.float_scale+0.5)
+                                 self._play_position.float_scale+0.5)
+        slider_page_step   = int(self._play_position.float_scale+0.5)
         self.play_position_gui.setSingleStep(slider_single_step)
         self.play_position_gui.setPageStep(slider_page_step)
-        self.play_position.range = [0, int(self._end_time*
-                                           self.play_position.float_scale)]
-        print(f"range = {self.play_position.range}")
-        self.play_position_gui.setRange(0, self.play_position.range[1])
+        self._play_position.range = [0, int(self._end_time*
+                                           self._play_position.float_scale)]
+        print(f"range = {self._play_position.range}")
+        self.play_position_gui.setRange(0, self._play_position.range[1])
         self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         self.play_position_gui.update()
         self.play_position_gui.changed()

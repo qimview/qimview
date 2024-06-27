@@ -123,9 +123,9 @@ class VLCPlayer(QWidget):
         super().__init__(parent)
         self.setWindowTitle("Media Player")
 
-        self.play_position = NumericParameter()
-        self.play_position.range = [0, 1000]
-        self.play_position.float_scale = 1000
+        self._play_position = NumericParameter()
+        self._play_position.range = [0, 1000]
+        self._play_position.float_scale = 1000
 
         # creating a basic vlc instance
         self.instance = vlc.Instance()
@@ -151,7 +151,7 @@ class VLCPlayer(QWidget):
         self.videoframe.setAutoFillBackground(True)
 
         # create slider
-        self.play_position_gui = NumericParameterGui(name="play_position", param=self.play_position,
+        self.play_position_gui = NumericParameterGui(name="play_position", param=self._play_position,
                                                      callback=lambda: self.synchronize_set_play_position(self))
         self.play_position_gui.decimals = 3
 
@@ -274,12 +274,12 @@ class VLCPlayer(QWidget):
             print(f"synchronize_set_play_position {id(self)}")
             self.set_play_position()
             if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
-                self.synchronize_viewer.play_position.copy_from(self.play_position)
+                self.synchronize_viewer.play_position.copy_from(self._play_position)
                 self.synchronize_viewer.synchronize_set_play_position(event_viewer)
 
     def set_play_position(self):
-        print(f"set_play_position {id(self)} {self.play_position.float}")
-        self.mediaplayer.set_position(self.play_position.float)
+        print(f"set_play_position {id(self)} {self._play_position.float}")
+        self.mediaplayer.set_position(self._play_position.float)
 
     # def setPosition(self, position):
     #     """Set the position
@@ -295,8 +295,8 @@ class VLCPlayer(QWidget):
         """updates the user interface"""
         # setting the slider to the desired position
         # self.positionslider.setValue(self.mediaplayer.get_position() * 1000)
-        self.play_position.float = self.mediaplayer.get_position()
-        self.play_position_gui.setValue(self.play_position.int)
+        self._play_position.float = self.mediaplayer.get_position()
+        self.play_position_gui.setValue(self._play_position.int)
 
         if not self.mediaplayer.is_playing():
             # no need to call this function if nothing is played

@@ -53,8 +53,8 @@ class QtVideoPlayer(QtWidgets.QWidget):
 
         self.synchronize_viewer = None
         self.add_open_button = open_button
-        self.play_position = NumericParameter()
-        self.play_position.float_scale = 1000
+        self._play_position = NumericParameter()
+        self._play_position.float_scale = 1000
 
         self.init_ui()
         # self.show()
@@ -93,7 +93,7 @@ class QtVideoPlayer(QtWidgets.QWidget):
         self.playBtn.clicked.connect(lambda: self.synchronize_toggle_play(self))
 
         # create slider
-        self.play_position_gui = NumericParameterGui(name="play_position", param=self.play_position,
+        self.play_position_gui = NumericParameterGui(name="play_position", param=self._play_position,
                                                      callback=lambda: self.synchronize_set_play_position(self))
         self.play_position_gui.decimals = 3
 
@@ -200,7 +200,7 @@ class QtVideoPlayer(QtWidgets.QWidget):
     def duration_changed(self, duration):
         self.slider.setRange(0, duration)
 
-        self.play_position.range = [0, duration]
+        self._play_position.range = [0, duration]
         self.play_position_gui.setRange(0, duration)
 
     def set_position(self, position):
@@ -210,11 +210,11 @@ class QtVideoPlayer(QtWidgets.QWidget):
         if self.mediaPlayer.playbackState() != QtMultimedia.QMediaPlayer.PlayingState:
             self.set_play_position()
             if self.synchronize_viewer is not None and self.synchronize_viewer is not event_viewer:
-                self.synchronize_viewer.play_position.copy_from(self.play_position)
+                self.synchronize_viewer.play_position.copy_from(self._play_position)
                 self.synchronize_viewer.synchronize_set_play_position(event_viewer)
 
     def set_play_position(self):
-        self.mediaPlayer.setPosition(self.play_position.int)
+        self.mediaPlayer.setPosition(self._play_position.int)
 
     def handle_errors(self):
         self.playBtn.setEnabled(False)
