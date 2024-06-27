@@ -209,28 +209,33 @@ class VideoPlayerAV(VideoPlayerBase):
                 self._scheduler.play()
 
     def slider_value_changed(self):
-        self.set_play_position()
+        self.set_play_position(fromSlider=True)
 
-    def set_play_position(self, recursive=True):
-        print(f"self._play_position {self._play_position.float}")
+    def set_play_position(self, recursive=True, fromSlider=False):
+        # print(f"{self._name} set_play_position {fromSlider=} {self.play_position=}")
         if self._frame_provider.frame_buffer:
             self._frame_provider.frame_buffer.reset()
-        self._frame_provider.set_time(self._play_position.float)
-        self._start_video_time = self._play_position.float
+        self._frame_provider.set_time(self.play_position)
+        self._start_video_time = self.play_position
         for p in self._compare_players:
-            p.play_position = self._play_position
+            p.play_position = self.play_position
             p.set_play_position(recursive=False)
-            p.update_position(recursive=False)
+            p.update_position(recursive=False, force=fromSlider)
         self.display_frame(self._frame_provider.frame)
 
     def speed_value_changed(self):
-        print(f"New speed value {self.playback_speed.float}")
+        print(f"{self._name} New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
-    def update_position(self, precision=0.02, recursive=True) -> bool:
+    def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
+        # print(f"{self._name} update_position({precision=}, {recursive=} {force=})")
         current_time = self._frame_provider.get_time()
-        if abs(self._play_position.float-current_time)>precision:
-            self._play_position.float = current_time
+        # print(f"{self._name} update_position({current_time=}, {self.play_position=})")
+        if force or abs(self.play_position-current_time)>precision:
+            # print(f"{self._name} update Gui {current_time=}")
+            self.play_position = current_time
+            # print(f"{self._name} {self.play_position=}")
+
             # Block signals to avoid calling changedValue signal
             self.play_position_gui.blockSignals(True)
             self.play_position_gui.updateGui()
