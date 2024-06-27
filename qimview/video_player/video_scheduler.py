@@ -15,13 +15,13 @@ class VideoScheduler:
         self._timer            : QtCore.QTimer        = QtCore.QTimer()
         self._timer_counter    : int                  = 0
         self._start_clock_time : float                = 0
-        self._skipped          : List[int]            = [0, 0]
-        self._displayed_pts    : List[int]            = [0, 0]
+        self._skipped          : List[int]            = []
+        self._displayed_pts    : List[int]            = []
         self._playback_speed   : float                = 1
         # _speed_ok: Check current frame queue for each video, True if queue size > 1
         # if all active videos are ok, speed might be increased
         # if any active video is not ok, speed will be decreased by 2%
-        self._speed_ok         : List[bool]           = [True, True]
+        self._speed_ok         : List[bool]           = []
 
     def set_interval(self, interval: int):
         """ Set scheduler interval in ms """
@@ -30,9 +30,15 @@ class VideoScheduler:
     def add_player(self, p:'VideoPlayerAV'):
         print("add_player")
         self._players.append(p)
+        self._skipped.append(0)
+        self._displayed_pts.append(0)
+        self._speed_ok.append(True)
 
     def set_players(self, lp: List['VideoPlayerAV']):
         self._players = lp
+        self._skipped       = [0]*len(self._players)
+        self._displayed_pts = [0]*len(self._players)
+        self._speed_ok      = [True]*len(self._players)
 
     def _init_player(self, played_idx: int = 0):
         print("_init_player")
@@ -52,7 +58,7 @@ class VideoScheduler:
                      f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
                 p.display_times()
             # Reset skipped counters
-            self._skipped = [0,0]
+            self._skipped = [0]*len(self._players)
         else:
             print("timer not active")
 

@@ -453,13 +453,12 @@ def main():
     video_layout = QtWidgets.QHBoxLayout()
 
     main_widget.setLayout(main_layout)
-    player1 = VideoPlayerAV(main_widget)
-    video_layout.addWidget(player1, 1)
-    if len(args.input_video) == 2:
-        player2 = VideoPlayerAV(main_widget)
-        video_layout.addWidget(player2, 1)
-    else:
-        player2 = None
+    players = []
+    for input in args.input_video:
+        player = VideoPlayerAV(main_widget)
+        player.set_video(input)
+        video_layout.addWidget(player, 1)
+        players.append(player)
     main_layout.addLayout(video_layout)
 
     # button_pauseplay = QtWidgets.QPushButton(">||")
@@ -467,30 +466,25 @@ def main():
     # button_pauseplay.clicked.connect(lambda: pause_play(player1, player2))
 
     sch = VideoScheduler(10)
-    sch.add_player(player1)
-    if player2:
-        sch.add_player(player2)
+    for p in players:
+        sch.add_player(p)
 
     # button_scheduler = QtWidgets.QPushButton("Scheduler")
     # main_layout.addWidget(button_scheduler)
     # button_scheduler.clicked.connect(sch.start_decode)
 
-    player1.set_video(args.input_video[0])
-    player1.show()
-
-    if player2:
-        player2.set_video(args.input_video[1])
-        player2.show()
+    for p in players:
+        p.show()
 
     main_window.show()
 
-    player1.set_name('player1')
-    player1.init_and_display()
-
-    if player2:
-        player2.set_name('player2')
-        player2.init_and_display()
-        player1.compare(player2)
+    for idx,p in enumerate(players):
+        p.show()
+        p.set_name(f'player{idx}')
+        p.init_and_display()
+        # First video is compare to all others
+        if idx>0:
+            players[0].compare(p)
 
     app.exec()
     # process(args.input_video, width, height)
