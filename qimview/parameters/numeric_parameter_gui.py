@@ -4,7 +4,7 @@
 
 from typing import Callable
 from qimview.utils.qt_imports import QtWidgets, QtCore
-
+from qimview.parameters.numeric_parameter import NumericParameter
 
 class NumericParameterGui(QtWidgets.QSlider):
     """
@@ -13,7 +13,7 @@ class NumericParameterGui(QtWidgets.QSlider):
     def __init__(self, name, param, callback = None, layout=None, parent_name=""):
         QtWidgets.QSlider.__init__(self, QtCore.Qt.Horizontal)
         self.name = name
-        self.param = param
+        self.param : NumericParameter = param
         self._valuechanged_callback : Callable | None = callback
         self._pressed_callback      : Callable | None = None
         self._moved_callback        : Callable | None = None
