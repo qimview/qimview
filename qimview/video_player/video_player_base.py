@@ -115,3 +115,11 @@ class VideoPlayerBase(QtWidgets.QWidget):
 
     def speed_value_changed(self):
         pass # to override
+
+    @property
+    def play_position(self) -> float:
+        return self.play_position_gui.param.float
+    
+    @play_position.setter
+    def play_position(self, p:float):
+        self.play_position_gui.param.float = p
