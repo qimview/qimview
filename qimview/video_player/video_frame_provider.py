@@ -83,6 +83,10 @@ class VideoFrameProvider:
         else:
             return -1
         
+    @property
+    def frame_duration(self) -> float:
+        return self._frame_duration
+        
     def get_frame_number(self) -> int:
         if self._frame:
             return int(self._frame.pts/self._ticks_per_frame + 0.5)

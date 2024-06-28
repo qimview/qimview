@@ -17,6 +17,7 @@ from qimview.utils.viewer_image                        import ViewerImage, Image
 from qimview.video_player.video_scheduler              import VideoScheduler
 from qimview.video_player.video_frame_provider         import VideoFrameProvider
 from qimview.video_player.video_player_base            import VideoPlayerBase, ImageViewerClass
+from .video_player_key_events                          import VideoPlayerKeyEvents
 
 class AverageTime:
     def __init__(self):
@@ -106,6 +107,13 @@ class VideoPlayerAV(VideoPlayerBase):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.event_recorder = None
+
+        # Key event class
+        self._key_events   : VideoPlayerKeyEvents   = VideoPlayerKeyEvents(self)
+
+        self.widget.add_help_tab('VideoPlayer keys',  self._key_events.markdown_help())
+        self.widget.add_help_links(self._key_events.help_links())
+
         # is show required here?
         self.show()
         self._im = None
@@ -135,6 +143,13 @@ class VideoPlayerAV(VideoPlayerBase):
     @property
     def frame_provider(self) -> Optional[VideoFrameProvider]:
         return self._frame_provider
+
+    @property
+    def frame_duration(self) -> float:
+        if self.frame_provider:
+            return self.frame_provider.frame_duration
+        else:
+            return 0.1
 
     def compare(self, player):
         self._compare_players.append(player)
@@ -425,6 +440,10 @@ class VideoPlayerAV(VideoPlayerBase):
         else:
             print(" --- video alread initialized")
 
+    def keyPressEvent(self, event):
+        print("Key pressed")
+        self._key_events.key_press_event(event)
+
 def main():
     import argparse
     # import ffmpeg
@@ -476,6 +495,7 @@ def main():
     for p in players:
         p.show()
 
+    main_window.setMinimumHeight(100)
     main_window.show()
 
     for idx,p in enumerate(players):
@@ -485,6 +505,8 @@ def main():
         # First video is compare to all others
         if idx>0:
             players[0].compare(p)
+    
+    main_window.resize(main_window.width(), 800)
 
     app.exec()
     # process(args.input_video, width, height)

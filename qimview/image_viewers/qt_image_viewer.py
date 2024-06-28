@@ -334,6 +334,8 @@ class QTImageViewer(ImageViewer, BaseWidget):
                 pen.setWidth(pen_width)
                 painter.setPen(pen)
                 painter.drawLine(rect.x(), pos_from_im_y, rect.x()+rect.width(), pos_from_im_y)
+            case OverlapMode.Rectangle:
+                print("Rectangle overlap not implemented ...")
 
     def draw_cursor(self, 
                     cropped_image_shape, 

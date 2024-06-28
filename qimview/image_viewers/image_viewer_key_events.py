@@ -168,9 +168,8 @@ class ImageViewerKeyEvents:
     def toggleOverlapMode(self) ->bool:
         """ Toggle overlap mode (Horizontal/Vertical) """
         from .image_viewer import OverlapMode
-        match self._viewer._overlap_mode:
-            case OverlapMode.Horizontal: self._viewer._overlap_mode = OverlapMode.Vertical
-            case OverlapMode.Vertical:   self._viewer._overlap_mode = OverlapMode.Horizontal
+
+        self._viewer._overlap_mode = OverlapMode(( self._viewer._overlap_mode+1)%len(OverlapMode))
         return self.updateAndAccept()
     
     def toggleCursor(self) ->bool:

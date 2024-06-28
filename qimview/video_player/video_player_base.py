@@ -116,6 +116,19 @@ class VideoPlayerBase(QtWidgets.QWidget):
     def speed_value_changed(self):
         pass # to override
 
+    def play_pause(self):
+        pass # to override
+
+    def set_play_position(self, recursive=True, fromSlider=False):
+        pass # to override
+
+    def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
+        pass # to override
+
+    @property
+    def frame_duration(self) -> float:
+        return 0.1 # to override
+
     @property
     def play_position(self) -> float:
         return self.play_position_gui.param.float

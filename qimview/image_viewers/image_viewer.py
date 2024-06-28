@@ -8,7 +8,7 @@ from abc    import abstractmethod
 from typing import Optional, Tuple, Callable
 import cv2
 import numpy as np
-from enum import Enum, auto
+from enum import Enum, IntEnum, auto
 from qimview.utils.viewer_image import ViewerImage, ImageFormat
 from qimview.image_viewers.image_filter_parameters import ImageFilterParameters
 from qimview.utils.utils        import get_time
@@ -17,10 +17,11 @@ from .fullscreen_helper         import FullScreenHelper
 from .image_viewer_key_events   import ImageViewerKeyEvents
 from .image_viewer_mouse_events import ImageViewerMouseEvents
 
-class OverlapMode(Enum):
+class OverlapMode(IntEnum):
     """ Different types of overlap """
     Horizontal  = 0
     Vertical    = 1
+    Rectangle   = 2
 
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
