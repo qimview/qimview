@@ -17,6 +17,7 @@ class VideoPlayerKeyEvents:
 
         # Set key events callbacks
         self.keys_callback = {
+                'F'     : self.toggleImageFilters,
                 'Space' : self.togglePlayPause,
                 'Right' : self.nextFrame,
                 'Left'  : self.prevFrame,
@@ -93,6 +94,11 @@ class VideoPlayerKeyEvents:
         help_win.show()
         return True
     
+    def toggleImageFilters(self) -> bool:
+        """ toggle image filters """
+        self._player.filters_widget.setVisible(not self._player.filters_widget.isVisible())
+        return True
+
     def togglePlayPause(self) -> bool:
         """ toggle play/pause mode """
         print("Play/Pause")

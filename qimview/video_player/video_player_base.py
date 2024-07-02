@@ -15,8 +15,8 @@ ImageViewerClass = NewType('ImageViewerClass', ImageViewer)
 class VideoPlayerBase(QtWidgets.QWidget):
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        vertical_layout = QtWidgets.QVBoxLayout()
-        self.setLayout(vertical_layout)
+        self._vertical_layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self._vertical_layout)
         # self.viewer_class = QTImageViewer
         self.viewer_class = GLImageViewerShaders
         self.widget: Union[GLImageViewerShaders, QTImageViewer]
@@ -27,20 +27,22 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.widget._show_text = False
         self.setGeometry(0, 0, self.widget.width(), self.widget.height())
 
-        filters_layout = self._add_filters()
+        self._filters_widget = self._add_filters()
         hor_layout = QtWidgets.QHBoxLayout()
         self._add_play_pause_button(       hor_layout)
         self._add_playback_speed_slider(   hor_layout)
         self._add_playback_position_slider(hor_layout)
-        vertical_layout.addLayout(filters_layout)
-        vertical_layout.addWidget(self.widget)
-        vertical_layout.addLayout(hor_layout)
+        self._vertical_layout.addWidget(self._filters_widget)
+        self._vertical_layout.addWidget(self.widget, stretch=1)
+        self._vertical_layout.addLayout(hor_layout)
     
-    def _add_filters(self):
+    def _add_filters(self) -> QtWidgets.QWidget:
         self.filter_params = ImageFilterParameters()
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params, name="TestViewer")
 
+        filters_widget = QtWidgets.QWidget()
         filters_layout = QtWidgets.QHBoxLayout()
+        filters_widget.setLayout(filters_layout)
         # Add color difference slider
         self.filter_params_gui.add_imdiff_factor(filters_layout, self.update_image_intensity_event)
 
@@ -54,7 +56,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
         # G_B adjustment
         self.filter_params_gui.add_g_b(filters_layout, self.update_image_intensity_event)
 
-        return filters_layout
+        return filters_widget
 
     def update_image_intensity_event(self):
         self.widget.filter_params.copy_from(self.filter_params)
@@ -124,6 +126,14 @@ class VideoPlayerBase(QtWidgets.QWidget):
 
     def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
         pass # to override
+
+    @property
+    def vertical_layout(self):
+        return self._vertical_layout
+
+    @property
+    def filters_widget(self):
+        return self._filters_widget
 
     @property
     def frame_duration(self) -> float:
