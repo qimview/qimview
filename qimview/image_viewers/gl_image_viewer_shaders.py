@@ -178,7 +178,7 @@ class GLImageViewerShaders(GLImageViewerBase):
             float dx = w*(1.01);
             float dy = 0.0;
             if ((UV.x>px+dx)&&(UV.x<px+dx+w)&&(UV.y>py+dy)&&(UV.y<py+dy+h)) {{
-                vec2 UV2 = UV-vec2(-dx,-dy);
+                vec2 UV2 = UV-vec2(dx,dy);
                 y = texture(YTex2, UV2).r*texture_scale;
                 u = texture(UTex2, UV2).r*texture_scale;
                 v = texture(VTex2, UV2).r*texture_scale;
