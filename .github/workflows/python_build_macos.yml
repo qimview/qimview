@@ -19,7 +19,7 @@ permissions:
 jobs:
   deploy:
 
-    runs-on: macos-latest
+    runs-on: macos
 
     steps:
     - uses: actions/checkout@v3
