@@ -173,7 +173,7 @@ class VideoPlayerAV(VideoPlayerBase):
         Args:
             filename (string): filename or filename:stream_number
         """        
-        res = re.match('(.*):(\d+)', filename)
+        res = re.match('^(.*):(\d+)$', filename)
         if res:
             self._filename = res.group(1)
             self._video_stream_number = int(res.group(2))
