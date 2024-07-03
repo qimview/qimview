@@ -34,6 +34,7 @@ jobs:
 
     - name: Build package
       run: |
+        python -m pip install pybind11
         python -m build
     # Publishing does not work yet
     # - name: Publish package
