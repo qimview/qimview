@@ -1,6 +1,5 @@
 *.pyc
 # _*
-_build
 *.orig
 .idea
 *.pyd
@@ -16,3 +15,17 @@ build/
 *.code-workspace
 # Package builds
 dist/
+# CMake generated files
+CMakeFiles/
+# Build folders
+_build*/
+# patches
+*.patch
+# libraries
+*.lib
+# Profiling outputs
+*.data
+*.calltree
+*.prof
+# Makefiles
+Makefile
