@@ -121,8 +121,6 @@ class CMakeBuild(build_ext):
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
-            cmake_args += ["-v"]
-
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
         if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
@@ -145,7 +143,7 @@ class CMakeBuild(build_ext):
         )
         print("running cmake --build")
         subprocess.run(
-            ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
+            ["cmake", "--build", ".", "-v", *build_args], cwd=build_temp, check=True
         )
         print("running cmake --install")
         print(f"editable_mode={self.editable_mode}")
