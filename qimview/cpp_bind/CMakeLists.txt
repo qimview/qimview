@@ -24,7 +24,7 @@ if (APPLE)
   
 endif(APPLE)
 
-find_package(OpenMP CXX)
+find_package(OpenMP)
 
 pybind11_add_module(qimview_cpp SHARED 
         qimview_cpp.cpp
