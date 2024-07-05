@@ -15,7 +15,7 @@ MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybin
 if (APPLE)
     EXECUTE_PROCESS( 
         COMMAND brew --prefix
-        RESULT_VARIABLE BREW_PREFIX
+        OUTPUT_VARIABLE BREW_PREFIX
     )
     MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
     set(ENV{OpenMP_ROOT} "$(BREW_PREFIX)/opt/libomp")
