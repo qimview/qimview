@@ -4,7 +4,7 @@ requires = [
     "setuptools-scm>=8.0",
     "cmake>=3.24",
     "wheel",
-    "libomp ; platform_system == 'Darwin'",
+    # "libomp ; platform_system == 'Darwin'",
 ]
 build-backend = "setuptools.build_meta"
 
@@ -53,6 +53,10 @@ extra = [
 testpaths = [
     "qimview/pytests",
 ]
+
+[tool.cibuildwheel.macos]
+before-all = "brew install libomp"
+environment = { OpenMP_ROOT="$(brew --prefix libomp)" }
 
 [tool.setuptools]
 packages = ["qimview"]
