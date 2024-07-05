@@ -137,7 +137,7 @@ class CMakeBuild(build_ext):
         # Be sure to have openml on macos
         if sys.platform.startswith("darwin"):
             subprocess.run(["brew","install","libomp"])
-        print("running cmake")
+        print(f"running cmake {build_temp=}")
         subprocess.run(
             ["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True
         )
