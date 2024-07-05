@@ -19,6 +19,9 @@ if (APPLE)
     )
     MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
     set(OpenMP_ROOT "$(BREW_PREFIX)/opt/libomp")
+    set(ENV{LDFLAGS} "-L$(BREW_PREFIX)/opt/libomp/lib")
+    set(ENV{CPPFLAGS} "-L$(BREW_PREFIX)/opt/libomp/lib")
+  
 endif(APPLE)
 
 find_package(OpenMP CXX)
