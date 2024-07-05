@@ -22,7 +22,7 @@ if (APPLE)
     set(OpenMP_ROOT "${BREW_PREFIX}/opt/libomp")
 endif(APPLE)
 
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 
 pybind11_add_module(qimview_cpp SHARED 
         qimview_cpp.cpp
@@ -37,11 +37,7 @@ target_link_libraries(
 )
 
 MESSAGE("pybind11_INCLUDE_DIR = ${pybind11_INCLUDE_DIR}")
-if (APPLE)
-  target_include_directories(qimview_cpp PUBLIC ${pybind11_INCLUDE_DIR} ${BREW_PREFIX}/opt/libomp/include)
-else(APPLE)
-  target_include_directories(qimview_cpp PUBLIC ${pybind11_INCLUDE_DIR})
-endif(APPLE)
+target_include_directories(qimview_cpp PUBLIC ${pybind11_INCLUDE_DIR})
 
 if(OpenMP_CXX_FOUND)
     target_link_libraries(qimview_cpp PUBLIC OpenMP::OpenMP_CXX)
