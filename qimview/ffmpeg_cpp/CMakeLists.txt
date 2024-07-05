@@ -17,8 +17,6 @@ FetchContent_MakeAvailable(pybind11)
 
 MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybind11_BINARY_DIR}")
 
-find_package(pybind11 CONFIG)
-
 find_package(FFMPEG COMPONENTS avcodec avdevice avfilter avformat avutil)
 
 if(FFMPEG_FOUND)

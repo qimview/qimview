@@ -12,7 +12,6 @@ FetchContent_MakeAvailable(pybind11)
 
 MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybind11_BINARY_DIR}")
 
-find_package(pybind11 CONFIG)
 find_package(OpenMP)
 
 pybind11_add_module(qimview_cpp SHARED 
