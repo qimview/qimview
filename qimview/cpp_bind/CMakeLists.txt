@@ -18,10 +18,10 @@ if (APPLE)
         OUTPUT_VARIABLE BREW_PREFIX
     )
     MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
-    set(ENV{OpenMP_ROOT} "$(BREW_PREFIX)/opt/libomp")
+    set(OpenMP_ROOT "$(BREW_PREFIX)/opt/libomp")
 endif(APPLE)
 
-find_package(OpenMP)
+find_package(OpenMP CXX)
 
 pybind11_add_module(qimview_cpp SHARED 
         qimview_cpp.cpp
