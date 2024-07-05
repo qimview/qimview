@@ -136,6 +136,9 @@ class CMakeBuild(build_ext):
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
 
+        # Be sure to have openml on macos
+        if sys.platform.startswith("darwin"):
+            subprocess.run(["brew","install","libomp"])
         print("running cmake")
         subprocess.run(
             ["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True

@@ -12,6 +12,15 @@ FetchContent_MakeAvailable(pybind11)
 
 MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybind11_BINARY_DIR}")
 
+if (APPLE)
+    EXECUTE_PROCESS( 
+        COMMAND brew --prefix
+        RESULT_VARIABLE BREW_PREFIX
+    )
+    MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
+    set(ENV{OpenMP_ROOT} "$(BREW_PREFIX)/opt/libomp")
+endif(APPLE)
+
 find_package(OpenMP)
 
 pybind11_add_module(qimview_cpp SHARED 
