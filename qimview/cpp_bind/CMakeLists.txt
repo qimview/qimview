@@ -16,6 +16,7 @@ if (APPLE)
     EXECUTE_PROCESS( 
         COMMAND brew --prefix
         OUTPUT_VARIABLE BREW_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
     set(OpenMP_ROOT "${BREW_PREFIX}/opt/libomp")
