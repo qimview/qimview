@@ -1,4 +1,3 @@
-from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup
 import os
 import re
@@ -135,13 +134,16 @@ class CMakeBuild(build_ext):
         if not build_temp.exists():
             build_temp.mkdir(parents=True)
 
-        print("running cmake")
+        # Be sure to have openml on macos
+        if sys.platform.startswith("darwin"):
+            subprocess.run(["brew","install","libomp"])
+        print(f"running cmake {build_temp=}")
         subprocess.run(
             ["cmake", ext.sourcedir, *cmake_args], cwd=build_temp, check=True
         )
         print("running cmake --build")
         subprocess.run(
-            ["cmake", "--build", ".", *build_args], cwd=build_temp, check=True
+            ["cmake", "--build", ".", "-v", *build_args], cwd=build_temp, check=True
         )
         print("running cmake --install")
         print(f"editable_mode={self.editable_mode}")

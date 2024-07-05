@@ -1,24 +1,21 @@
 
-cmake_minimum_required(VERSION 3.21)
+include(FetchContent)
+
+cmake_minimum_required(VERSION 3.24)
+
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(decode_video LANGUAGES CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
-# set(CMAKE_C_STANDARD 99)
-find_package(Python COMPONENTS Interpreter Development)
+# Install pybind11, which is a header only library
+FetchContent_Declare(pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG v2.13.1)
+FetchContent_MakeAvailable(pybind11)
 
-# find pybind11 path from python script
-execute_process(
-	COMMAND ${Python_EXECUTABLE} -c "import pybind11; print(pybind11.get_include(), end='')"
-	OUTPUT_VARIABLE pybind11_path
-)
-
-set(pybind11_DIR "${pybind11_path}/../share/cmake/pybind11")
-MESSAGE(" pybind11_DIR ${pybind11_DIR}")
-
-find_package(pybind11 CONFIG)
+MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybind11_BINARY_DIR}")
 
 find_package(FFMPEG COMPONENTS avcodec avdevice avfilter avformat avutil)
 
@@ -38,14 +35,14 @@ endif()
 list(APPEND CMAKE_BUILD_RPATH ${FFMPEG_ROOT}/lib)
 
 add_library(decode_video_lib decode_video.cpp decode_video.hpp)
-MESSAGE(" Python libs ${Python_Development_FOUND} ${Python_LIBRARIES}")
+# MESSAGE(" Python libs ${Python_Development_FOUND} ${Python_LIBRARIES}")
 
 target_link_libraries( decode_video_lib PUBLIC
         FFMPEG::avutil
         FFMPEG::avcodec
         FFMPEG::avformat
         pybind11::module
-        ${Python_LIBRARIES}
+#        ${Python_LIBRARIES}
 )
 
 

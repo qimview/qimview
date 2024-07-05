@@ -1,20 +1,28 @@
-cmake_minimum_required(VERSION 3.21)
+include(FetchContent)
+
+cmake_minimum_required(VERSION 3.24)
 
 project(qimview_cpp LANGUAGES CXX)
 
-find_package(Python COMPONENTS Interpreter Development)
+# Install pybind11, which is a header only library
+FetchContent_Declare(pybind11
+    GIT_REPOSITORY https://github.com/pybind/pybind11.git
+    GIT_TAG v2.13.1)
+FetchContent_MakeAvailable(pybind11)
 
-# find pybind11 path from python script
-execute_process(
-	COMMAND ${Python_EXECUTABLE} -c "import pybind11; print(pybind11.get_include(), end='')"
-	OUTPUT_VARIABLE pybind11_path
-)
+MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybind11_BINARY_DIR}")
 
-set(pybind11_DIR "${pybind11_path}/../share/cmake/pybind11")
-MESSAGE(" pybind11_DIR ${pybind11_DIR}")
+if (APPLE)
+    EXECUTE_PROCESS( 
+        COMMAND brew --prefix
+        OUTPUT_VARIABLE BREW_PREFIX
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+    MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
+    set(OpenMP_ROOT "${BREW_PREFIX}/opt/libomp")
+endif(APPLE)
 
-find_package(pybind11 CONFIG)
-find_package(OpenMP)
+find_package(OpenMP REQUIRED)
 
 pybind11_add_module(qimview_cpp SHARED 
         qimview_cpp.cpp
@@ -23,8 +31,6 @@ pybind11_add_module(qimview_cpp SHARED
         image_to_rgb.hpp
 )
 
-MESSAGE("Python_Development.Embed_FOUND ${Python_Development.Embed_FOUND}")
-MESSAGE("Python_INCLUDE_DIRS ${Python_INCLUDE_DIRS}")
 
 target_link_libraries(
     qimview_cpp PRIVATE  pybind11::module 
@@ -39,12 +45,12 @@ endif()
 
 install(TARGETS qimview_cpp DESTINATION .)
 
-        #     ["qimview/cpp_bind/qimview_cpp.cpp"],
-        #     depends = [ 
-        #         'qimview/cpp_bind/image_histogram.hpp',
-        #         'qimview/cpp_bind/image_resize.hpp',
-        #         'qimview/cpp_bind/image_to_rgb.hpp',
-        #         ],
-        #     # Example: passing in the version to the compiled code
-        #     # define_macros = [('VERSION_INFO', __version__)],
-        #     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
+#     ["qimview/cpp_bind/qimview_cpp.cpp"],
+#     depends = [ 
+#         'qimview/cpp_bind/image_histogram.hpp',
+#         'qimview/cpp_bind/image_resize.hpp',
+#         'qimview/cpp_bind/image_to_rgb.hpp',
+#         ],
+#     # Example: passing in the version to the compiled code
+#     # define_macros = [('VERSION_INFO', __version__)],
+#     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
