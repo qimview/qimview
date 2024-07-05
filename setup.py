@@ -121,6 +121,8 @@ class CMakeBuild(build_ext):
             if archs:
                 cmake_args += ["-DCMAKE_OSX_ARCHITECTURES={}".format(";".join(archs))]
 
+            cmake_args += ["-DCMAKE_PREFIX_PATH=/opt/homebrew"]
+
         # Set CMAKE_BUILD_PARALLEL_LEVEL to control the parallel build level
         # across all generators.
         if "CMAKE_BUILD_PARALLEL_LEVEL" not in os.environ:
