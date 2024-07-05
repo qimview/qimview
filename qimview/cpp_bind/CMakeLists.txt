@@ -20,8 +20,8 @@ if (APPLE)
     MESSAGE("BREW_PREFIX is ${BREW_PREFIX}")
     set(OpenMP_ROOT "$(BREW_PREFIX)/opt/libomp")
     set(ENV{LDFLAGS} "-L$(BREW_PREFIX)/opt/libomp/lib")
-    set(ENV{CPPFLAGS} "-L$(BREW_PREFIX)/opt/libomp/include")
-  
+    set(ENV{CPPFLAGS} "-I$(BREW_PREFIX)/opt/libomp/include")
+    INCLUDE_DIRECTORIES("$(BREW_PREFIX)/opt/libomp/include")
 endif(APPLE)
 
 find_package(OpenMP)
