@@ -9,6 +9,8 @@ project(decode_video LANGUAGES CXX)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+find_package(Python COMPONENTS Interpreter Development)
+
 # Install pybind11, which is a header only library
 FetchContent_Declare(pybind11
     GIT_REPOSITORY https://github.com/pybind/pybind11.git
@@ -37,12 +39,14 @@ list(APPEND CMAKE_BUILD_RPATH ${FFMPEG_ROOT}/lib)
 add_library(decode_video_lib decode_video.cpp decode_video.hpp)
 # MESSAGE(" Python libs ${Python_Development_FOUND} ${Python_LIBRARIES}")
 
+target_include_directories(decode_video_lib PUBLIC ${pybind11_INCLUDE_DIRS})
+
 target_link_libraries( decode_video_lib PUBLIC
         FFMPEG::avutil
         FFMPEG::avcodec
         FFMPEG::avformat
         pybind11::module
-#        ${Python_LIBRARIES}
+        ${Python_LIBRARIES}
 )
 
 
