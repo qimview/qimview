@@ -1,6 +1,6 @@
 include(FetchContent)
 
-cmake_minimum_required(VERSION 3.24)
+cmake_minimum_required(VERSION 3.22)
 
 project(qimview_cpp LANGUAGES CXX)
 
