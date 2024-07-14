@@ -13,7 +13,7 @@ class VideoScheduler:
         self._players          : List['VideoPlayerAV']  = []
         self._interval         : int                  = interval  # intervals in ms
         self._use_period_timer : bool                 = False     # use a periodical timer
-        self._minimal_period   : int                  = 5         # minimal time between single shot time calls
+        self._minimal_period   : int                  = 2         # minimal time between single shot time calls
         self._is_running       : bool                 = False     # used for single shot timer
         self._timer            : QtCore.QTimer        = QtCore.QTimer()
         self._timer_counter    : int                  = 0
@@ -25,6 +25,8 @@ class VideoScheduler:
         # if all active videos are ok, speed might be increased
         # if any active video is not ok, speed will be decreased by 2%
         self._speed_ok         : List[bool]           = []
+        self._fps_start        : float                = -1        # start time to compute displayed FPS
+        self._fps_count        : int                  = 0         # count displayed frames
 
     @property
     def is_running(self) -> bool:
@@ -181,7 +183,7 @@ class VideoScheduler:
                 p.update_position()
 
             # print(f" done {time.perf_counter():0.4f}")
-    def _display_next_frame(self):
+    def _display_next_frame(self) -> bool:
         """
             Get and display next frame of each video player 
         """
@@ -198,9 +200,11 @@ class VideoScheduler:
                 for n in range(1,len(self._players)):
                     self._display_frame(n)
                 self._display_frame(0)
+            return ok
         except EndOfVideo:
             print("End of video")
             self.pause()
+            return False
 
     def _display_remaining_frames(self):
         """
@@ -208,7 +212,13 @@ class VideoScheduler:
         """
         try:
             start_display = time.perf_counter()
-            self._display_next_frame()
+            if start_display>self._fps_start+1:
+                if self._fps_start >0:
+                    print(f" displayed FPS: {self._fps_count}")
+                self._fps_count = 0
+                self._fps_start = start_display
+            if self._display_next_frame():
+                self._fps_count += 1
             display_duration = time.perf_counter() - start_display
             assert self._players[0].frame_provider is not None
             frame_duration = (self._players[0].frame_provider.frame_duration)/self._playback_speed
@@ -292,5 +302,4 @@ class VideoScheduler:
             self.play()
         else:
             self.play()
-            self._display_remaining_frames()
         # self._timer.start()
