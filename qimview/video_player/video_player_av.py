@@ -141,6 +141,10 @@ class VideoPlayerAV(VideoPlayerBase):
         self._compare_players : list[VideoPlayerAV] = []
 
     @property
+    def scheduler(self) -> VideoScheduler:
+        return self._scheduler
+
+    @property
     def frame_provider(self) -> Optional[VideoFrameProvider]:
         return self._frame_provider
 
@@ -190,7 +194,7 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def pause(self):
         """ Method called from video player """
-        self._was_active = self._scheduler._timer.isActive()
+        self._was_active = self._scheduler.is_running
         self._scheduler.pause()
     
     def set_play(self):
@@ -204,7 +208,7 @@ class VideoPlayerAV(VideoPlayerBase):
             self._scheduler.play()
 
     def start_decode(self):
-        if self._scheduler._timer.isActive():
+        if not self._scheduler.is_running:
             self._scheduler.pause()
         players = [self]
         players.extend(self._compare_players)
@@ -212,11 +216,11 @@ class VideoPlayerAV(VideoPlayerBase):
         self._scheduler.start_decode(self._frame_provider.get_time())
 
     def play_pause(self):
-        if len(self._scheduler._players) == 0:
+        if len(self.scheduler._players) == 0:
             self._button_play_pause.setIcon(self._icon_pause)
             self.start_decode()
         else:
-            if self._scheduler._timer.isActive():
+            if self.scheduler.is_running:
                 self.pause()
                 self._button_play_pause.setIcon(self._icon_play)
             else:
@@ -404,8 +408,8 @@ class VideoPlayerAV(VideoPlayerBase):
             print("--- init_video_av() video already intialized")
             return
         
-        if self._scheduler._timer.isActive():
-            self._scheduler.pause()
+        if self.scheduler.is_running:
+            self.scheduler.pause()
         print(f"filename = {self._filename}")
         if self._container is not None:
             self._container.close()

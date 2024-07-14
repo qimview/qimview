@@ -42,8 +42,6 @@ class TestVideoPlayer(VideoPlayerBase):
 
     def pause(self):
         """ Method called from video player """
-        # self._was_active = self._scheduler._timer.isActive()
-        # self._scheduler.pause()
         pass
 
     def reset_play(self):
