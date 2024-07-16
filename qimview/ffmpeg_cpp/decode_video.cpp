@@ -163,6 +163,24 @@ namespace AV
       return stream_index;
     }
 
+    int  FormatContext::getStreamIndex(const int& video_stream_index)
+    {
+
+        int n=0;        
+        for (int i = 0; i < _format_ctx->nb_streams; ++i) {
+            auto av_codec_params = getCodecParams(i);
+            auto av_codec = findDecoder(i);
+            if (!av_codec) continue;
+            if (av_codec_params->codec_type == AVMEDIA_TYPE_VIDEO) {
+                if (n==video_stream_index)
+                    return i;
+                else
+                    n++;
+            }
+        }
+        return -1;
+    }
+
     AVCodecParameters* FormatContext::getCodecParams(const int& stream_index)
     {
       return _format_ctx->streams[stream_index]->codecpar;
@@ -504,7 +522,11 @@ namespace AV {
 // }
 
 
-bool AV::VideoDecoder::open(const char* filename, const char* device_type_name)
+bool AV::VideoDecoder::open(
+        const char* filename, 
+        const char* device_type_name, 
+        const int&  video_stream_index
+        )
 {
   try {
 
@@ -514,7 +536,14 @@ bool AV::VideoDecoder::open(const char* filename, const char* device_type_name)
     _format_ctx.findStreamInfo();
 
     /* find the video stream information */
-    _stream_index = _format_ctx.findBestVideoStream(&codec);
+    if (video_stream_index != -1) {
+        _stream_index = _format_ctx.getStreamIndex(video_stream_index);
+    }
+    if (_stream_index != -1) {
+        codec = _format_ctx.findDecoder(_stream_index);
+    } else {
+        _stream_index = _format_ctx.findBestVideoStream(&codec);
+    }
 
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 

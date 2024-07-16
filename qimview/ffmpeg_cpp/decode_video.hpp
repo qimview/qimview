@@ -59,6 +59,7 @@ namespace AV
 
     void openFile(const char* filename);
     int findFirstValidVideoStream();
+    int getStreamIndex(const int& video_stream_index);
     AVCodecParameters* getCodecParams(const int& stream_index);
     const AVCodec* findDecoder(const int& stream_index);
     void findStreamInfo();
@@ -153,8 +154,8 @@ namespace AV {
   class VideoDecoder
   {
   public:
-    VideoDecoder(): _stream_index(-1), _framenum(0) {}
-    bool open(const char* filename, const char* device_type_name = nullptr);
+    VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0) {}
+    bool open(const char* filename, const char* device_type_name = nullptr, const int& video_stream_index=-1);
     bool seek(float sec);
     int  nextFrame(bool convert=true);
     int  frameNumber() { return _framenum; }
@@ -178,7 +179,8 @@ namespace AV {
     std::string       _filename;
     AV::FormatContext _format_ctx;
     AV::CodecContext  _codec_ctx;
-    int               _stream_index;
+    int               _video_stream_index; // Index among videos streams
+    int               _stream_index;       // Index of the video stream among all streams
     AV::Frame         _frame;
     AV::Frame         _sw_frame;
     AV::Packet        _packet;
