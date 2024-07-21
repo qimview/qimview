@@ -37,7 +37,8 @@ class MultiView(QtWidgets.QWidget):
           - fast switch between images
     """
 
-    def __init__(self, parent=None, viewer_mode: ViewerType =ViewerType.QT_VIEWER, nb_viewers: int =1) -> None:
+    def __init__(self, parent=None, viewer_mode: ViewerType =ViewerType.QT_VIEWER, 
+                 nb_viewers: int =1, image_cache: ImageCache | None = None) -> None:
         """
         :param parent:
         :param viewer_mode:
@@ -116,7 +117,7 @@ class MultiView(QtWidgets.QWidget):
         self.nb_viewers_used : int = 0
 
         # save images of last visited row
-        self.cache = ImageCache()
+        self.cache = ImageCache() if image_cache is None else image_cache
         self.image_dict = { }
         self.read_size = 'full'
         self.image1 = dict()
