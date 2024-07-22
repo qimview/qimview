@@ -56,7 +56,8 @@ class GLImageViewerShaders(GLImageViewerBase):
             res = res/(white_level-black_level);
             
             /// Apply gamma
-            res = pow(res, vec3(1.0/gamma).rgb);
+            if (gamma!=1.f)
+               res = pow(res, vec3(1.0/gamma).rgb);
             
             return res;
           }
