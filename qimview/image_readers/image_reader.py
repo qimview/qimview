@@ -98,6 +98,7 @@ def reader_add_plugins():
             formats = config['READERS']['Formats'].split(',')
         except Exception as e:
             print(f" ----- No reader plugin in config file: {e}")
+            return
         for fmt in  formats:
             try:
                 format_cfg = config[f'READER.{fmt.upper()}']
