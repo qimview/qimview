@@ -201,6 +201,22 @@ class ImageViewer:
         self.evt_width : int
         self.evt_height : int
 
+        self.synchronize_pos       : bool                = True
+        self.paint_callbacks       : dict[str, Callable] = {}
+        self.imagechange_callbacks : dict[str, Callable] = {}
+
+    def set_paint_callback(self, cb_name, cb):
+        self.paint_callbacks[cb_name] = cb
+    
+    def remove_paint_callback(self, cb_name):
+        self.paint_callbacks.pop(cb_name)
+
+    def set_imagechange_callback(self, plugin_name, cb):
+        self.imagechange_callbacks[plugin_name] = cb
+    
+    def remove_imagechange_callback(self, plugin_name):
+        self.imagechange_callbacks.pop(plugin_name)
+
     # === Properties
 
     # --- widget
@@ -309,6 +325,8 @@ class ImageViewer:
         if is_different:
             self._image = image
             self.image_id += 1
+            for cb in self.imagechange_callbacks.values():
+                cb(self)
         return is_different
 
     def set_image_fast(self, image : Optional[ViewerImage]) -> None:
@@ -380,10 +398,11 @@ class ImageViewer:
         """ Synchronize: copy parameters to another viewer
         """
         dest_viewer.current_scale = self.current_scale
-        dest_viewer.current_dx = self.current_dx
-        dest_viewer.current_dy = self.current_dy
-        dest_viewer.mouse_displ      = self.mouse_displ
-        dest_viewer.mouse_pos        = self.mouse_pos
+        if dest_viewer.synchronize_pos:
+            dest_viewer.current_dx = self.current_dx
+            dest_viewer.current_dy = self.current_dy
+            dest_viewer.mouse_displ      = self.mouse_displ
+            dest_viewer.mouse_pos        = self.mouse_pos
         dest_viewer.mouse_zoom_displ = self.mouse_zoom_displ
 
         dest_viewer.show_histogram      = self.show_histogram

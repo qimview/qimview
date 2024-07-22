@@ -798,6 +798,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
                     line,
                     channels = self._image.channels,
                     )
+        
+        for _,cb in self.paint_callbacks.items():
+            cb(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
 
         self.display_text(painter, self.display_message(im_pos, ratio*self.devicePixelRatio()))
 

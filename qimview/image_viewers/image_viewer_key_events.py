@@ -1,5 +1,5 @@
 from qimview.utils.qt_imports import QtGui, QtCore, QtWidgets
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, List, Tuple, Callable
 from qimview.utils.tab_dialog import TabDialog
 if TYPE_CHECKING:
     from .image_viewer import (ImageViewer, OverlapMode)
@@ -8,6 +8,9 @@ QtMouse = QtCore.Qt.MouseButton
 
 
 class ImageViewerKeyEvents:
+
+    plugins_key_events : dict[str,Callable] = {}
+
     """ Implement events for ImageViewer
     """
     def __init__(self, viewer: 'ImageViewer'):
@@ -17,27 +20,32 @@ class ImageViewerKeyEvents:
 
         # Set key events callbacks
         self.keys_callback = {
-                'A'     : self.toggleAntialiasing,
-                'C'     : self.toggleCursor,
-                'D'     : self.toggleDifferences,
-                'H'     : self.toggleHistogram,
-                'I'     : self.toggleIntensityLine,
-                'O'     : self.toggleOverlap,
-                'Alt+O' : self.toggleOverlapMode,
-                'S'     : self.toggleStats,
-                'T'     : self.toggleText,
-                'F1'    : self.helpDialog,
-                'F11'   : self.toggleFullScreen,
-                'Esc'   : self.exitFullScreen,
-                'Alt+A' : self.zoomUpperLeft,
-                'Alt+B' : self.zoomUpperRight,
-                'Alt+C' : self.zoomLowerLeft,
-                'Alt+D' : self.zoomLowerRight,
-                'Alt+F' : self.unZoom,
-                'Ctrl+P': self.ImagePath2Clipboard,
-                'Ctrl+B': self.copy2Clipboard,
-                'Ctrl+S': self.saveImage,
+                'A'        : self.toggleAntialiasing,
+                'C'        : self.toggleCursor,
+                'D'        : self.toggleDifferences,
+                'H'        : self.toggleHistogram,
+                'I'        : self.toggleIntensityLine,
+                'O'        : self.toggleOverlap,
+                'Alt+O'    : self.toggleOverlapMode,
+                'S'        : self.toggleStats,
+                'T'        : self.toggleText,
+                'F1'       : self.helpDialog,
+                'F11'      : self.toggleFullScreen,
+                'Esc'      : self.exitFullScreen,
+                'Alt+A'    : self.zoomUpperLeft,
+                'Alt+B'    : self.zoomUpperRight,
+                'Alt+C'    : self.zoomLowerLeft,
+                'Alt+D'    : self.zoomLowerRight,
+                'Alt+F'    : self.unZoom,
+                'Ctrl+P'   : self.ImagePath2Clipboard,
+                'Ctrl+B'   : self.copy2Clipboard,
+                'Ctrl+S'   : self.saveImage,
+                'Shift+P'  : self.syncPos,
         }
+        for plg in self.plugins_key_events:
+            self.keys_callback.update(
+                {plg: lambda: self.plugins_key_events[plg][self]}
+            )
 
         self._help_tabs  : List[Tuple[str,str]] = []
         self._help_links : str = ''
@@ -115,6 +123,11 @@ class ImageViewerKeyEvents:
         self._viewer.synchronize()
         return True
     
+    def syncPos(self) -> bool:
+        """ Toggle position synchronization from other viewer on/off """
+        self._viewer.synchronize_pos = not self._viewer.synchronize_pos
+        return self.updateAndAccept()
+ 
     def zoomUpperLeft(self) -> bool:
         """ Display upper left quarter of the image """
         self._viewer.current_dx = int(self._wsize.width()/4+0.5)
@@ -244,3 +257,30 @@ class ImageViewerKeyEvents:
                 event.ignore()
         else:
             event.ignore()
+
+def imageviewer_add_plugins():
+    import configparser, sys, os
+    config = configparser.ConfigParser()
+    res = config.read([os.path.expanduser('~/.qimview.cfg')])
+    if res:
+        try:
+            plugins = config['IMAGEVIEWER']['Plugins'].split(',')
+        except Exception as e:
+            print(f" ----- No imageviewer plugin in config file : {e}")
+            return
+        for plg in plugins:
+            try:
+                format_cfg = config[f'IMAGEVIEWER.{plg.upper()}']
+                folder, module, keyevent = [format_cfg[s] for s in ('Folder','Module','KeyEvent')]
+                folder = os.path.expanduser(folder)
+                print(f' {plg} {folder, keyevent}')
+                # TODO: avoid sys.path.append?
+                sys.path.append(folder)
+                import importlib
+                keyevent_module = importlib.import_module(module)
+                ImageViewerKeyEvents.plugins_key_events.update({keyevent:keyevent_module.Plugin.run})
+            except Exception as e:
+                print(f" ----- Failed to add support for {plg}: {e}")
+
+imageviewer_add_plugins()
+
