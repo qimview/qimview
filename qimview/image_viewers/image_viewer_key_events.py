@@ -42,10 +42,8 @@ class ImageViewerKeyEvents:
                 'Ctrl+S'   : self.saveImage,
                 'Shift+P'  : self.syncPos,
         }
-        for plg in self.plugins_key_events:
-            self.keys_callback.update(
-                {plg: lambda: self.plugins_key_events[plg][self]}
-            )
+        for plg,plg_cb in self.plugins_key_events.items():
+            self.keys_callback[plg] = lambda cb=plg_cb: cb(self)
 
         self._help_tabs  : List[Tuple[str,str]] = []
         self._help_links : str = ''
