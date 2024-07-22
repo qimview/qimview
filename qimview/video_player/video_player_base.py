@@ -8,6 +8,7 @@ from qimview.parameters.numeric_parameter_gui          import NumericParameterGu
 from qimview.image_viewers.image_filter_parameters     import ImageFilterParameters
 from qimview.image_viewers.image_filter_parameters_gui import ImageFilterParametersGui
 from qimview.image_viewers.image_viewer                import ImageViewer
+from qimview.image_viewers.fullscreen_helper           import FullScreenHelper
 
 # Class that derives from ImageViewer
 ImageViewerClass = NewType('ImageViewerClass', ImageViewer)
@@ -35,7 +36,10 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self._vertical_layout.addWidget(self._filters_widget)
         self._vertical_layout.addWidget(self.widget, stretch=1)
         self._vertical_layout.addLayout(hor_layout)
-    
+
+        # FullScreen helper features
+        self._fullscreen      : FullScreenHelper = FullScreenHelper()
+
     def _add_filters(self) -> QtWidgets.QWidget:
         self.filter_params = ImageFilterParameters()
         self.filter_params_gui = ImageFilterParametersGui(self.filter_params, name="TestViewer")
@@ -146,3 +150,13 @@ class VideoPlayerBase(QtWidgets.QWidget):
     @play_position.setter
     def play_position(self, p:float):
         self.play_position_gui.param.float = p
+
+    def closeEvent(self, event):
+        # do stuff
+        print("closing player")
+        self.pause()
+        can_exit=True
+        if can_exit:
+            event.accept() # let the window close
+        else:
+            event.ignore()

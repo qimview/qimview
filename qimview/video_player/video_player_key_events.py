@@ -123,13 +123,11 @@ class VideoPlayerKeyEvents:
 
     def toggleFullScreen(self) -> bool:
         """ toggle fullscreen mode """
-        return True
-        # return self._player._fullscreen.toggle_fullscreen(self._player._widget)
+        return self._player._fullscreen.toggle_fullscreen(self._player)
 
     def exitFullScreen(self) -> bool: 
         """ exit fullscreen mode """
-        return True
-        # return self._player._fullscreen.exit_fullscreen(self._player._widget)
+        return self._player._fullscreen.exit_fullscreen(self._player)
     
     def updateAndAccept(self) -> bool:
         # self._player.player_update()
