@@ -337,12 +337,36 @@ class QTImageViewer(ImageViewer, BaseWidget):
             case OverlapMode.Rectangle:
                 print("Rectangle overlap not implemented ...")
 
-    def draw_cursor(self, 
-                    cropped_image_shape, 
-                    crop_xmin, 
-                    crop_ymin, 
-                    rect : QtCore.QRect, 
-                    painter, 
+    def screen2image(self,
+                     cropped_image_shape,
+                     crop_xmin,
+                     crop_ymin,
+                     rect: QtCore.QRect,
+                     x,y):
+        (height,width) = cropped_image_shape[:2]
+        im_x = (x-rect.x())/rect.width()*width   + crop_xmin
+        im_y = (y-rect.y())/rect.height()*height + crop_ymin
+        return im_x, im_y
+    
+    def image2screen(self,
+                     cropped_image_shape,
+                     crop_xmin,
+                     crop_ymin,
+                     rect: QtCore.QRect,
+                     im_x,im_y):
+        (height,width) = cropped_image_shape[:2]
+        x = im_x-crop_xmin
+        y = im_y-crop_ymin
+        x = x/width *rect.width()  + rect.x()
+        y = y/height*rect.height() + rect.y()
+        return x,y
+
+    def draw_cursor(self,
+                    cropped_image_shape,
+                    crop_xmin,
+                    crop_ymin,
+                    rect : QtCore.QRect,
+                    painter,
                     full=False
         ) -> Optional[Tuple[int, int]]:
         """
