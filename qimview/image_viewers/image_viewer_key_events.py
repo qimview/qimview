@@ -43,7 +43,10 @@ class ImageViewerKeyEvents:
                 'Shift+P'  : self.syncPos,
         }
         for plg,plg_cb in self.plugins_key_events.items():
-            self.keys_callback[plg] = lambda cb=plg_cb: cb(self)
+            f = lambda cb=plg_cb: cb(self)
+            # Copy the docstring to the lambda function
+            f.__doc__ = plg_cb.__doc__
+            self.keys_callback[plg] = f
 
         self._help_tabs  : List[Tuple[str,str]] = []
         self._help_links : str = ''
