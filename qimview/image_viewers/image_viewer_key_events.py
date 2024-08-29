@@ -46,6 +46,8 @@ class ImageViewerKeyEvents:
             f = lambda cb=plg_cb: cb(self)
             # Copy the docstring to the lambda function
             f.__doc__ = plg_cb.__doc__
+            if plg in self.keys_callback:
+                print(f"WARNING: image viewer key event {plg} already exists, overwritten by plugin")
             self.keys_callback[plg] = f
 
         self._help_tabs  : List[Tuple[str,str]] = []
@@ -273,13 +275,27 @@ def imageviewer_add_plugins():
             try:
                 format_cfg = config[f'IMAGEVIEWER.{plg.upper()}']
                 folder, module, keyevent = [format_cfg[s] for s in ('Folder','Module','KeyEvent')]
-                folder = os.path.expanduser(folder)
-                print(f' {plg} {folder, keyevent}')
+                keyevents = keyevent.split(';')
                 # TODO: avoid sys.path.append?
+                folder = os.path.expanduser(folder)
                 sys.path.append(folder)
                 import importlib
                 keyevent_module = importlib.import_module(module)
-                ImageViewerKeyEvents.plugins_key_events.update({keyevent:keyevent_module.Plugin.run})
+                for ke in keyevents:
+                    ke_info = ke.split(':')
+                    assert len(ke_info)<=2, "Incorrect syntax for keyevents"
+                    # If Method is given, use it otherwise use 'run' method
+                    keystr = ke_info[0]
+                    if len(ke_info)==2:
+                        method_name = ke_info[1]
+                    else:
+                        method_name = 'run'
+                    print(f' {plg} {folder, keystr, method_name}')
+                    method = getattr(keyevent_module.Plugin,method_name, False)
+                    if method:
+                        ImageViewerKeyEvents.plugins_key_events.update({keystr:method})
+                    else:
+                        print(f'Plugin Error: {method_name=} , not found in plugin {module}, folder {folder}')
             except Exception as e:
                 print(f" ----- Failed to add support for {plg}: {e}")
 

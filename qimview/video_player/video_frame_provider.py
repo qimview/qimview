@@ -52,6 +52,9 @@ class VideoFrameProvider:
         
         nb_videos = len(self._container.streams.video)
         print(f"Found {nb_videos} videos")
+        if nb_videos == 0:
+            print(f"ERROR: Video not found !")
+            return
         self._container.streams.video[0].thread_type = "FRAME"
         self._container.streams.video[0].thread_count = 8
         # self._container.streams.video[0].fast = True

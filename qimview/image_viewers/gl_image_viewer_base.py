@@ -164,6 +164,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.myPaintGL()
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
+
+            for _,cb in self.gl_paint_callbacks.items():
+                cb(self)
+
         except Exception as e:
             self.print_log(" failed paintGL {}".format(e))
             traceback.print_exc()

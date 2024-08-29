@@ -21,6 +21,7 @@ class VideoScheduler:
         self._skipped          : List[int]            = []
         self._displayed_pts    : List[int]            = []
         self._playback_speed   : float                = 1
+        self._loop             : bool                 = True
         # _speed_ok: Check current frame queue for each video, True if queue size > 1
         # if all active videos are ok, speed might be increased
         # if any active video is not ok, speed will be decreased by 2%
@@ -203,7 +204,12 @@ class VideoScheduler:
             return ok
         except EndOfVideo:
             print("End of video")
-            self.pause()
+            if self._loop:
+                for p in self._players:
+                    if p.frame_provider is not None:
+                        p.frame_provider.set_time(p.loop_start_time)
+            else:
+                self.pause()
             return False
 
     def _display_remaining_frames(self):

@@ -203,6 +203,10 @@ class ImageViewer:
 
         self.synchronize_pos       : bool                = True
         self.paint_callbacks       : dict[str, Callable] = {}
+
+        # Paint callback for opengl version
+        # TODO: unify paint_callback and gl_paint_callback
+        self.gl_paint_callbacks       : dict[str, Callable] = {}
         self.imagechange_callbacks : dict[str, Callable] = {}
 
     def set_paint_callback(self, cb_name, cb):
@@ -214,6 +218,12 @@ class ImageViewer:
     def set_imagechange_callback(self, plugin_name, cb):
         self.imagechange_callbacks[plugin_name] = cb
     
+    def set_gl_paint_callback(self, cb_name, cb):
+        self.gl_paint_callbacks[cb_name] = cb
+    
+    def remove_gl_paint_callback(self, cb_name):
+        self.gl_paint_callbacks.pop(cb_name)
+
     def remove_imagechange_callback(self, plugin_name):
         self.imagechange_callbacks.pop(plugin_name)
 

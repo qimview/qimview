@@ -31,6 +31,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self._filters_widget = self._add_filters()
         hor_layout = QtWidgets.QHBoxLayout()
         self._add_play_pause_button(       hor_layout)
+        self._add_loop_button(             hor_layout)
         self._add_playback_speed_slider(   hor_layout)
         self._add_playback_position_slider(hor_layout)
         self._vertical_layout.addWidget(self._filters_widget)
@@ -75,6 +76,15 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self._button_play_pause.setIcon(self._icon_play)
         hor_layout.addWidget(self._button_play_pause)
 
+    def _add_loop_button(self, hor_layout):
+        self._button_loop = QtWidgets.QPushButton()
+        self._button_loop.setCheckable(True)
+        self._button_loop.setChecked(True)
+        self._button_loop.clicked.connect(self.loop_clicked)
+        self._icon_loop = self.style().standardIcon(QtWidgets.QStyle.StandardPixmap.SP_BrowserReload)
+        self._button_loop.setIcon(self._icon_loop)
+        hor_layout.addWidget(self._button_loop)
+        
     def _add_playback_speed_slider(self, hor_layout):
         # Playback speed slider
         self.playback_speed = NumericParameter()
@@ -106,6 +116,9 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
         self.play_position_gui.create()
         self.play_position_gui.add_to_layout(hor_layout,5)
+
+    def loop_clicked(self):
+        pass # to override
 
     def on_synchronize(self, viewer : ImageViewerClass) -> None:
         pass

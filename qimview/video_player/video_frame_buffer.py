@@ -5,6 +5,7 @@ import threading
 import av
 from av import container, VideoFrame
 from av.frame import Frame
+import gc
 
 
 class EndOfVideo(Exception):
@@ -38,6 +39,7 @@ class VideoFrameBuffer:
         self._queue = queue.Queue(maxsize=self._maxsize)
 
     def _worker(self):
+        gc.collect()
         item  = None
         nb = 0
         total_time = 0

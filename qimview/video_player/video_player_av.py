@@ -122,6 +122,8 @@ class VideoPlayerAV(VideoPlayerBase):
 
         self._scheduler : VideoScheduler = VideoScheduler()
         self._start_video_time : float = 0
+        self.loop_start_time  : float = 0
+        self.loop_end_time    : float = -1 # -1 means end of video
         self._skipped : int = 0
         self._frame_provider : VideoFrameProvider = VideoFrameProvider()
         self._displayed_pts : int = -1
@@ -155,8 +157,12 @@ class VideoPlayerAV(VideoPlayerBase):
         else:
             return 0.1
 
+    def empty_compare(self):
+        self._compare_players = []
+        
     def compare(self, player):
         self._compare_players.append(player)
+        print(f"{self._compare_players=}")
 
     def on_synchronize(self, viewer : ImageViewerClass) -> None:
         # Synchronize other viewer to calling viewer
@@ -216,6 +222,9 @@ class VideoPlayerAV(VideoPlayerBase):
         players.extend(self._compare_players)
         self._scheduler.set_players(players)
         self._scheduler.start_decode(self._frame_provider.get_time())
+        
+    def loop_clicked(self):
+        self._scheduler._loop = self._button_loop.isChecked()
 
     def play_pause(self):
         if len(self.scheduler._players) == 0:
@@ -414,7 +423,11 @@ class VideoPlayerAV(VideoPlayerBase):
             self.scheduler.pause()
         print(f"filename = {self._filename}")
         if self._container is not None:
+            self._frame_provider.frame_buffer.reset()
+            # del self._frame_provider.frame_buffer
+            # del self._frame_provider._container
             self._container.close()
+            del self._container
         self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
 
@@ -490,9 +503,9 @@ def main():
     # main_layout.addWidget(button_pauseplay)
     # button_pauseplay.clicked.connect(lambda: pause_play(player1, player2))
 
-    sch = VideoScheduler(10)
-    for p in players:
-        sch.add_player(p)
+    # sch = VideoScheduler(10)
+    # for p in players:
+    #     sch.add_player(p)
 
     # button_scheduler = QtWidgets.QPushButton("Scheduler")
     # main_layout.addWidget(button_scheduler)
