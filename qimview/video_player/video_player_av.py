@@ -227,7 +227,8 @@ class VideoPlayerAV(VideoPlayerBase):
         self._scheduler._loop = self._button_loop.isChecked()
 
     def play_pause(self):
-        if len(self.scheduler._players) == 0:
+        # If the number of players has changes, restart decode
+        if len(self.scheduler._players) != len(self._compare_players)+1:
             self._button_play_pause.setIcon(self._icon_pause)
             self.start_decode()
         else:
@@ -457,7 +458,7 @@ class VideoPlayerAV(VideoPlayerBase):
             self.update_position()
             self.display_frame()
         else:
-            print(" --- video alread initialized")
+            print(" --- video already initialized")
 
     def keyPressEvent(self, event):
         print("Key pressed")
