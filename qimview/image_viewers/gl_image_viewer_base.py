@@ -16,7 +16,7 @@ import OpenGL.GLU as glu
 from .gltexture import GLTexture
 from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
-from qimview.image_viewers.image_viewer import ImageViewer, trace_method
+from qimview.image_viewers.image_viewer import ImageViewer, trace_method, OverlapMode
 
 
 class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
@@ -164,6 +164,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.myPaintGL()
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
+            if self._show_overlap:
+                self.gl_draw_overlap_separation()
 
             for _,cb in self.gl_paint_callbacks.items():
                 cb(self)
@@ -238,6 +240,57 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             return (im_x, im_y)
         return None
 
+    def gl_draw_overlap_separation(self):
+        # _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl = gl
+
+        x0, x1, y0, y1 = self.image_centered_position()
+
+        im_x = int(self.cursor_imx_ratio*self.texture.width)
+        im_y = int(self.cursor_imy_ratio*self.texture.height)
+
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.texture.width + x0
+        glpos_from_im_y = (self.texture.height - (im_y+0.5))*(y1-y0)/self.texture.height+y0
+
+        match self._overlap_mode:
+            case OverlapMode.Horizontal:
+                width = 2
+                _gl.glLineWidth(width)
+                _gl.glColor3f(0.0, 1.0, 1.0)
+                _gl.glBegin(gl.GL_LINES)
+                _gl.glVertex3f(glpos_from_im_x, y0, -0.001)
+                _gl.glVertex3f(glpos_from_im_x, y1, -0.001)
+                _gl.glEnd()
+            case OverlapMode.Vertical:
+                width = 2
+                _gl.glLineWidth(width)
+                _gl.glColor3f(0.0, 1.0, 1.0)
+                _gl.glBegin(gl.GL_LINES)
+                _gl.glVertex3f(x0, glpos_from_im_y, -0.001)
+                _gl.glVertex3f(x1, glpos_from_im_y, -0.001)
+                _gl.glEnd()
+            case OverlapMode.Rectangle:
+                w = 0.05*(x1-x0)
+                h = 0.2*(y1-y0)
+                px = glpos_from_im_x
+                py = glpos_from_im_y
+                dx = w*(1.01)
+                dy = 0.0
+                _gl.glLineWidth(1)
+                _gl.glColor3f(1.0, 1.0, 0.0)
+                _gl.glBegin(gl.GL_LINES)
+                _gl.glVertex3f(px,py, -0.001)
+                _gl.glVertex3f(px+dx, py+dy, -0.001)
+                _gl.glEnd()
+                width = 2
+                _gl.glLineWidth(width)
+                _gl.glColor3f(0.0, 1.0, 1.0)
+                _gl.glBegin(gl.GL_LINE_LOOP)
+                _gl.glVertex3f(px+dx,   py+dy,   -0.001)
+                _gl.glVertex3f(px+dx+w, py+dy,   -0.001)
+                _gl.glVertex3f(px+dx+w, py+dy-h, -0.001)
+                _gl.glVertex3f(px+dx,   py+dy-h, -0.001)
+                _gl.glEnd()
 
     def image_centered_position(self):
         w = self._width
