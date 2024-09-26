@@ -243,7 +243,15 @@ class VideoPlayerAV(VideoPlayerBase):
         self.set_play_position(fromSlider=True)
 
     def set_play_position(self, recursive=True, fromSlider=False):
+        """ Sets the play position based on the member play_position
+
+        Args:
+            recursive (bool, optional): _description_. Defaults to True.
+            fromSlider (bool, optional): _description_. Defaults to False.
+        """
         # print(f"{self._name} set_play_position {fromSlider=} {self.play_position=}")
+        # Here, instead of resetting the frame_buffer, we want to use existing frames
+        # as much as possible
         if self._frame_provider.frame_buffer:
             self._frame_provider.frame_buffer.reset()
         self._frame_provider.set_time(self.play_position)

@@ -13,6 +13,9 @@ class VideoFrameProvider:
         self._container       : Optional[container.InputContainer] = None
         self._playing         : bool                               = False
         self._frame           : Optional[VideoFrame]               = None
+        # Tell is current _frame comes from saved frames, in which case
+        # the decoder is not positioned at the frame number
+        self._from_saved      : bool                               = False
         self._video_stream    : Optional[streams.StreamContainer]  = None
         self._framerate       : float                              = 0
         self._time_base       : float                              = 0
@@ -97,7 +100,9 @@ class VideoFrameProvider:
             return -1
 
     def set_time(self, time_pos : float, exact: bool =True):
-        """ set time position in seconds """
+        """ set time position in seconds 
+            the video frame corresponding to the requested time_pos is set in _frame member
+        """
         print(f"set_time {time_pos} , _end_time={self._end_time}")
         if self._container is None or self.frame_buffer is None:
             print("Video not initialized")
@@ -111,9 +116,19 @@ class VideoFrameProvider:
             if frame_num == sec_frame:
                 print(f"Current frame is at the requested position {frame_num} {sec_frame}")
                 return
+
+            # Check if frame is in the frame buffer saved frames,
+            # this allows fast moving within saved frames
+            for f in self.frame_buffer._saved_frames:
+                fn = int(f.pts * self._time_base* self._framerate)
+                if frame_num == fn:
+                    self._frame = f
+                    self._from_saved = True
+                    return
+
             # if we look for a frame slightly after, don't use seek()
             try:
-                if frame_num<sec_frame or frame_num > sec_frame + 10:
+                if self._from_saved or frame_num<sec_frame or frame_num > sec_frame + 10:
                     # seek to that nearest timestamp
                     # is_playing = self.playing
                     # self.playing = False
@@ -128,6 +143,7 @@ class VideoFrameProvider:
                     initial_pos = float(frame.pts * self._time_base)
                     # self.playing = is_playing
                 # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
+                # Loop over next frames to reach the exact requested position
                 if not frame or exact:
                     for _ in range(sec_frame, frame_num):
                         frame = self.frame_buffer.get_frame()
@@ -140,6 +156,7 @@ class VideoFrameProvider:
                 sec_frame = int(frame.pts * self._time_base * self._framerate)
                 print(f"Frame at {initial_pos:0.3f}->"
                       f"{float(frame.pts * self._time_base):0.3f} requested {time_pos}")
+                self._from_saved = False
                 self._frame = frame
 
     def get_next_frame(self, verbose=False) -> bool:

@@ -28,6 +28,8 @@ class VideoFrameBuffer:
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
         self._maxsize : int = maxsize
         self._queue = queue.Queue(maxsize=self._maxsize)
+        # Save frames before emptying the queue to faster manual display
+        self._saved_frames = []
         self._running : bool = False
         self._container : container.InputContainer = container
         self._stream_number : int = stream_number
@@ -35,7 +37,16 @@ class VideoFrameBuffer:
         self._thread : Optional[threading.Thread] = None
         self._end_of_video : bool = False
 
+    @property
+    def running(self) -> bool:
+        return self._running
+
     def reset_queue(self):
+        # print("VideoFrameBuffer.reset_queue()")
+        # If queue is empty, keep current saved frames
+        if self._queue.qsize()>0:
+            # print(f"saving {self._queue.qsize()} frames")
+            self._saved_frames = [ self._queue.get() for _ in range(self._queue.qsize())]
         self._queue = queue.Queue(maxsize=self._maxsize)
 
     def _worker(self):
@@ -81,6 +92,11 @@ class VideoFrameBuffer:
         self._frame_generator = g
 
     def set_container(self, c):
+        """ not used?
+
+        Args:
+            c (_type_): _description_
+        """
         self.terminate()
         self._container = c
         self._frame_generator = self._container.decode(video=self._stream_number)
@@ -91,6 +107,7 @@ class VideoFrameBuffer:
         self._queue = queue.Queue(maxsize=m)
 
     def reset(self):
+        # print("VideoFrameBuffer.reset()")
         self.terminate()
         self.reset_queue()
         self._frame_generator = self._container.decode(video=self._stream_number)
@@ -99,7 +116,20 @@ class VideoFrameBuffer:
     def size(self) -> int:
         return self._queue.qsize()
 
-    def get_frame(self, timeout=6) -> VideoFrame:
+    def get_frame(self, timeout=6) -> VideoFrame | None:
+        """ Get the next video frame from the queue or from the decoder directly
+
+        Args:
+            timeout (int, optional): _description_. Defaults to 6.
+
+        Raises:
+            EndOfVideo: _description_
+            TimeOut: _description_
+            EndOfVideo: _description_
+
+        Returns:
+            VideoFrame: _description_
+        """
         if self._running or self._queue.qsize()>0:
             try:
                 res = self._queue.get(block=True, timeout=timeout)
@@ -146,9 +176,13 @@ class VideoFrameBuffer:
             self._running = True
             self._thread.start()
             duration = 0
+            # print(f"{self._queue.qsize()=}")
+            # Empty saved frames to avoid using too much memory
+            self._saved_frames = []
             while self._queue.qsize()<self._maxsize and self._running:
-                time.sleep(1)
-                duration += 1
+                # print(f"{self._queue.qsize()=}")
+                time.sleep(0.1)
+                duration += 0.1
             print(f"queue size after {duration} sec {self._queue.qsize()}")
         else:
             print("Cannot start already running thread")
