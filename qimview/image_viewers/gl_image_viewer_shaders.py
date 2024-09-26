@@ -169,7 +169,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         {fragmentShader_yuv2rgb}
 
         void main() {{
-          float epsilon     = 1.5f/((overlap_mode==0)?textureSize(YTex,0).x:textureSize(YTex,0).y);
           if (overlap_mode==2) {{
             // duplicate rectangle
             float w = 0.05;
@@ -193,38 +192,34 @@ class GLImageViewerShaders(GLImageViewerBase):
           }} else {{
             float overlap_pos   = (overlap_mode==0)?UV.x:UV.y;
             float overlap_ratio = (overlap_mode==0)?cursor_x:cursor_y;
-            if ((overlap_pos>overlap_ratio-epsilon)&&(overlap_pos<overlap_ratio+epsilon)) {{
-                colour = vec3(0.9,0.2,0.2);
-            }} else {{
-                if (difference_scaling>0) {{
-                    float y2 = texture(YTex2, UV).r*texture_scale;
-                    float u2 = texture(UTex2, UV).r*texture_scale;
-                    float v2 = texture(VTex2, UV).r*texture_scale;
-                    if (overlap_pos<=overlap_ratio) {{
-                        y = texture(YTex, UV).r*texture_scale;
-                        u = texture(UTex, UV).r*texture_scale;
-                        v = texture(VTex, UV).r*texture_scale;
-                        vec3 rgb1 = yuv2rgb(vec3(y,u,v));
-                        vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
-                        vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
-                        colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
-                    }} else {{
-                        vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
-                        colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
-                    }}
+            if (difference_scaling>0) {{
+                float y2 = texture(YTex2, UV).r*texture_scale;
+                float u2 = texture(UTex2, UV).r*texture_scale;
+                float v2 = texture(VTex2, UV).r*texture_scale;
+                if (overlap_pos<=overlap_ratio) {{
+                    y = texture(YTex, UV).r*texture_scale;
+                    u = texture(UTex, UV).r*texture_scale;
+                    v = texture(VTex, UV).r*texture_scale;
+                    vec3 rgb1 = yuv2rgb(vec3(y,u,v));
+                    vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
+                    vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
+                    colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
                 }} else {{
-                    if (overlap_pos<=overlap_ratio) {{
-                        y = texture(YTex, UV).r*texture_scale;
-                        u = texture(UTex, UV).r*texture_scale;
-                        v = texture(VTex, UV).r*texture_scale;
-                    }} else {{
-                        y = texture(YTex2, UV).r*texture_scale;
-                        u = texture(UTex2, UV).r*texture_scale;
-                        v = texture(VTex2, UV).r*texture_scale;
-                    }}
-                    vec3 rgb = yuv2rgb(vec3(y,u,v));
+                    vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
                     colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
                 }}
+            }} else {{
+                if (overlap_pos<=overlap_ratio) {{
+                    y = texture(YTex, UV).r*texture_scale;
+                    u = texture(UTex, UV).r*texture_scale;
+                    v = texture(VTex, UV).r*texture_scale;
+                }} else {{
+                    y = texture(YTex2, UV).r*texture_scale;
+                    u = texture(UTex2, UV).r*texture_scale;
+                    v = texture(VTex2, UV).r*texture_scale;
+                }}
+                vec3 rgb = yuv2rgb(vec3(y,u,v));
+                colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
             }}
           }}
         }}
@@ -283,42 +278,37 @@ class GLImageViewerShaders(GLImageViewerBase):
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
  
-          float epsilon     = 1.5f/((overlap_mode==0)?textureSize(YTex,0).x:textureSize(YTex,0).y);
           float overlap_pos = (overlap_mode==0)?UV.x:UV.y;
           float overlap_ratio = (overlap_mode==0)?cursor_x:cursor_y;
 
-          if ((overlap_pos>overlap_ratio-epsilon)&&(overlap_pos<overlap_ratio+epsilon)) {{
-              colour = vec3(0.9,0.2,0.2);
-          }} else {{
-              if (difference_scaling>0) {{
-                float y2 = texture(YTex2,  UV).r*texture_scale;
-                float u2 = texture(UVTex2, UV).r*texture_scale;
-                float v2 = texture(UVTex2, UV).g*texture_scale;
-                if (overlap_pos<=overlap_ratio) {{
-                    y = texture(YTex,  UV).r*texture_scale;
-                    u = texture(UVTex, UV).r*texture_scale;
-                    v = texture(UVTex, UV).g*texture_scale;
-                    vec3 rgb1 = yuv2rgb(vec3(y,u,v));
-                    vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
-                    vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
-                 colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
-                }} else {{
-                    vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
-                    colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
-                }}
-              }} else {{
-                if (overlap_pos<=overlap_ratio) {{
-                    y = texture(YTex,  UV).r*texture_scale;
-                    u = texture(UVTex, UV).r*texture_scale;
-                    v = texture(UVTex, UV).g*texture_scale;
-                }} else {{
-                    y = texture(YTex2,  UV).r*texture_scale;
-                    u = texture(UVTex2, UV).r*texture_scale;
-                    v = texture(UVTex2, UV).g*texture_scale;
-                }}
-                vec3 rgb = yuv2rgb(vec3(y,u,v));
+          if (difference_scaling>0) {{
+            float y2 = texture(YTex2,  UV).r*texture_scale;
+            float u2 = texture(UVTex2, UV).r*texture_scale;
+            float v2 = texture(UVTex2, UV).g*texture_scale;
+            if (overlap_pos<=overlap_ratio) {{
+                y = texture(YTex,  UV).r*texture_scale;
+                u = texture(UVTex, UV).r*texture_scale;
+                v = texture(UVTex, UV).g*texture_scale;
+                vec3 rgb1 = yuv2rgb(vec3(y,u,v));
+                vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
+                vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
+             colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+            }} else {{
+                vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
                 colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
-              }}
+            }}
+          }} else {{
+            if (overlap_pos<=overlap_ratio) {{
+                y = texture(YTex,  UV).r*texture_scale;
+                u = texture(UVTex, UV).r*texture_scale;
+                v = texture(UVTex, UV).g*texture_scale;
+            }} else {{
+                y = texture(YTex2,  UV).r*texture_scale;
+                u = texture(UVTex2, UV).r*texture_scale;
+                v = texture(UVTex2, UV).g*texture_scale;
+            }}
+            vec3 rgb = yuv2rgb(vec3(y,u,v));
+            colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
           }}
         }}
     """
