@@ -17,13 +17,17 @@ class VideoPlayerKeyEvents:
 
         # Set key events callbacks
         self.keys_callback = {
-                'F'     : self.toggleImageFilters,
-                'Space' : self.togglePlayPause,
-                'Right' : self.nextFrame,
-                'Left'  : self.prevFrame,
-                'F1'    : self.helpDialog,
-                'F10'   : self.toggleFullScreen,
-                'Esc'   : self.exitFullScreen,
+                'F'           : self.toggleImageFilters,
+                'Space'       : self.togglePlayPause,
+                'Right'       : self.nextFrame,
+                'Left'        : self.prevFrame,
+                'Shift+Right' : self.nextTenFrame,
+                'Shift+Left'  : self.prevTenFrame,
+                'PgUp'        : self.nextSecond,
+                'PgDown'      : self.prevSecond,
+                'F1'          : self.helpDialog,
+                'F10'         : self.toggleFullScreen,
+                'Esc'         : self.exitFullScreen,
         }
 
         self._help_tabs  : List[Tuple[str,str]] = []
@@ -117,6 +121,38 @@ class VideoPlayerKeyEvents:
         """ display previous Frame """
         p = self._player
         p.play_position = max(0,p.play_position-p.frame_duration)
+        p.set_play_position()
+        p.update_position(force=True)
+        return True
+
+    def nextTenFrame(self) -> bool:
+        """ display Frame + 10 """
+        p = self._player
+        p.play_position = p.play_position+10*p.frame_duration
+        p.set_play_position()
+        p.update_position(force=True)
+        return True
+
+    def prevTenFrame(self) -> bool:
+        """ display Frame - 10 """
+        p = self._player
+        p.play_position = max(0,p.play_position-10*p.frame_duration)
+        p.set_play_position()
+        p.update_position(force=True)
+        return True
+
+    def nextSecond(self) -> bool:
+        """ display Frame at +1 second """
+        p = self._player
+        p.play_position = p.play_position+1
+        p.set_play_position()
+        p.update_position(force=True)
+        return True
+
+    def prevSecond(self) -> bool:
+        """ display Frame at -1 second """
+        p = self._player
+        p.play_position = max(0,p.play_position-1)
         p.set_play_position()
         p.update_position(force=True)
         return True
