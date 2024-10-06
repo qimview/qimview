@@ -23,10 +23,10 @@ GLSL_VERSION = '120' if sys.platform=='darwin' else '330 core'
 OUT = 'varying' if GLSL_VERSION=='120' else 'out'
 IN  = 'varying' if GLSL_VERSION=='120' else 'in'
 
-DECLARE_GLOBAL_COLOUR = ''                           if GLSL_VERSION=='120' else 'out vec3 colour;'
-DECLARE_LOCAL_COLOUR  = 'vec3 colour;'               if GLSL_VERSION=='120' else ''
-RETURN_COLOUR         = 'gl_FragColor=vec4(colour);' if GLSL_VERSION=='120' else ''
-TEXTURE               = 'texture2D'                  if GLSL_VERSION=='120' else 'texture'
+DECLARE_GLOBAL_COLOUR = ''                                 if GLSL_VERSION=='120' else 'out vec3 colour;'
+DECLARE_LOCAL_COLOUR  = 'vec3 colour;'                     if GLSL_VERSION=='120' else ''
+RETURN_COLOUR         = 'gl_FragColor=vec4(colour.xyz,1);' if GLSL_VERSION=='120' else ''
+TEXTURE               = 'texture2D'                        if GLSL_VERSION=='120' else 'texture'
 
 class GLImageViewerShaders(GLImageViewerBase):
 
