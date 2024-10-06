@@ -26,7 +26,7 @@ IN  = 'varying' if GLSL_VERSION=='120' else 'in'
 DECLARE_GLOBAL_COLOUR = ''                           if GLSL_VERSION=='120' else 'out vec3 colour;'
 DECLARE_LOCAL_COLOUR  = 'vec3 colour;'               if GLSL_VERSION=='120' else ''
 RETURN_COLOUR         = 'gl_FragColor=vec4(colour);' if GLSL_VERSION=='120' else ''
-
+TEXTURE               = 'texture2D'                  if GLSL_VERSION=='120' else 'texture'
 
 class GLImageViewerShaders(GLImageViewerBase):
 
@@ -127,7 +127,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         void main() {{
           {DECLARE_LOCAL_COLOUR}
-          colour = texture(backgroundTexture, UV).rgb;
+          colour = {TEXTURE}(backgroundTexture, UV).rgb;
           colour = apply_filters(colour,max_value
               , 1 // texture_scale
               , max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -155,9 +155,9 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         void main() {{
           {DECLARE_LOCAL_COLOUR}
-          y = texture(YTex, UV).r*texture_scale;
-          u = texture(UTex, UV).r*texture_scale;
-          v = texture(VTex, UV).r*texture_scale;
+          y = {TEXTURE}(YTex, UV).r*texture_scale;
+          u = {TEXTURE}(UTex, UV).r*texture_scale;
+          v = {TEXTURE}(VTex, UV).r*texture_scale;
 
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -200,13 +200,13 @@ class GLImageViewerShaders(GLImageViewerBase):
             float dy = 0.0;
             if ((UV.x>px+dx)&&(UV.x<px+dx+w)&&(UV.y>py+dy)&&(UV.y<py+dy+h)) {{
                 vec2 UV2 = UV-vec2(dx,dy);
-                y = texture(YTex2, UV2).r*texture_scale;
-                u = texture(UTex2, UV2).r*texture_scale;
-                v = texture(VTex2, UV2).r*texture_scale;
+                y = {TEXTURE}(YTex2, UV2).r*texture_scale;
+                u = {TEXTURE}(UTex2, UV2).r*texture_scale;
+                v = {TEXTURE}(VTex2, UV2).r*texture_scale;
             }} else {{
-                y = texture(YTex, UV).r*texture_scale;
-                u = texture(UTex, UV).r*texture_scale;
-                v = texture(VTex, UV).r*texture_scale;
+                y = {TEXTURE}(YTex, UV).r*texture_scale;
+                u = {TEXTURE}(UTex, UV).r*texture_scale;
+                v = {TEXTURE}(VTex, UV).r*texture_scale;
             }}
             vec3 rgb = yuv2rgb(vec3(y,u,v));
             colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -214,13 +214,13 @@ class GLImageViewerShaders(GLImageViewerBase):
             float overlap_pos   = (overlap_mode==0)?UV.x:UV.y;
             float overlap_ratio = (overlap_mode==0)?cursor_x:cursor_y;
             if (difference_scaling>0) {{
-                float y2 = texture(YTex2, UV).r*texture_scale;
-                float u2 = texture(UTex2, UV).r*texture_scale;
-                float v2 = texture(VTex2, UV).r*texture_scale;
+                float y2 = {TEXTURE}(YTex2, UV).r*texture_scale;
+                float u2 = {TEXTURE}(UTex2, UV).r*texture_scale;
+                float v2 = {TEXTURE}(VTex2, UV).r*texture_scale;
                 if (overlap_pos<=overlap_ratio) {{
-                    y = texture(YTex, UV).r*texture_scale;
-                    u = texture(UTex, UV).r*texture_scale;
-                    v = texture(VTex, UV).r*texture_scale;
+                    y = {TEXTURE}(YTex, UV).r*texture_scale;
+                    u = {TEXTURE}(UTex, UV).r*texture_scale;
+                    v = {TEXTURE}(VTex, UV).r*texture_scale;
                     vec3 rgb1 = yuv2rgb(vec3(y,u,v));
                     vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
                     vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
@@ -231,13 +231,13 @@ class GLImageViewerShaders(GLImageViewerBase):
                 }}
             }} else {{
                 if (overlap_pos<=overlap_ratio) {{
-                    y = texture(YTex, UV).r*texture_scale;
-                    u = texture(UTex, UV).r*texture_scale;
-                    v = texture(VTex, UV).r*texture_scale;
+                    y = {TEXTURE}(YTex, UV).r*texture_scale;
+                    u = {TEXTURE}(UTex, UV).r*texture_scale;
+                    v = {TEXTURE}(VTex, UV).r*texture_scale;
                 }} else {{
-                    y = texture(YTex2, UV).r*texture_scale;
-                    u = texture(UTex2, UV).r*texture_scale;
-                    v = texture(VTex2, UV).r*texture_scale;
+                    y = {TEXTURE}(YTex2, UV).r*texture_scale;
+                    u = {TEXTURE}(UTex2, UV).r*texture_scale;
+                    v = {TEXTURE}(VTex2, UV).r*texture_scale;
                 }}
                 vec3 rgb = yuv2rgb(vec3(y,u,v));
                 colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -264,9 +264,9 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         void main() {{
           {DECLARE_LOCAL_COLOUR}
-          y  = texture(YTex,  UV).r*texture_scale;
-          u  = texture(UVTex, UV).r*texture_scale;
-          v  = texture(UVTex, UV).g*texture_scale;
+          y  = {TEXTURE}(YTex,  UV).r*texture_scale;
+          u  = {TEXTURE}(UVTex, UV).r*texture_scale;
+          v  = {TEXTURE}(UVTex, UV).g*texture_scale;
 
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -305,13 +305,13 @@ class GLImageViewerShaders(GLImageViewerBase):
           float overlap_ratio = (overlap_mode==0)?cursor_x:cursor_y;
 
           if (difference_scaling>0) {{
-            float y2 = texture(YTex2,  UV).r*texture_scale;
-            float u2 = texture(UVTex2, UV).r*texture_scale;
-            float v2 = texture(UVTex2, UV).g*texture_scale;
+            float y2 = {TEXTURE}(YTex2,  UV).r*texture_scale;
+            float u2 = {TEXTURE}(UVTex2, UV).r*texture_scale;
+            float v2 = {TEXTURE}(UVTex2, UV).g*texture_scale;
             if (overlap_pos<=overlap_ratio) {{
-                y = texture(YTex,  UV).r*texture_scale;
-                u = texture(UVTex, UV).r*texture_scale;
-                v = texture(UVTex, UV).g*texture_scale;
+                y = {TEXTURE}(YTex,  UV).r*texture_scale;
+                u = {TEXTURE}(UVTex, UV).r*texture_scale;
+                v = {TEXTURE}(UVTex, UV).g*texture_scale;
                 vec3 rgb1 = yuv2rgb(vec3(y,u,v));
                 vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
                 vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
@@ -322,13 +322,13 @@ class GLImageViewerShaders(GLImageViewerBase):
             }}
           }} else {{
             if (overlap_pos<=overlap_ratio) {{
-                y = texture(YTex,  UV).r*texture_scale;
-                u = texture(UVTex, UV).r*texture_scale;
-                v = texture(UVTex, UV).g*texture_scale;
+                y = {TEXTURE}(YTex,  UV).r*texture_scale;
+                u = {TEXTURE}(UVTex, UV).r*texture_scale;
+                v = {TEXTURE}(UVTex, UV).g*texture_scale;
             }} else {{
-                y = texture(YTex2,  UV).r*texture_scale;
-                u = texture(UVTex2, UV).r*texture_scale;
-                v = texture(UVTex2, UV).g*texture_scale;
+                y = {TEXTURE}(YTex2,  UV).r*texture_scale;
+                u = {TEXTURE}(UVTex2, UV).r*texture_scale;
+                v = {TEXTURE}(UVTex2, UV).g*texture_scale;
             }}
             vec3 rgb = yuv2rgb(vec3(y,u,v));
             colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -350,7 +350,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         void main() {{
           {DECLARE_LOCAL_COLOUR}
-          vec4 bayer = texture(backgroundTexture, UV);
+          vec4 bayer = {TEXTURE}(backgroundTexture, UV);
           // transform bayer data to RGB
           int r,gr,gb,b;
           r  = channels%4;
