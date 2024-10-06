@@ -28,6 +28,20 @@ DECLARE_LOCAL_COLOUR  = 'vec3 colour;'                     if GLSL_VERSION=='120
 RETURN_COLOUR         = 'gl_FragColor=vec4(colour.xyz,1);' if GLSL_VERSION=='120' else ''
 TEXTURE               = 'texture2D'                        if GLSL_VERSION=='120' else 'texture'
 
+if GLSL_VERSION=='120':
+    DECLARE_MODULO = """
+        int mymod(int v, int m) {{
+            return v - m*int(v/m);
+        }}
+    """
+else:
+    DECLARE_MODULO = """
+        int mymod(int v, int m) {{
+            return v%m;
+        }}
+    """
+
+
 class GLImageViewerShaders(GLImageViewerBase):
 
     # glsl version
@@ -348,15 +362,17 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         {fragmentShader_apply_filters}
 
+        {DECLARE_MODULO}
+
         void main() {{
           {DECLARE_LOCAL_COLOUR}
           vec4 bayer = {TEXTURE}(backgroundTexture, UV);
           // transform bayer data to RGB
           int r,gr,gb,b;
-          r  = channels%4;
-          gr = (8-channels+1)%4;
-          gb = (channels+2)%4;
-          b  = (8-channels+3)%4;
+          r  = mymod(channels,     4);
+          gr = mymod(8-channels+1, 4);
+          gb = mymod(channels+2,   4);
+          b  = mymod(8-channels+3, 4);
           // if (channels==4)      {{ r = 0; gr = 1; gb = 2; b = 3; }} // CH_RGGB = 4 phase 0, bayer 2
           // else if (channels==5) {{ r = 1; gr = 0; gb = 3; b = 2; }} // CH_GRBG = 5 phase 1, bayer 3 
           // else if (channels==6) {{ r = 2; gr = 3; gb = 0; b = 1; }} // CH_GBRG = 6 phase 2, bayer 0
