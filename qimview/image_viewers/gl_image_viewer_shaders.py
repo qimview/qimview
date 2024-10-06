@@ -140,7 +140,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     fragmentShader_YUV420 = f"""
         {glslVersion}
     
-        in vec2 UV;
+        {IN} vec2 UV;
         uniform sampler2D YTex;
         uniform sampler2D UTex;
         uniform sampler2D VTex;
@@ -168,7 +168,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     fragmentShader_YUV420_twotex = f"""
         {glslVersion}
     
-        in vec2 UV;
+        {IN} vec2 UV;
         uniform sampler2D YTex;
         uniform sampler2D UTex;
         uniform sampler2D VTex;
@@ -250,7 +250,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     fragmentShader_YUV420_interlaced = f"""
         {glslVersion}
     
-        in vec2 UV;
+        {IN} vec2 UV;
         uniform sampler2D YTex;
         uniform sampler2D UVTex;
         uniform float texture_scale;
@@ -278,7 +278,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     fragmentShader_YUV420_interlaced_twotex = f"""
         {glslVersion}
     
-        in vec2 UV;
+        {IN} vec2 UV;
         uniform sampler2D YTex;
         uniform sampler2D UVTex;
         uniform sampler2D YTex2;
@@ -340,7 +340,7 @@ class GLImageViewerShaders(GLImageViewerBase):
     fragmentShader_RAW = f"""
         {glslVersion}
         
-        in vec2 UV;
+        {IN} vec2 UV;
         uniform sampler2D backgroundTexture;
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
