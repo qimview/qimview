@@ -17,7 +17,7 @@ from qimview.utils.viewer_image                        import ViewerImage, Image
 from qimview.video_player.video_scheduler              import VideoScheduler
 from qimview.video_player.video_frame_provider         import VideoFrameProvider
 from qimview.video_player.video_player_base            import VideoPlayerBase, ImageViewerClass
-from .video_player_key_events                          import VideoPlayerKeyEvents
+from qimview.video_player.video_player_key_events      import VideoPlayerKeyEvents
 
 class AverageTime:
     def __init__(self):
@@ -437,6 +437,7 @@ class VideoPlayerAV(VideoPlayerBase):
             # del self._frame_provider._container
             self._container.close()
             del self._container
+            self._container = None
         self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
 

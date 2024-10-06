@@ -12,12 +12,17 @@ import OpenGL
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
 import OpenGL.GLU as glu
+import sys
 
 from .gltexture import GLTexture
 from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method, OverlapMode
 
+if sys.platform=='Darwin':
+    from qimview.fix.GLU.projection import gluUnProject
+else:
+    from OpenGL.GLU import gluUnProject
 
 class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
@@ -382,13 +387,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     #     return super().event(evt)
 
     def get_mouse_gl_coordinates(self, x, y):
-        modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
-        # print(f"modelview {modelview}")
-        projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
-        # print(f"projection {projection}")
-        viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
-        # print(f"viewport {viewport}")
-        posX, posY, posZ = glu.gluUnProject(x, y, 0, modelview, projection, viewport)
+        # done by default by gluUnProject
+        # modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
+        # projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
+        # viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
+        posX, posY, posZ = gluUnProject(x, y, 0)
         # print(f"get_mouse_gl_coordinates({x},{y}) -> {posX} {posY}")
         return posX, posY
 

@@ -95,7 +95,14 @@ class GLTexture:
 
     def new_texture(self, texture):
         # if texture is not None: gl.glDeleteTextures(np.array([texture]))
-        return gl.glGenTextures(1)
+        # Issue on macos, so try to sort out the 2 versions with exception catch
+        try:
+            id = gl.glGenTextures(1)
+        except Exception as e:
+            texture = np.array([0], dtype=np.uint32)
+            self._gl.glGenTextures(1, texture)
+            id = texture[0]
+        return id
     
     def texSubImage(self, textureY, w, h, LUM, gl_type, data):
         self._gl.glBindTexture(  gl.GL_TEXTURE_2D, textureY)

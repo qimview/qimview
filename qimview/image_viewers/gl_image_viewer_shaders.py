@@ -18,22 +18,37 @@ from .image_viewer             import trace_method, get_time, OverlapMode
 from .gl_image_viewer_base     import GLImageViewerBase
 from qimview.utils.viewer_image import ImageFormat
 
+# Deal with compatibility with GLSL 1.2 
+GLSL_VERSION = '120' if sys.platform=='darwin' else '330 core'
+OUT = 'varying' if GLSL_VERSION=='120' else 'out'
+IN  = 'varying' if GLSL_VERSION=='120' else 'in'
+
+DECLARE_GLOBAL_COLOUR = ''                           if GLSL_VERSION=='120' else 'out vec3 colour;'
+DECLARE_LOCAL_COLOUR  = 'vec3 colour;'               if GLSL_VERSION=='120' else ''
+RETURN_COLOUR         = 'gl_FragColor=vec4(colour);' if GLSL_VERSION=='120' else ''
+
 
 class GLImageViewerShaders(GLImageViewerBase):
+
+    # glsl version
+    glslVersion = f"""
+        #version {GLSL_VERSION}
+    """
+
     # vertex shader program
-    vertexShader = """
-        #version 330 core
+    vertexShader = f"""
+        {glslVersion}
 
         attribute vec3 vert;
         attribute vec2 uV;
         uniform mat4 mvMatrix;
         uniform mat4 pMatrix;
-        out vec2 UV;
+        {OUT} vec2 UV;
 
-        void main() {
+        void main() {{
           gl_Position = pMatrix * mvMatrix * vec4(vert, 1.0);
           UV = uV;
-        }
+        }}
         """
 
     fragmentShader_apply_filters = """
@@ -96,31 +111,34 @@ class GLImageViewerShaders(GLImageViewerBase):
         #   g = y-0.21482*u-0.38059*v;
         #   b = y+2.12798*u;
 
+
     # fragment shader program
     fragmentShader_RGB = f"""
-        #version 330 core
+        {glslVersion}
     
-        in vec2 UV;
+        {IN} vec2 UV;
         uniform sampler2D backgroundTexture;
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
-        out vec3 colour;
+        {DECLARE_GLOBAL_COLOUR}
     
         {fragmentShader_apply_filters}
         {fragmentShader_yuv2rgb}
 
         void main() {{
+          {DECLARE_LOCAL_COLOUR}
           colour = texture(backgroundTexture, UV).rgb;
           colour = apply_filters(colour,max_value
               , 1 // texture_scale
               , max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+          {RETURN_COLOUR}
         }}
     """
 
 
     # fragment shader program
     fragmentShader_YUV420 = f"""
-        #version 330 core
+        {glslVersion}
     
         in vec2 UV;
         uniform sampler2D YTex;
@@ -130,23 +148,25 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
-        out vec3 colour;
+        {DECLARE_GLOBAL_COLOUR}
         
         {fragmentShader_apply_filters}
         {fragmentShader_yuv2rgb}
 
         void main() {{
+          {DECLARE_LOCAL_COLOUR}
           y = texture(YTex, UV).r*texture_scale;
           u = texture(UTex, UV).r*texture_scale;
           v = texture(VTex, UV).r*texture_scale;
 
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+          {RETURN_COLOUR}
         }}
     """
 
     fragmentShader_YUV420_twotex = f"""
-        #version 330 core
+        {glslVersion}
     
         in vec2 UV;
         uniform sampler2D YTex;
@@ -163,12 +183,13 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
-        out vec3 colour;
+        {DECLARE_GLOBAL_COLOUR}
     
         {fragmentShader_apply_filters}
         {fragmentShader_yuv2rgb}
 
         void main() {{
+          {DECLARE_LOCAL_COLOUR}
           if (overlap_mode==2) {{
             // duplicate rectangle
             float w = 0.05;
@@ -222,11 +243,12 @@ class GLImageViewerShaders(GLImageViewerBase):
                 colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
             }}
           }}
+          {RETURN_COLOUR}
         }}
     """
 
     fragmentShader_YUV420_interlaced = f"""
-        #version 330 core
+        {glslVersion}
     
         in vec2 UV;
         uniform sampler2D YTex;
@@ -235,25 +257,26 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
-        out vec3 colour;
+        {DECLARE_GLOBAL_COLOUR}
     
         {fragmentShader_apply_filters}
         {fragmentShader_yuv2rgb}
 
         void main() {{
+          {DECLARE_LOCAL_COLOUR}
           y  = texture(YTex,  UV).r*texture_scale;
           u  = texture(UVTex, UV).r*texture_scale;
           v  = texture(UVTex, UV).g*texture_scale;
 
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
-
+          {RETURN_COLOUR}
         }}
     """
 
     # Version with 2 textures
     fragmentShader_YUV420_interlaced_twotex = f"""
-        #version 330 core
+        {glslVersion}
     
         in vec2 UV;
         uniform sampler2D YTex;
@@ -268,13 +291,13 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
         float y,u,v, r, g, b;
-        out vec3 colour;
+        {DECLARE_GLOBAL_COLOUR}
     
         {fragmentShader_apply_filters}
         {fragmentShader_yuv2rgb}
 
         void main() {{
-
+          {DECLARE_LOCAL_COLOUR}
           vec3 rgb = yuv2rgb(vec3(y,u,v));
           colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
  
@@ -310,37 +333,35 @@ class GLImageViewerShaders(GLImageViewerBase):
             vec3 rgb = yuv2rgb(vec3(y,u,v));
             colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
           }}
+          {RETURN_COLOUR}
         }}
     """
 
     fragmentShader_RAW = f"""
-        #version 330 core
+        {glslVersion}
         
         in vec2 UV;
         uniform sampler2D backgroundTexture;
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
-        out vec3 colour;
+        {DECLARE_GLOBAL_COLOUR}
 
         {fragmentShader_apply_filters}
 
         void main() {{
-
-           const int CH_RGGB = 4; // phase 0, bayer 2
-           const int CH_GRBG = 5; // phase 1, bayer 3 (Boilers)
-           const int CH_GBRG = 6; // phase 2, bayer 0
-           const int CH_BGGR = 7; // phase 3, bayer 1 (Coconuts)
-
+          {DECLARE_LOCAL_COLOUR}
           vec4 bayer = texture(backgroundTexture, UV);
           // transform bayer data to RGB
           int r,gr,gb,b;
-          switch (channels) {{
-            case 4:   r = 0; gr = 1; gb = 2; b = 3;  break; // CH_RGGB = 4 phase 0, bayer 2
-            case 5:   r = 1; gr = 0; gb = 3; b = 2;  break; // CH_GRBG = 5 phase 1, bayer 3 (Boilers)
-            case 6:   r = 2; gr = 3; gb = 0; b = 1;  break; // CH_GBRG = 6 phase 2, bayer 0
-            case 7:   r = 3; gr = 2; gb = 1; b = 0;  break; // CH_BGGR = 7 phase 3, bayer 1 (Coconuts)
-            default:        r = 0; gr = 1; gb = 2; b = 3;  break; // this should not happen
-          }}
+          r  = channels%4;
+          gr = (8-channels+1)%4;
+          gb = (channels+2)%4;
+          b  = (8-channels+3)%4;
+          // if (channels==4)      {{ r = 0; gr = 1; gb = 2; b = 3; }} // CH_RGGB = 4 phase 0, bayer 2
+          // else if (channels==5) {{ r = 1; gr = 0; gb = 3; b = 2; }} // CH_GRBG = 5 phase 1, bayer 3 
+          // else if (channels==6) {{ r = 2; gr = 3; gb = 0; b = 1; }} // CH_GBRG = 6 phase 2, bayer 0
+          // else if (channels==7) {{ r = 3; gr = 2; gb = 1; b = 0; }} // CH_BGGR = 7 phase 3, bayer 1 
+          // else                  {{r = 0;  gr = 1; gb = 2; b = 3;  }} // this should not happen
 
           // first retreive black point to get the coefficients right ...
           // 5% of dynamics?
@@ -353,6 +374,7 @@ class GLImageViewerShaders(GLImageViewerBase):
           colour = apply_filters(colour,max_value, 
               1, // texture_scale set to 1 
               max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+          {RETURN_COLOUR}
         }}
     """
 
@@ -385,8 +407,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 self.print_log(f"\n***** self.program_RGB = {self.program_RGB} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
-            shaders.glDeleteShader(vs)
-            shaders.glDeleteShader(fs)
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
 
         if self.program_YUV420 is None:
             vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
@@ -396,8 +421,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 self.print_log(f"\n***** self.program_YUV420 = {self.program_YUV420} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
-            shaders.glDeleteShader(vs)
-            shaders.glDeleteShader(fs)
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
 
         if self.program_YUV420_twotex is None:
             vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
@@ -407,8 +435,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 self.print_log(f"\n***** self.program_YUV420_twotex = {self.program_YUV420_twotex} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
-            shaders.glDeleteShader(vs)
-            shaders.glDeleteShader(fs)
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
 
 
         if self.program_YUV420_interlaced is None:
@@ -419,8 +450,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 self.print_log(f"\n***** self.program_YUV420_interlaced = {self.program_YUV420_interlaced} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
-            shaders.glDeleteShader(vs)
-            shaders.glDeleteShader(fs)
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
 
         if self.program_YUV420_interlaced_twotex is None:
             vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
@@ -430,8 +464,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 self.print_log(f"\n***** self.program_YUV420_interlaced_twotex = {self.program_YUV420_interlaced_twotex} *****\n")
             except Exception as e:
                 print(f'failed RGB shaders.compileProgram() {e}')
-            shaders.glDeleteShader(vs)
-            shaders.glDeleteShader(fs)
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
 
         if self.program_RAW is None:
             vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
@@ -441,8 +478,11 @@ class GLImageViewerShaders(GLImageViewerBase):
                 self.print_log(f"\n***** self.program_RAW = {self.program_RAW} *****\n")
             except Exception as e:
                 print(f'failed RAW shaders.compileProgram() {e}')
-            shaders.glDeleteShader(vs)
-            shaders.glDeleteShader(fs)
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
 
     def set_crop(self, crop):
         if not np.array_equal(crop,self._output_crop):
@@ -776,4 +816,4 @@ if __name__ == '__main__':
     window = TestWindow()
     window.load()
     window.show()
-    app.exec_()
+    app.exec()
