@@ -354,10 +354,10 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def(py::init<>()) // constructor
     .def("open",             &AV::VideoDecoder::open, "Open decoder", ARG(filename), ARG(devide_type_name) = nullptr, ARG(video_stream_index) = -1)
     .def("nextFrame",        &AV::VideoDecoder::nextFrame, "Decode next video frame", ARG(convert) = true)
-    .def("getFrame",         &AV::VideoDecoder::getFrame)
+    .def("getFrame",         &AV::VideoDecoder::getFrame, py::return_value_policy::reference)
     .def("seek",             &AV::VideoDecoder::seek)
-    .def("getStream",        &AV::VideoDecoder::getStream, "Get stream", ARG(idx) = -1)
-    .def("getFormatContext", &AV::VideoDecoder::getFormatContext)
+    .def("getStream",        &AV::VideoDecoder::getStream, "Get stream", ARG(idx) = -1, py::return_value_policy::reference)
+    .def("getFormatContext", &AV::VideoDecoder::getFormatContext,                       py::return_value_policy::reference)
     ;
 
   m.def("load_frames", &AV::load_frames, "Loads n first video frames");
