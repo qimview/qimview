@@ -1,9 +1,6 @@
 
 from typing import Optional
 import time
-import av
-from av import container, VideoFrame
-from av.container import streams
 from qimview.video_player.video_frame_buffer_cpp import VideoFrameBufferCpp, EndOfVideo
 
 import os
@@ -20,8 +17,8 @@ class VideoFrameProvider:
         # self._container       : Optional[container.InputContainer] = None
         self._decoder         : decode_lib.VideoDecoder | None     = None
         self._playing         : bool                               = False
-        self._frame           : Optional[VideoFrame]               = None
-        self._video_stream    : Optional[streams.StreamContainer]  = None
+        self._frame           = None #: Optional[VideoFrame]               = None
+        self._video_stream    = None #: Optional[streams.StreamContainer]  = None
         self._framerate       : float                              = 0
         self._time_base       : float                              = 0
         self._frame_duration  : float                              = 0
@@ -34,11 +31,11 @@ class VideoFrameProvider:
         return self._frame_buffer
     
     @property
-    def stream(self) -> Optional[streams.StreamContainer]:
+    def stream(self): # -> Optional[streams.StreamContainer]:
         return self._video_stream
 
     @property
-    def frame(self) -> Optional[VideoFrame]:
+    def frame(self): # -> Optional[VideoFrame]:
         return self._frame
 
     @property
@@ -59,7 +56,9 @@ class VideoFrameProvider:
         self._decoder = video_decoder
 
         assert self._decoder is not None, "No decoder" 
+        # TODO: fix: crash when returned formatcontext is deleted
         nb_streams = self._decoder.getFormatContext().nb_streams
+        print(f"{nb_streams=}")
         video_streams = []
         for i in range(nb_streams):
             if self._decoder.getStream(i).codecpar.codec_type == decode_lib.AVMediaType.AVMEDIA_TYPE_VIDEO:
@@ -71,21 +70,22 @@ class VideoFrameProvider:
         ## self._container.streams.video[0].fast = True
         assert nb_videos>0, "No video stream found"
         self._video_stream = video_streams[0]
-        print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
+        # TODO: get width and height
+        # print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
 
         st = self.stream
         # Assume all frame have the same time base as the video stream
         # fps = self.stream.base_rate, base_rate vs average_rate
-        print(f"FPS base:{st.base_rate} avg:{st.average_rate} guessed:{st.guessed_rate}")
+        print(f"FPS  avg:{st.avg_frame_rate} ")
         # --- Initialize several constants/parameters for this video
-        self._framerate       = float(st.average_rate) # get the frame rate
+        self._framerate       = float(st.avg_frame_rate) # get the frame rate
         self._time_base       = float(st.time_base)
         self._frame_duration  = float(1/self._framerate)
         self._ticks_per_frame = int(self._frame_duration / self._time_base)
         self._duration        = float(st.duration * self._time_base)
         self._end_time        = float(self._duration-self._frame_duration)
 
-        self._frame_buffer = VideoFrameBuffer(container)
+        self._frame_buffer = VideoFrameBufferCpp(self._decoder)
         self._frame = None
 
     def get_time(self) -> float:
