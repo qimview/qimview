@@ -34,9 +34,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         _format = QtGui.QSurfaceFormat()
         print(f'profile is {_format.profile()}')
         print(f'version is {_format.version()}')
-        # _format.setDepthBufferSize(24)
-        # _format.setVersion(4,0)
-        # _format.setProfile(PySide2.QtGui.QSurfaceFormat.CoreProfile)
+        #_format.setDepthBufferSize(24)
+        #_format.setVersion(3,3)
+        #_format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
         _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         self.setFormat(_format)
 
@@ -61,6 +61,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             'float32': gl.GL_FLOAT,
             'float64': gl.GL_DOUBLE
         }
+
+        # Projection matrix
+        self.pMatrix  : np.ndarray | None = None 
+        # Model view matrix
+        self.mvMatrix : np.ndarray | None = None 
+
 
     def set_image(self, image):
         if self.trace_calls:
