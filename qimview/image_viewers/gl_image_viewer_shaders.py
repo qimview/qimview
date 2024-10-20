@@ -5,6 +5,7 @@
 #
 
 import OpenGL.GL as gl
+import glm
 from OpenGL.GL import shaders
 import argparse
 import sys
@@ -53,8 +54,8 @@ class GLImageViewerShaders(GLImageViewerBase):
     vertexShader = f"""
         {glslVersion}
 
-        attribute vec3 vert;
-        attribute vec2 uV;
+        in vec3 vert;
+        in vec2 uV;
         uniform mat4 mvMatrix;
         uniform mat4 pMatrix;
         {OUT} vec2 UV;
@@ -714,9 +715,6 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         _gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
 
-        # enable attribute arrays
-        _gl.glEnableVertexAttribArray(self.aVert)
-        _gl.glEnableVertexAttribArray(self.aUV)
 
         # set vertex and UV buffers
         # vert_buffers = VertexBuffers()
@@ -724,6 +722,10 @@ class GLImageViewerShaders(GLImageViewerBase):
         # vert_buffers.normal_buffer = normal_buffer
         # vert_buffers.tex_coord_buffer = tex_coord_buffer
         # vert_buffers.amount_of_vertices = int(len(index_array) / 3)
+
+        # enable attribute arrays
+        _gl.glEnableVertexAttribArray(self.aVert)
+        _gl.glEnableVertexAttribArray(self.aUV)
 
         _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vertex_buffer.bufferId())
         gl.glVertexAttribPointer(self.aVert, 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
@@ -786,18 +788,32 @@ class GLImageViewerShaders(GLImageViewerBase):
             # update the window size
             if make_current:
                 self.makeCurrent()
-            gl.glMatrixMode(gl.GL_PROJECTION)
-            gl.glLoadIdentity()
-            translation_unit = min(w, h)/2
-            gl.glScale(scale, scale, scale)
-            gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
-            # the window corner OpenGL coordinates are (-+1, -+1)
-            gl.glOrtho(0, w, 0, h, -1, 1)
-            self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
+            use_glm = False
+            if use_glm:
+                translation_unit = min(w, h)/2
+                m = glm.mat4()
+                # the window corner OpenGL coordinates are (-+1, -+1)
+                m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
+                m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
+                m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
+                self.pMatrix = np.array(m, dtype=np.float32).flatten()
 
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glLoadIdentity()
-            self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+                m = glm.mat4()
+                self.mvMatrix = np.array(m, dtype=np.float32).flatten()
+            else:
+                gl.glMatrixMode(gl.GL_PROJECTION)
+                gl.glLoadIdentity()
+                translation_unit = min(w, h)/2
+                gl.glScale(scale, scale, scale)
+                gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
+                # the window corner OpenGL coordinates are (-+1, -+1)
+                gl.glOrtho(0, w, 0, h, -1, 1)
+                self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
+
+                gl.glMatrixMode(gl.GL_MODELVIEW)
+                gl.glLoadIdentity()
+                self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+
             self._transform_param = new_transform_params
         if self.display_timing:
             self.print_log('updateTransforms time {:0.1f} ms'.format((get_time()-start_time)*1000))
