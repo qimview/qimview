@@ -7,7 +7,8 @@ if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
     #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
 import av
-from av import container, VideoFrame # type: ignore
+from av import container
+from  av.video.frame import VideoFrame as AVVideoFrame # type: ignore
 from av.frame import Frame
 from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
 
@@ -18,6 +19,7 @@ from qimview.video_player.video_scheduler              import VideoScheduler
 from qimview.video_player.video_frame_provider         import VideoFrameProvider
 from qimview.video_player.video_player_base            import VideoPlayerBase, ImageViewerClass
 from qimview.video_player.video_player_key_events      import VideoPlayerKeyEvents
+from qimview.video_player.video_frame                  import VideoFrame
 
 class AverageTime:
     def __init__(self):
@@ -86,6 +88,7 @@ class VideoPlayerAV(VideoPlayerBase):
         else:
             return None
 
+    @staticmethod
     def to_yuv(frame) -> Optional[List[np.ndarray]]:
         match frame.format.name:
             case 'yuv420p' | 'yuvj420p':
@@ -285,33 +288,20 @@ class VideoPlayerAV(VideoPlayerBase):
             return True
         return False
 
-    def set_image(self, np_array, im_name, force_new=False):
-        prec = 8
-
-        if self._im is None or force_new:
-            format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-            self._im = ViewerImage(np_array, channels = format, precision=prec)
+    def set_image_RGB(self, im : ViewerImage, im_name, force_new=False):
+        if self._im is None or force_new or self._im.data.shape != im.data.shape:
+            self._im = im
             self.widget.set_image_fast(self._im)
         else:
-            if self._im.data.shape == np_array.shape:
-                self._im._data = np_array
+            if self._im.data.shape == im.data.shape:
+                self._im._data = im.data
                 self.widget.image_id += 1
-            else:
-                format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-                self._im = ViewerImage(np_array, channels = format, precision=prec)
-                self.widget.set_image_fast(self._im)
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
-    def set_image_YUV420(self, y, u, v, im_name):
-        prec = 8
-        match y.dtype:
-            case np.uint8:  prec=8
-            case np.uint16: prec=10
-
-        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
-        self._im.u = u
-        self._im.v = v
+    def set_image_YUV420(self, frame: AVVideoFrame, im_name):
+        video_frame = VideoFrame(frame)
+        self._im = video_frame.toViewerImage()
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
@@ -334,50 +324,17 @@ class VideoPlayerAV(VideoPlayerBase):
     def set_synchronize(self, viewer):
         self.synchronize_viewer = viewer
 
-    def display_frame_RGB(self, frame: av.VideoFrame):
+    def display_frame_RGB(self, frame: AVVideoFrame):
         """ Convert YUV to RGB and display RGB frame """
-        st = time.perf_counter()
-        # a = frame.to_ndarray(format='rgb24')
-        # to start with keep all pixels, then crop only at the end
-        crop_yuv=True
-        self.yuv_array = VideoPlayerAV.to_ndarray_v1(frame, self.yuv_array, crop=crop_yuv)
-        # print(f"display_frame_RGB() 1. {(time.perf_counter()-st)*1000:0.1f} ms")
-        self._t1.add_time(time.perf_counter()-st)
-        if crop_yuv:
-            a = cvtColor(self.yuv_array.reshape(-1,frame.planes[0].width), COLOR_YUV2RGB_I420)
-            # print(f"display_frame_RGB() 2. {(time.perf_counter()-st)*1000:0.1f} ms")
-            self._t2.add_time(time.perf_counter()-st)
-            # a bit slow, try inplace with fastremap
-            # a = a[:,:frame.width]
-            self._t3.add_time(time.perf_counter()-st)
-        else:
-            a = cvtColor(self.yuv_array.reshape(-1,frame.planes[0].line_size), COLOR_YUV2RGB_I420)
-            # print(f"display_frame_RGB() 2. {(time.perf_counter()-st)*1000:0.1f} ms")
-            self._t2.add_time(time.perf_counter()-st)
-            # a bit slow, try inplace with fastremap
-            a = a[:,:frame.width]
-            self._t3.add_time(time.perf_counter()-st)
-        # print(f"display_frame_RGB() 2.1 {(time.perf_counter()-st)*1000:0.1f} ms")
-        if not a.flags.contiguous:
-            a = np.ascontiguousarray(a)
-        self._t4.add_time(time.perf_counter()-st)
-        # print(f"display_frame_RGB() 3. {(time.perf_counter()-st)*1000:0.1f} ms")
-        if frame.pts==0:
-            self.set_image(a, f"frame_{frame.pts}")
-            # QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 5)
-        else:
-            if self.viewer_class is GLImageViewerShaders:
-                # print("set_image GL")
-                self.set_image(a, f"frame_{frame.pts}", force_new=True)
+        video_frame = VideoFrame(frame)
+        im = video_frame.toViewerImage(rgb=True)
+        im_name = f"frame_{frame.pts}"
+        if im:
+            if self._im is not None:
+                self.set_image_data(im.data)
             else:
-                # print("set_image_data")
-                if self._im is not None:
-                    self.set_image_data(a)
-                else:
-                    self.set_image(a, "frame_0")
+                self.set_image_RGB(im, im_name, force_new=self.viewer_class is GLImageViewerShaders)
         self.widget.viewer_update()
-        self._t5.add_time(time.perf_counter()-st)
-        # print(f"display_frame_RGB() {(time.perf_counter()-st)*1000:0.1f} ms")
 
     def display_times(self):
         print(f"display_frame_RGB() 1. {self._t1.average()*1000:0.1f} ms")
@@ -387,26 +344,16 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"display_frame_RGB() 5. {self._t5.average()*1000:0.1f} ms")
 
 
-    def display_frame_YUV420(self, frame: av.VideoFrame):
+    def display_frame_YUV420(self, frame: AVVideoFrame):
         """ Display YUV frame, for OpenGL with shaders """
-        # a = frame.to_ndarray(format='rgb24')
-        # to start with keep all pixels, then crop only at the end
-        # print("display YUV")
-        y,u,v = VideoPlayerAV.to_yuv(frame)
-        # print(f"y min {np.min(y)} y max {np.max(y)}")
-        self.set_image_YUV420(y,u,v, f"{self._basename}: {self._frame_provider.get_frame_number()}")
-        # update is not immediate
-        # self.widget.viewer_update()
-        pl = frame.planes[0]
-        im_width = y.data.shape[1]
-        # print(f"frame.planes[0].width = {pl.width} y.data.shape[1] = {im_width}")
-        if im_width != pl.width and self.viewer_class == GLImageViewerShaders:
+
+        self.set_image_YUV420(frame, f"{self._basename}: {self._frame_provider.get_frame_number()}")
+        if self.viewer_class == GLImageViewerShaders and self._im and self._im.crop is not None:
             # Apply crop on the right
-            self.widget.set_crop(np.array([0,0,pl.width/im_width,1], dtype=np.float32))
+            self.widget.set_crop(self._im.crop)
         else:
             self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()
-        # self.widget.repaint()
 
     def display_frame(self, frame=None):
         if frame is None:
