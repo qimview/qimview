@@ -71,11 +71,20 @@ class ViewerImage:
         self.data_reduced_2 = None
         self.data_reduced_4 = None
         # For YUV format, _data contains Y and _u and _v contain U and V
-        self._u  : Optional[np.ndarray] = None
-        self._v  : Optional[np.ndarray] = None
+        self._u  : Optional[np.ndarray]   = None
+        self._v  : Optional[np.ndarray]   = None
         # For YUV format, _uv contains interlaced UV data
-        self._uv : Optional[np.ndarray] = None
+        self._uv : Optional[np.ndarray]   = None
+        self._crop : Optional[np.ndarray] = None
 
+
+    @property
+    def crop(self) -> Optional[np.ndarray] :
+        return self._crop
+
+    @crop.setter
+    def crop(self, c : np.ndarray):
+        self._crop = c
 
     @property
     def y(self) -> Optional[np.ndarray] :
