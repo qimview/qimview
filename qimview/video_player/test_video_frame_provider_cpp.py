@@ -13,10 +13,10 @@ def getFrames(fp, nb):
     total_time_start = perf_counter()
     # record start time
     for n in range(nb):
-        time_start = perf_counter()
+        # time_start = perf_counter()
         fp.get_next_frame()
-        time_end = perf_counter()
-        print(f'Took {(time_end - time_start)*1000:0.1f} msec', end="; ")
+        # time_end = perf_counter()
+        # print(f'Took {(time_end - time_start)*1000:0.1f} msec', end="; ")
     total_time_end = perf_counter()
     print(f'\nTotal time Took {(total_time_end - total_time_start)} msec')
 
@@ -28,4 +28,4 @@ vd.open(filename, device_type)
 print("open ok")
 fp = VideoFrameProvider()
 fp.set_input_container(vd)
-getFrames(fp,100)
+getFrames(fp,400)

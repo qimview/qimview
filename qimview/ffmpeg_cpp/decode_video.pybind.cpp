@@ -344,7 +344,8 @@ PYBIND11_MODULE(decode_video_py, m) {
   py::class_<AV::Frame>(m, "Frame")
     .def(py::init<>()) // constructor
     .def("get",         &AV::Frame::get, py::return_value_policy::reference)
-    .def("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width), ARG(verbose) = false)
+    .def("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width)
+                                , ARG(verbose) = false)
     .def("getFormat",   &AV::Frame::getFormat)
     .def("getShape",    &AV::Frame::getShape)
     .def("getLinesize", &AV::Frame::getLinesize)

@@ -93,9 +93,43 @@ class VideoFrame:
 
 
     def _libFrameToViewer(self) -> ViewerImage | None:
-        pass
+        def getArray(frame, index, height, width, dtype):
+            dtype_size = np.dtype(dtype).itemsize
+            mem = frame.getData(index, height, width)
+            linesize = int(frame.getLinesize()[index]/dtype_size)
+            array = np.frombuffer(mem, dtype=dtype).reshape(-1, linesize)
+            return mem, array
 
-    def _avFrameToViewer(self, frame, rgb=False) -> ViewerImage | None:
+        height, width = self._frame.getShape()
+        # if self.frame2:
+        #     height2, width2 = self.frame2.getShape()
+        #     assert self._frame.getFormat() == self.frame2.getFormat(), "Videos have different frame formats"
+        match self._frame.getFormat():
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_P010LE:
+                dtype, prec, hasUV = np.uint16, 16, True
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P10LE:
+                dtype, prec, hasUV = np.uint16, 10, False
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_YUVJ420P | decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P:
+                dtype, prec, hasUV = np.uint8, 8, False
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_NV12:
+                dtype, prec, hasUV = np.uint8, 8, True
+            case _:
+                assert False, f"frame format {self._frame.getFormat()} not available"
+        # Create numpy array from Y and UV
+        self.memY,Y  = getArray(self._frame, 0, height, width, dtype)
+        im = ViewerImage(Y, channels = ImageFormat.CH_YUV420, precision=prec)
+        if hasUV:
+            self.memUV, UV = getArray(self._frame, 1, height//2, width, dtype)
+            im.uv = UV
+        else:
+            self.memU, U = getArray(self._frame, 1, height//2, width//2, dtype)
+            self.memV, V = getArray(self._frame, 2, height//2, width//2, dtype)
+            im.u = U
+            im.v = V
+        return im
+
+    def _avFrameToViewer(self, rgb=False) -> ViewerImage | None:
+        frame = self._frame
         if rgb:
             # Retun RGB Image
             crop_yuv=True
@@ -136,7 +170,7 @@ class VideoFrame:
 
     def toViewerImage(self, rgb=False) -> ViewerImage | None:
         if type(self._frame) is decode_lib.Frame:
-            return None
+            return self._libFrameToViewer(rgb)
         if type(self._frame) is AVVideoFrame:
-            return self._avFrameToViewer(self._frame, rgb)
+            return self._avFrameToViewer(rgb)
 
