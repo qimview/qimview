@@ -126,6 +126,11 @@ class VideoFrame:
             self.memV, V = getArray(self._frame, 2, height//2, width//2, dtype)
             im.u = U
             im.v = V
+        dtype_size = np.dtype(dtype).itemsize
+        linesize = int(self._frame.getLinesize()[0]/dtype_size)
+        if width < linesize:
+            # Apply crop on the right
+            im.crop = np.array([0,0,width/linesize,1], dtype=np.float32)
         return im
 
     def _avFrameToViewer(self, rgb=False) -> ViewerImage | None:
@@ -170,7 +175,7 @@ class VideoFrame:
 
     def toViewerImage(self, rgb=False) -> ViewerImage | None:
         if type(self._frame) is decode_lib.Frame:
-            return self._libFrameToViewer(rgb)
+            return self._libFrameToViewer()
         if type(self._frame) is AVVideoFrame:
             return self._avFrameToViewer(rgb)
 
