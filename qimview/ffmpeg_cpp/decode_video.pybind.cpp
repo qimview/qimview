@@ -274,6 +274,10 @@ PYBIND11_MODULE(decode_video_py, m) {
     RO(AVFrame, height)
     RO(AVFrame, format)
     RO(AVFrame, pict_type)
+    RO(AVFrame, pts)
+    RO(AVFrame, pkt_dts)
+    RO(AVFrame, best_effort_timestamp)
+    RO(AVFrame, flags)
     ;
 
   py::class_<AVRational>(m, "AVRational")
@@ -342,13 +346,18 @@ PYBIND11_MODULE(decode_video_py, m) {
 #define ARG(v) py::arg(#v)
 
   py::class_<AV::Frame>(m, "Frame")
-    .def(py::init<>()) // constructor
-    .def("get",         &AV::Frame::get, py::return_value_policy::reference)
-    .def("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width)
-                                , ARG(verbose) = false)
-    .def("getFormat",   &AV::Frame::getFormat)
-    .def("getShape",    &AV::Frame::getShape)
-    .def("getLinesize", &AV::Frame::getLinesize)
+    .def         (py::init<>()) // constructor
+    .def         ("get",         &AV::Frame::get, py::return_value_policy::reference)
+    // .def         ("pts",         &AV::Frame::pts)
+    .def         ("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width)
+                                         , ARG(verbose) = false)
+    .def         ("getFormat",   &AV::Frame::getFormat)
+    .def         ("getShape",    &AV::Frame::getShape)
+    .def         ("getLinesize", &AV::Frame::getLinesize)
+    .def_property("flags",       &AV::Frame::getFlags, &AV::Frame::setFlags)
+    .def_property_readonly("pts",              &AV::Frame::pts)
+    .def_property_readonly("key_frame",        &AV::Frame::key_frame)
+    .def_property_readonly("interlaced_frame", &AV::Frame::interlaced_frame)
     ;
 
   py::class_<AV::VideoDecoder>(m, "VideoDecoder")
@@ -357,6 +366,7 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def("nextFrame",        &AV::VideoDecoder::nextFrame, "Decode next video frame", ARG(convert) = true)
     .def("getFrame",         &AV::VideoDecoder::getFrame, py::return_value_policy::reference)
     .def("seek",             &AV::VideoDecoder::seek)
+    .def("seek_file",        &AV::VideoDecoder::seek_file)
     .def("getStream",        &AV::VideoDecoder::getStream, "Get stream", ARG(idx) = -1, py::return_value_policy::reference)
     .def("getFormatContext", &AV::VideoDecoder::getFormatContext,                       py::return_value_policy::reference)
     ;
@@ -372,6 +382,13 @@ PYBIND11_MODULE(decode_video_py, m) {
         ;
         
   
+  // C++ defines
+  m.attr("AV_NOPTS_VALUE")                = py::int_(AV_NOPTS_VALUE);
+  m.attr("AV_FRAME_FLAG_CORRUPT")         = py::int_(AV_FRAME_FLAG_CORRUPT);
+  m.attr("AV_FRAME_FLAG_KEY ")            = py::int_(AV_FRAME_FLAG_KEY);
+  m.attr("AV_FRAME_FLAG_DISCARD")         = py::int_(AV_FRAME_FLAG_DISCARD);
+  m.attr("AV_FRAME_FLAG_INTERLACED ")     = py::int_(AV_FRAME_FLAG_INTERLACED );
+  m.attr("AV_FRAME_FLAG_TOP_FIELD_FIRST") = py::int_(AV_FRAME_FLAG_TOP_FIELD_FIRST);
 
   //   py::class_<AV::FormatContext>(m, "FormatContext")
 //         .def(py::init<>) // constructor
@@ -379,5 +396,6 @@ PYBIND11_MODULE(decode_video_py, m) {
 
   // define all standalone functions
 //  m.def("StandAloneFunction", &StandAloneFunction);
+
 
 }
