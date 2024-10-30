@@ -55,7 +55,7 @@ class VideoFrameBufferCpp:
                     st = time.perf_counter()
                     res = self._decoder.nextFrame(convert=True)
                     if res == 0:
-                        item = self._decoder.nextFrame()
+                        item = self._decoder.getFrame()
                         extract_time = time.perf_counter() - st
                         total_time += extract_time
                         nb += 1
@@ -134,7 +134,6 @@ class VideoFrameBufferCpp:
         if self._thread:
             self._thread.join()
         self._thread = None
-        self._decoder.seek(0)
 
     def start_thread(self):
         print(f"start_thread {self._thread} running {self._running}")
