@@ -11,7 +11,7 @@ if os.name == 'nt' and os.path.isdir(ffmpeg_path):
 
 import decode_video_py as decode_lib
 
-class VideoFrameProvider:
+class VideoFrameProviderCpp:
     def __init__(self):
         self._frame_buffer    : Optional[VideoFrameBufferCpp]      = None
         # self._container       : Optional[container.InputContainer] = None
@@ -25,6 +25,10 @@ class VideoFrameProvider:
         self._ticks_per_frame : int                                = 0
         self._duration        : float                              = 0
         self._end_time        : float                              = 0
+
+    @property
+    def frame_duration(self) -> float:
+        return self._frame_duration
 
     @property
     def frame_buffer(self) -> Optional[VideoFrameBufferCpp]:
@@ -52,7 +56,7 @@ class VideoFrameProvider:
             else:
                 self._frame_buffer.start_thread()
 
-    def set_input_container(self, video_decoder: decode_lib.VideoDecoder ):
+    def set_input_container(self, video_decoder: decode_lib.VideoDecoder, stream_number: int = 0 ):
         self._decoder = video_decoder
 
         assert self._decoder is not None, "No decoder" 
@@ -69,7 +73,7 @@ class VideoFrameProvider:
         # self._container.streams.video[0].thread_count = 8
         ## self._container.streams.video[0].fast = True
         assert nb_videos>0, "No video stream found"
-        self._video_stream = video_streams[0]
+        self._video_stream = video_streams[stream_number]
         # TODO: get width and height
         # print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
 
@@ -103,7 +107,7 @@ class VideoFrameProvider:
     def set_time(self, time_pos : float, exact: bool =True):
         """ set time position in seconds """
         print(f"set_time {time_pos} , _end_time={self._end_time}")
-        if self._container is None or self.frame_buffer is None:
+        if self._decoder is None or self.frame_buffer is None:
             print("Video not initialized")
         else:
             frame_num = int(time_pos*self._framerate+0.5)
@@ -121,7 +125,8 @@ class VideoFrameProvider:
                     # seek to that nearest timestamp
                     # is_playing = self.playing
                     # self.playing = False
-                    self._container.seek(int(time_pos*1000000), backward=True)
+                    # print(f"seek {int(time_pos/self._time_base+0.5)}")
+                    seek_ok = self._decoder.seek(int(time_pos/self._time_base+0.5))  #, backward=True)
                     # It seems that the frame generator is not automatically updated
                     if time_pos==0:
                         self.frame_buffer.reset()
@@ -155,7 +160,7 @@ class VideoFrameProvider:
             return False
         try:
             self._frame = self._frame_buffer.get_frame()
-        except (StopIteration, av.EOFError, EndOfVideo) as e:
+        except (StopIteration, EndOfVideo) as e:
             print(f"get_next_frame(): Reached end of video stream: Exception {e}")
             # Reset valid generator
             self._frame_buffer.reset()
