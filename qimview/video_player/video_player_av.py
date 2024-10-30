@@ -16,10 +16,23 @@ from qimview.utils.qt_imports                          import QtWidgets, QtCore,
 from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
 from qimview.utils.viewer_image                        import ViewerImage, ImageFormat
 from qimview.video_player.video_scheduler              import VideoScheduler
-from qimview.video_player.video_frame_provider         import VideoFrameProvider
 from qimview.video_player.video_player_base            import VideoPlayerBase, ImageViewerClass
 from qimview.video_player.video_player_key_events      import VideoPlayerKeyEvents
 from qimview.video_player.video_frame                  import VideoFrame
+
+try:
+    ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
+    if os.name == 'nt' and os.path.isdir(ffmpeg_path):
+        os.add_dll_directory(ffmpeg_path)
+
+    import decode_video_py as decode_lib
+    from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
+    has_decode_video_py = True
+except Exception as e:
+    print("Failed to load decode_video_py")
+    has_decode_video_py = False
+
+from qimview.video_player.video_frame_provider     import VideoFrameProvider
 
 class AverageTime:
     def __init__(self):
@@ -37,9 +50,11 @@ class AverageTime:
 
 class VideoPlayerAV(VideoPlayerBase):
 
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, use_decode_video_py : bool = False, cuda : bool =False) -> None:
         super().__init__(parent)
         self.event_recorder = None
+        self._use_decode_video_py : bool = use_decode_video_py
+        self._cuda : bool = cuda
 
         # Key event class
         self._key_events   : VideoPlayerKeyEvents   = VideoPlayerKeyEvents(self)
@@ -58,7 +73,10 @@ class VideoPlayerAV(VideoPlayerBase):
         self.loop_start_time  : float = 0
         self.loop_end_time    : float = -1 # -1 means end of video
         self._skipped : int = 0
-        self._frame_provider : VideoFrameProvider = VideoFrameProvider()
+        if use_decode_video_py:
+            self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProviderCpp()
+        else:
+            self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProvider()
         self._displayed_pts : int = -1
         self._timer : Optional[QtCore.QTimer] = None
         self._name : str = "video player"
@@ -80,7 +98,7 @@ class VideoPlayerAV(VideoPlayerBase):
         return self._scheduler
 
     @property
-    def frame_provider(self) -> Optional[VideoFrameProvider]:
+    def frame_provider(self) -> VideoFrameProvider | VideoFrameProviderCpp:
         return self._frame_provider
 
     @property
@@ -315,7 +333,12 @@ class VideoPlayerAV(VideoPlayerBase):
             self._container.close()
             del self._container
             self._container = None
-        self._container = av.open(self._filename)
+        if self._use_decode_video_py:
+            device_type = 'cuda' if self._cuda else None
+            self._container = decode_lib.VideoDecoder()
+            self._container.open(self._filename, device_type)
+        else:
+            self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
 
         print(f"duration = {self._frame_provider._duration} seconds")
@@ -357,6 +380,8 @@ def main():
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
+    parser.add_argument('--ffmpeg', action='store_true', help='Use ffmpeg bound with pybind11 instead of pyav')
+    parser.add_argument('--cuda',   action='store_true', help='Use cuda hardware acceleration with ffmpeg bound library')
     args = parser.parse_args()
     # _params = vars(args)
     print(args)
@@ -380,7 +405,7 @@ def main():
     main_widget.setLayout(main_layout)
     players = []
     for input in args.input_video:
-        player = VideoPlayerAV(main_widget)
+        player = VideoPlayerAV(main_widget, use_decode_video_py=args.ffmpeg, cuda=args.cuda)
         player.set_video(input)
         video_layout.addWidget(player, 1)
         players.append(player)
