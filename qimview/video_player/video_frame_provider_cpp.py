@@ -1,7 +1,8 @@
 
 from typing import Optional
 import time
-from qimview.video_player.video_frame_buffer_cpp import VideoFrameBufferCpp, EndOfVideo
+from qimview.video_player.video_frame_buffer_cpp import VideoFrameBufferCpp
+from qimview.video_player.video_exceptions import EndOfVideo
 
 import os
 

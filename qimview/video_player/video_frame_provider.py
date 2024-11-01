@@ -4,8 +4,8 @@ import time
 import av
 from av import container, VideoFrame
 from av.container import streams
-from qimview.video_player.video_frame_buffer import VideoFrameBuffer, EndOfVideo
-
+from qimview.video_player.video_frame_buffer import VideoFrameBuffer
+from qimview.video_player.video_exceptions import EndOfVideo
 
 class VideoFrameProvider:
     def __init__(self):

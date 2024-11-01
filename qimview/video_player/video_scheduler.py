@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING
 import time
 from qimview.utils.qt_imports import QtCore
-from qimview.video_player.video_frame_buffer import EndOfVideo, TimeOut
+from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
@@ -204,7 +204,7 @@ class VideoScheduler:
                 self._display_frame(0)
             return ok
         except EndOfVideo:
-            print("End of video")
+            print("_display_next_frame() End of video")
             if self._loop:
                 for p in self._players:
                     if p.frame_provider is not None:
@@ -227,7 +227,7 @@ class VideoScheduler:
                 if not ok: break
             return ok
         except EndOfVideo:
-            print("End of video")
+            print("_skip_next_frame() End of video")
             if self._loop:
                 for p in self._players:
                     if p.frame_provider is not None:
