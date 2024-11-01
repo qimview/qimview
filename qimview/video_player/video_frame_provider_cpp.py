@@ -151,7 +151,7 @@ class VideoFrameProviderCpp:
                       f"{float(frame.pts * self._time_base):0.3f} requested {time_pos}")
                 self._frame = frame
 
-    def get_next_frame(self, verbose=False) -> bool:
+    def get_next_frame(self, timeout=6, verbose=False) -> bool:
         """ Obtain the next frame, usually while video is playing, 
             can raise EndofVideo exception """
         t = time.perf_counter()
@@ -159,7 +159,7 @@ class VideoFrameProviderCpp:
             print("Video Frame Buffer not created")
             return False
         try:
-            self._frame = self._frame_buffer.get_frame()
+            self._frame = self._frame_buffer.get_frame(timeout=timeout)
         except (StopIteration, EndOfVideo) as e:
             print(f"get_next_frame(): Reached end of video stream: Exception {e}")
             # Reset valid generator
