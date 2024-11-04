@@ -4,8 +4,8 @@ import time
 import av
 from av import container, VideoFrame
 from av.container import streams
-from qimview.video_player.video_frame_buffer import VideoFrameBuffer, EndOfVideo
-
+from qimview.video_player.video_frame_buffer import VideoFrameBuffer
+from qimview.video_player.video_exceptions import EndOfVideo
 
 class VideoFrameProvider:
     def __init__(self):
@@ -159,7 +159,7 @@ class VideoFrameProvider:
                 self._from_saved = False
                 self._frame = frame
 
-    def get_next_frame(self, verbose=False) -> bool:
+    def get_next_frame(self, timeout=6,  verbose=False) -> bool:
         """ Obtain the next frame, usually while video is playing, 
             can raise EndofVideo exception """
         t = time.perf_counter()
@@ -167,7 +167,7 @@ class VideoFrameProvider:
             print("Video Frame Buffer not created")
             return False
         try:
-            self._frame = self._frame_buffer.get_frame()
+            self._frame = self._frame_buffer.get_frame(timeout=timeout)
         except (StopIteration, av.EOFError, EndOfVideo) as e:
             print(f"get_next_frame(): Reached end of video stream: Exception {e}")
             # Reset valid generator

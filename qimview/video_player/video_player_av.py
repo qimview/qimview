@@ -7,7 +7,8 @@ if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
     #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
 import av
-from av import container, VideoFrame # type: ignore
+from av import container
+from  av.video.frame import VideoFrame as AVVideoFrame # type: ignore
 from av.frame import Frame
 from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
 
@@ -15,9 +16,23 @@ from qimview.utils.qt_imports                          import QtWidgets, QtCore,
 from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
 from qimview.utils.viewer_image                        import ViewerImage, ImageFormat
 from qimview.video_player.video_scheduler              import VideoScheduler
-from qimview.video_player.video_frame_provider         import VideoFrameProvider
 from qimview.video_player.video_player_base            import VideoPlayerBase, ImageViewerClass
 from qimview.video_player.video_player_key_events      import VideoPlayerKeyEvents
+from qimview.video_player.video_frame                  import VideoFrame
+
+try:
+    ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
+    if os.name == 'nt' and os.path.isdir(ffmpeg_path):
+        os.add_dll_directory(ffmpeg_path)
+
+    import decode_video_py as decode_lib
+    from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
+    has_decode_video_py = True
+except Exception as e:
+    print("Failed to load decode_video_py")
+    has_decode_video_py = False
+
+from qimview.video_player.video_frame_provider     import VideoFrameProvider
 
 class AverageTime:
     def __init__(self):
@@ -35,78 +50,11 @@ class AverageTime:
 
 class VideoPlayerAV(VideoPlayerBase):
 
-    @staticmethod
-    def useful_array(plane, crop=True, dtype=np.uint8):
-        """
-        Return the useful part of the VideoPlane as a single dimensional array.
-
-        We are simply discarding any padding which was added for alignment.
-        """
-        total_line_size = int(abs(plane.line_size)/dtype().itemsize)
-        arr = np.frombuffer(plane, dtype).reshape(-1, total_line_size)
-        if crop:
-            arr = arr[:,:plane.width]
-            return np.ascontiguousarray(arr)
-        else:
-            return arr
-
-    @staticmethod
-    def to_ndarray_v1(frame, yuv_array: np.ndarray, crop=False) -> Optional[np.ndarray]:
-        match frame.format.name:
-            case 'yuv420p' | 'yuvj420p':
-                dtype = np.uint8
-            case 'yuv420p10le':
-                dtype = np.uint16
-            case _:
-                dtype = None
-        if dtype is not None:
-            # assert frame.width % 2 == 0
-            # assert frame.height % 2 == 0
-            # assert frame.planes[0].line_size == 2*frame.planes[1].line_size
-            # assert frame.planes[0].width     == 2*frame.planes[1].width
-            # assert frame.planes[1].line_size == frame.planes[2].line_size
-            # assert frame.planes[1].width     == frame.planes[2].width
-            # width = frame.planes[0].line_size
-            v0 = VideoPlayerAV.useful_array(frame.planes[0], crop=crop, dtype=dtype).ravel()
-            v1 = VideoPlayerAV.useful_array(frame.planes[1], crop=crop, dtype=dtype).ravel()
-            v2 = VideoPlayerAV.useful_array(frame.planes[2], crop=crop, dtype=dtype).ravel()
-            total_size = v0.size+ v1.size + v2.size
-            if yuv_array.size != total_size:
-                output_array = np.empty((total_size,), dtype=dtype)
-            else:
-                output_array = yuv_array
-            output_array[0:v0.size]                                   = v0
-            output_array[v0.size:(v0.size+v1.size)]                   = v1
-            output_array[(v0.size+v1.size):(v0.size+v1.size+v2.size)] = v2
-            return output_array
-            # if output_array.size == total_size:
-            # else:
-            #     # print(f"{v0.shape} {v1.shape} {v2.shape}")
-            #     return np.hstack((v0, v1, v2)).reshape(-1, width)
-        else:
-            return None
-
-    def to_yuv(frame) -> Optional[List[np.ndarray]]:
-        match frame.format.name:
-            case 'yuv420p' | 'yuvj420p':
-                dtype = np.uint8
-            case 'yuv420p10le':
-                dtype = np.uint16
-            case _:
-                print(f"Unknow format {frame.format.name}")
-                dtype = None
-        if dtype is not None:
-            y = VideoPlayerAV.useful_array(frame.planes[0], crop=False, dtype=dtype)
-            u = VideoPlayerAV.useful_array(frame.planes[1], crop=False, dtype=dtype)
-            v = VideoPlayerAV.useful_array(frame.planes[2], crop=False, dtype=dtype)
-            return [y,u,v]
-        else:
-            return None
-
-
-    def __init__(self, parent=None) -> None:
+    def __init__(self, parent=None, use_decode_video_py : bool = False, cuda : bool =False) -> None:
         super().__init__(parent)
         self.event_recorder = None
+        self._use_decode_video_py : bool = use_decode_video_py
+        self._cuda : bool = cuda
 
         # Key event class
         self._key_events   : VideoPlayerKeyEvents   = VideoPlayerKeyEvents(self)
@@ -125,7 +73,10 @@ class VideoPlayerAV(VideoPlayerBase):
         self.loop_start_time  : float = 0
         self.loop_end_time    : float = -1 # -1 means end of video
         self._skipped : int = 0
-        self._frame_provider : VideoFrameProvider = VideoFrameProvider()
+        if use_decode_video_py:
+            self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProviderCpp()
+        else:
+            self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProvider()
         self._displayed_pts : int = -1
         self._timer : Optional[QtCore.QTimer] = None
         self._name : str = "video player"
@@ -147,7 +98,7 @@ class VideoPlayerAV(VideoPlayerBase):
         return self._scheduler
 
     @property
-    def frame_provider(self) -> Optional[VideoFrameProvider]:
+    def frame_provider(self) -> VideoFrameProvider | VideoFrameProviderCpp:
         return self._frame_provider
 
     @property
@@ -285,33 +236,20 @@ class VideoPlayerAV(VideoPlayerBase):
             return True
         return False
 
-    def set_image(self, np_array, im_name, force_new=False):
-        prec = 8
-
-        if self._im is None or force_new:
-            format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-            self._im = ViewerImage(np_array, channels = format, precision=prec)
+    def set_image_RGB(self, im : ViewerImage, im_name, force_new=False):
+        if self._im is None or force_new or self._im.data.shape != im.data.shape:
+            self._im = im
             self.widget.set_image_fast(self._im)
         else:
-            if self._im.data.shape == np_array.shape:
-                self._im._data = np_array
+            if self._im.data.shape == im.data.shape:
+                self._im._data = im.data
                 self.widget.image_id += 1
-            else:
-                format = ImageFormat.CH_Y if len(np_array.shape) == 2 else ImageFormat.CH_RGB
-                self._im = ViewerImage(np_array, channels = format, precision=prec)
-                self.widget.set_image_fast(self._im)
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
-    def set_image_YUV420(self, y, u, v, im_name):
-        prec = 8
-        match y.dtype:
-            case np.uint8:  prec=8
-            case np.uint16: prec=10
-
-        self._im = ViewerImage(y, channels = ImageFormat.CH_YUV420, precision=prec)
-        self._im.u = u
-        self._im.v = v
+    def set_image_YUV420(self, frame: AVVideoFrame, im_name):
+        video_frame = VideoFrame(frame)
+        self._im = video_frame.toViewerImage()
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
@@ -334,50 +272,17 @@ class VideoPlayerAV(VideoPlayerBase):
     def set_synchronize(self, viewer):
         self.synchronize_viewer = viewer
 
-    def display_frame_RGB(self, frame: av.VideoFrame):
+    def display_frame_RGB(self, frame: AVVideoFrame):
         """ Convert YUV to RGB and display RGB frame """
-        st = time.perf_counter()
-        # a = frame.to_ndarray(format='rgb24')
-        # to start with keep all pixels, then crop only at the end
-        crop_yuv=True
-        self.yuv_array = VideoPlayerAV.to_ndarray_v1(frame, self.yuv_array, crop=crop_yuv)
-        # print(f"display_frame_RGB() 1. {(time.perf_counter()-st)*1000:0.1f} ms")
-        self._t1.add_time(time.perf_counter()-st)
-        if crop_yuv:
-            a = cvtColor(self.yuv_array.reshape(-1,frame.planes[0].width), COLOR_YUV2RGB_I420)
-            # print(f"display_frame_RGB() 2. {(time.perf_counter()-st)*1000:0.1f} ms")
-            self._t2.add_time(time.perf_counter()-st)
-            # a bit slow, try inplace with fastremap
-            # a = a[:,:frame.width]
-            self._t3.add_time(time.perf_counter()-st)
-        else:
-            a = cvtColor(self.yuv_array.reshape(-1,frame.planes[0].line_size), COLOR_YUV2RGB_I420)
-            # print(f"display_frame_RGB() 2. {(time.perf_counter()-st)*1000:0.1f} ms")
-            self._t2.add_time(time.perf_counter()-st)
-            # a bit slow, try inplace with fastremap
-            a = a[:,:frame.width]
-            self._t3.add_time(time.perf_counter()-st)
-        # print(f"display_frame_RGB() 2.1 {(time.perf_counter()-st)*1000:0.1f} ms")
-        if not a.flags.contiguous:
-            a = np.ascontiguousarray(a)
-        self._t4.add_time(time.perf_counter()-st)
-        # print(f"display_frame_RGB() 3. {(time.perf_counter()-st)*1000:0.1f} ms")
-        if frame.pts==0:
-            self.set_image(a, f"frame_{frame.pts}")
-            # QtWidgets.QApplication.processEvents(QtCore.QEventLoop.ProcessEventsFlag.AllEvents, 5)
-        else:
-            if self.viewer_class is GLImageViewerShaders:
-                # print("set_image GL")
-                self.set_image(a, f"frame_{frame.pts}", force_new=True)
+        video_frame = VideoFrame(frame)
+        im = video_frame.toViewerImage(rgb=True)
+        im_name = f"frame_{frame.pts}"
+        if im:
+            if self._im is not None:
+                self.set_image_data(im.data)
             else:
-                # print("set_image_data")
-                if self._im is not None:
-                    self.set_image_data(a)
-                else:
-                    self.set_image(a, "frame_0")
+                self.set_image_RGB(im, im_name, force_new=self.viewer_class is GLImageViewerShaders)
         self.widget.viewer_update()
-        self._t5.add_time(time.perf_counter()-st)
-        # print(f"display_frame_RGB() {(time.perf_counter()-st)*1000:0.1f} ms")
 
     def display_times(self):
         print(f"display_frame_RGB() 1. {self._t1.average()*1000:0.1f} ms")
@@ -387,26 +292,16 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"display_frame_RGB() 5. {self._t5.average()*1000:0.1f} ms")
 
 
-    def display_frame_YUV420(self, frame: av.VideoFrame):
+    def display_frame_YUV420(self, frame: AVVideoFrame):
         """ Display YUV frame, for OpenGL with shaders """
-        # a = frame.to_ndarray(format='rgb24')
-        # to start with keep all pixels, then crop only at the end
-        # print("display YUV")
-        y,u,v = VideoPlayerAV.to_yuv(frame)
-        # print(f"y min {np.min(y)} y max {np.max(y)}")
-        self.set_image_YUV420(y,u,v, f"{self._basename}: {self._frame_provider.get_frame_number()}")
-        # update is not immediate
-        # self.widget.viewer_update()
-        pl = frame.planes[0]
-        im_width = y.data.shape[1]
-        # print(f"frame.planes[0].width = {pl.width} y.data.shape[1] = {im_width}")
-        if im_width != pl.width and self.viewer_class == GLImageViewerShaders:
+
+        self.set_image_YUV420(frame, f"{self._basename}: {self._frame_provider.get_frame_number()}")
+        if self.viewer_class == GLImageViewerShaders and self._im and self._im.crop is not None:
             # Apply crop on the right
-            self.widget.set_crop(np.array([0,0,pl.width/im_width,1], dtype=np.float32))
+            self.widget.set_crop(self._im.crop)
         else:
             self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()
-        # self.widget.repaint()
 
     def display_frame(self, frame=None):
         if frame is None:
@@ -438,7 +333,12 @@ class VideoPlayerAV(VideoPlayerBase):
             self._container.close()
             del self._container
             self._container = None
-        self._container = av.open(self._filename)
+        if self._use_decode_video_py:
+            device_type = 'cuda' if self._cuda else None
+            self._container = decode_lib.VideoDecoder()
+            self._container.open(self._filename, device_type)
+        else:
+            self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
 
         print(f"duration = {self._frame_provider._duration} seconds")
@@ -480,6 +380,8 @@ def main():
     # import numpy for generating random data points
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
+    parser.add_argument('--ffmpeg', action='store_true', help='Use ffmpeg bound with pybind11 instead of pyav')
+    parser.add_argument('--cuda',   action='store_true', help='Use cuda hardware acceleration with ffmpeg bound library')
     args = parser.parse_args()
     # _params = vars(args)
     print(args)
@@ -503,7 +405,7 @@ def main():
     main_widget.setLayout(main_layout)
     players = []
     for input in args.input_video:
-        player = VideoPlayerAV(main_widget)
+        player = VideoPlayerAV(main_widget, use_decode_video_py=args.ffmpeg, cuda=args.cuda)
         player.set_video(input)
         video_layout.addWidget(player, 1)
         players.append(player)

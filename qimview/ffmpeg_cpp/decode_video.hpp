@@ -13,6 +13,7 @@ extern "C" {
 #include <libavutil/pixfmt.h>
 }
 
+#include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
 #include <vector>
@@ -95,7 +96,36 @@ namespace AV
   public:
     Frame();
     ~Frame();
-    AVFrame* get() { return _frame; }
+    AVFrame* get() { 
+        return _frame; 
+    }
+    uint64_t pts() { 
+        // std::cout << "pts: " << _frame->pts << "  " << AV_NOPTS_VALUE << std::endl;
+        // std::cout << "pkt_dts: " << _frame->pkt_dts <<  std::endl;
+        // std::cout << "best effort_timestamp: " << _frame->best_effort_timestamp <<  std::endl;
+        // std::cout << "best effort pts: " << av_frame_get_best_effort_timestamp ( _frame ) << std::endl;
+        return _frame->pts; 
+    }
+
+    int getFlags()
+    {
+        return _frame->flags;
+    }
+    void setFlags(const int& flags)
+    {
+        _frame->flags = flags;
+    }
+
+    bool key_frame()
+    {
+        return _frame->flags && AV_FRAME_FLAG_KEY;
+    }
+
+    bool interlaced_frame()
+    {
+        return _frame->flags && AV_FRAME_FLAG_KEY;
+    }
+
     AVPixelFormat getFormat() { return (AVPixelFormat) _frame->format;  }
     std::vector<int> getLinesize() {
       std::vector<int> res;
@@ -156,13 +186,14 @@ namespace AV {
   public:
     VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0) {}
     bool open(const char* filename, const char* device_type_name = nullptr, const int& video_stream_index=-1);
-    bool seek(float sec);
+    bool seek(int64_t timestamp);
+    bool seek_file(int64_t timestamp);
     int  nextFrame(bool convert=true);
     int  frameNumber() { return _framenum; }
 
     AV::Frame* getFrame() const;
 
-    AVStream* getStream( int idx=-1) 
+    AVStream* getStream( int idx=-1)
     { 
       idx = std::min(idx,(int)_format_ctx.get()->nb_streams-1);
       return _format_ctx.get()->streams[((idx<0)?_stream_index:idx)]; 

@@ -1,7 +1,7 @@
 from typing import List, TYPE_CHECKING
 import time
 from qimview.utils.qt_imports import QtCore
-from qimview.video_player.video_frame_buffer import EndOfVideo, TimeOut
+from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
@@ -28,6 +28,7 @@ class VideoScheduler:
         self._speed_ok         : List[bool]           = []
         self._fps_start        : float                = -1        # start time to compute displayed FPS
         self._fps_count        : int                  = 0         # count displayed frames
+        self._total_fps_count  : int                  = 0         # count displayed and skipped frames
 
     @property
     def is_running(self) -> bool:
@@ -203,7 +204,30 @@ class VideoScheduler:
                 self._display_frame(0)
             return ok
         except EndOfVideo:
-            print("End of video")
+            print("_display_next_frame() End of video")
+            if self._loop:
+                for p in self._players:
+                    if p.frame_provider is not None:
+                        p.frame_provider.set_time(p.loop_start_time)
+            else:
+                self.pause()
+            return False
+
+    def _skip_next_frame(self) -> bool:
+        """
+            Get and display next frame of each video player 
+        """
+        try:
+            ok = True
+            for p in self._players:
+                if p.frame_provider is not None:
+                    ok = ok and p.frame_provider.get_next_frame(timeout=2)
+                else:
+                    ok = False
+                if not ok: break
+            return ok
+        except EndOfVideo:
+            print("_skip_next_frame() End of video")
             if self._loop:
                 for p in self._players:
                     if p.frame_provider is not None:
@@ -218,18 +242,34 @@ class VideoScheduler:
         """
         try:
             start_display = time.perf_counter()
+            # Compute frame duration based on first video only
+            total_frame_duration   = 0
+            nb_skip = 0
+            max_skip = 6
             if start_display>self._fps_start+1:
                 if self._fps_start >0:
-                    print(f" displayed FPS: {self._fps_count}")
+                    print(f" displayed FPS: {self._fps_count} {self._total_fps_count}")
                 self._fps_count = 0
+                self._total_fps_count = 0
                 self._fps_start = start_display
             if self._display_next_frame():
                 self._fps_count += 1
-            display_duration = time.perf_counter() - start_display
+                self._total_fps_count += 1
             assert self._players[0].frame_provider is not None
             frame_duration = (self._players[0].frame_provider.frame_duration)/self._playback_speed
-            #print(f"{display_duration=} {frame_duration=}")
-            slow_down = max(self._minimal_period,int((frame_duration-display_duration)*1000))
+            total_frame_duration   += frame_duration
+            display_duration = time.perf_counter() - start_display
+            skip_ok = True
+            while display_duration>total_frame_duration and nb_skip < max_skip and skip_ok:
+                print('-', end='')
+                skip_ok = self._skip_next_frame()
+                if skip_ok:
+                    total_frame_duration   += frame_duration
+                    nb_skip += 1
+                    self._total_fps_count += 1
+                display_duration = time.perf_counter() - start_display
+            slow_down_delay = 0
+            slow_down = max(self._minimal_period,int((total_frame_duration-display_duration)*1000+0.5)-slow_down_delay)
             if self.is_running:
                 QtCore.QTimer.singleShot(slow_down, lambda : self._display_remaining_frames())
         except Exception as e:

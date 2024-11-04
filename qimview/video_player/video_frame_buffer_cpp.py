@@ -4,6 +4,7 @@ import time
 import threading
 
 import os
+from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 
 ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
 if os.name == 'nt' and os.path.isdir(ffmpeg_path):
@@ -15,18 +16,6 @@ import decode_video_py as decode_lib
 # from av import container, VideoFrame
 # from av.frame import Frame
 
-
-class EndOfVideo(Exception):
-    """Exception raised when end of video is reached.  """
-    def __init__(self, message="End of video reached"):
-        self.message = message
-        super().__init__(self.message)
-
-class TimeOut(Exception):
-    """Exception raised when no frame is available during a maximal duration.  """
-    def __init__(self, message="Timeout reached while getting a video frame"):
-        self.message = message
-        super().__init__(self.message)
 
 class VideoFrameBufferCpp:
     """ This class uses a thread to store several successive videos frame in a queue
@@ -55,7 +44,7 @@ class VideoFrameBufferCpp:
                     st = time.perf_counter()
                     res = self._decoder.nextFrame(convert=True)
                     if res == 0:
-                        item = self._decoder.nextFrame()
+                        item = self._decoder.getFrame()
                         extract_time = time.perf_counter() - st
                         total_time += extract_time
                         nb += 1
@@ -134,7 +123,6 @@ class VideoFrameBufferCpp:
         if self._thread:
             self._thread.join()
         self._thread = None
-        self._decoder.seek(0)
 
     def start_thread(self):
         print(f"start_thread {self._thread} running {self._running}")

@@ -582,11 +582,24 @@ bool AV::VideoDecoder::open(
 
 }
 
-bool AV::VideoDecoder::seek(float sec)
+bool AV::VideoDecoder::seek(int64_t timestamp)
 {
-    int64_t seekTarget = sec*AV_TIME_BASE;
-    int ret = avformat_seek_file(_format_ctx.get(),_stream_index,INT64_MIN,seekTarget,INT64_MAX,0);
-    return ret>=0;
+    int ret = av_seek_frame(_format_ctx.get(),_stream_index,timestamp,
+                AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD);
+    if (ret<0) return false;
+    avcodec_flush_buffers(_codec_ctx.get());
+    // int ret = avformat_seek_file(_format_ctx.get(),_stream_index,INT64_MIN,seekTarget,INT64_MAX,0);
+    return true;
+}
+
+bool AV::VideoDecoder::seek_file(int64_t timestamp)
+{
+    int ret = avformat_seek_file(_format_ctx.get(),_stream_index,
+                INT64_MIN,timestamp,INT64_MAX,
+                AVSEEK_FLAG_FRAME | AVSEEK_FLAG_BACKWARD);
+    if (ret<0) return false;
+    avcodec_flush_buffers(_codec_ctx.get());
+    return true;
 }
 
 
@@ -603,6 +616,8 @@ int AV::VideoDecoder::nextFrame(bool convert)
   {
     res =_format_ctx.readVideoFrame(_packet.get(), _stream_index);
     if (res == 0) {
+      // std::cout << "nextFrame: packet pts=" << _packet.get()->pts 
+      //           << std::endl;
       int response = _codec_ctx.receiveFrame(_packet.get(), _frame.get());
       if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
       else if (response < 0) return response;
@@ -612,6 +627,12 @@ int AV::VideoDecoder::nextFrame(bool convert)
       }
       else
         _current_frame = &_frame;
+      if (_current_frame->pts() != _frame.get()->pts)
+      {
+        // std::cout << " current frame pts != frame pts " << _current_frame->pts() << ", " << _frame.pts() <<  std::endl;
+        // Copy timestamp from packet
+        _current_frame->get()->pts = _frame.get()->pts;
+      }
 
       if (frame_timer) {
         //curr = high_resolution_clock::now();
@@ -636,7 +657,6 @@ AV::Frame* AV::VideoDecoder::getFrame() const
 {
   return _current_frame;
 }
-
 
 AVPixelFormat AV::VideoDecoder::hw_pix_fmt = AV_PIX_FMT_NONE;
 
