@@ -50,7 +50,7 @@ class AverageTime:
 
 class VideoPlayerAV(VideoPlayerBase):
 
-    def __init__(self, parent=None, use_decode_video_py : bool = False, codec : str = '') -> None:
+    def __init__(self, parent=None, use_decode_video_py : bool = has_decode_video_py, codec : str = '') -> None:
         super().__init__(parent)
         self.event_recorder = None
         self._use_decode_video_py : bool = use_decode_video_py
