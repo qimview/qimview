@@ -58,8 +58,8 @@ class VideoFrameProvider:
         if nb_videos == 0:
             print(f"ERROR: Video not found !")
             return
-        self._container.streams.video[0].thread_type = "FRAME"
-        self._container.streams.video[0].thread_count = 8
+        self._container.streams.video[video_stream_number].thread_type = "FRAME"
+        self._container.streams.video[video_stream_number].thread_count = 8
         # self._container.streams.video[0].fast = True
         self._video_stream = self._container.streams.video[video_stream_number]
         print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")

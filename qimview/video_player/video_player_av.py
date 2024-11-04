@@ -54,7 +54,7 @@ class VideoPlayerAV(VideoPlayerBase):
         super().__init__(parent)
         self.event_recorder = None
         self._use_decode_video_py : bool = use_decode_video_py
-        self._cuda : bool = cuda
+        self._codec : str = codec
 
         # Key event class
         self._key_events   : VideoPlayerKeyEvents   = VideoPlayerKeyEvents(self)
@@ -330,11 +330,12 @@ class VideoPlayerAV(VideoPlayerBase):
             self._frame_provider.frame_buffer.reset()
             # del self._frame_provider.frame_buffer
             # del self._frame_provider._container
-            self._container.close()
+            if not self._use_decode_video_py:
+                self._container.close()
             del self._container
             self._container = None
         if self._use_decode_video_py:
-            device_type = 'cuda' if self._cuda else None
+            device_type = self._codec if self._codec != '' else None
             self._container = decode_lib.VideoDecoder()
             self._container.open(self._filename, device_type)
         else:
@@ -381,7 +382,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
     parser.add_argument('--ffmpeg', action='store_true', help='Use ffmpeg bound with pybind11 instead of pyav')
-    parser.add_argument('--cuda',   action='store_true', help='Use cuda hardware acceleration with ffmpeg bound library')
+    parser.add_argument('--codec', type=str, default='', help='Use codec (ex: cuda) hardware acceleration with ffmpeg bound library')
     args = parser.parse_args()
     # _params = vars(args)
     print(args)
@@ -405,7 +406,7 @@ def main():
     main_widget.setLayout(main_layout)
     players = []
     for input in args.input_video:
-        player = VideoPlayerAV(main_widget, use_decode_video_py=args.ffmpeg, cuda=args.cuda)
+        player = VideoPlayerAV(main_widget, use_decode_video_py=args.ffmpeg, codec=args.codec)
         player.set_video(input)
         video_layout.addWidget(player, 1)
         players.append(player)
