@@ -10,7 +10,8 @@ class VideoScheduler:
         Can schedule 2 videos by playing each of them alternatively (TODO: remove this feature?)
     """
     def __init__(self, interval=5):
-        self._players          : List['VideoPlayerAV']  = []
+        self._players          : List['VideoPlayerAV'] = []
+        self._timeshifts       : List[float]          = []
         self._interval         : int                  = interval  # intervals in ms
         self._use_period_timer : bool                 = False     # use a periodical timer
         self._minimal_period   : int                  = 2         # minimal time between single shot time calls
@@ -50,6 +51,9 @@ class VideoScheduler:
         self._skipped       = [0]*len(self._players)
         self._displayed_pts = [0]*len(self._players)
         self._speed_ok      = [True]*len(self._players)
+
+    def set_timeshifts(self, timeshifts: List[float]) -> None:
+        self._timeshifts = timeshifts
 
     def _init_player(self, played_idx: int = 0):
         print("_init_player")
@@ -224,7 +228,6 @@ class VideoScheduler:
                     ok = ok and p.frame_provider.get_next_frame(timeout=2)
                 else:
                     ok = False
-                if not ok: break
             return ok
         except EndOfVideo:
             print("_skip_next_frame() End of video")
@@ -259,15 +262,18 @@ class VideoScheduler:
             frame_duration = (self._players[0].frame_provider.frame_duration)/self._playback_speed
             total_frame_duration   += frame_duration
             display_duration = time.perf_counter() - start_display
-            skip_ok = True
-            while display_duration>total_frame_duration and nb_skip < max_skip and skip_ok:
-                print('-', end='')
+            skip_ok = False
+            while display_duration>total_frame_duration and nb_skip < max_skip and skip_ok and total_frame_duration<0.04 and display_duration<0.04:
+                # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}", end='  ')
                 skip_ok = self._skip_next_frame()
                 if skip_ok:
                     total_frame_duration   += frame_duration
                     nb_skip += 1
                     self._total_fps_count += 1
                 display_duration = time.perf_counter() - start_display
+                # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}")
+            if nb_skip>0:
+                print(f'  --- {nb_skip} ---  ')
             slow_down_delay = 0
             slow_down = max(self._minimal_period,int((total_frame_duration-display_duration)*1000+0.5)-slow_down_delay)
             if self.is_running:
