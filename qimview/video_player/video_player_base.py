@@ -29,6 +29,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.setGeometry(0, 0, self.widget.width(), self.widget.height())
 
         self._filters_widget = self._add_filters()
+        self.synchronize_filters : bool = True
         hor_layout = QtWidgets.QHBoxLayout()
         self._add_play_pause_button(       hor_layout)
         self._add_loop_button(             hor_layout)
@@ -142,6 +143,9 @@ class VideoPlayerBase(QtWidgets.QWidget):
         pass # to override
 
     def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
+        pass # to override
+
+    def setTimeShifts(self) -> None:
         pass # to override
 
     @property
