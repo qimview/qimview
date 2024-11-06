@@ -80,10 +80,11 @@ class GLTexture:
 
     def set_default_parameters(self, texture):
         """ Default texture parameters using OpenGL functions """
-        self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+        # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
         self._gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 4)
+        # Setting max level >0 slows down on non GPU graphics
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
