@@ -87,11 +87,12 @@ class VideoPlayerAV(VideoPlayerBase):
         self._t5 : AverageTime = AverageTime()
         self._max_skip : int = 10
 
-        self._filename : str = "none"
-        self._video_stream_number : int = 0
-        self._basename : str = "none"
-        self._initialized : bool = False
-        self._compare_players : list[VideoPlayerAV] = []
+        self._filename            : str                 = "none"
+        self._video_stream_number : int                 = 0
+        self._basename            : str                 = "none"
+        self._initialized         : bool                = False
+        self._compare_players     : list[VideoPlayerAV] = []
+        self._compare_timeshift   : list[float]         = [] # time shift for each comparing player
 
     @property
     def scheduler(self) -> VideoScheduler:
@@ -113,15 +114,15 @@ class VideoPlayerAV(VideoPlayerBase):
         
     def compare(self, player):
         self._compare_players.append(player)
-        print(f"{self._compare_players=}")
+        self._compare_timeshift.append(0)
+        print(f"{self._compare_players=} {self._compare_timeshift=}")
 
     def on_synchronize(self, viewer : ImageViewerClass) -> None:
         # Synchronize other viewer to calling viewer
-        copy_filters = True
         for v in self._compare_players:
             if v.widget != viewer:
                  viewer.synchronize_data(v.widget)
-                 if copy_filters:
+                 if self.synchronize_filters:
                      v.widget.filter_params.copy_from(viewer.filter_params)
                  v.widget.viewer_update()
 
@@ -172,6 +173,9 @@ class VideoPlayerAV(VideoPlayerBase):
         players = [self]
         players.extend(self._compare_players)
         self._scheduler.set_players(players)
+        timeshifts = [0]
+        timeshifts.extend(self._compare_timeshift)
+        self._scheduler.set_timeshifts(timeshifts)
         self._scheduler.start_decode(self._frame_provider.get_time())
         
     def loop_clicked(self):
@@ -207,11 +211,17 @@ class VideoPlayerAV(VideoPlayerBase):
             self._frame_provider.frame_buffer.reset()
         self._frame_provider.set_time(self.play_position)
         self._start_video_time = self.play_position
-        for p in self._compare_players:
-            p.play_position = self.play_position
+        for idx, p in enumerate(self._compare_players):
+            p.play_position = self.play_position + self._compare_timeshift[idx]
             p.set_play_position(recursive=False)
             p.update_position(recursive=False, force=fromSlider)
         self.display_frame(self._frame_provider.frame)
+        
+    def setTimeShifts(self) -> None:
+        play_position = self.play_position
+        for idx, p in enumerate(self._compare_players):
+            self._compare_timeshift[idx] = p.play_position - play_position
+            print(f"Setting time shift for player {idx} as {self._compare_timeshift[idx]}")
 
     def speed_value_changed(self):
         print(f"{self._name} New speed value {self.playback_speed.float}")
@@ -337,7 +347,7 @@ class VideoPlayerAV(VideoPlayerBase):
         if self._use_decode_video_py:
             device_type = self._codec if self._codec != '' else None
             self._container = decode_lib.VideoDecoder()
-            self._container.open(self._filename, device_type)
+            self._container.open(self._filename, device_type, self._video_stream_number)
         else:
             self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
