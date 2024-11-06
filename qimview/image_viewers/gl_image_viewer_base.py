@@ -38,6 +38,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         #_format.setVersion(3,3)
         #_format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
         _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        _format.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
         self.setFormat(_format)
 
         self.texture     : GLTexture | None = None
