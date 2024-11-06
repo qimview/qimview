@@ -28,6 +28,8 @@ class VideoPlayerKeyEvents:
                 'F1'          : self.helpDialog,
                 'F10'         : self.toggleFullScreen,
                 'Esc'         : self.exitFullScreen,
+                'Shift+F'     : self.syncFilters,
+                'Shift+S'     : self.setTimeShifts,
         }
 
         self._help_tabs  : List[Tuple[str,str]] = []
@@ -165,6 +167,16 @@ class VideoPlayerKeyEvents:
         """ exit fullscreen mode """
         return self._player._fullscreen.exit_fullscreen(self._player)
     
+    def syncFilters(self) -> bool:
+        """ Toggle image filters synchronization from other viewer on/off """
+        self._player.synchronize_filters = not self._player.synchronize_filters
+        return self.updateAndAccept()
+
+    def setTimeShifts(self) -> bool:
+        """ Use current players time to set time shifts with respect to first video player """
+        self._player.setTimeShifts()
+        return self.updateAndAccept()
+
     def updateAndAccept(self) -> bool:
         # self._player.player_update()
         # self._player.synchronize()
