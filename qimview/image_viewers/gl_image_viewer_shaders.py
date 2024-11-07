@@ -662,7 +662,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         shaders.glUseProgram(self.program)
 
         # set uniforms
-        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE,  self.pMatrix)
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glUniform1i(self.uYTex, 0)
@@ -773,7 +773,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         self.print_timing(force=True)
 
-    def updateTransforms(self, make_current=False, force=True) -> float:
+    def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         if self.display_timing:
@@ -784,35 +784,21 @@ class GLImageViewerShaders(GLImageViewerBase):
         # Deduce new scale from mouse vertical displacement
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
         new_transform_params = [w,h,dx,dy,scale]
-        if self._transform_param != new_transform_params or force:
+        if self._transform_param != new_transform_params:
             # update the window size
-            if make_current:
-                self.makeCurrent()
-            use_glm = False
-            if use_glm:
-                translation_unit = min(w, h)/2
-                m = glm.mat4()
-                # the window corner OpenGL coordinates are (-+1, -+1)
-                m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
-                m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
-                m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
-                self.pMatrix = np.array(m, dtype=np.float32).flatten()
+            translation_unit = min(w, h)/2
+            # use_glm = False
+            m = glm.mat4()
+            # the window corner OpenGL coordinates are (-+1, -+1)
+            m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
+            m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
+            m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
+            self.pMatrix_glm = m
+            self.mvMatrix_glm = glm.mat4()
 
-                m = glm.mat4()
-                self.mvMatrix = np.array(m, dtype=np.float32).flatten()
-            else:
-                gl.glMatrixMode(gl.GL_PROJECTION)
-                gl.glLoadIdentity()
-                translation_unit = min(w, h)/2
-                gl.glScale(scale, scale, scale)
-                gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
-                # the window corner OpenGL coordinates are (-+1, -+1)
-                gl.glOrtho(0, w, 0, h, -1, 1)
-                self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
-
-                gl.glMatrixMode(gl.GL_MODELVIEW)
-                gl.glLoadIdentity()
-                self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+            # For use in shaders
+            self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
+            self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
 
             self._transform_param = new_transform_params
         if self.display_timing:

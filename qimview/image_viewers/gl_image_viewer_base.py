@@ -18,11 +18,7 @@ from .gltexture import GLTexture
 from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method, OverlapMode
-
-if sys.platform=='Darwin':
-    from qimview.fix.GLU.projection import gluUnProject
-else:
-    from OpenGL.GLU import gluUnProject
+import glm
 
 class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
@@ -68,6 +64,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # Model view matrix
         self.mvMatrix : np.ndarray | None = None 
 
+        # Projection matrix
+        self.pMatrix_glm  : glm.mat4  = glm.mat4() 
+        # Model view matrix
+        self.mvMatrix_glm : glm.mat4  = glm.mat4()
 
     def set_image(self, image):
         if self.trace_calls:
@@ -171,9 +171,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         im_pos = None
         scale  = 1
         try:
-            self.updateViewPort()
-            scale = self.updateTransforms(make_current=False)
+            scale = self.updateTransforms()
             self.myPaintGL()
+
+            # Keep openGL drawing working by setting the projection matrix and viewport
+            self.updateViewPort()
+            # Still need this part for drawing lines (cursor, etc...)
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadMatrixf(self.pMatrix.data)
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
             if self._show_overlap:
@@ -211,7 +216,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         Sets the image position from the cursor in proportion of the image dimension
         :return:
         """
-        self.updateTransforms(make_current=True, force=True)
+        self.updateTransforms()
         ratio = self.screen().devicePixelRatio()
         self.print_log("ratio {}".format(ratio))
         pos_x = cursor_x * ratio
@@ -343,7 +348,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             self.print_log(" failed glViewport {}".format(e))
         self.print_timing(add_total=True)
 
-    def updateTransforms(self, make_current=True, force=True) -> float:
+    def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
@@ -355,25 +360,23 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         h = self._height
         dx, dy = self.new_translation()
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
-        print(f"updateTransforms scale {scale}")
-        try:
-            # print("current context ", QtOpenGL.QGLContext.currentContext())
-            # gl = QtOpenGL.QGLContext.currentContext().functions()
-            # update the window size
-            gl.glMatrixMode(gl.GL_PROJECTION)
-            gl.glLoadIdentity()
-            translation_unit = min(w, h)/2
-            # self.print_log("scale {}".format(scale))
-            gl.glScale(scale, scale, scale)
-            gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
-            # the window corner OpenGL coordinates are (-+1, -+1)
-            gl.glOrtho(0, w, 0, h, -1, 1)
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glLoadIdentity()
-        except Exception as e:
-            self.print_log(" setting gl matrices failed {}".format(e))
+
+        # update the window size
+        translation_unit = min(w, h)/2
+        # use_glm = False
+        m = glm.mat4()
+        # the window corner OpenGL coordinates are (-+1, -+1)
+        m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
+        m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
+        m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
+        self.pMatrix_glm = m
+        self.mvMatrix_glm = glm.mat4()
+
+        # For use in shaders
+        self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
+        self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
+
         self.print_timing(add_total=True)
-        self.opengl_error()
         return scale
 
     def resizeGL(self, width, height):
@@ -394,13 +397,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     #     return super().event(evt)
 
     def get_mouse_gl_coordinates(self, x, y):
-        # done by default by gluUnProject
-        # modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
-        # projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
-        # viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
-        posX, posY, posZ = gluUnProject(x, y, 0)
-        # print(f"get_mouse_gl_coordinates({x},{y}) -> {posX} {posY}")
-        return posX, posY
+        viewport_glm = glm.vec4(0,0,int(self._width+0.5), int(self._height+0.5))
+        pos_glm = glm.unProject(glm.vec3(x,y,0),
+                                glm.transpose(self.mvMatrix_glm),
+                                glm.transpose(self.pMatrix_glm),
+                                viewport_glm)
+        return pos_glm[0], pos_glm[1]
 
     # def paintEvent(self, event):
     #     # print("GLIVB paintEvent")
