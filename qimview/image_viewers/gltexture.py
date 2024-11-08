@@ -200,7 +200,7 @@ class GLTexture:
                     assert self._textureU[texture_idx] is not None and self._textureV[texture_idx] is not None, \
                             "textureV and textureV should not be None"
                     self.texSubImage(self._textureU[texture_idx], w2, h2, LUM, gl_type, image.u,'U')
-                    self.texSubImage(self._textureV[texture_idx], w2, h2, LUM, gl_type, image.u,'V')
+                    self.texSubImage(self._textureV[texture_idx], w2, h2, LUM, gl_type, image.v,'V')
             self._current_texture_idx = texture_idx
         else:
             # Texture pixel format
