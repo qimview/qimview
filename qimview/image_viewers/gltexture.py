@@ -150,10 +150,10 @@ class GLTexture:
             id = texture[0]
         return id
     
-    def texSubImage(self, textureY, w, h, LUM, gl_type, data, name='unamed'):
+    def texSubImage(self, textureY, w, h_start, h_end, LUM, gl_type, data, name='unamed'):
         start_time = time.perf_counter()
         self._gl.glBindTexture(  gl.GL_TEXTURE_2D, textureY)
-        self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h, LUM, gl_type, data)
+        self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h_start, w, h_end-h_start, LUM, gl_type, data[h_start:h_end,:])
         if name not in self.timing:
             self.timing[name], self.counter[name] = 0, 0
         self.timing[name] += time.perf_counter() - start_time
@@ -212,11 +212,13 @@ class GLTexture:
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
 
 
-    def create_texture_gl(self, image: ViewerImage):
+    def create_texture_gl(self, image: ViewerImage, h_min: int = 0, h_max: int = -1):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
         # Copy to temporary textures
         texture_idx = (self._current_texture_idx+1)%2
         height, width = image.data.shape[:2]
+        if h_max == -1:
+            h_max = height
         gl_type = self._gl_types[image.data.dtype.name]
         if image.channels == ImageFormat.CH_YUV420:
             # TODO: check if this condition is sufficient
@@ -261,7 +263,7 @@ class GLTexture:
                     self.bind(self._textureV[texture_idx])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
-                self.texSubImage(self._textureY[texture_idx], w,h,LUM, gl_type, image.data, 'Y')
+                self.texSubImage(self._textureY[texture_idx], w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
                 # self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureY)
                 # # Split in two
                 # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h2, LUM, gl_type, image.data)
@@ -273,8 +275,8 @@ class GLTexture:
                 else:
                     assert self._textureU[texture_idx] is not None and self._textureV[texture_idx] is not None, \
                             "textureV and textureV should not be None"
-                    self.texSubImage(self._textureU[texture_idx], w2, h2, LUM, gl_type, image.u,'U')
-                    self.texSubImage(self._textureV[texture_idx], w2, h2, LUM, gl_type, image.v,'V')
+                    self.texSubImage(self._textureU[texture_idx], w2, 0, h2, LUM, gl_type, image.u,'U')
+                    self.texSubImage(self._textureV[texture_idx], w2, 0, h2, LUM, gl_type, image.v,'V')
             self._current_texture_idx = texture_idx
         else:
             # Texture pixel format
