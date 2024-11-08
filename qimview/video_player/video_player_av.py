@@ -260,11 +260,12 @@ class VideoPlayerAV(VideoPlayerBase):
         video_frame = VideoFrame(frame)
         self._im = video_frame.toViewerImage()
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
+        use_crop = self._scheduler.is_running
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
-            self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im)
+            self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im, use_crop=use_crop)
         else:
-            self.widget.set_image_fast(self._im)
+            self.widget.set_image_fast(self._im, use_crop=use_crop)
         self.widget.image_name = im_name
 
     def set_image_data(self, np_array):

@@ -552,8 +552,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.uvBuffer.bind()
         self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
-    def setTexture(self):
-        texture_ok = super(GLImageViewerShaders, self).setTexture()
+    def setTexture(self, use_crop:bool=True):
+        texture_ok = super(GLImageViewerShaders, self).setTexture(use_crop)
         self.setVerticesBufferData()
         return texture_ok
 

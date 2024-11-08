@@ -158,9 +158,9 @@ class GLTexture:
             self.timing[name], self.counter[name] = 0, 0
         self.timing[name] += time.perf_counter() - start_time
         self.counter[name] += 1
-        if self.counter[name] == 30:
-            print(f" {name}: textSubImage() av {self.counter[name]} = {(self.timing[name]/self.counter[name])*1000:0.1f} ms")
-            self.timing[name], self.counter[name] = 0, 0
+        # if self.counter[name] == 30:
+        #     print(f" {name}: textSubImage() av {self.counter[name]} = {(self.timing[name]/self.counter[name])*1000:0.1f} ms")
+        #     self.timing[name], self.counter[name] = 0, 0
 
     def create_texture_qt_gl(self, image: ViewerImage):
         """ Creates a QOpenGLTexture from a ViewerImage
@@ -242,7 +242,9 @@ class GLTexture:
                         format_uv = gl.GL_R8
             
             w, h = width, height
-            w2, h2 = int(w/2), int(h/2)
+            w2, h2 = w>>1, h>>1
+            h2_min = h_min>>1
+            h2_max = h_max>>1
             if (self.width,self.height) != (width,height) or self._textureY[texture_idx] is None:
                 self._textureY[texture_idx] = self.new_texture()
                 self.bind(self._textureY[texture_idx])
@@ -275,8 +277,8 @@ class GLTexture:
                 else:
                     assert self._textureU[texture_idx] is not None and self._textureV[texture_idx] is not None, \
                             "textureV and textureV should not be None"
-                    self.texSubImage(self._textureU[texture_idx], w2, 0, h2, LUM, gl_type, image.u,'U')
-                    self.texSubImage(self._textureV[texture_idx], w2, 0, h2, LUM, gl_type, image.v,'V')
+                    self.texSubImage(self._textureU[texture_idx], w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
+                    self.texSubImage(self._textureV[texture_idx], w2, h2_min, h2_max, LUM, gl_type, image.v,'V')
             self._current_texture_idx = texture_idx
         else:
             # Texture pixel format

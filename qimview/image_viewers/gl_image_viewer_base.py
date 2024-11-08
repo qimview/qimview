@@ -93,11 +93,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             else:
                 print("setTexture() return False")
 
-    def set_image_fast(self, image, image_ref=None):
+    def set_image_fast(self, image, image_ref=None, use_crop:bool=True):
+        # print(f"set_image_fast {use_crop=}")
         self._image     = image
         self._image_ref = image_ref
         self.image_id += 1
-        res = self.setTexture()
+        res = self.setTexture(use_crop)
         if not res: print("setTexture() returned False")
 
 
@@ -112,10 +113,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             if status != gl.GL_NO_ERROR:
                 print(self.tab[0]+'gl error %s' % status)
 
-    def setTexture(self) -> bool:
+    def setTexture(self, use_crop:bool=True) -> bool:
         """
         :return: set opengl texture based on input numpy array image
         """
+        # print(f"{use_crop=}")
 
         # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
 
@@ -137,21 +139,25 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             h_min = 0
             h_max = self._image.data.shape[0]
         else:
-            # Compute Y range of displayed texture
-            self.updateTransforms()
-            ratio = self.screen().devicePixelRatio()
-            _, _, y0, y1 = self.image_centered_position()
-            _, gl_posY0 = self.get_gl_coordinates(0, 0)
-            _, gl_posY1 = self.get_gl_coordinates(0, self.height() * ratio)
-            h0 = 1 - (gl_posY0 - y0) / (y1 - y0)
-            h1 = 1 - (gl_posY1 - y0) / (y1 - y0)
-            h0 = int(h0*self.texture.height+0.5)
-            h1 = int(h1*self.texture.height+0.5)
-            h0=min(self.texture.height,max(0,h0))
-            h1=min(self.texture.height,max(0,h1))
-            h_min = min(h0,h1)
-            h_max = max(h0,h1)
-        # print(f"{h_min=} {h_max=}")
+            if use_crop:
+                # Compute Y range of displayed texture
+                self.updateTransforms()
+                ratio = self.screen().devicePixelRatio()
+                _, _, y0, y1 = self.image_centered_position()
+                _, gl_posY0 = self.get_gl_coordinates(0, 0)
+                _, gl_posY1 = self.get_gl_coordinates(0, self.height() * ratio)
+                h0 = 1 - (gl_posY0 - y0) / (y1 - y0)
+                h1 = 1 - (gl_posY1 - y0) / (y1 - y0)
+                h0 = int(h0*self.texture.height+0.5)
+                h1 = int(h1*self.texture.height+0.5)
+                h0=min(self.texture.height,max(0,h0))
+                h1=min(self.texture.height,max(0,h1))
+                h_min = min(h0,h1)
+                h_max = max(h0,h1)
+            else:
+                h_min = 0
+                h_max = self._image.data.shape[0]
+            # print(f"{h_min=} {h_max=}")
 
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
 
@@ -160,7 +166,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self._image_ref and self._image_ref.channels == self._image.channels:
             if self.texture_ref is None:
                 self.texture_ref = GLTexture(_gl)
-            self.texture_ref.create_texture_gl(self._image_ref)
+            self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max)
 
         self.print_timing(add_total=True)
         self.opengl_error()
