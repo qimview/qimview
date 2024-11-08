@@ -30,14 +30,14 @@ class VideoPlayerBase(QtWidgets.QWidget):
 
         self._filters_widget = self._add_filters()
         self.synchronize_filters : bool = True
-        hor_layout = QtWidgets.QHBoxLayout()
-        self._add_play_pause_button(       hor_layout)
-        self._add_loop_button(             hor_layout)
-        self._add_playback_speed_slider(   hor_layout)
-        self._add_playback_position_slider(hor_layout)
+        self._hor_layout = QtWidgets.QHBoxLayout()
+        self._add_play_pause_button(       self._hor_layout)
+        self._add_loop_button(             self._hor_layout)
+        self._add_playback_speed_slider(   self._hor_layout)
+        self._add_playback_position_slider(self._hor_layout)
         self._vertical_layout.addWidget(self._filters_widget)
         self._vertical_layout.addWidget(self.widget, stretch=1)
-        self._vertical_layout.addLayout(hor_layout)
+        self._vertical_layout.addLayout(self._hor_layout)
 
         # FullScreen helper features
         self._fullscreen      : FullScreenHelper = FullScreenHelper()
