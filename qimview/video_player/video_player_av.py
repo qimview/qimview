@@ -78,7 +78,6 @@ class VideoPlayerAV(VideoPlayerBase):
         else:
             self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProvider()
         self._displayed_pts : int = -1
-        self._timer : Optional[QtCore.QTimer] = None
         self._name : str = "video player"
         self._t1 : AverageTime = AverageTime()
         self._t2 : AverageTime = AverageTime()
