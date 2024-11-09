@@ -379,8 +379,6 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self.trace_calls:
             t = trace_method(self.tab)
         self.start_timing()
-        if make_current:
-            self.makeCurrent()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
         w = self._width
@@ -470,6 +468,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
+        self.makeCurrent()
+        if self.texture:
+            self.texture.resize_event()
+        if self.texture_ref:
+            self.texture_ref.resize_event()
         QOpenGLWidget.resizeEvent(self, event)
+        self.setTexture()
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 
