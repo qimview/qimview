@@ -24,8 +24,8 @@ def getFrames(fp, nb):
 vd = decode_lib.VideoDecoder()
 
 filename = "C:/Users/karl/Videos/GX010296.MP4"
-device_type = None # = "cuda"
-vd.open(filename, device_type)
+device_type = None #"cuda"
+vd.open(filename, device_type, 0, num_threads = 4)
 print("open ok")
 fp = VideoFrameProviderCpp()
 fp.set_input_container(vd)
