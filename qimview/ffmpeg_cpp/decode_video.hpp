@@ -185,7 +185,8 @@ namespace AV {
   {
   public:
     VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0) {}
-    bool open(const char* filename, const char* device_type_name = nullptr, const int& video_stream_index=-1);
+    bool open(  const char* filename, const char* device_type_name = nullptr, 
+                const int& video_stream_index=-1, const int& num_threads = 4);
     bool seek(int64_t timestamp);
     bool seek_file(int64_t timestamp);
     int  nextFrame(bool convert=true);

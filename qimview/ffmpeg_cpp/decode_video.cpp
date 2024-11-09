@@ -525,7 +525,8 @@ namespace AV {
 bool AV::VideoDecoder::open(
         const char* filename, 
         const char* device_type_name, 
-        const int&  video_stream_index
+        const int&  video_stream_index,
+        const int&  num_threads
         )
 {
   try {
@@ -564,12 +565,10 @@ bool AV::VideoDecoder::open(
     AVStream *video = _format_ctx.get()->streams[_stream_index];
     _codec_ctx.initFromParam(video->codecpar);
 
-    int num_threads = 8;
     if (use_hw) {
       // Use lambda to create a callback that captures hw_pix_fmt
       _codec_ctx.get()->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {return AV::HW::get_hw_format(ctx, pix_fmts, hw_pix_fmt); };
       _codec_ctx.initHw(hw_device_type);
-      num_threads = 4; // 4, best value ?
     }
     _codec_ctx.setThreading(num_threads, FF_THREAD_FRAME);
     _codec_ctx.open(codec);
