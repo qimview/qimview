@@ -347,7 +347,8 @@ class VideoPlayerAV(VideoPlayerBase):
         if self._use_decode_video_py:
             device_type = self._codec if self._codec != '' else None
             self._container = decode_lib.VideoDecoder()
-            self._container.open(self._filename, device_type, self._video_stream_number)
+            self._container.open(self._filename, device_type, self._video_stream_number, 
+                                 num_threads=8 if device_type is None else 2)
         else:
             self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
