@@ -226,7 +226,7 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"{self._name} New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
-    def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
+    def update_position(self, precision=0.1, recursive=True, force=False) -> bool:
         # print(f"{self._name} update_position({precision=}, {recursive=} {force=})")
         current_time = self._frame_provider.get_time()
         # print(f"{self._name} update_position({current_time=}, {self.play_position=})")
