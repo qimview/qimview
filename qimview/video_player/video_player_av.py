@@ -256,17 +256,17 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
-    def set_image_YUV420(self, frame: AVVideoFrame, im_name):
+    def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str):
         video_frame = VideoFrame(frame)
         self._im = video_frame.toViewerImage()
-        self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
+        self._im.filename = self._filename + frame_str
         use_crop = self._scheduler.is_running
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
             self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im, use_crop=use_crop)
         else:
             self.widget.set_image_fast(self._im, use_crop=use_crop)
-        self.widget.image_name = im_name
+        self.widget.image_name = im_name + frame_str
 
     def set_image_data(self, np_array):
         self._im._data = np_array
@@ -304,8 +304,8 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def display_frame_YUV420(self, frame: AVVideoFrame):
         """ Display YUV frame, for OpenGL with shaders """
-
-        self.set_image_YUV420(frame, f"{self._basename}: {self._frame_provider.get_frame_number()}")
+        frame_str = ' :'+str(self._frame_provider.get_frame_number())
+        self.set_image_YUV420(frame, self._basename, frame_str)
         if self.viewer_class == GLImageViewerShaders and self._im and self._im.crop is not None:
             # Apply crop on the right
             self.widget.set_crop(self._im.crop)
