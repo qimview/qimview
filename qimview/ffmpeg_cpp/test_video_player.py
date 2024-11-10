@@ -172,22 +172,25 @@ class TestVideoPlayer(VideoPlayerBase):
 
     def display_frame(self):
 
-        def getArray(frame, index, height, width, dtype):
+
+        def getArray(frame, linesize, index, height, width, dtype):
             dtype_size = np.dtype(dtype).itemsize
             mem = frame.getData(index, height, width)
-            linesize = int(frame.getLinesize()[index]/dtype_size)
+            linesize = int(linesize[index])/dtype_size)
             array = np.frombuffer(mem, dtype=dtype).reshape(-1, linesize)
             return mem, array
 
         height1, width1 = self.frame1.getShape()
+        linesize1 = self.frame1.getLinesizeAll()
         if self.frame2:
             height2, width2 = self.frame2.getShape()
+            linesize2 = self.frame2.getLinesizeAll()
             assert self.frame1.getFormat() == self.frame2.getFormat(), "Videos have different frame formats"
         match self.frame1.getFormat():
             case decode_lib.AVPixelFormat.AV_PIX_FMT_P010LE:
                 # Create numpy array from Y and UV
-                self.memY1,  self.Y1  = getArray(self.frame1, 0, height1,    width1, np.uint16)
-                self.memUV1, self.UV1 = getArray(self.frame1, 1, height1//2, width1, np.uint16)
+                self.memY1,  self.Y1  = getArray(self.frame1, linesize1, 0, height1,    width1, np.uint16)
+                self.memUV1, self.UV1 = getArray(self.frame1, linesize1, 1, height1//2, width1, np.uint16)
 
                 prec=16
                 self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
@@ -195,9 +198,9 @@ class TestVideoPlayer(VideoPlayerBase):
                 self._im2 = None
             case decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P10LE:
                 # Create numpy array from Y, U and V
-                self.memY1, self.Y1 = getArray(self.frame1, 0, height1,    width1,    np.uint16)
-                self.memU1, self.U1 = getArray(self.frame1, 1, height1//2, width1//2, np.uint16)
-                self.memV1, self.V1 = getArray(self.frame1, 2, height1//2, width1//2, np.uint16)
+                self.memY1, self.Y1 = getArray(self.frame1, linesize1, 0, height1,    width1,    np.uint16)
+                self.memU1, self.U1 = getArray(self.frame1, linesize1, 1, height1//2, width1//2, np.uint16)
+                self.memV1, self.V1 = getArray(self.frame1, linesize1, 2, height1//2, width1//2, np.uint16)
 
                 prec=10
                 self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
@@ -207,16 +210,16 @@ class TestVideoPlayer(VideoPlayerBase):
             case decode_lib.AVPixelFormat.AV_PIX_FMT_YUVJ420P | decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P:
                 # Create numpy array from Y, U and V
                 prec=8
-                self.memY1, self.Y1 = getArray(self.frame1, 0, height1,    width1,    np.uint8)
-                self.memU1, self.U1 = getArray(self.frame1, 1, height1//2, width1//2, np.uint8)
-                self.memV1, self.V1 = getArray(self.frame1, 2, height1//2, width1//2, np.uint8)
+                self.memY1, self.Y1 = getArray(self.frame1, linesize1, 0, height1,    width1,    np.uint8)
+                self.memU1, self.U1 = getArray(self.frame1, linesize1, 1, height1//2, width1//2, np.uint8)
+                self.memV1, self.V1 = getArray(self.frame1, linesize1, 2, height1//2, width1//2, np.uint8)
                 self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
                 self._im1.u = self.U1
                 self._im1.v = self.V1
                 if self.frame2:
-                    self.memY2, self.Y2 = getArray(self.frame2, 0, height2,    width2,    np.uint8)
-                    self.memU2, self.U2 = getArray(self.frame2, 1, height2//2, width2//2, np.uint8)
-                    self.memV2, self.V2 = getArray(self.frame2, 2, height2//2, width2//2, np.uint8)
+                    self.memY2, self.Y2 = getArray(self.frame2, linesize2, 0, height2,    width2,    np.uint8)
+                    self.memU2, self.U2 = getArray(self.frame2, linesize2, 1, height2//2, width2//2, np.uint8)
+                    self.memV2, self.V2 = getArray(self.frame2, linesize2, 2, height2//2, width2//2, np.uint8)
                     self._im2 = ViewerImage(self.Y2, channels = ImageFormat.CH_YUV420, precision=prec)
                     self._im2.u = self.U2
                     self._im2.v = self.V2
@@ -224,14 +227,14 @@ class TestVideoPlayer(VideoPlayerBase):
                     self._im2 = None
             case decode_lib.AVPixelFormat.AV_PIX_FMT_NV12:
                 prec=8
-                self.memY1,  self.Y1  = getArray(self.frame1, 0, height1,    width1, np.uint8)
-                self.memUV1, self.UV1 = getArray(self.frame1, 1, height1//2, width1, np.uint8)
+                self.memY1,  self.Y1  = getArray(self.frame1, linesize1, 0, height1,    width1, np.uint8)
+                self.memUV1, self.UV1 = getArray(self.frame1, linesize1, 1, height1//2, width1, np.uint8)
                 self._im1 = ViewerImage(self.Y1, channels = ImageFormat.CH_YUV420, precision=prec)
                 self._im1.uv = self.UV1
 
                 if self.frame2:
-                    self.memY2,  self.Y2  = getArray(self.frame2, 0, height2,    width2, np.uint8)
-                    self.memUV2, self.UV2 = getArray(self.frame2, 1, height2//2, width2, np.uint8)
+                    self.memY2,  self.Y2  = getArray(self.frame2, linesize2, 0, height2,    width2, np.uint8)
+                    self.memUV2, self.UV2 = getArray(self.frame2, linesize2, 1, height2//2, width2, np.uint8)
                     self._im2 = ViewerImage(self.Y2, channels = ImageFormat.CH_YUV420, precision=prec)
                     self._im2.uv = self.UV2
                 else:
