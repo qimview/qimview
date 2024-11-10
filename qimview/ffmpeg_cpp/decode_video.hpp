@@ -127,7 +127,8 @@ namespace AV
     }
 
     AVPixelFormat getFormat() { return (AVPixelFormat) _frame->format;  }
-    std::vector<int> getLinesize() {
+
+    std::vector<int> getLinesizeAll() const {
       std::vector<int> res;
       int pos = 0;
       while ((_frame->linesize[pos] != 0) && (pos < AV_NUM_DATA_POINTERS))
@@ -138,7 +139,11 @@ namespace AV
       return res;
     }
 
-    std::tuple<int, int> getShape() {
+    int getLinesize( const int& pos) const {
+        return _frame->linesize[pos];
+    }
+
+    std::tuple<int, int> getShape() const {
       return std::tuple<int, int>(_frame->height, _frame->width);
     }
     /**
