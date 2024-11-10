@@ -7,7 +7,7 @@ import OpenGL.GL as gl
 from qimview.utils.qt_imports   import QtGui, QOpenGLTexture, QImage
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 import time
-import typing
+import ctypes
 from typing import Optional
 
 
@@ -28,12 +28,12 @@ class GLTexture:
         self._gl = _gl if _gl else gl
         self.texture : QOpenGLTexture | None = None
         self._use_buffers: bool = True
-        self._current_buf_idx : int = 0
+        self._buf_idx : int = 0
         self._nbuf = 2
-        self._bufferY  : np.ndarray = np.zeros(self._nbuf)
-        self._bufferU  : np.ndarray = np.zeros(self._nbuf)
-        self._bufferV  : np.ndarray = np.zeros(self._nbuf)
-        self._bufferUV : np.ndarray = np.zeros(self._nbuf)
+        self._bufferY  : np.ndarray | None = None
+        self._bufferU  : np.ndarray | None = None
+        self._bufferV  : np.ndarray | None = None
+        self._bufferUV : np.ndarray | None = None
         self._textureY  = None
         self._textureU  = None
         self._textureV  = None
@@ -195,25 +195,55 @@ class GLTexture:
                 print(f" {name}: textSubImage() av {self.counter[name]} = {(self.timing[name]/self.counter[name])*1000:0.1f} ms")
                 self.timing[name], self.counter[name] = 0, 0
 
-    def bufferTexSubImage(self, buf, tex, w, h_start, h_end, LUM, gl_type, data, name='unamed'):
+    def bufferTexSubImage(self, buf, buf_idx, tex, w, h_start, h_end, LUM, gl_type, data, name='unamed'):
+        # print(f"bufferTexSubImage {name}")
+        gl = self._gl
         if self._log_timings:
             start_time = time.perf_counter()
 
-        # Copy image Y to buffer Y
-        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf)
-        d = data[h_start:h_end,:]
-        gl.glBufferData(gl.GL_PIXEL_UNPACK_BUFFER, d.nbytes, d, gl.GL_STREAM_DRAW)
+        buf0 = buf_idx     % self._nbuf
+        buf1 = (buf_idx+1) % self._nbuf
 
-        self._gl.glBindTexture(  gl.GL_TEXTURE_2D, tex)
-        self._gl.glBindBuffer (  gl.GL_PIXEL_UNPACK_BUFFER, buf)
-        self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h_start, w, h_end-h_start, LUM, gl_type, None)
+        # Copy image Y to buffer Y
+        # print(f"{buf=}")
+
+        d = data[h_start:h_end,:]
+        if buf_idx == 0:
+            gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf[buf0])
+            gl.glBufferData(gl.GL_PIXEL_UNPACK_BUFFER, d.nbytes, d, gl.GL_STREAM_DRAW)
+
+        gl.glBindTexture(  gl.GL_TEXTURE_2D, tex)
+        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf[buf0])
+        gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h_start, w, h_end-h_start, LUM, gl_type, None)
+
+        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf[buf1])
+        if buf_idx == 0:
+            gl.glBufferData(gl.GL_PIXEL_UNPACK_BUFFER, d.nbytes, d, gl.GL_STREAM_DRAW)
+        else:
+            # This version is slower
+            use_glmap = False
+            if use_glmap:
+                vp = gl.glMapBuffer(gl.GL_PIXEL_UNPACK_BUFFER, gl.GL_WRITE_ONLY)
+                if d.dtype.itemsize==2:
+                    vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_uint16) )
+                else:
+                    vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_uint8) )
+                array = np.ctypeslib.as_array(vp_array, shape=(d.size,))
+                array[:] = d.ravel()
+                gl.glUnmapBuffer(gl.GL_PIXEL_UNPACK_BUFFER)
+            else:
+                gl.glBufferSubData(gl.GL_PIXEL_UNPACK_BUFFER, 0, d.nbytes, d)
+
+        # Release PBOs
+        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
+
         if self._log_timings:
             if name not in self.timing:
                 self.timing[name], self.counter[name] = 0, 0
             self.timing[name] += time.perf_counter() - start_time
             self.counter[name] += 1
             if self.counter[name] == 30:
-                print(f" {name}: textSubImage() av {self.counter[name]} = {(self.timing[name]/self.counter[name])*1000:0.1f} ms")
+                print(f" {name}: bufferTexSubImage() av {self.counter[name]} = {(self.timing[name]/self.counter[name])*1000:0.1f} ms")
                 self.timing[name], self.counter[name] = 0, 0
 
     def create_texture_qt_gl(self, image: ViewerImage):
@@ -265,28 +295,24 @@ class GLTexture:
                     self.bind(self._textureV)
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
 
-    def reset_buffers(self):
-        self._bufferY  : np.ndarray = np.zeros(self._nbuf)
-        self._bufferU  : np.ndarray = np.zeros(self._nbuf)
-        self._bufferV  : np.ndarray = np.zeros(self._nbuf)
-        self._bufferUV : np.ndarray = np.zeros(self._nbuf)
-
     def resize_event(self):
-        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
         if self._use_buffers:
-            if not np.all(self._bufferY==np.zeros(2)):
+            if self._bufferY is not None:
                 gl.glDeleteBuffers(2, self._bufferY)
+                self._bufferY = None
                 if self.interlaced_uv:
                     gl.glDeleteBuffers(2, self._bufferUV)
+                    self._bufferUV = None
                 else:
                     gl.glDeleteBuffers(2, self._bufferU)
                     gl.glDeleteBuffers(2, self._bufferV)
-            self.reset_buffers()
+                    self._bufferU = None
+                    self._bufferV = None
+            self._buf_idx = 0
 
     def create_texture_gl(self, image: ViewerImage, h_min: int = 0, h_max: int = -1):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
         # Copy to temporary textures
-        buf_idx = (self._current_buf_idx+1)%self._nbuf
         height, width = image.data.shape[:2]
         if h_max == -1:
             h_max = height
@@ -316,7 +342,7 @@ class GLTexture:
             w2, h2 = w>>1, h>>1
             h2_min = h_min>>1
             h2_max = h_max>>1
-            if np.all(self._bufferY==np.zeros(2)) and self._use_buffers:
+            if self._bufferY is None and self._use_buffers:
                 self._bufferY = self.new_buffers(self._nbuf)
                 if self.interlaced_uv:
                     self._bufferUV = self.new_buffers(self._nbuf)
@@ -328,8 +354,6 @@ class GLTexture:
             #         print(f"{gl.glIsBuffer(self._bufferY[0])=}")
 
             if (self.width,self.height) != (width,height) or self._textureY is None:
-                if self._use_buffers:
-                    gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
                 self._textureY = self.new_texture()
                 self.bind(self._textureY)
                 self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
@@ -350,7 +374,7 @@ class GLTexture:
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
                 if self._use_buffers:
-                    self.bufferTexSubImage(self._bufferY[buf_idx],  self._textureY, 
+                    self.bufferTexSubImage(self._bufferY, self._buf_idx,  self._textureY, 
                         w, h_min, h_max,LUM, gl_type, image.data, 'BY')
                 else:
                     self.texSubImage(self._textureY, w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
@@ -361,7 +385,7 @@ class GLTexture:
                 if self.interlaced_uv:
                     assert self.textureUV is not None, "textureUV should not be None"
                     if self._use_buffers:
-                        self.bufferTexSubImage(self._bufferUV[buf_idx],  self._textureUV, 
+                        self.bufferTexSubImage(self._bufferUV, self._buf_idx,  self._textureUV, 
                             w2, h2_min, h2_max,RG, gl_type, image.uv, 'BUV')
                     else:
                         self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureUV)
@@ -370,14 +394,14 @@ class GLTexture:
                     assert self._textureU is not None and self._textureV is not None, \
                             "textureV and textureV should not be None"
                     if self._use_buffers:
-                        self.bufferTexSubImage(self._bufferU[buf_idx],  self._textureU, 
+                        self.bufferTexSubImage(self._bufferU, self._buf_idx,  self._textureU, 
                             w2, h2_min, h2_max,LUM, gl_type, image.u, 'BU')
-                        self.bufferTexSubImage(self._bufferV[buf_idx],  self._textureV, 
+                        self.bufferTexSubImage(self._bufferV, self._buf_idx,  self._textureV, 
                             w2, h2_min, h2_max,LUM, gl_type, image.v, 'BV')
                     else:
                         self.texSubImage(self._textureU, w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
                         self.texSubImage(self._textureV, w2, h2_min, h2_max, LUM, gl_type, image.v,'V')
-            self._current_buf_idx = buf_idx
+                self._buf_idx += 1
         else:
             # Texture pixel format
             pix_fmt = self._channels2format[image.channels]
