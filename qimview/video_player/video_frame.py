@@ -93,10 +93,11 @@ class VideoFrame:
 
 
     def _libFrameToViewer(self) -> ViewerImage | None:
+        linesizeall = self._frame.getLinesizeAll()
         def getArray(frame, index, height, width, dtype):
             dtype_size = np.dtype(dtype).itemsize
             mem = frame.getData(index, height, width)
-            linesize = int(frame.getLinesize()[index]/dtype_size)
+            linesize = int(linesizeall[index]/dtype_size)
             array = np.frombuffer(mem, dtype=dtype).reshape(-1, linesize)
             return mem, array
 
@@ -127,7 +128,7 @@ class VideoFrame:
             im.u = U
             im.v = V
         dtype_size = np.dtype(dtype).itemsize
-        linesize = int(self._frame.getLinesize()[0]/dtype_size)
+        linesize = int(linesizeall[0]/dtype_size)
         if width < linesize:
             # Apply crop on the right
             im.crop = np.array([0,0,width/linesize,1], dtype=np.float32)
