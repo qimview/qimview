@@ -180,7 +180,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     # To be defined in children
     def myPaintGL(self):  pass
 
-    def paintAll(self):
+    def paintAll(self, make_current: bool = True):
         """ Should be called from PaintGL() exclusively """
         # print("GLIVB paintAll")
         if self.trace_calls:
@@ -191,7 +191,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
             return
         # No need for makeCurrent() since it is called from PaintGL() only ?
-        # self.makeCurrent()
+        if make_current: self.makeCurrent()
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.beginNativePainting()
@@ -469,10 +469,11 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
         self.makeCurrent()
-        if self.texture:
-            self.texture.resize_event()
-        if self.texture_ref:
-            self.texture_ref.resize_event()
+        if self.isValid():
+            if self.texture:
+                self.texture.resize_event()
+            if self.texture_ref:
+                self.texture_ref.resize_event()
         QOpenGLWidget.resizeEvent(self, event)
         self.setTexture()
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
