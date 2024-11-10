@@ -60,7 +60,7 @@ class VideoFrameBufferCpp:
                 try:
                     self._queue.put_nowait(item)
                     # print(f"added item, qsize = {self._queue.qsize()}")
-                    if nb%30 == 0:
+                    if nb%50 == 0:
                         print(f" {nb} Av extraction time: {total_time/nb:0.3f} queue: {self._queue.qsize()}")
                         total_time = 0
                         nb = 0
