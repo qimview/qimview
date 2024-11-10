@@ -586,7 +586,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.update()
 
     def paintGL(self):
-        self.paintAll()
+        self.paintAll(make_current=False)
 
     def myPaintGL(self):
         """Paint the scene.
