@@ -27,6 +27,8 @@ class VideoScheduler:
         self._fps_start        : float                = -1        # start time to compute displayed FPS
         self._fps_count        : int                  = 0         # count displayed frames
         self._total_fps_count  : int                  = 0         # count displayed and skipped frames
+        self._allow_skipping   : bool                 = True      # skip displaying frame if rendered FPS is late
+        self._max_skip         : int                  = 6         # maximum number of successive skips
 
     @property
     def is_running(self) -> bool:
@@ -68,7 +70,7 @@ class VideoScheduler:
                 print(f" player {idx}: "
                     f"skipped = {self._skipped[idx]} "
                     f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
-                p.display_times()
+                # p.display_times()
             # Reset skipped counters
             self._skipped = [0]*len(self._players)
 
@@ -106,8 +108,8 @@ class VideoScheduler:
         if p._frame_provider._frame and \
             p._frame_provider._frame.pts != self._displayed_pts[player_index]:
             # print(f"*** {p._name} {time.perf_counter():0.4f}", end=' --')
-            frame_time : float = p._frame_provider.get_time() - p._start_video_time
-            time_spent = self.get_time_spent()
+            # frame_time : float = p._frame_provider.get_time() - p._start_video_time
+            # time_spent = self.get_time_spent()
             p.display_frame()
             self._displayed_pts[player_index] = p._frame_provider._frame.pts
             diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
@@ -173,7 +175,6 @@ class VideoScheduler:
             # Compute frame duration based on first video only
             total_frame_duration   = 0
             nb_skip = 0
-            max_skip = 6
             if start_display>self._fps_start+1:
                 if self._fps_start >0:
                     print(f" displayed FPS: {self._fps_count} {self._total_fps_count}")
@@ -187,18 +188,23 @@ class VideoScheduler:
             frame_duration = (self._players[0].frame_provider.frame_duration)/self._playback_speed
             total_frame_duration   += frame_duration
             display_duration = time.perf_counter() - start_display
-            skip_ok = False
-            while display_duration>total_frame_duration and nb_skip < max_skip and skip_ok and total_frame_duration<0.04 and display_duration<0.04:
-                # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}", end='  ')
-                skip_ok = self._skip_next_frame()
-                if skip_ok:
-                    total_frame_duration   += frame_duration
-                    nb_skip += 1
-                    self._total_fps_count += 1
-                display_duration = time.perf_counter() - start_display
-                # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}")
-            if nb_skip>0:
-                print(f'  --- {nb_skip} ---  ')
+            if self._allow_skipping:
+                while (
+                        display_duration     > total_frame_duration and 
+                        nb_skip              < self._max_skip       and 
+                        total_frame_duration < 0.05                 and 
+                        display_duration     < 0.05 
+                       ):
+                    # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}", end='  ')
+                    skip_ok = self._skip_next_frame()
+                    if skip_ok:
+                        total_frame_duration   += frame_duration
+                        nb_skip += 1
+                        self._total_fps_count += 1
+                    display_duration = time.perf_counter() - start_display
+                    # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}")
+                if nb_skip>0:
+                    print('*'*nb_skip, end=';')
             slow_down_delay = 0
             slow_down = max(self._minimal_period,int((total_frame_duration-display_duration)*1000+0.5)-slow_down_delay)
             if self.is_running:
