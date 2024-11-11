@@ -30,6 +30,7 @@ try:
 except Exception as e:
     print("Failed to load decode_video_py")
     has_decode_video_py = False
+print(f"{has_decode_video_py=}")
 
 from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from qimview.video_player.video_frame_provider     import VideoFrameProvider
@@ -225,7 +226,7 @@ class VideoPlayerAV(VideoPlayerBase):
             print(f"Setting time shift for player {idx} as {self._compare_timeshift[idx]}")
 
     def speed_value_changed(self):
-        print(f"{self._name} New speed value {self.playback_speed.float}")
+        # print(f"{self._name} New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
     def update_position(self, precision=0.1, recursive=True, force=False) -> bool:
@@ -260,13 +261,13 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str):
         video_frame = VideoFrame(frame)
-        print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
+        # print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
         self._im = video_frame.toViewerImage()
         self._im.filename = self._filename + frame_str
         use_crop = self._scheduler.is_running
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
-            print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
+            # print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
             self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im, use_crop=use_crop)
         else:
             self.widget.set_image_fast(self._im, use_crop=use_crop)

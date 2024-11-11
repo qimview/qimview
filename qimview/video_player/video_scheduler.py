@@ -6,6 +6,9 @@ if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
 class VideoScheduler:
+
+    _name = "VideoScheduler"
+
     """ Create a timer to schedule frame extraction and display 
         Can schedule 2 videos by playing each of them alternatively (TODO: remove this feature?)
     """
@@ -82,7 +85,7 @@ class VideoScheduler:
                 p.set_play()
             # Set _start_clock_time after starting the players to avoid rushing them
             self._start_clock_time = time.perf_counter()
-            print("VideoSchedular.play() ", end='')
+            print(f"{self._name}.play() ", end='')
             for idx, p in enumerate(self._players):
                 print(f" player{idx}, pos = {p.play_position}", end = '')
             print()
@@ -118,20 +121,23 @@ class VideoScheduler:
             p.display_frame()
             self._displayed_pts[player_index] = p._frame_provider._frame.pts
             diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
-            print(f"VideoScheduler._display_frame({player_index}) {self._displayed_pts[player_index]=}")
+            # print(f"{self._name}._display_frame({player_index}) {self._displayed_pts[player_index]=}")
             if p._frame_provider._frame.key_frame or diff>1:
                 p.update_position()
 
             # print(f" done {time.perf_counter():0.4f}")
+
     def _display_next_frame(self) -> bool:
         """
             Get and display next frame of each video player 
         """
+        # print(f"{self._name}._display_next_frame()")
         try:
             ok = True
             for p in self._players:
                 if p.frame_provider is not None:
                     ok = ok and p.frame_provider.get_next_frame()
+                    # print(f" {p._name}.frame_provider.get_next_frame() --> {ok}")
                 else:
                     ok = False
             if ok:
@@ -176,6 +182,7 @@ class VideoScheduler:
         """
             display next frames and call itself with a timer
         """
+        # print(f"{self._name}._display_remaining_frames()")
         try:
             start_display = time.perf_counter()
             # Compute frame duration based on first video only
