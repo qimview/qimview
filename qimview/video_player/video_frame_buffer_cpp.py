@@ -13,10 +13,6 @@ if os.name == 'nt' and os.path.isdir(ffmpeg_path):
 
 import decode_video_py as decode_lib
 
-# import av
-# from av import container, VideoFrame
-# from av.frame import Frame
-
 
 class VideoFrameBufferCpp(VideoFrameBufferBase):
     """ This class uses a thread to store several successive videos frame in a queue
