@@ -23,6 +23,7 @@ class VideoFrameBufferBase(Protocol):
     _running : bool = False
     _thread : Optional[threading.Thread] = None
     _end_of_video : bool = False
+    _name : str = "VideoFrameBufferBase"
 
     def __init__(self, maxsize = 20):
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
@@ -83,7 +84,9 @@ class VideoFrameBufferBase(Protocol):
                     print("Decoder not ok")
             if item is not None:
                 try:
-                    self._queue.put_nowait(item)
+                    self._queue.put(item, timeout = 1/100)
+                    # self._queue.put_nowait(item)
+                    # print(f"{self._name}._worker() adding to queue: frame at {item.pts} / size {self.size()}")
                     # print(f"added item, qsize = {self._queue.qsize()}")
                     if nb%50 == 0:
                         print(f" {nb} Av extraction time: {total_time/nb:0.3f} queue: {self._queue.qsize()}")
@@ -93,8 +96,8 @@ class VideoFrameBufferBase(Protocol):
                     pass
                 else:
                     item = None
-            if self._queue.qsize() != 0:
-                time.sleep(1/2000)
+            # if self._queue.qsize() != 0:
+            #     time.sleep(1/1000)
 
     def set_max_size(self, m = 10):
         print(f" *** set_max_size {m}")
@@ -102,7 +105,7 @@ class VideoFrameBufferBase(Protocol):
         self._queue = queue.Queue(maxsize=m)
 
     def reset(self):
-        # print("VideoFrameBuffer.reset()")
+        # print(f"{self._name}.reset()")
         self.pause_frames()
         self.reset_queue()
         # self.resetDecoder()
@@ -111,7 +114,7 @@ class VideoFrameBufferBase(Protocol):
     def size(self) -> int:
         return self._queue.qsize()
 
-    def get_frame(self, timeout=6) -> FRAMETYPE:
+    def get_frame(self, timeout=0.5) -> FRAMETYPE:
         """ Get the next video frame from the queue or from the decoder directly
 
         Args:
@@ -119,15 +122,17 @@ class VideoFrameBufferBase(Protocol):
 
         Raises:
             EndOfVideo: _description_
-            TimeOut: _description_
+            TimeOut: maximum time in seconds to wait for the queue to return a frame
             EndOfVideo: _description_
 
         Returns:
             VideoFrame: _description_
         """
+        # print(f"{self._name}.get_frame() ", end='; ')
         if self._running or self._queue.qsize()>0:
             try:
                 res = self._queue.get(block=True, timeout=timeout)
+                # print(f" {res.pts=} / {self.size()}")
             except queue.Empty as e:
                 if self._end_of_video:
                     raise EndOfVideo() from e
@@ -141,6 +146,7 @@ class VideoFrameBufferBase(Protocol):
         return res
 
     def get_nothread(self) -> Optional[FRAMETYPE]:
+        # print("VideoFrameBufferBase.get_nothread()")
         if self.decoderOk():
             res = self.decodeNextFrame()
             if res is None:
@@ -157,7 +163,7 @@ class VideoFrameBufferBase(Protocol):
         """
             Stop the thread that generates frames
         """        
-        print(f"VideoFrameBufferBase.pause_frames() {self._thread}")
+        # print(f"VideoFrameBufferBase.pause_frames() {self._thread}")
         self._running = False
         if self._thread:
             self._thread.join()
