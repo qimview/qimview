@@ -557,15 +557,15 @@ bool AV::VideoDecoder::open(
       if (hwconfig == nullptr) return false;
       hw_pix_fmt = hwconfig->pix_fmt;
     }
-    bool use_hw = (hw_pix_fmt != AV_PIX_FMT_NONE) && (hw_device_type != AV_HWDEVICE_TYPE_NONE);
-    std::cout << " use_hw = " << use_hw << " " << (hw_pix_fmt != AV_PIX_FMT_NONE) << " " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
+    _use_hw = (hw_pix_fmt != AV_PIX_FMT_NONE) && (hw_device_type != AV_HWDEVICE_TYPE_NONE);
+    std::cout << "_use_hw = " << _use_hw << " " << (hw_pix_fmt != AV_PIX_FMT_NONE) << " " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
 
     _codec_ctx.alloc(codec);
 
     AVStream *video = _format_ctx.get()->streams[_stream_index];
     _codec_ctx.initFromParam(video->codecpar);
 
-    if (use_hw) {
+    if (_use_hw) {
       // Use lambda to create a callback that captures hw_pix_fmt
       _codec_ctx.get()->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {return AV::HW::get_hw_format(ctx, pix_fmts, hw_pix_fmt); };
       _codec_ctx.initHw(hw_device_type);
@@ -608,8 +608,17 @@ int AV::VideoDecoder::nextFrame(bool convert)
   //auto prev = high_resolution_clock::now();
   //auto curr = high_resolution_clock::now();
   //auto start = curr;
-  AVFrame *tmp_frame = NULL;
   int res;
+
+
+  auto initial_idx = _current_frame_idx;
+  AV::Frame* frame;
+  if (!_use_hw) 
+    frame = &_frames[initial_idx];
+  else
+    // in case of GPU, use a single frame for decoding and save the converted frame in the array
+    frame = &_gpu_frame;
+  _current_frame_idx = (_current_frame_idx + 1)%_nb_frames;
 
   while (true) 
   {
@@ -617,20 +626,23 @@ int AV::VideoDecoder::nextFrame(bool convert)
     if (res == 0) {
       // std::cout << "nextFrame: packet pts=" << _packet.get()->pts 
       //           << std::endl;
-      int response = _codec_ctx.receiveFrame(_packet.get(), _frame.get());
+      int response = _codec_ctx.receiveFrame(_packet.get(), frame->get());
       if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
       else if (response < 0) return response;
 
-      if (convert) {
-        _current_frame = _frame.gpu2Cpu(hw_pix_fmt, &_sw_frame);
+      if (convert && _use_hw) {
+        // use previous circular frame as frame for CPU 2 GPU convertion?
+        // _nb_frames must be > 1
+        AV::Frame* cpu_frame = &_frames[initial_idx];
+        _current_frame = frame->gpu2Cpu(hw_pix_fmt, cpu_frame);
       }
       else
-        _current_frame = &_frame;
-      if (_current_frame->pts() != _frame.get()->pts)
+        _current_frame = frame;
+      if (_current_frame->pts() != frame->get()->pts)
       {
         // std::cout << " current frame pts != frame pts " << _current_frame->pts() << ", " << _frame.pts() <<  std::endl;
         // Copy timestamp from packet
-        _current_frame->get()->pts = _frame.get()->pts;
+        _current_frame->get()->pts = frame->get()->pts;
       }
 
       if (frame_timer) {
@@ -654,6 +666,7 @@ int AV::VideoDecoder::nextFrame(bool convert)
 
 AV::Frame* AV::VideoDecoder::getFrame() const
 {
+//   std::cout << "AV::VideoDecoder::getFrame() " << _current_frame << "  " << _current_frame->get() << std::endl;
   return _current_frame;
 }
 

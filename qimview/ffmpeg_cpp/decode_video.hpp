@@ -18,6 +18,7 @@ extern "C" {
 #include <pybind11/numpy.h>
 #include <vector>
 #include <tuple>
+#include <array>
 
 namespace py = pybind11;
 
@@ -192,7 +193,7 @@ namespace AV {
   class VideoDecoder
   {
   public:
-    VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0) {}
+    VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0),_current_frame_idx(0) {}
     bool open(  const char* filename, const char* device_type_name = nullptr, 
                 const int& video_stream_index=-1, const int& num_threads = 4);
     bool seek(int64_t timestamp);
@@ -221,8 +222,12 @@ namespace AV {
     AV::CodecContext  _codec_ctx;
     int               _video_stream_index; // Index among videos streams
     int               _stream_index;       // Index of the video stream among all streams
-    AV::Frame         _frame;
-    AV::Frame         _sw_frame;
+    // Use an array of frames to feed the Frame Buffer without memory overlap issues
+    static constexpr int _nb_frames = 8;
+    std::array<AV::Frame,_nb_frames> _frames;
+    bool              _use_hw;
+    AV::Frame         _gpu_frame;
+    int               _current_frame_idx;
     AV::Packet        _packet;
     int               _framenum;
     AV::Frame*        _current_frame;
