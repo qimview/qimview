@@ -15,7 +15,6 @@ import decode_video_py as decode_lib
 class VideoFrameProviderCpp:
     def __init__(self):
         self._frame_buffer    : Optional[VideoFrameBufferCpp]      = None
-        # self._container       : Optional[container.InputContainer] = None
         self._decoder         : decode_lib.VideoDecoder | None     = None
         self._playing         : bool                               = False
         self._frame           = None #: Optional[VideoFrame]               = None
@@ -26,6 +25,12 @@ class VideoFrameProviderCpp:
         self._ticks_per_frame : int                                = 0
         self._duration        : float                              = 0
         self._end_time        : float                              = 0
+        self._name            : str                                = 'VideoFrameProviderCpp'
+
+    @property
+    def name(self) -> str: return self._name
+    @name.setter
+    def name(self, n:str): self._name = n
 
     @property
     def frame_duration(self) -> float:
@@ -53,7 +58,7 @@ class VideoFrameProviderCpp:
         # Stop frame buffer thread
         if self._frame_buffer:
             if not self._playing:
-                self._frame_buffer.terminate()
+                self._frame_buffer.pause_frames()
             else:
                 self._frame_buffer.start_thread()
 
