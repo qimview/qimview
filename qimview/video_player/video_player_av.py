@@ -26,12 +26,12 @@ try:
         os.add_dll_directory(ffmpeg_path)
 
     import decode_video_py as decode_lib
-    from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
     has_decode_video_py = True
 except Exception as e:
     print("Failed to load decode_video_py")
     has_decode_video_py = False
 
+from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from qimview.video_player.video_frame_provider     import VideoFrameProvider
 
 class AverageTime:
@@ -50,7 +50,9 @@ class AverageTime:
 
 class VideoPlayerAV(VideoPlayerBase):
 
-    def __init__(self, parent=None, use_decode_video_py : bool = has_decode_video_py, codec : str = '') -> None:
+    def __init__(self, parent=None, 
+                 use_decode_video_py : bool = has_decode_video_py, 
+                 codec : str = '') -> None:
         super().__init__(parent)
         self.event_recorder = None
         self._use_decode_video_py : bool = use_decode_video_py
@@ -258,11 +260,13 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str):
         video_frame = VideoFrame(frame)
+        print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
         self._im = video_frame.toViewerImage()
         self._im.filename = self._filename + frame_str
         use_crop = self._scheduler.is_running
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
+            print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
             self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im, use_crop=use_crop)
         else:
             self.widget.set_image_fast(self._im, use_crop=use_crop)
@@ -444,13 +448,16 @@ def main():
     main_window.setMinimumHeight(100)
     main_window.show()
 
-    for idx,p in enumerate(players):
+    # First display compared videos
+    for n in range(1,len(players)):
         p.show()
         p.set_name(f'player{idx}')
         p.init_and_display()
         # First video is compare to all others
-        if idx>0:
-            players[0].compare(p)
+        players[0].compare(p)
+    players[0].show()
+    players[0].set_name('player0')
+    players[0].init_and_display()
     
     main_window.resize(main_window.width(), 800)
 
