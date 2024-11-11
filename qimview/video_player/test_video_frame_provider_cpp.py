@@ -9,8 +9,11 @@ from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from time import perf_counter
 
 
+test_buffer = True
+
 def getFrames(fp, nb):
-    # res = []
+    if test_buffer:
+        res = []
     total_time_start = perf_counter()
     # record start time
     for n in range(nb):
@@ -18,22 +21,27 @@ def getFrames(fp, nb):
         # f = fp._frame_buffer.get_nothread()
         fp.get_next_frame()
         f = fp._frame
-        # res.append(f)
-        # print(f"{f.pts=}")
+        if test_buffer:
+            res.append(f)
+            print(f"{f.pts=}")
         # time_end = perf_counter()
         # print(f'Took {(time_end - time_start)*1000:0.1f} msec', end="; ")
     total_time_end = perf_counter()
     print(f'\nTotal time Took {(total_time_end - total_time_start)} msec')
-    # return res
+    if test_buffer:
+        return res
 
 vd = decode_lib.VideoDecoder()
 
 filename = "C:/Users/karl/Videos/GX010296.MP4"
-device_type = "cuda"
+device_type = None # "cuda"
 vd.open(filename, device_type, 0, num_threads = 4)
 print("open ok")
 fp = VideoFrameProviderCpp()
 fp.set_input_container(vd)
-getFrames(fp,100)
-# for f in frames:
-#     print(f"{f.pts=}")
+if test_buffer:
+    frames = getFrames(fp,4)
+    for f in frames:
+        print(f"{f.pts=}")
+else:
+    getFrames(fp,100)
