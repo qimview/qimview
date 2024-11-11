@@ -449,7 +449,7 @@ def main():
     main_window.show()
 
     # First display compared videos
-    for n in range(1,len(players)):
+    for idx in range(1,len(players)):
         p.show()
         p.set_name(f'player{idx}')
         p.init_and_display()

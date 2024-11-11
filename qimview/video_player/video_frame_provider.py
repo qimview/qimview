@@ -153,11 +153,11 @@ class VideoFrameProvider:
                 if not frame or exact:
                     for _ in range(sec_frame, frame_num):
                         frame = self.frame_buffer.get_frame()
-            except StopIteration as e:
+            except EndOfVideo: #  as e:
                 print(f"set_time(): Reached end of video stream")
                 # Reset valid generator
                 self.frame_buffer.reset()
-                raise EndOfVideo() from e
+                # raise EndOfVideo() from e
             else:
                 sec_frame = int(frame.pts * self._time_base * self._framerate)
                 print(f"Frame at {initial_pos:0.3f}->"
