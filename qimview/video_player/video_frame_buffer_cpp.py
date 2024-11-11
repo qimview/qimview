@@ -18,13 +18,15 @@ class VideoFrameBufferCpp(VideoFrameBufferBase):
     """ This class uses a thread to store several successive videos frame in a queue
     that is available for the video player
     """
-    def __init__(self, decoder: decode_lib.VideoDecoder, maxsize = 8):
+    def __init__(self, decoder: decode_lib.VideoDecoder, maxsize = 6):
         super().__init__(maxsize)
         self._decoder : decode_lib.VideoDecoder = decoder
 
     def decodeNextFrame(self):
         res = self._decoder.nextFrame(convert=True)
-        return self._decoder.getFrame() if res==0 else None
+        if res !=0: return None
+        f = self._decoder.getFrame()
+        return f
 
     def resetDecoder(self) -> None:
         self._decoder.seek(0)

@@ -138,6 +138,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                 if frame_num == fn:
                     self._frame = f
                     self._from_saved = True
+                    print(f"Found frame from saved ones")
                     return
 
             # if we look for a frame slightly after, don't use seek()
@@ -149,7 +150,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                     if time_pos==0:
                         self.frame_buffer.reset()
                     # get the next available frame
-                    frame = self.frame_buffer.get_frame(timeout=10)
+                    frame = self.frame_buffer.get_frame(timeout=1)
                     # get the proper key frame number of that timestamp
                     sec_frame = int(frame.pts * self._time_base * self._framerate)
                     initial_pos = float(frame.pts * self._time_base)

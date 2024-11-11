@@ -53,4 +53,5 @@ class VideoFrameProviderCpp(VideoFrameProviderBase[decode_lib.Frame, decode_lib.
         
     def seek_position(self, time_pos: float) -> bool:
         seek_ok = self._container.seek(int(time_pos/self._time_base+0.5))  #, backward=True)
+        print(f"{self._name}.seek_position({time_pos=}) --> {seek_ok=}")
         return seek_ok
