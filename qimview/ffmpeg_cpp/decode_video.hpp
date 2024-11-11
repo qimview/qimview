@@ -100,11 +100,14 @@ namespace AV
         return _frame; 
     }
     uint64_t pts() { 
-        // std::cout << "pts: " << _frame->pts << "  " << AV_NOPTS_VALUE << std::endl;
-        // std::cout << "pkt_dts: " << _frame->pkt_dts <<  std::endl;
+        // std::cout << "pts: " << _frame->pts << "  vs ";
         // std::cout << "best effort_timestamp: " << _frame->best_effort_timestamp <<  std::endl;
-        // std::cout << "best effort pts: " << av_frame_get_best_effort_timestamp ( _frame ) << std::endl;
+        // //std::cout << "pkt_dts: " << _frame->pkt_dts <<  std::endl;
         return _frame->pts; 
+    }
+
+    uint64_t best_effort_timestamp() { 
+        return  _frame->best_effort_timestamp; 
     }
 
     int getFlags()
