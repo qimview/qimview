@@ -66,12 +66,12 @@ class VideoScheduler:
             self._is_running = False
             for idx, p in enumerate(self._players):
                 p.set_pause()
-                p.update_position()
                 print(f" player {idx}: "
                     f"skipped = {self._skipped[idx]} "
                     f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
                 # p.display_times()
             # Reset skipped counters
+            self._players[0].update_position()
             self._skipped = [0]*len(self._players)
 
     def play(self):
@@ -82,6 +82,11 @@ class VideoScheduler:
                 p.set_play()
             # Set _start_clock_time after starting the players to avoid rushing them
             self._start_clock_time = time.perf_counter()
+            print("VideoSchedular.play() ", end='')
+            for idx, p in enumerate(self._players):
+                print(f" player{idx}, pos = {p.play_position}", end = '')
+            print()
+
             self._display_remaining_frames()
 
     def set_playback_speed(self, speed: float):
@@ -113,6 +118,7 @@ class VideoScheduler:
             p.display_frame()
             self._displayed_pts[player_index] = p._frame_provider._frame.pts
             diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
+            print(f"VideoScheduler._display_frame({player_index}) {self._displayed_pts[player_index]=}")
             if p._frame_provider._frame.key_frame or diff>1:
                 p.update_position()
 
