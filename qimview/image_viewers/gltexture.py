@@ -34,11 +34,7 @@ class GLTexture:
         self._bufferU  : np.ndarray | None = None
         self._bufferV  : np.ndarray | None = None
         self._bufferUV : np.ndarray | None = None
-        self._textureY  = None
-        self._textureU  = None
-        self._textureV  = None
-        self._textureUV = None
-        self.textureID = None
+        self._texture = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None }
         self.interlaced_uv = False
         self._gl_types = {
             'int8'   : gl.GL_BYTE,
@@ -92,19 +88,23 @@ class GLTexture:
 
     @property
     def textureY(self):
-        return self._textureY
+        return self._texture['Y']
 
     @property
     def textureU(self):
-        return self._textureU
+        return self._texture['U']
 
     @property
     def textureV(self):
-        return self._textureV
+        return self._texture['V']
 
     @property
     def textureUV(self):
-        return self._textureUV
+        return self._texture['UV']
+
+    @property
+    def textureRGB(self):
+        return self._texture['RGB']
 
     def _internal_format(self, image):
         # Not sure what is the right parameter for internal format of 2D texture based
@@ -148,7 +148,7 @@ class GLTexture:
         # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
         # Setting max level >0 slows down on non GPU graphics
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 4)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
@@ -174,6 +174,15 @@ class GLTexture:
             self._gl.glGenTextures(1, texture)
             id = texture[0]
         return id
+
+    def free_texture(self, texture: int | None):
+        if texture is not None:
+            self._gl.glDeleteTextures(1, np.array([texture]))
+        
+    def free_all_textures(self):
+        for k in self._texture:
+            self.free_texture(self._texture[k])
+            self._texture[k] = None
 
     def new_buffers(self, n: int) -> np.ndarray:
         """
@@ -206,6 +215,11 @@ class GLTexture:
                     self._bufferU = None
                     self._bufferV = None
             self._buf_idx = 0
+
+    def reset(self):
+        self.free_buffers()
+        # Issue?
+        # self.free_all_textures()
 
     def texSubImage(self, tex, w, h_start, h_end, LUM, gl_type, data, name='unamed'):
         if self._log_timings:
@@ -300,25 +314,25 @@ class GLTexture:
             w, h = width, height
             w2, h2 = int(w/2), int(h/2)
             if (self.width,self.height) != (width,height) or self.textureY is None:
-                self._textureY = self.new_texture()
+                self._texture['Y'] = self.new_texture()
                 # Create QImage
                 image = QtGui.QImage(image.data, w, h, )
-                self.bind(self._textureY)
+                self.bind(self._texture['Y'])
                 self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
                 self.width, self.height = width, height
                 if self.interlaced_uv:
                     # UV
-                    self._textureUV = self.new_texture()
+                    self._texture['UV'] = self.new_texture()
                     self.bind(self.textureUV)
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format_uv, w2, h2, 0, RG, gl_type, image.uv)
                 else:
                     # U
-                    self._textureU = self.new_texture()
-                    self.bind(self._textureU)
+                    self._texture['U'] = self.new_texture()
+                    self.bind(self._texture['U'])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
                     # V
-                    self._textureV = self.new_texture()
-                    self.bind(self._textureV)
+                    self._texture['V'] = self.new_texture()
+                    self.bind(self._texture['V'])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
 
     def resize_event(self):
@@ -358,31 +372,31 @@ class GLTexture:
             h2_max = h_max>>1
             self.check_buffers()
 
-            if (self.width,self.height) != (width,height) or self._textureY is None:
-                self._textureY = self.new_texture()
-                self.bind(self._textureY)
+            if (self.width,self.height) != (width,height) or self._texture['Y'] is None:
+                self._texture['Y'] = self.new_texture()
+                self.bind(self._texture['Y'])
                 self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
                 self.width, self.height = width, height
                 if self.interlaced_uv:
                     # UV
-                    self._textureUV = self.new_texture()
-                    self.bind(self._textureUV)
+                    self._texture['UV'] = self.new_texture()
+                    self.bind(self._texture['UV'])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format_uv, w2, h2, 0, RG, gl_type, image.uv)
                 else:
                     # U
-                    self._textureU = self.new_texture()
-                    self.bind(self._textureU)
+                    self._texture['U'] = self.new_texture()
+                    self.bind(self._texture['U'])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
                     # V
-                    self._textureV = self.new_texture()
-                    self.bind(self._textureV)
+                    self._texture['V'] = self.new_texture()
+                    self.bind(self._texture['V'])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
                 if self._use_buffers:
-                    self.bufferTexSubImage(self._bufferY, self._buf_idx,  self._textureY, 
+                    self.bufferTexSubImage(self._bufferY, self._buf_idx,  self._texture['Y'], 
                         w, h_min, h_max,LUM, gl_type, image.data, 'BY')
                 else:
-                    self.texSubImage(self._textureY, w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
+                    self.texSubImage(self._texture['Y'], w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
                 # self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureY)
                 # # Split in two
                 # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h2, LUM, gl_type, image.data)
@@ -390,22 +404,22 @@ class GLTexture:
                 if self.interlaced_uv:
                     assert self.textureUV is not None, "textureUV should not be None"
                     if self._use_buffers:
-                        self.bufferTexSubImage(self._bufferUV, self._buf_idx,  self._textureUV, 
+                        self.bufferTexSubImage(self._bufferUV, self._buf_idx,  self._texture['UV'], 
                             w2, h2_min, h2_max,RG, gl_type, image.uv, 'BUV')
                     else:
                         self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureUV)
                         self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, RG, gl_type, image.uv)
                 else:
-                    assert self._textureU is not None and self._textureV is not None, \
+                    assert self._texture['U'] is not None and self._texture['V'] is not None, \
                             "textureV and textureV should not be None"
                     if self._use_buffers:
-                        self.bufferTexSubImage(self._bufferU, self._buf_idx,  self._textureU, 
+                        self.bufferTexSubImage(self._bufferU, self._buf_idx,  self._texture['U'], 
                             w2, h2_min, h2_max,LUM, gl_type, image.u, 'BU')
-                        self.bufferTexSubImage(self._bufferV, self._buf_idx,  self._textureV, 
+                        self.bufferTexSubImage(self._bufferV, self._buf_idx,  self._texture['V'], 
                             w2, h2_min, h2_max,LUM, gl_type, image.v, 'BV')
                     else:
-                        self.texSubImage(self._textureU, w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
-                        self.texSubImage(self._textureV, w2, h2_min, h2_max, LUM, gl_type, image.v,'V')
+                        self.texSubImage(self._texture['U'], w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
+                        self.texSubImage(self._texture['V'], w2, h2_min, h2_max, LUM, gl_type, image.v,'V')
                 self._buf_idx += 1
         else:
             # Texture pixel format
@@ -413,9 +427,9 @@ class GLTexture:
 
             if (self.width,self.height) != (width,height):
                 try:
-                    if self.textureID is not None: gl.glDeleteTextures(np.array([self.textureID]))
-                    self.textureID = gl.glGenTextures(1)
-                    self.bind(self.textureID)
+                    self.free_texture(self._texture['RGB'])
+                    self._texture['RGB'] = gl.glGenTextures(1)
+                    self.bind(self._texture['RGB'])
                     # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
                     format = self._internal_format(image)
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, width, height, 0, pix_fmt, gl_type, image.data)

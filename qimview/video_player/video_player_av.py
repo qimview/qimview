@@ -148,10 +148,8 @@ class VideoPlayerAV(VideoPlayerBase):
         self._initialized = False
         # Reset textures if used
         if self.viewer_class is GLImageViewerShaders:
-            if self.widget.texture:
-                self.widget.texture.free_buffers()
-            if self.widget.texture_ref:
-                self.widget.texture_ref.free_buffers()
+            if self.widget.texture:     self.widget.texture.reset()
+            if self.widget.texture_ref: self.widget.texture_ref.reset()
 
     def set_pause(self):
         """ Method called from scheduler """

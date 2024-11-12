@@ -758,7 +758,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                     _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
         else:
             if self.texture:
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
         _gl.glEnable(gl.GL_TEXTURE_2D)
 
         # draw

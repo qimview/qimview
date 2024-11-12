@@ -50,8 +50,7 @@ class GLImageViewer(GLImageViewerBase):
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         # TODO: fix textureID will only work for RGB textures, not YUV
-        assert self.texture.textureID is not None, "RGB texture not initialized"
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
+        assert self.texture.textureRGB is not None, "RGB texture not initialized"
         # gl.glGenerateMipmap (gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBegin(gl.GL_QUADS)
