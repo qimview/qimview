@@ -181,6 +181,32 @@ class GLTexture:
         """
         return gl.glGenBuffers(n)
 
+    def check_buffers(self):
+        """ Create all the PBO buffers if they don't already exist
+        """
+        if self._use_buffers and self._bufferY is None:
+            self._bufferY = self.new_buffers(self._nbuf)
+            if self.interlaced_uv:
+                self._bufferUV = self.new_buffers(self._nbuf)
+            else:
+                self._bufferU  = self.new_buffers(self._nbuf)
+                self._bufferV  = self.new_buffers(self._nbuf)
+
+    def free_buffers(self):
+        if self._use_buffers:
+            if self._bufferY is not None:
+                gl.glDeleteBuffers(2, self._bufferY)
+                self._bufferY = None
+                if self.interlaced_uv:
+                    gl.glDeleteBuffers(2, self._bufferUV)
+                    self._bufferUV = None
+                else:
+                    gl.glDeleteBuffers(2, self._bufferU)
+                    gl.glDeleteBuffers(2, self._bufferV)
+                    self._bufferU = None
+                    self._bufferV = None
+            self._buf_idx = 0
+
     def texSubImage(self, tex, w, h_start, h_end, LUM, gl_type, data, name='unamed'):
         if self._log_timings:
             start_time = time.perf_counter()
@@ -296,19 +322,7 @@ class GLTexture:
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
 
     def resize_event(self):
-        if self._use_buffers:
-            if self._bufferY is not None:
-                gl.glDeleteBuffers(2, self._bufferY)
-                self._bufferY = None
-                if self.interlaced_uv:
-                    gl.glDeleteBuffers(2, self._bufferUV)
-                    self._bufferUV = None
-                else:
-                    gl.glDeleteBuffers(2, self._bufferU)
-                    gl.glDeleteBuffers(2, self._bufferV)
-                    self._bufferU = None
-                    self._bufferV = None
-            self._buf_idx = 0
+        self.free_buffers()
 
     def create_texture_gl(self, image: ViewerImage, h_min: int = 0, h_max: int = -1):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
@@ -342,16 +356,7 @@ class GLTexture:
             w2, h2 = w>>1, h>>1
             h2_min = h_min>>1
             h2_max = h_max>>1
-            if self._bufferY is None and self._use_buffers:
-                self._bufferY = self.new_buffers(self._nbuf)
-                if self.interlaced_uv:
-                    self._bufferUV = self.new_buffers(self._nbuf)
-                else:
-                    self._bufferU  = self.new_buffers(self._nbuf)
-                    self._bufferV  = self.new_buffers(self._nbuf)
-            # else:
-            #     if self._use_buffers:
-            #         print(f"{gl.glIsBuffer(self._bufferY[0])=}")
+            self.check_buffers()
 
             if (self.width,self.height) != (width,height) or self._textureY is None:
                 self._textureY = self.new_texture()

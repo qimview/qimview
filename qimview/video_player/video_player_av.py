@@ -1,16 +1,13 @@
 import os
 import re
-import time
 import numpy as np
-from typing import Union, Generator, List, Optional, Iterator
+
 if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
     #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
 import av
 from av import container
 from  av.video.frame import VideoFrame as AVVideoFrame # type: ignore
-from av.frame import Frame
-from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
 
 from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
 from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
@@ -149,6 +146,12 @@ class VideoPlayerAV(VideoPlayerBase):
         self._basename = os.path.basename(self._filename)
 
         self._initialized = False
+        # Reset textures if used
+        if self.viewer_class is GLImageViewerShaders:
+            if self.widget.texture:
+                self.widget.texture.free_buffers()
+            if self.widget.texture_ref:
+                self.widget.texture_ref.free_buffers()
 
     def set_pause(self):
         """ Method called from scheduler """
@@ -353,7 +356,7 @@ class VideoPlayerAV(VideoPlayerBase):
             device_type = self._codec if self._codec != '' else None
             self._container = decode_lib.VideoDecoder()
             self._container.open(self._filename, device_type, self._video_stream_number, 
-                                 num_threads=8 if device_type is None else 2)
+                                 num_threads=8 if device_type is None else 4)
         else:
             self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
