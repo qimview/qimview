@@ -19,7 +19,7 @@ class VideoFrameBufferCpp(VideoFrameBufferBase):
     that is available for the video player
     """
     def __init__(self, decoder: decode_lib.VideoDecoder, maxsize = 6):
-        super().__init__(maxsize)
+        super().__protocol_init__(maxsize)
         self._decoder : decode_lib.VideoDecoder = decoder
 
     def decodeNextFrame(self):

@@ -25,7 +25,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
     _container       : Optional[DECODERTYPE] = None
     _video_stream    = None # : Optional[streams.StreamContainer]  = None
 
-    def __init__(self):
+    def __protocol_init__(self):
         pass
 
     @property

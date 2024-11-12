@@ -6,8 +6,8 @@ from qimview.video_player.video_frame_buffer        import VideoFrameBuffer
 from qimview.video_player.video_frame_provider_base import VideoFrameProviderBase
 
 class VideoFrameProvider(VideoFrameProviderBase[VideoFrame,  container.InputContainer]):
-    def __init__(self):
-        super().__init__()
+    def __protocol_init__(self):
+        super().__protocol_init__()
         self._name            : str                                = 'VideoFrameProvider'
 
     def get_video_streams(self):

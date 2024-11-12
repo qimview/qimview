@@ -25,7 +25,7 @@ class VideoFrameBufferBase(Protocol):
     _end_of_video : bool = False
     _name : str = "VideoFrameBufferBase"
 
-    def __init__(self, maxsize = 20):
+    def __protocol_init__(self, maxsize = 20):
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
         self._maxsize : int = maxsize
         self._queue : queue.Queue = queue.Queue(maxsize=self._maxsize)

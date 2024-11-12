@@ -1,9 +1,6 @@
 from typing import Optional, Iterator
-import queue
-import time
-import threading
 import av
-from av import container, VideoFrame
+from av import container
 from av.frame import Frame
 from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 from qimview.video_player.video_frame_buffer_base import VideoFrameBufferBase
@@ -14,7 +11,7 @@ class VideoFrameBuffer(VideoFrameBufferBase):
     that is available for the video player
     """
     def __init__(self, container: container.InputContainer, maxsize = 20, stream_number = 0):
-        super().__init__(maxsize)
+        super().__protocol_init__(maxsize)
         self._stream_number : int = stream_number
         self._container : container.InputContainer = container
         self._frame_generator : Optional[Iterator[Frame]] = self._container.decode(video=self._stream_number)
