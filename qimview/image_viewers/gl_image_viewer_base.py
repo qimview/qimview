@@ -123,7 +123,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         self.makeCurrent()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
@@ -168,7 +168,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 self.texture_ref = GLTexture(_gl)
             self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max)
 
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()
         # self.doneCurrent()
         return True
@@ -229,8 +229,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self.show_histogram:
             current_image = self._image.data
             rect = QtCore.QRect(0, 0, self.width(), self.height())
-            histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
-            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+            histograms = self.compute_histogram_Cpp(current_image, show_timings=self._display_timing)
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self._display_timing)
 
         painter.end()
         # self.context().swapBuffers(self.context().surface())
@@ -364,7 +364,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     def updateViewPort(self):
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         # keep image proportions
         w = self._width
         h = self._height
@@ -373,12 +373,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             gl.glViewport(0,0,w,h) # keep everything in viewport
         except Exception as e:
             self.print_log(" failed glViewport {}".format(e))
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
 
     def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
         w = self._width
@@ -401,7 +401,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
         self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
 
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
         return scale
 
     def resizeGL(self, width, height):
