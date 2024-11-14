@@ -30,11 +30,8 @@ class GLTexture:
         self._use_buffers: bool = True
         self._buf_idx : int = 0
         self._nbuf = 2
-        self._bufferY  : np.ndarray | None = None
-        self._bufferU  : np.ndarray | None = None
-        self._bufferV  : np.ndarray | None = None
-        self._bufferUV : np.ndarray | None = None
-        self._texture = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None }
+        self._buffers : dict[str, np.ndarray | None] = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None }
+        self._texture : dict[str, int | None]        = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None }
         self.interlaced_uv = False
         self._gl_types = {
             'int8'   : gl.GL_BYTE,
@@ -193,28 +190,21 @@ class GLTexture:
     def check_buffers(self):
         """ Create all the PBO buffers if they don't already exist
         """
-        if self._use_buffers and self._bufferY is None:
-            self._bufferY = self.new_buffers(self._nbuf)
+        if self._use_buffers and self._buffers['Y'] is None:
+            self._buffers['Y'] = self.new_buffers(self._nbuf)
             if self.interlaced_uv:
-                self._bufferUV = self.new_buffers(self._nbuf)
+                self._buffers['UV'] = self.new_buffers(self._nbuf)
             else:
-                self._bufferU  = self.new_buffers(self._nbuf)
-                self._bufferV  = self.new_buffers(self._nbuf)
+                self._buffers['U']  = self.new_buffers(self._nbuf)
+                self._buffers['V']  = self.new_buffers(self._nbuf)
 
     def free_buffers(self):
         if self._use_buffers:
-            if self._bufferY is not None:
-                gl.glDeleteBuffers(2, self._bufferY)
-                self._bufferY = None
-                if self.interlaced_uv:
-                    gl.glDeleteBuffers(2, self._bufferUV)
-                    self._bufferUV = None
-                else:
-                    gl.glDeleteBuffers(2, self._bufferU)
-                    gl.glDeleteBuffers(2, self._bufferV)
-                    self._bufferU = None
-                    self._bufferV = None
-            self._buf_idx = 0
+            for name in self._buffers:
+                if self._buffers[name] is not None:
+                    gl.glDeleteBuffers(2, self._buffers[name])
+                    self._buffers[name] = None
+                self._buf_idx = 0
 
     def reset(self):
         self.free_buffers()
@@ -246,36 +236,38 @@ class GLTexture:
 
         # Copy image Y to buffer Y
         # print(f"{buf=}")
+        target = gl.GL_PIXEL_UNPACK_BUFFER
 
         d = data[h_start:h_end,:]
         if buf_idx == 0:
-            gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf[buf0])
-            gl.glBufferData(gl.GL_PIXEL_UNPACK_BUFFER, d.nbytes, d, gl.GL_STREAM_DRAW)
+            gl.glBindBuffer(target, buf[buf0])
+            gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
 
         gl.glBindTexture(  gl.GL_TEXTURE_2D, tex)
-        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf[buf0])
+        gl.glBindBuffer(target, buf[buf0])
         gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h_start, w, h_end-h_start, LUM, gl_type, None)
 
-        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, buf[buf1])
-        if buf_idx == 0:
-            gl.glBufferData(gl.GL_PIXEL_UNPACK_BUFFER, d.nbytes, d, gl.GL_STREAM_DRAW)
+        gl.glBindBuffer(target, buf[buf1])
+        buffer_size = gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, [0])
+        if buffer_size != d.nbytes:
+            gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
         else:
             # This version is slower
             use_glmap = False
             if use_glmap:
-                vp = gl.glMapBuffer(gl.GL_PIXEL_UNPACK_BUFFER, gl.GL_WRITE_ONLY)
+                vp = gl.glMapBuffer(target, gl.GL_WRITE_ONLY)
                 if d.dtype.itemsize==2:
                     vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_uint16) )
                 else:
                     vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_uint8) )
                 array = np.ctypeslib.as_array(vp_array, shape=(d.size,))
                 array[:] = d.ravel()
-                gl.glUnmapBuffer(gl.GL_PIXEL_UNPACK_BUFFER)
+                gl.glUnmapBuffer(target)
             else:
-                gl.glBufferSubData(gl.GL_PIXEL_UNPACK_BUFFER, 0, d.nbytes, d)
+                gl.glBufferSubData(target, 0, d.nbytes, d)
 
         # Release PBOs
-        gl.glBindBuffer(gl.GL_PIXEL_UNPACK_BUFFER, 0)
+        gl.glBindBuffer(target, 0)
 
         if self._log_timings:
             if name not in self.timing:
@@ -393,7 +385,7 @@ class GLTexture:
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
                 if self._use_buffers:
-                    self.bufferTexSubImage(self._bufferY, self._buf_idx,  self._texture['Y'], 
+                    self.bufferTexSubImage(self._buffers['Y'], self._buf_idx,  self._texture['Y'], 
                         w, h_min, h_max,LUM, gl_type, image.data, 'BY')
                 else:
                     self.texSubImage(self._texture['Y'], w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
@@ -404,7 +396,7 @@ class GLTexture:
                 if self.interlaced_uv:
                     assert self.textureUV is not None, "textureUV should not be None"
                     if self._use_buffers:
-                        self.bufferTexSubImage(self._bufferUV, self._buf_idx,  self._texture['UV'], 
+                        self.bufferTexSubImage(self._buffers['UV'], self._buf_idx,  self._texture['UV'], 
                             w2, h2_min, h2_max,RG, gl_type, image.uv, 'BUV')
                     else:
                         self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureUV)
@@ -413,9 +405,9 @@ class GLTexture:
                     assert self._texture['U'] is not None and self._texture['V'] is not None, \
                             "textureV and textureV should not be None"
                     if self._use_buffers:
-                        self.bufferTexSubImage(self._bufferU, self._buf_idx,  self._texture['U'], 
+                        self.bufferTexSubImage(self._buffers['U'], self._buf_idx,  self._texture['U'], 
                             w2, h2_min, h2_max,LUM, gl_type, image.u, 'BU')
-                        self.bufferTexSubImage(self._bufferV, self._buf_idx,  self._texture['V'], 
+                        self.bufferTexSubImage(self._buffers['V'], self._buf_idx,  self._texture['V'], 
                             w2, h2_min, h2_max,LUM, gl_type, image.v, 'BV')
                     else:
                         self.texSubImage(self._texture['U'], w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
