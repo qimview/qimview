@@ -4,20 +4,19 @@
 #
 #
 
-import OpenGL.GL as gl
-import glm
-from OpenGL.GL import shaders
 import argparse
 import sys
+import glm
+import OpenGL.GL as gl
+from OpenGL.GL import shaders
 import numpy as np
 
-from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
-                              QOpenGLShaderProgram, QOpenGLTexture)
+from PySide6.QtOpenGL import QOpenGLBuffer
 
-from qimview.utils.qt_imports  import QtWidgets, QtGui
-from .image_viewer             import trace_method, get_time, OverlapMode
-from .gl_image_viewer_base     import GLImageViewerBase
+from qimview.utils.qt_imports  import QtWidgets
 from qimview.utils.viewer_image import ImageFormat
+from .gl_image_viewer_base     import GLImageViewerBase
+from .image_viewer             import trace_method, get_time
 
 # Deal with compatibility with GLSL 1.2 
 GLSL_VERSION = '120' if sys.platform=='darwin' else '330 core'
@@ -572,7 +571,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         """
         Initialize OpenGL, VBOs, upload data on the GPU, etc.
         """
-        self.start_timing()
+        if self._display_timing: self.start_timing()
 
         time1 = get_time()
         self.set_shaders()
@@ -580,7 +579,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         self.setVerticesBufferData()
         self.setBufferData()
-        self.print_timing()
+        if self._display_timing: self.print_timing()
 
     def viewer_update(self):
         self.update()
@@ -603,7 +602,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         assert self.texture is not None
 
         self.opengl_error()
-        self.start_timing()
+        if self._display_timing: self.start_timing()
 
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
@@ -771,7 +770,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         shaders.glUseProgram(0)
 
-        self.print_timing(force=True)
+        if self._display_timing: self.print_timing(force=True)
 
     def updateTransforms(self) -> float:
         if self.trace_calls:
@@ -801,7 +800,7 @@ class GLImageViewerShaders(GLImageViewerBase):
             self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
 
             self._transform_param = new_transform_params
-        if self.display_timing:
+        if self._display_timing:
             self.print_log('updateTransforms time {:0.1f} ms'.format((get_time()-start_time)*1000))
         return scale
 
