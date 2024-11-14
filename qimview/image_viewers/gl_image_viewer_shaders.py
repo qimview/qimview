@@ -587,6 +587,45 @@ class GLImageViewerShaders(GLImageViewerBase):
     def paintGL(self):
         self.paintAll(make_current=False)
 
+    def setShaderProgram(self, program: shaders.ShaderProgram, twotex: bool):
+        if self.program != program:
+            self.program = program
+            # Obtain uniforms and attributes
+            self.aVert              = shaders.glGetAttribLocation(self.program, "vert")
+            self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
+            self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
+            self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
+            if self._image and self._image.channels == ImageFormat.CH_YUV420:
+                self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
+                if twotex:
+                    self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
+                if self.texture.interlaced_uv:
+                    self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
+                    if twotex:
+                        self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
+                else:
+                    self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
+                    self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+                    if twotex:
+                        self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
+                        self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
+                if twotex:
+                    self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
+                    self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
+                    self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
+                    self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
+                self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
+            else:
+                self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
+            self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
+            self.black_level_location = shaders.glGetUniformLocation(self.program, "black_level")
+            self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
+            self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, "g_r_coeff")
+            self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, "g_b_coeff")
+            self.max_value_location   = shaders.glGetUniformLocation(self.program, "max_value")
+            self.max_type_location    = shaders.glGetUniformLocation(self.program, "max_type")
+            self.gamma_location       = shaders.glGetUniformLocation(self.program, "gamma")
+
     def myPaintGL(self):
         """Paint the scene.
         """
@@ -609,52 +648,19 @@ class GLImageViewerShaders(GLImageViewerBase):
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
         twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlap or self._show_image_differences)
-        if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
-            self.program = self.program_RAW
-        elif self._image and self._image.channels == ImageFormat.CH_YUV420:
-            if self.texture.interlaced_uv:
-                self.program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
-            else:
-                self.program = self.program_YUV420_twotex if twotex else self.program_YUV420
-        else:
-            # TODO: check for other types: scalar ...
-            self.program = self.program_RGB
+        # Default shader program
+        program = self.program_RGB
+        if self._image:
+            if self._image.channels in ImageFormat.CH_RAWFORMATS():
+                self.program = self.program_RAW
+            elif self._image.channels == ImageFormat.CH_YUV420:
+                if self.texture.interlaced_uv:
+                    program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
+                else:
+                    program = self.program_YUV420_twotex if twotex else self.program_YUV420
 
-        # Obtain uniforms and attributes
-        self.aVert              = shaders.glGetAttribLocation(self.program, "vert")
-        self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
-        self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
-        self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
-        if self._image and self._image.channels == ImageFormat.CH_YUV420:
-            self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
-            if twotex:
-                self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
-            if self.texture.interlaced_uv:
-                self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
-                if twotex:
-                    self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
-            else:
-                self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
-                self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
-                if twotex:
-                    self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
-                    self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
-            if twotex:
-                self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
-                self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
-                self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
-                self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
-            self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
-        else:
-            self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
-        self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
-        self.black_level_location = shaders.glGetUniformLocation(self.program, "black_level")
-        self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
-        self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, "g_r_coeff")
-        self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, "g_b_coeff")
-        self.max_value_location   = shaders.glGetUniformLocation(self.program, "max_value")
-        self.max_type_location    = shaders.glGetUniformLocation(self.program, "max_type")
-        self.gamma_location       = shaders.glGetUniformLocation(self.program, "gamma")
+        # Avoid calling each time glGet{Attrib,Uniform}Location()
+        self.setShaderProgram(program, twotex)
 
         # use shader program
         self.print_log("self.program = {}".format(self.program))
