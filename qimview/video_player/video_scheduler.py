@@ -221,7 +221,7 @@ class VideoScheduler:
             slow_down_delay = 0
             slow_down = max(self._minimal_period,int((total_frame_duration-display_duration)*1000+0.5)-slow_down_delay)
             if self.is_running:
-                QtCore.QTimer.singleShot(slow_down, lambda : self._display_remaining_frames())
+                QtCore.QTimer.singleShot(slow_down, self._display_remaining_frames)
         except Exception as e:
             print(f"Exception: {e}")
             # duration = time.perf_counter()-self.start_time

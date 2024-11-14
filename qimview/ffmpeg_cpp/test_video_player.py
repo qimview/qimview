@@ -151,7 +151,7 @@ class TestVideoPlayer(VideoPlayerBase):
         assert self.video_decoder1 is not None
         try:
             self.get_frames(display=True)
-            QtCore.QTimer.singleShot(self.slow_down, lambda : self.display_frames())
+            QtCore.QTimer.singleShot(self.slow_down, self.display_frames)
         except Exception as e:
             print(f"Exception: {e}")
             duration = time.perf_counter()-self.start_time
