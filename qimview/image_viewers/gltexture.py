@@ -239,19 +239,18 @@ class GLTexture:
         target = gl.GL_PIXEL_UNPACK_BUFFER
 
         d = data[h_start:h_end,:]
+        gl.glBindBuffer(target, buf[buf0])
         buffer_size = np.zeros(1, dtype=np.int32)
-        gl.glGetNamedBufferParameteriv(buf[buf0],gl.GL_BUFFER_SIZE, buffer_size)
+        gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, buffer_size)
         if buffer_size[0] != d.nbytes:
-            gl.glBindBuffer(target, buf[buf0])
             gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
 
         gl.glBindTexture(  gl.GL_TEXTURE_2D, tex)
-        gl.glBindBuffer(target, buf[buf0])
         gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h_start, w, h_end-h_start, LUM, gl_type, None)
 
         gl.glBindBuffer(target, buf[buf1])
         buffer_size = np.zeros(1, dtype=np.int32)
-        gl.glGetNamedBufferParameteriv(buf[buf1],gl.GL_BUFFER_SIZE, buffer_size)
+        gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, buffer_size)
         if buffer_size[0] != d.nbytes:
             print(f"Different buffer 1 sizes {buffer_size[0]} {d.nbytes}")
             gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
@@ -260,12 +259,8 @@ class GLTexture:
             use_glmap = False
             if use_glmap:
                 vp = gl.glMapBuffer(target, gl.GL_WRITE_ONLY)
-                if d.dtype.itemsize==2:
-                    vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_uint16) )
-                else:
-                    vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_uint8) )
-                array = np.ctypeslib.as_array(vp_array, shape=(d.size,))
-                array[:] = d.ravel()
+                vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_void_p) )
+                ctypes.memmove(vp_array, d.ctypes.data_as(ctypes.c_void_p),  d.nbytes)
                 gl.glUnmapBuffer(target)
             else:
                 gl.glBufferSubData(target, 0, d.nbytes, d)
