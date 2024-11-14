@@ -43,7 +43,7 @@ class GLImageViewer(GLImageViewerBase):
         """
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         if self.texture is None:
             print("GLImageViewer paintGL texture not set")
             return
@@ -80,7 +80,7 @@ class GLImageViewer(GLImageViewerBase):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()
 
     def resizeGL(self, width, height):
