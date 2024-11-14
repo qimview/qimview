@@ -183,7 +183,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         self.print_log(f"current_image.data.shape {current_image.data.shape}")
         # return current_image
 
-        self.start_timing(title='apply_filters()')
+        if self._display_timing: self.start_timing(title='apply_filters()')
 
         # Output RGB from input
         if self._image is None: return current_image
@@ -297,7 +297,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             #     table = np.array([((i / 255.0) ** invGamma) * 255 for i in np.arange(0, 256)]).astype("uint8")
             #     work_image = cv2.LUT(work_image, table)
 
-        self.print_timing(title='apply_filters()')
+        if self._display_timing: self.print_timing(title='apply_filters()')
         return rgb_image
 
     def viewer_update(self):
@@ -499,7 +499,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
     def paint_image(self):
         # print(f"paint_image display_timing {self.display_timing}")
         if self.trace_calls: t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         time0 = time1 = get_time()
 
         label_width = self.size().width()
@@ -810,7 +810,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             # self.display_histogram(histograms2, 2, painter, rect, show_timings=self.display_timing)
 
         painter.end()
-        self.print_timing()
+        if self._display_timing: self.print_timing()
 
         if self.display_timing:
             print(f" paint_image took {int((get_time()-time0)*1000)} ms")
