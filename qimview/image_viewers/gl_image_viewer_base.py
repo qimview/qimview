@@ -11,12 +11,10 @@ import numpy as np
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
-import OpenGL.GLU as glu
-import sys
 
 from .gltexture import GLTexture
 from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
-from qimview.utils.viewer_image import ImageFormat, ViewerImage
+from qimview.utils.viewer_image import ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method, OverlapMode
 import glm
 
@@ -93,14 +91,17 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             else:
                 print("setTexture() return False")
 
-    def set_image_fast(self, image, image_ref=None, use_crop:bool=True):
+    def set_image_fast(self, 
+                       image, 
+                       image_ref=None,
+                       texture_ref = None,
+                       use_crop:bool=True):
         # print(f"set_image_fast {use_crop=}")
         self._image     = image
         self._image_ref = image_ref
         self.image_id += 1
-        res = self.setTexture(use_crop)
+        res = self.setTexture(use_crop, texture_ref)
         if not res: print("setTexture() returned False")
-
 
     def synchronize_data(self, other_viewer):
         super(GLImageViewerBase, self).synchronize_data(other_viewer)
@@ -113,9 +114,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             if status != gl.GL_NO_ERROR:
                 print(self.tab[0]+'gl error %s' % status)
 
-    def setTexture(self, use_crop:bool=True) -> bool:
-        """
-        :return: set opengl texture based on input numpy array image
+    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None) -> bool:
+        """ set opengl texture based on input numpy array image
+
+        Args:
+            use_crop (bool, optional): _description_. Defaults to True.
+            texture_ref (GLTexture, optional): Texture of compared image, if not set, will be computed. Defaults to None.
         """
         # print(f"{use_crop=}")
 
@@ -164,9 +168,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.texture.create_texture_gl(self._image, h_min, h_max)
         # Set image_ref if available and compatible
         if self._image_ref and self._image_ref.channels == self._image.channels:
-            if self.texture_ref is None:
-                self.texture_ref = GLTexture(_gl)
-            self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max)
+            if texture_ref:
+                self.texture_ref = texture_ref
+            else:
+                if self.texture_ref is None:
+                    self.texture_ref = GLTexture(_gl)
+                self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max)
 
         if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()
@@ -455,9 +462,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self._mouse_events.mouse_wheel_event(event)
 
     def keyPressEvent(self, event):
-        # TODO: Fix the correct parameters for selecting image zoom/pan
         x0, x1, y0, y1 = self.image_centered_position()
-        print(f"image centered position {x1-x0} x {y1-y0}")
         self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
 
     def resizeEvent(self, event):

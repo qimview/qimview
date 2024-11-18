@@ -13,10 +13,11 @@ import numpy as np
 
 from PySide6.QtOpenGL import QOpenGLBuffer
 
-from qimview.utils.qt_imports  import QtWidgets
+from qimview.utils.qt_imports   import QtWidgets
 from qimview.utils.viewer_image import ImageFormat
-from .gl_image_viewer_base     import GLImageViewerBase
-from .image_viewer             import trace_method, get_time
+from .gl_image_viewer_base      import GLImageViewerBase
+from .gltexture                 import GLTexture
+from .image_viewer              import trace_method, get_time
 
 # Deal with compatibility with GLSL 1.2 
 GLSL_VERSION = '120' if sys.platform=='darwin' else '330 core'
@@ -551,8 +552,15 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.uvBuffer.bind()
         self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
-    def setTexture(self, use_crop:bool=True):
-        texture_ok = super(GLImageViewerShaders, self).setTexture(use_crop)
+    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None) -> bool:
+        """ set opengl texture based on input numpy array image
+
+        Args:
+            use_crop (bool, optional): _description_. Defaults to True.
+            texture_ref (GLTexture, optional): Texture of compared image, if not set, will be computed. Defaults to None.
+
+        """
+        texture_ok = super(GLImageViewerShaders, self).setTexture(use_crop, texture_ref)
         self.setVerticesBufferData()
         return texture_ok
 

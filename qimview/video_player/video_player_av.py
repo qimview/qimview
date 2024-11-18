@@ -269,7 +269,10 @@ class VideoPlayerAV(VideoPlayerBase):
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
             # print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
-            self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im, use_crop=use_crop)
+            self.widget.set_image_fast(self._im, 
+                                       image_ref = self._compare_players[0]._im,
+                                       texture_ref = self._compare_players[0].widget.texture,
+                                       use_crop=use_crop)
         else:
             self.widget.set_image_fast(self._im, use_crop=use_crop)
         self.widget.image_name = im_name + frame_str
@@ -388,7 +391,6 @@ class VideoPlayerAV(VideoPlayerBase):
             print(" --- video already initialized")
 
     def keyPressEvent(self, event):
-        print("Key pressed")
         self._key_events.key_press_event(event)
 
 def main():

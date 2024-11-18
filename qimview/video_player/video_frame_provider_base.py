@@ -117,7 +117,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
         """ set time position in seconds 
             the video frame corresponding to the requested time_pos is set in _frame member
         """
-        print(f"set_time {time_pos} , _end_time={self._end_time}")
+        # print(f"set_time {time_pos} , _end_time={self._end_time}")
         if self.frame_buffer is None or not self.frame_buffer.decoderOk():
             print("Video not initialized")
         else:
