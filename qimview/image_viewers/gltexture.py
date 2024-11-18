@@ -10,6 +10,9 @@ import time
 import ctypes
 from typing import Optional
 
+import os
+os.add_dll_directory("C:/Users/karl/GIT/qimview/qimview/opengl_cpp/glew-2.2.0/glew-2.2.0/build/cmake/build/bin/Release")
+import opengl_cpp
 
 # Use PBO: https://www.songho.ca/opengl/gl_pbo.html#unpack
 # 1. generate buffer with glGenBuffers()
@@ -82,6 +85,11 @@ class GLTexture:
         self.timing : dict[str,float] = {}
         self.counter : dict[str,int] = {}
         self._log_timings : bool = False
+
+        self._buffer_size = np.zeros(1, dtype=np.int32)
+
+        self._buffersubdata_total_time = {}
+        self._buffersubdata_count      = {}
 
     @property
     def textureY(self):
@@ -170,6 +178,7 @@ class GLTexture:
             texture = np.array([0], dtype=np.uint32)
             self._gl.glGenTextures(1, texture)
             id = texture[0]
+        opengl_cpp.InitGlew()
         return id
 
     def free_texture(self, texture: int | None):
@@ -238,32 +247,57 @@ class GLTexture:
         # print(f"{buf=}")
         target = gl.GL_PIXEL_UNPACK_BUFFER
 
+        use_opengl_cpp = True
+        if use_opengl_cpp:
+            if data.dtype.itemsize == 1:
+                glBufferDataFunc    = opengl_cpp.glBufferData_u8
+                glBufferSubDataFunc = opengl_cpp.glBufferSubData_u8
+            elif data.dtype.itemsize ==2:
+                glBufferDataFunc    = opengl_cpp.glBufferData_u16
+                glBufferSubDataFunc = opengl_cpp.glBufferSubData_u16
+            else:
+                assert False, "Data type is not compatible"
+        else:
+            glBufferDataFunc    = gl.glBufferData
+            glBufferSubDataFunc = gl.glBufferSubData
+
         d = data[h_start:h_end,:]
         gl.glBindBuffer(target, buf[buf0])
-        buffer_size = np.zeros(1, dtype=np.int32)
-        gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, buffer_size)
-        if buffer_size[0] != d.nbytes:
-            gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
+        gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, self._buffer_size)
+        if self._buffer_size[0] < d.nbytes:
+            # t = time.perf_counter()
+            glBufferDataFunc(target, d.nbytes, d, gl.GL_STREAM_DRAW)
+            # print(f" glBufferData() {name} took {(time.perf_counter()-t)*1000:0.2f} ms")
 
         gl.glBindTexture(  gl.GL_TEXTURE_2D, tex)
         gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h_start, w, h_end-h_start, LUM, gl_type, None)
 
         gl.glBindBuffer(target, buf[buf1])
-        buffer_size = np.zeros(1, dtype=np.int32)
-        gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, buffer_size)
-        if buffer_size[0] != d.nbytes:
-            print(f"Different buffer 1 sizes {buffer_size[0]} {d.nbytes}")
-            gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
+        gl.glGetBufferParameteriv(target,gl.GL_BUFFER_SIZE, self._buffer_size)
+        if self._buffer_size[0] < d.nbytes:
+            # print(f"Different buffer 1 sizes {buffer_size[0]} {d.nbytes}")
+            # t = time.perf_counter()
+            # opengl_cpp.InitGlew()
+            glBufferDataFunc(target, d.nbytes, d, gl.GL_STREAM_DRAW)
+            # print(f" glBufferData() {name} took {(time.perf_counter()-t)*1000:0.2f} ms")
+            self._buffersubdata_total_time[name] = 0
+            self._buffersubdata_count[name]      = 0
+            # gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
         else:
             # This version is slower
-            use_glmap = False
+            use_glmap = True
+            t = time.perf_counter()
             if use_glmap:
                 vp = gl.glMapBuffer(target, gl.GL_WRITE_ONLY)
                 vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_void_p) )
                 ctypes.memmove(vp_array, d.ctypes.data_as(ctypes.c_void_p),  d.nbytes)
                 gl.glUnmapBuffer(target)
             else:
-                gl.glBufferSubData(target, 0, d.nbytes, d)
+                glBufferSubDataFunc(target, 0, d.nbytes, d)
+            self._buffersubdata_total_time[name] += time.perf_counter()-t
+            self._buffersubdata_count[name]      += 1
+            if self._buffersubdata_count[name] % 30 == 0:
+                print(f" glBufferSubData() {name} took {(self._buffersubdata_total_time[name]/self._buffersubdata_count[name])*1000:0.2f} ms")
 
         # Release PBOs
         gl.glBindBuffer(target, 0)

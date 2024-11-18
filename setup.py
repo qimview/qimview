@@ -195,8 +195,8 @@ setup_args = dict(
         #     # define_macros = [('VERSION_INFO', __version__)],
         #     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
         #     ),
-        CMakeExtension(name="qimview_cpp",     sourcedir="qimview/cpp_bind"),
-        # CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"),
+        CMakeExtension(name="qimview_cpp", sourcedir="qimview/cpp_bind"),
+        CMakeExtension(name="opengl_cpp",  sourcedir="qimview/opengl_cpp"),
     ],
     cmdclass = {'build_ext': CMakeBuild
                  # build_ext_subclass 
@@ -205,7 +205,8 @@ setup_args = dict(
 
 if os.environ.get('FFMPEG_ROOT', False):
     setup_args['ext_modules'].append(
-        CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp"))
+        CMakeExtension(name="decode_video_py", sourcedir="qimview/ffmpeg_cpp")
+        )
 
 
 setup(**setup_args)
