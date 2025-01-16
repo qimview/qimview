@@ -196,7 +196,7 @@ setup_args = dict(
         #     include_dirs=['qimview/cpp_bind','/usr/local/opt/libomp/include'],
         #     ),
         CMakeExtension(name="qimview_cpp", sourcedir="qimview/cpp_bind"),
-        CMakeExtension(name="opengl_cpp",  sourcedir="qimview/opengl_cpp"),
+        # CMakeExtension(name="opengl_cpp",  sourcedir="qimview/opengl_cpp"),
     ],
     cmdclass = {'build_ext': CMakeBuild
                  # build_ext_subclass 
