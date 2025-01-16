@@ -8,11 +8,16 @@ from qimview.utils.qt_imports   import QtGui, QOpenGLTexture, QImage
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 import time
 import ctypes
-from typing import Optional
 
-import os
-os.add_dll_directory("C:/Users/karl/GIT/qimview/qimview/opengl_cpp/glew-2.2.0/glew-2.2.0/build/cmake/build/bin/Release")
-import opengl_cpp
+use_opengl_cpp = True
+if use_opengl_cpp:
+    # WIP: this part needs to be moved to the file header and improved
+    import os
+    os.add_dll_directory(
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                        "../opengl_cpp/glew-2.2.0/glew-2.2.0/build/cmake/build/bin/Release"))
+    import opengl_cpp
+
 
 # Use PBO: https://www.songho.ca/opengl/gl_pbo.html#unpack
 # 1. generate buffer with glGenBuffers()
@@ -90,6 +95,14 @@ class GLTexture:
 
         self._buffersubdata_total_time = {}
         self._buffersubdata_count      = {}
+
+        # Use glMapBuffer and the memcopy, this version is slower 
+        self._use_glmap = False
+
+        # Use own binding of some opengl functions, can be faster but required glew library
+        self._use_opengl_cpp = use_opengl_cpp
+        if self._use_opengl_cpp:
+            self._glew_initialized = False
 
     @property
     def textureY(self):
@@ -178,7 +191,9 @@ class GLTexture:
             texture = np.array([0], dtype=np.uint32)
             self._gl.glGenTextures(1, texture)
             id = texture[0]
-        opengl_cpp.InitGlew()
+        if self._use_opengl_cpp and not self._glew_initialized:
+            opengl_cpp.InitGlew()
+            self._glew_initialized = True
         return id
 
     def free_texture(self, texture: int | None):
@@ -247,12 +262,11 @@ class GLTexture:
         # print(f"{buf=}")
         target = gl.GL_PIXEL_UNPACK_BUFFER
 
-        use_opengl_cpp = True
-        if use_opengl_cpp:
+        if self._use_opengl_cpp:
             if data.dtype.itemsize == 1:
                 glBufferDataFunc    = opengl_cpp.glBufferData_u8
                 glBufferSubDataFunc = opengl_cpp.glBufferSubData_u8
-            elif data.dtype.itemsize ==2:
+            elif data.dtype.itemsize == 2:
                 glBufferDataFunc    = opengl_cpp.glBufferData_u16
                 glBufferSubDataFunc = opengl_cpp.glBufferSubData_u16
             else:
@@ -284,10 +298,8 @@ class GLTexture:
             self._buffersubdata_count[name]      = 0
             # gl.glBufferData(target, d.nbytes, d, gl.GL_STREAM_DRAW)
         else:
-            # This version is slower
-            use_glmap = True
             t = time.perf_counter()
-            if use_glmap:
+            if self._use_glmap:
                 vp = gl.glMapBuffer(target, gl.GL_WRITE_ONLY)
                 vp_array = ctypes.cast(vp, ctypes.POINTER(ctypes.c_void_p) )
                 ctypes.memmove(vp_array, d.ctypes.data_as(ctypes.c_void_p),  d.nbytes)
