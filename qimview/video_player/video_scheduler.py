@@ -74,7 +74,7 @@ class VideoScheduler:
                     f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
                 # p.display_times()
             # Reset skipped counters
-            self._players[0].update_position()
+            self._players[0].update_position(force=True)
             self._skipped = [0]*len(self._players)
 
     def play(self):
