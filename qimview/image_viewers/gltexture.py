@@ -9,7 +9,7 @@ from qimview.utils.viewer_image import ImageFormat, ViewerImage
 import time
 import ctypes
 
-use_opengl_cpp = True
+use_opengl_cpp = False
 if use_opengl_cpp:
     # WIP: this part needs to be moved to the file header and improved
     import os
