@@ -552,7 +552,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.uvBuffer.bind()
         self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
-    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None) -> bool:
+    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None, use_PBO:bool = False) -> bool:
         """ set opengl texture based on input numpy array image
 
         Args:
@@ -560,7 +560,7 @@ class GLImageViewerShaders(GLImageViewerBase):
             texture_ref (GLTexture, optional): Texture of compared image, if not set, will be computed. Defaults to None.
 
         """
-        texture_ok = super(GLImageViewerShaders, self).setTexture(use_crop, texture_ref)
+        texture_ok = super(GLImageViewerShaders, self).setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         self.setVerticesBufferData()
         return texture_ok
 

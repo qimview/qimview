@@ -272,9 +272,10 @@ class VideoPlayerAV(VideoPlayerBase):
             self.widget.set_image_fast(self._im, 
                                        image_ref = self._compare_players[0]._im,
                                        texture_ref = self._compare_players[0].widget.texture,
-                                       use_crop=use_crop)
+                                       use_crop=use_crop,
+                                       use_PBO=self._scheduler._is_running)
         else:
-            self.widget.set_image_fast(self._im, use_crop=use_crop)
+            self.widget.set_image_fast(self._im, use_crop=use_crop, use_PBO=self._scheduler._is_running)
         self.widget.image_name = im_name + frame_str
 
     def set_image_data(self, np_array):
@@ -313,7 +314,8 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def display_frame_YUV420(self, frame: AVVideoFrame):
         """ Display YUV frame, for OpenGL with shaders """
-        frame_str = ' :'+str(self._frame_provider.get_frame_number())
+        frame_num = int(frame.pts/self._frame_provider._ticks_per_frame + 0.5)
+        frame_str = ' :'+str(frame_num)
         self.set_image_YUV420(frame, self._basename, frame_str)
         if self.viewer_class == GLImageViewerShaders and self._im and self._im.crop is not None:
             # Apply crop on the right

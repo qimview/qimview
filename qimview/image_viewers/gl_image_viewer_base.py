@@ -95,12 +95,22 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                        image, 
                        image_ref=None,
                        texture_ref = None,
-                       use_crop:bool=True):
+                       use_crop:bool=True,
+                       use_PBO: bool=False):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+            image_ref (_type_, optional): _description_. Defaults to None.
+            texture_ref (_type_, optional): _description_. Defaults to None.
+            use_crop (bool, optional): _description_. Defaults to True.
+            use_PBO (bool, optional): When PBO (Pixel Buffer Object) is used, the displayed image is delayed until the next image display. Defaults to True.
+        """
         # print(f"set_image_fast {use_crop=}")
         self._image     = image
         self._image_ref = image_ref
         self.image_id += 1
-        res = self.setTexture(use_crop, texture_ref)
+        res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         if not res: print("setTexture() returned False")
 
     def synchronize_data(self, other_viewer):
@@ -114,12 +124,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             if status != gl.GL_NO_ERROR:
                 print(self.tab[0]+'gl error %s' % status)
 
-    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None) -> bool:
+    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None, use_PBO:bool=False) -> bool:
         """ set opengl texture based on input numpy array image
 
         Args:
             use_crop (bool, optional): _description_. Defaults to True.
             texture_ref (GLTexture, optional): Texture of compared image, if not set, will be computed. Defaults to None.
+            use_PBO (bool, optional): When PBO (Pixel Buffer Object) is used, the displayed image is delayed until the next image display. Defaults to False.
         """
         # print(f"{use_crop=}")
 
@@ -165,7 +176,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
 
-        self.texture.create_texture_gl(self._image, h_min, h_max)
+        self.texture.create_texture_gl(self._image, h_min, h_max, use_PBO=use_PBO)
         # Set image_ref if available and compatible
         if self._image_ref and self._image_ref.channels == self._image.channels:
             if texture_ref:
@@ -173,7 +184,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             else:
                 if self.texture_ref is None:
                     self.texture_ref = GLTexture(_gl)
-                self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max)
+                self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max, use_PBO=use_PBO)
 
         if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()

@@ -166,6 +166,10 @@ class VideoPlayerBase(QtWidgets.QWidget):
     
     @play_position.setter
     def play_position(self, p:float):
+        """
+        Returns:
+            float: The current position displayed by the slider
+        """
         self.play_position_gui.param.float = p
 
     def closeEvent(self, event):

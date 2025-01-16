@@ -375,7 +375,7 @@ class GLTexture:
     def resize_event(self):
         self.free_buffers()
 
-    def create_texture_gl(self, image: ViewerImage, h_min: int = 0, h_max: int = -1):
+    def create_texture_gl(self, image: ViewerImage, h_min: int = 0, h_max: int = -1, use_PBO:bool = False):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
         # Copy to temporary textures
         height, width = image.data.shape[:2]
@@ -407,7 +407,8 @@ class GLTexture:
             w2, h2 = w>>1, h>>1
             h2_min = h_min>>1
             h2_max = h_max>>1
-            self.check_buffers()
+            if use_PBO:
+                self.check_buffers()
 
             if (self.width,self.height) != (width,height) or self._texture['Y'] is None:
                 self._texture['Y'] = self.new_texture()
@@ -429,7 +430,7 @@ class GLTexture:
                     self.bind(self._texture['V'])
                     self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
             else:
-                if self._use_buffers:
+                if self._use_buffers and use_PBO:
                     self.bufferTexSubImage(self._buffers['Y'], self._buf_idx,  self._texture['Y'], 
                         w, h_min, h_max,LUM, gl_type, image.data, 'BY')
                 else:
@@ -440,7 +441,7 @@ class GLTexture:
                 # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h2, w, h2, LUM, gl_type, image.data[h2:,:])
                 if self.interlaced_uv:
                     assert self.textureUV is not None, "textureUV should not be None"
-                    if self._use_buffers:
+                    if self._use_buffers and use_PBO:
                         self.bufferTexSubImage(self._buffers['UV'], self._buf_idx,  self._texture['UV'], 
                             w2, h2_min, h2_max,RG, gl_type, image.uv, 'BUV')
                     else:
@@ -449,7 +450,7 @@ class GLTexture:
                 else:
                     assert self._texture['U'] is not None and self._texture['V'] is not None, \
                             "textureV and textureV should not be None"
-                    if self._use_buffers:
+                    if self._use_buffers and use_PBO:
                         self.bufferTexSubImage(self._buffers['U'], self._buf_idx,  self._texture['U'], 
                             w2, h2_min, h2_max,LUM, gl_type, image.u, 'BU')
                         self.bufferTexSubImage(self._buffers['V'], self._buf_idx,  self._texture['V'], 
