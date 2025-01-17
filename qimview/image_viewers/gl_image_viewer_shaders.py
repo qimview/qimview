@@ -21,8 +21,9 @@ from .image_viewer              import trace_method, get_time
 
 # Deal with compatibility with GLSL 1.2 
 GLSL_VERSION = '120' if sys.platform=='darwin' else '330 core'
-OUT = 'varying' if GLSL_VERSION=='120' else 'out'
-IN  = 'varying' if GLSL_VERSION=='120' else 'in'
+OUT = 'varying'       if GLSL_VERSION=='120' else 'out'
+IN  = 'varying'       if GLSL_VERSION=='120' else 'in'
+VERT_IN = 'attribute' if GLSL_VERSION=='120' else 'in' # Quick fix for 1.2
 
 DECLARE_GLOBAL_COLOUR = ''                                 if GLSL_VERSION=='120' else 'out vec3 colour;'
 DECLARE_LOCAL_COLOUR  = 'vec3 colour;'                     if GLSL_VERSION=='120' else ''
@@ -54,8 +55,8 @@ class GLImageViewerShaders(GLImageViewerBase):
     vertexShader = f"""
         {glslVersion}
 
-        in vec3 vert;
-        in vec2 uV;
+        {VERT_IN} vec3 vert;
+        {VERT_IN} vec2 uV;
         uniform mat4 mvMatrix;
         uniform mat4 pMatrix;
         {OUT} vec2 UV;
