@@ -2,15 +2,15 @@ from typing import Optional, Iterator
 import av
 from av import container
 from av.frame import Frame
-from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 from qimview.video_player.video_frame_buffer_base import VideoFrameBufferBase
-
+from qimview.video_player.video_player_config import VideoConfig
 
 class VideoFrameBuffer(VideoFrameBufferBase):
     """ This class uses a thread to store several successive videos frame in a queue
     that is available for the video player
     """
-    def __init__(self, container: container.InputContainer, maxsize = 20, stream_number = 0):
+    def __init__(self, container: container.InputContainer, 
+                 maxsize = VideoConfig.framebuffer_max_size, stream_number = 0):
         super().__protocol_init__(maxsize)
         self._stream_number : int = stream_number
         self._container : container.InputContainer = container

@@ -5,6 +5,7 @@ import time
 import threading
 import gc
 from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
+from qimview.video_player.video_player_config import VideoConfig
 
 FRAMETYPE = TypeVar('FRAMETYPE')
 
@@ -25,7 +26,7 @@ class VideoFrameBufferBase(Protocol):
     _end_of_video : bool = False
     _name : str = "VideoFrameBufferBase"
 
-    def __protocol_init__(self, maxsize = 20):
+    def __protocol_init__(self, maxsize = VideoConfig.framebuffer_max_size):
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
         self._maxsize : int = maxsize
         self._queue : queue.Queue = queue.Queue(maxsize=self._maxsize)

@@ -4,6 +4,7 @@ from av import container, VideoFrame
 from av.container import streams
 from qimview.video_player.video_frame_buffer        import VideoFrameBuffer
 from qimview.video_player.video_frame_provider_base import VideoFrameProviderBase
+from qimview.video_player.video_player_config       import VideoConfig
 
 class VideoFrameProvider(VideoFrameProviderBase[VideoFrame,  container.InputContainer]):
     def __protocol_init__(self):
@@ -15,11 +16,13 @@ class VideoFrameProvider(VideoFrameProviderBase[VideoFrame,  container.InputCont
     
     def set_stream_threads(self, stream):
         stream.thread_type = "FRAME"
-        stream.thread_count = 4
+        stream.thread_count = VideoConfig.decoder_thread_count
 
     def CreateFrameBuffer(self, video_stream_number: int):
         assert self._container is not None
-        self._frame_buffer = VideoFrameBuffer(self._container, maxsize=10, stream_number = video_stream_number)
+        self._frame_buffer = VideoFrameBuffer(self._container,
+                                              maxsize = VideoConfig.framebuffer_max_size,
+                                              stream_number = video_stream_number)
 
     def logStreamInfo(self):
         st = self.stream

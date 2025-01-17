@@ -9,6 +9,8 @@ from qimview.utils.viewer_image import ImageFormat, ViewerImage
 import time
 import ctypes
 
+from qimview.video_player.video_player_config import VideoConfig
+
 use_opengl_cpp = False
 if use_opengl_cpp:
     # WIP: this part needs to be moved to the file header and improved
@@ -166,7 +168,7 @@ class GLTexture:
         # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
         # Setting max level >0 slows down on non GPU graphics
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 0)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, VideoConfig.mipmap_max_level)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
         # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)

@@ -1,10 +1,6 @@
-from typing import Optional, Iterator
-import queue
-import time
-import threading
+from qimview.video_player.video_player_config import VideoConfig
 
 import os
-from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 from qimview.video_player.video_frame_buffer_base import VideoFrameBufferBase
 
 ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
@@ -18,7 +14,7 @@ class VideoFrameBufferCpp(VideoFrameBufferBase):
     """ This class uses a thread to store several successive videos frame in a queue
     that is available for the video player
     """
-    def __init__(self, decoder: decode_lib.VideoDecoder, maxsize = 6):
+    def __init__(self, decoder: decode_lib.VideoDecoder, maxsize = VideoConfig.framebuffer_max_size):
         super().__protocol_init__(maxsize)
         self._decoder : decode_lib.VideoDecoder = decoder
 
