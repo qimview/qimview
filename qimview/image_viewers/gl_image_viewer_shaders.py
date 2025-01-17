@@ -13,7 +13,7 @@ import numpy as np
 
 from PySide6.QtOpenGL import QOpenGLBuffer
 
-from qimview.utils.qt_imports   import QtWidgets
+from qimview.utils.qt_imports   import QtWidgets, QtGui
 from qimview.utils.viewer_image import ImageFormat
 from .gl_image_viewer_base      import GLImageViewerBase
 from .gltexture                 import GLTexture
@@ -579,6 +579,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         """
         Initialize OpenGL, VBOs, upload data on the GPU, etc.
         """
+        print(f"initializeGL() {self.isValid()=}")
         if self._display_timing: self.start_timing()
 
         time1 = get_time()
@@ -597,6 +598,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
     def setShaderProgram(self, program: shaders.ShaderProgram, twotex: bool):
         if self.program != program:
+            print(f" {gl.glGetString(gl.GL_RENDERER)=} {gl.glGetString(gl.GL_VENDOR)=} {gl.glGetString(gl.GL_VERSION)=}")
             self.program = program
             # Obtain uniforms and attributes
             self.aVert              = shaders.glGetAttribLocation(self.program, "vert")
@@ -637,6 +639,10 @@ class GLImageViewerShaders(GLImageViewerBase):
     def myPaintGL(self):
         """Paint the scene.
         """
+        if not self.isValid():
+            print("*** paintGL() widget not yet valid")
+            self.create()
+            return
         if self._image is not None:
             if self.texture is None or not self.isValid():
                 print("paintGL() not ready")
@@ -651,8 +657,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.opengl_error()
         if self._display_timing: self.start_timing()
 
-        # _gl = QtGui.QOpenGLContext.currentContext().functions()
-        _gl = gl
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        # _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
         twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlap or self._show_image_differences)

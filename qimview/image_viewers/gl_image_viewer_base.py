@@ -26,14 +26,15 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.setAutoFillBackground(False)
 
         _format = QtGui.QSurfaceFormat()
-        print(f'profile is {_format.profile()}')
-        print(f'version is {_format.version()}')
         #_format.setDepthBufferSize(24)
         #_format.setVersion(3,3)
         #_format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
         _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         _format.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
         self.setFormat(_format)
+
+        print(f'profile is {_format.profile()}')
+        print(f'version is {_format.version()}')
 
         self.texture     : GLTexture | None = None
         # YUV texture of reference image
@@ -58,12 +59,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         }
 
         # Projection matrix
-        self.pMatrix  : np.ndarray | None = None 
+        self.pMatrix  : np.ndarray | None = None
         # Model view matrix
-        self.mvMatrix : np.ndarray | None = None 
+        self.mvMatrix : np.ndarray | None = None
 
         # Projection matrix
-        self.pMatrix_glm  : glm.mat4  = glm.mat4() 
+        self.pMatrix_glm  : glm.mat4  = glm.mat4()
         # Model view matrix
         self.mvMatrix_glm : glm.mat4  = glm.mat4()
 
@@ -91,8 +92,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             else:
                 print("setTexture() return False")
 
-    def set_image_fast(self, 
-                       image, 
+    def set_image_fast(self,
+                       image,
                        image_ref=None,
                        texture_ref = None,
                        use_crop:bool=True,
@@ -139,7 +140,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self.trace_calls:
             t = trace_method(self.tab)
         if self._display_timing: self.start_timing()
-        self.makeCurrent()
+        self._makeCurrent()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
 
@@ -201,6 +202,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     def paintAll(self, make_current: bool = True):
         """ Should be called from PaintGL() exclusively """
         # print("GLIVB paintAll")
+        if not self.isValid():
+            print(f"paintAll() opengl widget not yet valid")
+            return
         if self.trace_calls:
             t = trace_method(self.tab)
         if self._image is None:
@@ -209,7 +213,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
             return
         # No need for makeCurrent() since it is called from PaintGL() only ?
-        if make_current: self.makeCurrent()
+        if make_current: self._makeCurrent()
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.beginNativePainting()
@@ -254,6 +258,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # self.context().swapBuffers(self.context().surface())
         # Seems required here, at least on linux
         # self.update()
+        # doneCurrent() fails on windows
         # self.doneCurrent()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
@@ -476,6 +481,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         x0, x1, y0, y1 = self.image_centered_position()
         self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
 
+    def _makeCurrent(self):
+        # print(f"{self.isValid()=}")
+        self.makeCurrent()
+        # print(f" {self.context()=}")
+        # if self.context():
+        #     print(f"{self.context().isValid()=}")
+
     def resizeEvent(self, event):
         """Called upon window resizing: reinitialize the viewport.
         """
@@ -484,7 +496,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
-        self.makeCurrent()
+        self._makeCurrent()
         if self.isValid():
             if self.texture:
                 self.texture.resize_event()
