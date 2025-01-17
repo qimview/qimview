@@ -15,7 +15,7 @@ class VideoFrameProvider(VideoFrameProviderBase[VideoFrame,  container.InputCont
     
     def set_stream_threads(self, stream):
         stream.thread_type = "FRAME"
-        stream.thread_count = 8
+        stream.thread_count = 4
 
     def CreateFrameBuffer(self, video_stream_number: int):
         assert self._container is not None
