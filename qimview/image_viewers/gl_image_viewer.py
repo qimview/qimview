@@ -43,15 +43,15 @@ class GLImageViewer(GLImageViewerBase):
         """
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         if self.texture is None:
             print("GLImageViewer paintGL texture not set")
             return
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         # TODO: fix textureID will only work for RGB textures, not YUV
-        assert self.texture.textureID is not None, "RGB texture not initialized"
-        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
+        assert self.texture.textureRGB is not None, "RGB texture not initialized"
+        gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
         # gl.glGenerateMipmap (gl.GL_TEXTURE_2D)
         gl.glEnable(gl.GL_TEXTURE_2D)
         gl.glBegin(gl.GL_QUADS)
@@ -80,7 +80,7 @@ class GLImageViewer(GLImageViewerBase):
         gl.glDisable(gl.GL_TEXTURE_2D)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_MODULATE)
 
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()
 
     def resizeGL(self, width, height):

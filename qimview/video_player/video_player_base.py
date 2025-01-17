@@ -148,6 +148,9 @@ class VideoPlayerBase(QtWidgets.QWidget):
     def setTimeShifts(self) -> None:
         pass # to override
 
+    def getTimeShifts(self) -> list[float]:
+        return []
+
     @property
     def vertical_layout(self):
         return self._vertical_layout
@@ -166,6 +169,10 @@ class VideoPlayerBase(QtWidgets.QWidget):
     
     @play_position.setter
     def play_position(self, p:float):
+        """
+        Returns:
+            float: The current position displayed by the slider
+        """
         self.play_position_gui.param.float = p
 
     def closeEvent(self, event):

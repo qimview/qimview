@@ -29,3 +29,10 @@ _build*/
 *.prof
 # Makefiles
 Makefile
+# glew code
+glew*/
+# glfw code
+glfw*/
+# downloads
+*.zip
+*.tgz

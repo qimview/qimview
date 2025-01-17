@@ -6,6 +6,9 @@ if TYPE_CHECKING:
     from qimview.video_player.video_player_av import VideoPlayerAV
 
 class VideoScheduler:
+
+    _name = "VideoScheduler"
+
     """ Create a timer to schedule frame extraction and display 
         Can schedule 2 videos by playing each of them alternatively (TODO: remove this feature?)
     """
@@ -27,6 +30,8 @@ class VideoScheduler:
         self._fps_start        : float                = -1        # start time to compute displayed FPS
         self._fps_count        : int                  = 0         # count displayed frames
         self._total_fps_count  : int                  = 0         # count displayed and skipped frames
+        self._allow_skipping   : bool                 = True      # skip displaying frame if rendered FPS is late
+        self._max_skip         : int                  = 6         # maximum number of successive skips
 
     @property
     def is_running(self) -> bool:
@@ -64,12 +69,12 @@ class VideoScheduler:
             self._is_running = False
             for idx, p in enumerate(self._players):
                 p.set_pause()
-                p.update_position()
                 print(f" player {idx}: "
                     f"skipped = {self._skipped[idx]} "
                     f"{self._displayed_pts[idx]/p._frame_provider._ticks_per_frame}")
-                p.display_times()
+                # p.display_times()
             # Reset skipped counters
+            self._players[0].update_position(force=True)
             self._skipped = [0]*len(self._players)
 
     def play(self):
@@ -80,6 +85,11 @@ class VideoScheduler:
                 p.set_play()
             # Set _start_clock_time after starting the players to avoid rushing them
             self._start_clock_time = time.perf_counter()
+            print(f"{self._name}.play() ", end='')
+            for idx, p in enumerate(self._players):
+                print(f" player{idx}, pos = {p.play_position}", end = '')
+            print()
+
             self._display_remaining_frames()
 
     def set_playback_speed(self, speed: float):
@@ -106,24 +116,28 @@ class VideoScheduler:
         if p._frame_provider._frame and \
             p._frame_provider._frame.pts != self._displayed_pts[player_index]:
             # print(f"*** {p._name} {time.perf_counter():0.4f}", end=' --')
-            frame_time : float = p._frame_provider.get_time() - p._start_video_time
-            time_spent = self.get_time_spent()
+            # frame_time : float = p._frame_provider.get_time() - p._start_video_time
+            # time_spent = self.get_time_spent()
             p.display_frame()
             self._displayed_pts[player_index] = p._frame_provider._frame.pts
             diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
+            # print(f"{self._name}._display_frame({player_index}) {self._displayed_pts[player_index]=}")
             if p._frame_provider._frame.key_frame or diff>1:
                 p.update_position()
 
             # print(f" done {time.perf_counter():0.4f}")
+
     def _display_next_frame(self) -> bool:
         """
             Get and display next frame of each video player 
         """
+        # print(f"{self._name}._display_next_frame()")
         try:
             ok = True
             for p in self._players:
                 if p.frame_provider is not None:
                     ok = ok and p.frame_provider.get_next_frame()
+                    # print(f" {p._name}.frame_provider.get_next_frame() --> {ok}")
                 else:
                     ok = False
             if ok:
@@ -134,10 +148,13 @@ class VideoScheduler:
             return ok
         except EndOfVideo:
             print("_display_next_frame() End of video")
+            min_start_time = 0
+            for ts in self._timeshifts:
+                min_start_time = min(min_start_time, -ts)
             if self._loop:
-                for p in self._players:
+                for idx, p in enumerate(self._players):
                     if p.frame_provider is not None:
-                        p.frame_provider.set_time(p.loop_start_time)
+                        p.frame_provider.set_time(max(min_start_time,p.loop_start_time)+self._timeshifts[idx])
             else:
                 self.pause()
             return False
@@ -168,12 +185,12 @@ class VideoScheduler:
         """
             display next frames and call itself with a timer
         """
+        # print(f"{self._name}._display_remaining_frames()")
         try:
             start_display = time.perf_counter()
             # Compute frame duration based on first video only
             total_frame_duration   = 0
             nb_skip = 0
-            max_skip = 6
             if start_display>self._fps_start+1:
                 if self._fps_start >0:
                     print(f" displayed FPS: {self._fps_count} {self._total_fps_count}")
@@ -187,22 +204,27 @@ class VideoScheduler:
             frame_duration = (self._players[0].frame_provider.frame_duration)/self._playback_speed
             total_frame_duration   += frame_duration
             display_duration = time.perf_counter() - start_display
-            skip_ok = False
-            while display_duration>total_frame_duration and nb_skip < max_skip and skip_ok and total_frame_duration<0.04 and display_duration<0.04:
-                # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}", end='  ')
-                skip_ok = self._skip_next_frame()
-                if skip_ok:
-                    total_frame_duration   += frame_duration
-                    nb_skip += 1
-                    self._total_fps_count += 1
-                display_duration = time.perf_counter() - start_display
-                # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}")
-            if nb_skip>0:
-                print(f'  --- {nb_skip} ---  ')
+            if self._allow_skipping:
+                while (
+                        display_duration     > total_frame_duration and 
+                        nb_skip              < self._max_skip       and 
+                        total_frame_duration < 0.05                 and 
+                        display_duration     < 0.05 
+                       ):
+                    # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}", end='  ')
+                    skip_ok = self._skip_next_frame()
+                    if skip_ok:
+                        total_frame_duration   += frame_duration
+                        nb_skip += 1
+                        self._total_fps_count += 1
+                    display_duration = time.perf_counter() - start_display
+                    # print(f"{total_frame_duration:0.3f} {display_duration:0.3f}")
+                if nb_skip>0:
+                    print('*'*nb_skip, end=';')
             slow_down_delay = 0
             slow_down = max(self._minimal_period,int((total_frame_duration-display_duration)*1000+0.5)-slow_down_delay)
             if self.is_running:
-                QtCore.QTimer.singleShot(slow_down, lambda : self._display_remaining_frames())
+                QtCore.QTimer.singleShot(slow_down, self._display_remaining_frames)
         except Exception as e:
             print(f"Exception: {e}")
             # duration = time.perf_counter()-self.start_time

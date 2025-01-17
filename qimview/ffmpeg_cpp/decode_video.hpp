@@ -18,6 +18,7 @@ extern "C" {
 #include <pybind11/numpy.h>
 #include <vector>
 #include <tuple>
+#include <array>
 
 namespace py = pybind11;
 
@@ -100,11 +101,14 @@ namespace AV
         return _frame; 
     }
     uint64_t pts() { 
-        // std::cout << "pts: " << _frame->pts << "  " << AV_NOPTS_VALUE << std::endl;
-        // std::cout << "pkt_dts: " << _frame->pkt_dts <<  std::endl;
+        // std::cout << "pts: " << _frame->pts << "  vs ";
         // std::cout << "best effort_timestamp: " << _frame->best_effort_timestamp <<  std::endl;
-        // std::cout << "best effort pts: " << av_frame_get_best_effort_timestamp ( _frame ) << std::endl;
+        // //std::cout << "pkt_dts: " << _frame->pkt_dts <<  std::endl;
         return _frame->pts; 
+    }
+
+    uint64_t best_effort_timestamp() { 
+        return  _frame->best_effort_timestamp; 
     }
 
     int getFlags()
@@ -127,7 +131,8 @@ namespace AV
     }
 
     AVPixelFormat getFormat() { return (AVPixelFormat) _frame->format;  }
-    std::vector<int> getLinesize() {
+
+    std::vector<int> getLinesizeAll() const {
       std::vector<int> res;
       int pos = 0;
       while ((_frame->linesize[pos] != 0) && (pos < AV_NUM_DATA_POINTERS))
@@ -138,7 +143,11 @@ namespace AV
       return res;
     }
 
-    std::tuple<int, int> getShape() {
+    int getLinesize( const int& pos) const {
+        return _frame->linesize[pos];
+    }
+
+    std::tuple<int, int> getShape() const {
       return std::tuple<int, int>(_frame->height, _frame->width);
     }
     /**
@@ -184,8 +193,9 @@ namespace AV {
   class VideoDecoder
   {
   public:
-    VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0) {}
-    bool open(const char* filename, const char* device_type_name = nullptr, const int& video_stream_index=-1);
+    VideoDecoder(): _stream_index(-1), _video_stream_index(-1),_framenum(0),_current_frame_idx(0) {}
+    bool open(  const char* filename, const char* device_type_name = nullptr, 
+                const int& video_stream_index=-1, const int& num_threads = 4);
     bool seek(int64_t timestamp);
     bool seek_file(int64_t timestamp);
     int  nextFrame(bool convert=true);
@@ -212,8 +222,12 @@ namespace AV {
     AV::CodecContext  _codec_ctx;
     int               _video_stream_index; // Index among videos streams
     int               _stream_index;       // Index of the video stream among all streams
-    AV::Frame         _frame;
-    AV::Frame         _sw_frame;
+    // Use an array of frames to feed the Frame Buffer without memory overlap issues
+    static constexpr int _nb_frames = 8;
+    std::array<AV::Frame,_nb_frames> _frames;
+    bool              _use_hw;
+    AV::Frame         _gpu_frame;
+    int               _current_frame_idx;
     AV::Packet        _packet;
     int               _framenum;
     AV::Frame*        _current_frame;

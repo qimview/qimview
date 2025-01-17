@@ -361,7 +361,7 @@ class ImageViewer:
             print("{}{}: {}".format(self.tab[0], caller_name, mess))
 
     def start_timing(self, title=None):
-        if not self.display_timing: return
+        if not self._display_timing: return
         if title is None:
             # it seems that inspect is slow
             caller_name = inspect.stack()[1][3]
@@ -374,8 +374,8 @@ class ImageViewer:
         self.timings[caller_name] = ''
 
     def add_time(self, mess, current_start, force=False, title=None):
-        if not self.display_timing: return
-        if self.display_timing or force:
+        if not self._display_timing: return
+        if self._display_timing or force:
             if title is None:
                 caller_name = inspect.stack()[1][3]
                 class_name = get_class_from_frame(inspect.stack()[1][0])
@@ -390,7 +390,7 @@ class ImageViewer:
                 self.timings[caller_name] += "{}{}: {}\n".format(self.tab[0], caller_name, mess)
 
     def print_timing(self, add_total=False, force=False, title=None):
-        if not self.display_timing: return
+        if not self._display_timing: return
         if title is None:
             caller_name = inspect.stack()[1][3]
             class_name = get_class_from_frame(inspect.stack()[1][0])
@@ -423,7 +423,7 @@ class ImageViewer:
     def synchronize(self):
         """ Calls synchronization callback if available
         """
-        start_time = get_time() if self.display_timing else None
+        start_time = get_time() if self._display_timing else None
         if self._on_synchronize: 
             self._on_synchronize(self)
         if start_time:
@@ -479,7 +479,7 @@ class ImageViewer:
         """ Display the text inside the image widget, with transparent background """
         if not self._show_text:
             return
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         color = QtGui.QColor(255, 50, 50, 255) if self.is_active else QtGui.QColor(50, 50, 255, 255)
         painter.setPen(color)
         # Compute font size base on widget size
@@ -512,7 +512,7 @@ class ImageViewer:
             )
         self._text_rect = painter.boundingRect(margin_x, margin_y, 
                                                area_width, area_height, text_options, text)
-        self.print_timing()
+        if self._display_timing: self.print_timing()
 
     def compute_histogram(self, current_image, show_timings=False):
         # print(f"compute_histogram show_timings {show_timings}")

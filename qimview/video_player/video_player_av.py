@@ -1,16 +1,13 @@
 import os
 import re
-import time
 import numpy as np
-from typing import Union, Generator, List, Optional, Iterator
+
 if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
     #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
 import av
 from av import container
 from  av.video.frame import VideoFrame as AVVideoFrame # type: ignore
-from av.frame import Frame
-from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
 
 from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
 from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
@@ -26,12 +23,13 @@ try:
         os.add_dll_directory(ffmpeg_path)
 
     import decode_video_py as decode_lib
-    from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
     has_decode_video_py = True
 except Exception as e:
     print("Failed to load decode_video_py")
     has_decode_video_py = False
+print(f"{has_decode_video_py=}")
 
+from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from qimview.video_player.video_frame_provider     import VideoFrameProvider
 
 class AverageTime:
@@ -50,7 +48,9 @@ class AverageTime:
 
 class VideoPlayerAV(VideoPlayerBase):
 
-    def __init__(self, parent=None, use_decode_video_py : bool = has_decode_video_py, codec : str = '') -> None:
+    def __init__(self, parent=None, 
+                 use_decode_video_py : bool = has_decode_video_py, 
+                 codec : str = '') -> None:
         super().__init__(parent)
         self.event_recorder = None
         self._use_decode_video_py : bool = use_decode_video_py
@@ -146,6 +146,10 @@ class VideoPlayerAV(VideoPlayerBase):
         self._basename = os.path.basename(self._filename)
 
         self._initialized = False
+        # Reset textures if used
+        if self.viewer_class is GLImageViewerShaders:
+            if self.widget.texture:     self.widget.texture.reset()
+            if self.widget.texture_ref: self.widget.texture_ref.reset()
 
     def set_pause(self):
         """ Method called from scheduler """
@@ -222,11 +226,14 @@ class VideoPlayerAV(VideoPlayerBase):
             self._compare_timeshift[idx] = p.play_position - play_position
             print(f"Setting time shift for player {idx} as {self._compare_timeshift[idx]}")
 
+    def getTimeShifts(self) -> list[float]:
+        return self._compare_timeshift
+
     def speed_value_changed(self):
-        print(f"{self._name} New speed value {self.playback_speed.float}")
+        # print(f"{self._name} New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
 
-    def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
+    def update_position(self, precision=0.1, recursive=True, force=False) -> bool:
         # print(f"{self._name} update_position({precision=}, {recursive=} {force=})")
         current_time = self._frame_provider.get_time()
         # print(f"{self._name} update_position({current_time=}, {self.play_position=})")
@@ -256,16 +263,23 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
-    def set_image_YUV420(self, frame: AVVideoFrame, im_name):
+    def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str):
         video_frame = VideoFrame(frame)
+        # print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
         self._im = video_frame.toViewerImage()
-        self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
+        self._im.filename = self._filename + frame_str
+        use_crop = self._scheduler.is_running
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
-            self.widget.set_image_fast(self._im, image_ref = self._compare_players[0]._im)
+            # print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
+            self.widget.set_image_fast(self._im, 
+                                       image_ref = self._compare_players[0]._im,
+                                       texture_ref = self._compare_players[0].widget.texture,
+                                       use_crop=use_crop,
+                                       use_PBO=self._scheduler._is_running)
         else:
-            self.widget.set_image_fast(self._im)
-        self.widget.image_name = im_name
+            self.widget.set_image_fast(self._im, use_crop=use_crop, use_PBO=self._scheduler._is_running)
+        self.widget.image_name = im_name + frame_str
 
     def set_image_data(self, np_array):
         self._im._data = np_array
@@ -303,8 +317,9 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def display_frame_YUV420(self, frame: AVVideoFrame):
         """ Display YUV frame, for OpenGL with shaders """
-
-        self.set_image_YUV420(frame, f"{self._basename}: {self._frame_provider.get_frame_number()}")
+        frame_num = int(frame.pts/self._frame_provider._ticks_per_frame + 0.5)
+        frame_str = ' :'+str(frame_num)
+        self.set_image_YUV420(frame, self._basename, frame_str)
         if self.viewer_class == GLImageViewerShaders and self._im and self._im.crop is not None:
             # Apply crop on the right
             self.widget.set_crop(self._im.crop)
@@ -327,9 +342,9 @@ class VideoPlayerAV(VideoPlayerBase):
     def init_video_av(self):
         """ Initialize the container and frame generator """
         if not self._initialized:
-            print("--- init_video_av() ")
+            print("--- init_video_av()  {self._name}")
         else:
-            print("--- init_video_av() video already intialized")
+            print("--- init_video_av()  {self._name} video already intialized")
             return
         
         if self.scheduler.is_running:
@@ -346,7 +361,8 @@ class VideoPlayerAV(VideoPlayerBase):
         if self._use_decode_video_py:
             device_type = self._codec if self._codec != '' else None
             self._container = decode_lib.VideoDecoder()
-            self._container.open(self._filename, device_type, self._video_stream_number)
+            self._container.open(self._filename, device_type, self._video_stream_number, 
+                                 num_threads=8 if device_type is None else 4)
         else:
             self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
@@ -377,10 +393,9 @@ class VideoPlayerAV(VideoPlayerBase):
             self.update_position()
             self.display_frame()
         else:
-            print(" --- video already initialized")
+            print(" --- video already initialized {self._name}")
 
     def keyPressEvent(self, event):
-        print("Key pressed")
         self._key_events.key_press_event(event)
 
 def main():
@@ -400,7 +415,7 @@ def main():
     # These 3 lines solve a flickering issue by allowing immediate repaint
     # of QOpenGLWidget objects (see https://forum.qt.io/topic/99824/qopenglwidget-immediate-opengl-repaint/3)
     format = QtGui.QSurfaceFormat.defaultFormat()
-    format.setSwapInterval(0)
+    # format.setSwapInterval(0)
     QtGui.QSurfaceFormat.setDefaultFormat(format)
 
     app = QtWidgets.QApplication()
@@ -439,16 +454,23 @@ def main():
     for p in players:
         p.show()
 
+    main_window.move(10,10)
     main_window.setMinimumHeight(100)
     main_window.show()
 
+    # First display compared videos
     for idx,p in enumerate(players):
-        p.show()
-        p.set_name(f'player{idx}')
-        p.init_and_display()
-        # First video is compare to all others
         if idx>0:
+            print(f" --- setting player {idx}")
+            p.show()
+            p.set_name(f'player{idx}')
+            p.init_and_display()
+            # First video is compare to all others
             players[0].compare(p)
+    print(f" --- setting player {0}")
+    players[0].show()
+    players[0].set_name('player0')
+    players[0].init_and_display()
     
     main_window.resize(main_window.width(), 800)
 

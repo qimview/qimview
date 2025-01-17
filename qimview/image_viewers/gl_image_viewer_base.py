@@ -11,18 +11,12 @@ import numpy as np
 import OpenGL
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
-import OpenGL.GLU as glu
-import sys
 
 from .gltexture import GLTexture
 from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
-from qimview.utils.viewer_image import ImageFormat, ViewerImage
+from qimview.utils.viewer_image import ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method, OverlapMode
-
-if sys.platform=='Darwin':
-    from qimview.fix.GLU.projection import gluUnProject
-else:
-    from OpenGL.GLU import gluUnProject
+import glm
 
 class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
@@ -32,14 +26,15 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.setAutoFillBackground(False)
 
         _format = QtGui.QSurfaceFormat()
-        print(f'profile is {_format.profile()}')
-        print(f'version is {_format.version()}')
         #_format.setDepthBufferSize(24)
         #_format.setVersion(3,3)
         #_format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
         _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         _format.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
         self.setFormat(_format)
+
+        print(f'profile is {_format.profile()}')
+        print(f'version is {_format.version()}')
 
         self.texture     : GLTexture | None = None
         # YUV texture of reference image
@@ -64,10 +59,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         }
 
         # Projection matrix
-        self.pMatrix  : np.ndarray | None = None 
+        self.pMatrix  : np.ndarray | None = None
         # Model view matrix
-        self.mvMatrix : np.ndarray | None = None 
+        self.mvMatrix : np.ndarray | None = None
 
+        # Projection matrix
+        self.pMatrix_glm  : glm.mat4  = glm.mat4()
+        # Model view matrix
+        self.mvMatrix_glm : glm.mat4  = glm.mat4()
 
     def set_image(self, image):
         if self.trace_calls:
@@ -93,13 +92,27 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             else:
                 print("setTexture() return False")
 
-    def set_image_fast(self, image, image_ref=None):
+    def set_image_fast(self,
+                       image,
+                       image_ref=None,
+                       texture_ref = None,
+                       use_crop:bool=True,
+                       use_PBO: bool=False):
+        """_summary_
+
+        Args:
+            image (_type_): _description_
+            image_ref (_type_, optional): _description_. Defaults to None.
+            texture_ref (_type_, optional): _description_. Defaults to None.
+            use_crop (bool, optional): _description_. Defaults to True.
+            use_PBO (bool, optional): When PBO (Pixel Buffer Object) is used, the displayed image is delayed until the next image display. Defaults to True.
+        """
+        # print(f"set_image_fast {use_crop=}")
         self._image     = image
         self._image_ref = image_ref
         self.image_id += 1
-        res = self.setTexture()
+        res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         if not res: print("setTexture() returned False")
-
 
     def synchronize_data(self, other_viewer):
         super(GLImageViewerBase, self).synchronize_data(other_viewer)
@@ -112,17 +125,22 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             if status != gl.GL_NO_ERROR:
                 print(self.tab[0]+'gl error %s' % status)
 
-    def setTexture(self) -> bool:
+    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None, use_PBO:bool=False) -> bool:
+        """ set opengl texture based on input numpy array image
+
+        Args:
+            use_crop (bool, optional): _description_. Defaults to True.
+            texture_ref (GLTexture, optional): Texture of compared image, if not set, will be computed. Defaults to None.
+            use_PBO (bool, optional): When PBO (Pixel Buffer Object) is used, the displayed image is delayed until the next image display. Defaults to False.
         """
-        :return: set opengl texture based on input numpy array image
-        """
+        # print(f"{use_crop=}")
 
         # gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP_SGIS, gl.GL_TRUE)
 
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
-        self.makeCurrent()
+        if self._display_timing: self.start_timing()
+        self._makeCurrent()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
 
@@ -134,14 +152,42 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # Set Y, U and V
         if self.texture is None:
             self.texture = GLTexture(_gl)
-        self.texture.create_texture_gl(self._image)
+            h_min = 0
+            h_max = self._image.data.shape[0]
+        else:
+            if use_crop:
+                # Compute Y range of displayed texture
+                self.updateTransforms()
+                ratio = self.screen().devicePixelRatio()
+                _, _, y0, y1 = self.image_centered_position()
+                _, gl_posY0 = self.get_gl_coordinates(0, 0)
+                _, gl_posY1 = self.get_gl_coordinates(0, self.height() * ratio)
+                h0 = 1 - (gl_posY0 - y0) / (y1 - y0)
+                h1 = 1 - (gl_posY1 - y0) / (y1 - y0)
+                h0 = int(h0*self.texture.height+0.5)
+                h1 = int(h1*self.texture.height+0.5)
+                h0=min(self.texture.height,max(0,h0))
+                h1=min(self.texture.height,max(0,h1))
+                h_min = min(h0,h1)
+                h_max = max(h0,h1)
+            else:
+                h_min = 0
+                h_max = self._image.data.shape[0]
+            # print(f"{h_min=} {h_max=}")
+
+        self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
+
+        self.texture.create_texture_gl(self._image, h_min, h_max, use_PBO=use_PBO)
         # Set image_ref if available and compatible
         if self._image_ref and self._image_ref.channels == self._image.channels:
-            if self.texture_ref is None:
-                self.texture_ref = GLTexture(_gl)
-            self.texture_ref.create_texture_gl(self._image_ref)
+            if texture_ref:
+                self.texture_ref = texture_ref
+            else:
+                if self.texture_ref is None:
+                    self.texture_ref = GLTexture(_gl)
+                self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max, use_PBO=use_PBO)
 
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()
         # self.doneCurrent()
         return True
@@ -153,9 +199,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     # To be defined in children
     def myPaintGL(self):  pass
 
-    def paintAll(self):
+    def paintAll(self, make_current: bool = True):
         """ Should be called from PaintGL() exclusively """
         # print("GLIVB paintAll")
+        if not self.isValid():
+            print(f"paintAll() opengl widget not yet valid")
+            return
         if self.trace_calls:
             t = trace_method(self.tab)
         if self._image is None:
@@ -164,16 +213,21 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
             return
         # No need for makeCurrent() since it is called from PaintGL() only ?
-        # self.makeCurrent()
+        if make_current: self._makeCurrent()
         painter = QtGui.QPainter()
         painter.begin(self)
         painter.beginNativePainting()
         im_pos = None
         scale  = 1
         try:
-            self.updateViewPort()
-            scale = self.updateTransforms(make_current=False)
+            scale = self.updateTransforms()
             self.myPaintGL()
+
+            # Keep openGL drawing working by setting the projection matrix and viewport
+            self.updateViewPort()
+            # Still need this part for drawing lines (cursor, etc...)
+            gl.glMatrixMode(gl.GL_PROJECTION)
+            gl.glLoadMatrixf(self.pMatrix.data)
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
             if self._show_overlap:
@@ -197,13 +251,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self.show_histogram:
             current_image = self._image.data
             rect = QtCore.QRect(0, 0, self.width(), self.height())
-            histograms = self.compute_histogram_Cpp(current_image, show_timings=self.display_timing)
-            self.display_histogram(histograms, 1,  painter, rect, show_timings=self.display_timing)
+            histograms = self.compute_histogram_Cpp(current_image, show_timings=self._display_timing)
+            self.display_histogram(histograms, 1,  painter, rect, show_timings=self._display_timing)
 
         painter.end()
         # self.context().swapBuffers(self.context().surface())
         # Seems required here, at least on linux
         # self.update()
+        # doneCurrent() fails on windows
         # self.doneCurrent()
 
     def set_cursor_image_position(self, cursor_x, cursor_y):
@@ -211,7 +266,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         Sets the image position from the cursor in proportion of the image dimension
         :return:
         """
-        self.updateTransforms(make_current=True, force=True)
+        self.updateTransforms()
         ratio = self.screen().devicePixelRatio()
         self.print_log("ratio {}".format(ratio))
         pos_x = cursor_x * ratio
@@ -219,7 +274,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.print_log("pos {} {}".format(pos_x, pos_y))
         x0, x1, y0, y1 = self.image_centered_position()
 
-        gl_posX, gl_posY = self.get_mouse_gl_coordinates(pos_x, pos_y)
+        gl_posX, gl_posY = self.get_gl_coordinates(pos_x, pos_y)
         self.cursor_imx_ratio = (gl_posX - x0) / (x1 - x0)
         self.cursor_imy_ratio = 1 - (gl_posY - y0) / (y1 - y0)
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
@@ -332,7 +387,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     def updateViewPort(self):
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
+        if self._display_timing: self.start_timing()
         # keep image proportions
         w = self._width
         h = self._height
@@ -341,39 +396,35 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             gl.glViewport(0,0,w,h) # keep everything in viewport
         except Exception as e:
             self.print_log(" failed glViewport {}".format(e))
-        self.print_timing(add_total=True)
+        if self._display_timing: self.print_timing(add_total=True)
 
-    def updateTransforms(self, make_current=True, force=True) -> float:
+    def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
-        self.start_timing()
-        if make_current:
-            self.makeCurrent()
+        if self._display_timing: self.start_timing()
         # _gl = QtGui.QOpenGLContext.currentContext().functions()
         _gl = gl
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
-        print(f"updateTransforms scale {scale}")
-        try:
-            # print("current context ", QtOpenGL.QGLContext.currentContext())
-            # gl = QtOpenGL.QGLContext.currentContext().functions()
-            # update the window size
-            gl.glMatrixMode(gl.GL_PROJECTION)
-            gl.glLoadIdentity()
-            translation_unit = min(w, h)/2
-            # self.print_log("scale {}".format(scale))
-            gl.glScale(scale, scale, scale)
-            gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
-            # the window corner OpenGL coordinates are (-+1, -+1)
-            gl.glOrtho(0, w, 0, h, -1, 1)
-            gl.glMatrixMode(gl.GL_MODELVIEW)
-            gl.glLoadIdentity()
-        except Exception as e:
-            self.print_log(" setting gl matrices failed {}".format(e))
-        self.print_timing(add_total=True)
-        self.opengl_error()
+
+        # update the window size
+        translation_unit = min(w, h)/2
+        # use_glm = False
+        m = glm.mat4()
+        # the window corner OpenGL coordinates are (-+1, -+1)
+        m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
+        m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
+        m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
+        self.pMatrix_glm = m
+        self.mvMatrix_glm = glm.mat4()
+
+        # For use in shaders
+        self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
+        self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
+
+        if self._display_timing: self.print_timing(add_total=True)
         return scale
 
     def resizeGL(self, width, height):
@@ -393,14 +444,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     #     print(f"event {evt.type()}")
     #     return super().event(evt)
 
-    def get_mouse_gl_coordinates(self, x, y):
-        # done by default by gluUnProject
-        # modelview = gl.glGetDoublev(gl.GL_MODELVIEW_MATRIX)
-        # projection = gl.glGetDoublev(gl.GL_PROJECTION_MATRIX)
-        # viewport = gl.glGetIntegerv(gl.GL_VIEWPORT)
-        posX, posY, posZ = gluUnProject(x, y, 0)
-        # print(f"get_mouse_gl_coordinates({x},{y}) -> {posX} {posY}")
-        return posX, posY
+    def get_gl_coordinates(self, x, y):
+        viewport_glm = glm.vec4(0,0,int(self._width+0.5), int(self._height+0.5))
+        pos_glm = glm.unProject(glm.vec3(x,y,0),
+                                glm.transpose(self.mvMatrix_glm),
+                                glm.transpose(self.pMatrix_glm),
+                                viewport_glm)
+        return pos_glm[0], pos_glm[1]
 
     # def paintEvent(self, event):
     #     # print("GLIVB paintEvent")
@@ -428,10 +478,15 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self._mouse_events.mouse_wheel_event(event)
 
     def keyPressEvent(self, event):
-        # TODO: Fix the correct parameters for selecting image zoom/pan
         x0, x1, y0, y1 = self.image_centered_position()
-        print(f"image centered position {x1-x0} x {y1-y0}")
         self.key_press_event(event, wsize=QtCore.QSize(x1-x0, y1-y0))
+
+    def _makeCurrent(self):
+        # print(f"{self.isValid()=}")
+        self.makeCurrent()
+        # print(f" {self.context()=}")
+        # if self.context():
+        #     print(f"{self.context().isValid()=}")
 
     def resizeEvent(self, event):
         """Called upon window resizing: reinitialize the viewport.
@@ -441,6 +496,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
         self.evt_width = event.size().width()
         self.evt_height = event.size().height()
+        self._makeCurrent()
+        if self.isValid():
+            if self.texture:
+                self.texture.resize_event()
+            if self.texture_ref:
+                self.texture_ref.resize_event()
         QOpenGLWidget.resizeEvent(self, event)
+        self.setTexture()
         self.print_log(f"resize {event.size()}  self {self.width()} {self.height()}")
 

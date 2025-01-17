@@ -1,73 +1,35 @@
 
 from typing import Optional
-import time
-import av
 from av import container, VideoFrame
 from av.container import streams
-from qimview.video_player.video_frame_buffer import VideoFrameBuffer
-from qimview.video_player.video_exceptions import EndOfVideo
+from qimview.video_player.video_frame_buffer        import VideoFrameBuffer
+from qimview.video_player.video_frame_provider_base import VideoFrameProviderBase
 
-class VideoFrameProvider:
-    def __init__(self):
-        self._frame_buffer    : Optional[VideoFrameBuffer]         = None
-        self._container       : Optional[container.InputContainer] = None
-        self._playing         : bool                               = False
-        self._frame           : Optional[VideoFrame]               = None
-        # Tell is current _frame comes from saved frames, in which case
-        # the decoder is not positioned at the frame number
-        self._from_saved      : bool                               = False
-        self._video_stream    : Optional[streams.StreamContainer]  = None
-        self._framerate       : float                              = 0
-        self._time_base       : float                              = 0
-        self._frame_duration  : float                              = 0
-        self._ticks_per_frame : int                                = 0
-        self._duration        : float                              = 0
-        self._end_time        : float                              = 0
+class VideoFrameProvider(VideoFrameProviderBase[VideoFrame,  container.InputContainer]):
+    def __protocol_init__(self):
+        super().__protocol_init__()
+        self._name            : str                                = 'VideoFrameProvider'
 
-    @property
-    def frame_buffer(self) -> Optional[VideoFrameBuffer]:
-        return self._frame_buffer
+    def get_video_streams(self):
+        return self._container.streams.video
     
-    @property
-    def stream(self) -> Optional[streams.StreamContainer]:
-        return self._video_stream
+    def set_stream_threads(self, stream):
+        stream.thread_type = "FRAME"
+        stream.thread_count = 8
 
-    @property
-    def frame(self) -> Optional[VideoFrame]:
-        return self._frame
+    def CreateFrameBuffer(self, video_stream_number: int):
+        assert self._container is not None
+        self._frame_buffer = VideoFrameBuffer(self._container, maxsize=10, stream_number = video_stream_number)
 
-    @property
-    def playing(self) -> bool:
-        return self._playing
-    
-    @playing.setter
-    def playing(self, p:bool):
-        self._playing = p
-        # Stop frame buffer thread
-        if self._frame_buffer:
-            if not self._playing:
-                self._frame_buffer.terminate()
-            else:
-                self._frame_buffer.start_thread()
-
-    def set_input_container(self, container: container.InputContainer, video_stream_number=0):
-        self._container = container
-        
-        nb_videos = len(self._container.streams.video)
-        print(f"Found {nb_videos} videos")
-        if nb_videos == 0:
-            print(f"ERROR: Video not found !")
-            return
-        self._container.streams.video[video_stream_number].thread_type = "FRAME"
-        self._container.streams.video[video_stream_number].thread_count = 8
-        # self._container.streams.video[0].fast = True
-        self._video_stream = self._container.streams.video[video_stream_number]
-        print(f"Video dimensions w={self.stream.width} x h={self.stream.height}")
-
+    def logStreamInfo(self):
         st = self.stream
+        print(f"Video dimensions w={st.width} x h={st.height}")
         # Assume all frame have the same time base as the video stream
         # fps = self.stream.base_rate, base_rate vs average_rate
         print(f"FPS base:{st.base_rate} avg:{st.average_rate} guessed:{st.guessed_rate}")
+
+    def copyStreamInfo(self):
+        st = self.stream
         # --- Initialize several constants/parameters for this video
         self._framerate       = float(st.average_rate) # get the frame rate
         self._time_base       = float(st.time_base)
@@ -80,107 +42,10 @@ class VideoFrameProvider:
             self._duration    = 0
             self._end_time    = 0
 
-        self._frame_buffer = VideoFrameBuffer(container, maxsize=10, stream_number = video_stream_number)
-        self._frame = None
-
-    def get_time(self) -> float:
-        if self._frame:
-            return self._frame.pts * self._time_base
-        else:
-            return -1
-        
     @property
     def frame_duration(self) -> float:
         return self._frame_duration
-        
-    def get_frame_number(self) -> int:
-        if self._frame:
-            return int(self._frame.pts/self._ticks_per_frame + 0.5)
-        else:
-            return -1
 
-    def set_time(self, time_pos : float, exact: bool =True):
-        """ set time position in seconds 
-            the video frame corresponding to the requested time_pos is set in _frame member
-        """
-        print(f"set_time {time_pos} , _end_time={self._end_time}")
-        if self._container is None or self.frame_buffer is None:
-            print("Video not initialized")
-        else:
-            frame_num = int(time_pos*self._framerate+0.5)
-            current_frame_time = self.get_time()
-            sec_frame   = int(current_frame_time * self._framerate)
-            initial_pos = current_frame_time
-            frame       = None
-            # print(f"{sec_frame} -> {frame_num}")
-            if frame_num == sec_frame:
-                print(f"Current frame is at the requested position {frame_num} {sec_frame}")
-                return
-
-            # Check if frame is in the frame buffer saved frames,
-            # this allows fast moving within saved frames
-            for f in self.frame_buffer._saved_frames:
-                fn = int(f.pts * self._time_base* self._framerate)
-                if frame_num == fn:
-                    self._frame = f
-                    self._from_saved = True
-                    return
-
-            # if we look for a frame slightly after, don't use seek()
-            try:
-                if self._from_saved or frame_num<sec_frame or frame_num > sec_frame + 10:
-                    # seek to that nearest timestamp
-                    # is_playing = self.playing
-                    # self.playing = False
-                    self._container.seek(int(time_pos*1000000), backward=True)
-                    # It seems that the frame generator is not automatically updated
-                    if time_pos==0:
-                        self.frame_buffer.reset()
-                    # get the next available frame
-                    frame = self.frame_buffer.get_frame(timeout=10)
-                    # get the proper key frame number of that timestamp
-                    sec_frame = int(frame.pts * self._time_base * self._framerate)
-                    initial_pos = float(frame.pts * self._time_base)
-                    # self.playing = is_playing
-                # print(f"missing {int((time_pos-sec_frame)/float(1000000*time_base))} ")
-                # Loop over next frames to reach the exact requested position
-                if not frame or exact:
-                    for _ in range(sec_frame, frame_num):
-                        frame = self.frame_buffer.get_frame()
-            except StopIteration as e:
-                print(f"set_time(): Reached end of video stream")
-                # Reset valid generator
-                self.frame_buffer.reset()
-                raise EndOfVideo() from e
-            else:
-                sec_frame = int(frame.pts * self._time_base * self._framerate)
-                print(f"Frame at {initial_pos:0.3f}->"
-                      f"{float(frame.pts * self._time_base):0.3f} requested {time_pos}")
-                self._from_saved = False
-                self._frame = frame
-
-    def get_next_frame(self, timeout=6,  verbose=False) -> bool:
-        """ Obtain the next frame, usually while video is playing, 
-            can raise EndofVideo exception """
-        t = time.perf_counter()
-        if not self.frame_buffer:
-            print("Video Frame Buffer not created")
-            return False
-        try:
-            self._frame = self._frame_buffer.get_frame(timeout=timeout)
-        except (StopIteration, av.EOFError, EndOfVideo) as e:
-            print(f"get_next_frame(): Reached end of video stream: Exception {e}")
-            # Reset valid generator
-            self._frame_buffer.reset()
-            raise EndOfVideo() from e
-        else:
-            if verbose:
-                d = time.perf_counter()-t
-                s = 'gen '
-                s += 'key ' if self._frame.key_frame else ''
-                s += f'{d:0.3f} ' if d>=0.001 else ''
-                s += f'{self._frame.pict_type}'
-                s += f' {self._frame.pts}'
-                if s != 'gen P': 
-                    print(s)
-            return True
+    def seek_position(self, time_pos: float) -> bool:
+        self._container.seek(int(time_pos*1000000), backward=True)
+        return True

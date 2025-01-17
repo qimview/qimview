@@ -4,20 +4,20 @@
 #
 #
 
-import OpenGL.GL as gl
-import glm
-from OpenGL.GL import shaders
 import argparse
 import sys
+import glm
+import OpenGL.GL as gl
+from OpenGL.GL import shaders
 import numpy as np
 
-from PySide6.QtOpenGL import (QOpenGLBuffer, QOpenGLShader,
-                              QOpenGLShaderProgram, QOpenGLTexture)
+from PySide6.QtOpenGL import QOpenGLBuffer
 
-from qimview.utils.qt_imports  import QtWidgets, QtGui
-from .image_viewer             import trace_method, get_time, OverlapMode
-from .gl_image_viewer_base     import GLImageViewerBase
+from qimview.utils.qt_imports   import QtWidgets, QtGui
 from qimview.utils.viewer_image import ImageFormat
+from .gl_image_viewer_base      import GLImageViewerBase
+from .gltexture                 import GLTexture
+from .image_viewer              import trace_method, get_time
 
 # Deal with compatibility with GLSL 1.2 
 GLSL_VERSION = '120' if sys.platform=='darwin' else '330 core'
@@ -552,8 +552,15 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.uvBuffer.bind()
         self.uvBuffer.allocate(uvData, 4 * len(uvData))
 
-    def setTexture(self):
-        texture_ok = super(GLImageViewerShaders, self).setTexture()
+    def setTexture(self, use_crop:bool=True, texture_ref : GLTexture = None, use_PBO:bool = False) -> bool:
+        """ set opengl texture based on input numpy array image
+
+        Args:
+            use_crop (bool, optional): _description_. Defaults to True.
+            texture_ref (GLTexture, optional): Texture of compared image, if not set, will be computed. Defaults to None.
+
+        """
+        texture_ok = super(GLImageViewerShaders, self).setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         self.setVerticesBufferData()
         return texture_ok
 
@@ -572,7 +579,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         """
         Initialize OpenGL, VBOs, upload data on the GPU, etc.
         """
-        self.start_timing()
+        print(f"initializeGL() {self.isValid()=}")
+        if self._display_timing: self.start_timing()
 
         time1 = get_time()
         self.set_shaders()
@@ -580,17 +588,61 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         self.setVerticesBufferData()
         self.setBufferData()
-        self.print_timing()
+        if self._display_timing: self.print_timing()
 
     def viewer_update(self):
         self.update()
 
     def paintGL(self):
-        self.paintAll()
+        self.paintAll(make_current=False)
+
+    def setShaderProgram(self, program: shaders.ShaderProgram, twotex: bool):
+        if self.program != program:
+            print(f" {gl.glGetString(gl.GL_RENDERER)=} {gl.glGetString(gl.GL_VENDOR)=} {gl.glGetString(gl.GL_VERSION)=}")
+            self.program = program
+            # Obtain uniforms and attributes
+            self.aVert              = shaders.glGetAttribLocation(self.program, "vert")
+            self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
+            self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
+            self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
+            if self._image and self._image.channels == ImageFormat.CH_YUV420:
+                self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
+                if twotex:
+                    self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
+                if self.texture.interlaced_uv:
+                    self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
+                    if twotex:
+                        self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
+                else:
+                    self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
+                    self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+                    if twotex:
+                        self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
+                        self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
+                if twotex:
+                    self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
+                    self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
+                    self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
+                    self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
+                self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
+            else:
+                self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
+            self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
+            self.black_level_location = shaders.glGetUniformLocation(self.program, "black_level")
+            self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
+            self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, "g_r_coeff")
+            self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, "g_b_coeff")
+            self.max_value_location   = shaders.glGetUniformLocation(self.program, "max_value")
+            self.max_type_location    = shaders.glGetUniformLocation(self.program, "max_type")
+            self.gamma_location       = shaders.glGetUniformLocation(self.program, "gamma")
 
     def myPaintGL(self):
         """Paint the scene.
         """
+        if not self.isValid():
+            print("*** paintGL() widget not yet valid")
+            self.create()
+            return
         if self._image is not None:
             if self.texture is None or not self.isValid():
                 print("paintGL() not ready")
@@ -603,66 +655,33 @@ class GLImageViewerShaders(GLImageViewerBase):
         assert self.texture is not None
 
         self.opengl_error()
-        self.start_timing()
+        if self._display_timing: self.start_timing()
 
-        # _gl = QtGui.QOpenGLContext.currentContext().functions()
-        _gl = gl
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        # _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
         twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlap or self._show_image_differences)
-        if self._image and self._image.channels in ImageFormat.CH_RAWFORMATS():
-            self.program = self.program_RAW
-        elif self._image and self._image.channels == ImageFormat.CH_YUV420:
-            if self.texture.interlaced_uv:
-                self.program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
-            else:
-                self.program = self.program_YUV420_twotex if twotex else self.program_YUV420
-        else:
-            # TODO: check for other types: scalar ...
-            self.program = self.program_RGB
+        # Default shader program
+        program = self.program_RGB
+        if self._image:
+            if self._image.channels in ImageFormat.CH_RAWFORMATS():
+                self.program = self.program_RAW
+            elif self._image.channels == ImageFormat.CH_YUV420:
+                if self.texture.interlaced_uv:
+                    program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
+                else:
+                    program = self.program_YUV420_twotex if twotex else self.program_YUV420
 
-        # Obtain uniforms and attributes
-        self.aVert              = shaders.glGetAttribLocation(self.program, "vert")
-        self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
-        self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
-        self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
-        if self._image and self._image.channels == ImageFormat.CH_YUV420:
-            self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
-            if twotex:
-                self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
-            if self.texture.interlaced_uv:
-                self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
-                if twotex:
-                    self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
-            else:
-                self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
-                self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
-                if twotex:
-                    self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
-                    self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
-            if twotex:
-                self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
-                self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
-                self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
-                self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
-            self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
-        else:
-            self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
-        self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
-        self.black_level_location = shaders.glGetUniformLocation(self.program, "black_level")
-        self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
-        self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, "g_r_coeff")
-        self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, "g_b_coeff")
-        self.max_value_location   = shaders.glGetUniformLocation(self.program, "max_value")
-        self.max_type_location    = shaders.glGetUniformLocation(self.program, "max_type")
-        self.gamma_location       = shaders.glGetUniformLocation(self.program, "gamma")
+        # Avoid calling each time glGet{Attrib,Uniform}Location()
+        self.setShaderProgram(program, twotex)
 
         # use shader program
         self.print_log("self.program = {}".format(self.program))
         shaders.glUseProgram(self.program)
 
         # set uniforms
-        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE, self.pMatrix)
+        gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE,  self.pMatrix)
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
         if self._image and self._image.channels == ImageFormat.CH_YUV420:
             _gl.glUniform1i(self.uYTex, 0)
@@ -758,7 +777,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                     _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
         else:
             if self.texture:
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureID)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
         _gl.glEnable(gl.GL_TEXTURE_2D)
 
         # draw
@@ -771,9 +790,9 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         shaders.glUseProgram(0)
 
-        self.print_timing(force=True)
+        if self._display_timing: self.print_timing(force=True)
 
-    def updateTransforms(self, make_current=False, force=True) -> float:
+    def updateTransforms(self) -> float:
         if self.trace_calls:
             t = trace_method(self.tab)
         if self.display_timing:
@@ -784,38 +803,24 @@ class GLImageViewerShaders(GLImageViewerBase):
         # Deduce new scale from mouse vertical displacement
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
         new_transform_params = [w,h,dx,dy,scale]
-        if self._transform_param != new_transform_params or force:
+        if self._transform_param != new_transform_params:
             # update the window size
-            if make_current:
-                self.makeCurrent()
-            use_glm = False
-            if use_glm:
-                translation_unit = min(w, h)/2
-                m = glm.mat4()
-                # the window corner OpenGL coordinates are (-+1, -+1)
-                m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
-                m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
-                m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
-                self.pMatrix = np.array(m, dtype=np.float32).flatten()
+            translation_unit = min(w, h)/2
+            # use_glm = False
+            m = glm.mat4()
+            # the window corner OpenGL coordinates are (-+1, -+1)
+            m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
+            m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
+            m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
+            self.pMatrix_glm = m
+            self.mvMatrix_glm = glm.mat4()
 
-                m = glm.mat4()
-                self.mvMatrix = np.array(m, dtype=np.float32).flatten()
-            else:
-                gl.glMatrixMode(gl.GL_PROJECTION)
-                gl.glLoadIdentity()
-                translation_unit = min(w, h)/2
-                gl.glScale(scale, scale, scale)
-                gl.glTranslate(dx/translation_unit, dy/translation_unit, 0)
-                # the window corner OpenGL coordinates are (-+1, -+1)
-                gl.glOrtho(0, w, 0, h, -1, 1)
-                self.pMatrix = np.array(gl.glGetFloatv(gl.GL_PROJECTION_MATRIX), dtype=np.float32).flatten()
-
-                gl.glMatrixMode(gl.GL_MODELVIEW)
-                gl.glLoadIdentity()
-                self.mvMatrix = np.array(gl.glGetFloatv(gl.GL_MODELVIEW_MATRIX), dtype=np.float32).flatten()
+            # For use in shaders
+            self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
+            self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
 
             self._transform_param = new_transform_params
-        if self.display_timing:
+        if self._display_timing:
             self.print_log('updateTransforms time {:0.1f} ms'.format((get_time()-start_time)*1000))
         return scale
 

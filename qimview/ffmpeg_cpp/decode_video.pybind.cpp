@@ -346,23 +346,28 @@ PYBIND11_MODULE(decode_video_py, m) {
 #define ARG(v) py::arg(#v)
 
   py::class_<AV::Frame>(m, "Frame")
-    .def         (py::init<>()) // constructor
-    .def         ("get",         &AV::Frame::get, py::return_value_policy::reference)
-    // .def         ("pts",         &AV::Frame::pts)
-    .def         ("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width)
+    .def                  (py::init<>()) // constructor
+    .def                  ("get",         &AV::Frame::get, py::return_value_policy::reference)
+    .def                  ("getData",     &AV::Frame::getData, "get frame data", ARG(channel), ARG(height), ARG(width)
                                          , ARG(verbose) = false)
-    .def         ("getFormat",   &AV::Frame::getFormat)
-    .def         ("getShape",    &AV::Frame::getShape)
-    .def         ("getLinesize", &AV::Frame::getLinesize)
-    .def_property("flags",       &AV::Frame::getFlags, &AV::Frame::setFlags)
-    .def_property_readonly("pts",              &AV::Frame::pts)
-    .def_property_readonly("key_frame",        &AV::Frame::key_frame)
-    .def_property_readonly("interlaced_frame", &AV::Frame::interlaced_frame)
+    .def                  ("getFormat",             &AV::Frame::getFormat)
+    .def                  ("getShape",              &AV::Frame::getShape)
+    .def                  ("getLinesizeAll",        &AV::Frame::getLinesizeAll)
+    .def                  ("getLinesize",           &AV::Frame::getLinesize)
+    .def_property         ("flags",                 &AV::Frame::getFlags, &AV::Frame::setFlags)
+    .def_property_readonly("pts",                   &AV::Frame::pts)
+    .def_property_readonly("best_effort_timestamp", &AV::Frame::best_effort_timestamp)
+    .def_property_readonly("key_frame",             &AV::Frame::key_frame)
+    .def_property_readonly("interlaced_frame",      &AV::Frame::interlaced_frame)
     ;
 
   py::class_<AV::VideoDecoder>(m, "VideoDecoder")
     .def(py::init<>()) // constructor
-    .def("open",             &AV::VideoDecoder::open, "Open decoder", ARG(filename), ARG(devide_type_name) = nullptr, ARG(video_stream_index) = -1)
+    .def("open",             &AV::VideoDecoder::open, "Open decoder", 
+            ARG(filename), 
+            ARG(devide_type_name) = nullptr, 
+            ARG(video_stream_index) = -1,
+            ARG(num_threads) = 4)
     .def("nextFrame",        &AV::VideoDecoder::nextFrame, "Decode next video frame", ARG(convert) = true)
     .def("getFrame",         &AV::VideoDecoder::getFrame, py::return_value_policy::reference)
     .def("seek",             &AV::VideoDecoder::seek)
