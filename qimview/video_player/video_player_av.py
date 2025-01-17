@@ -136,7 +136,7 @@ class VideoPlayerAV(VideoPlayerBase):
         """
         # Pause video if running
         self.pause()
-        res = re.match('^(.*):(\d+)$', filename)
+        res = re.match(r'^(.*):(\d+)$', filename)
         if res:
             self._filename = res.group(1)
             self._video_stream_number = int(res.group(2))
