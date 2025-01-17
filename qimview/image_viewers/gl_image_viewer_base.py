@@ -488,6 +488,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         # if self.context():
         #     print(f"{self.context().isValid()=}")
 
+    def resetTextureBuffers(self):
+        self._makeCurrent()
+        if self.isValid():
+            if self.texture:
+                self.texture.free_buffers()
+            if self.texture_ref:
+                self.texture_ref.free_buffers()
+
     def resizeEvent(self, event):
         """Called upon window resizing: reinitialize the viewport.
         """

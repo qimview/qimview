@@ -154,6 +154,8 @@ class VideoPlayerAV(VideoPlayerBase):
     def set_pause(self):
         """ Method called from scheduler """
         self._frame_provider.playing = False
+        if self.viewer_class is GLImageViewerShaders:
+            self.widget.resetTextureBuffers()
 
     def pause(self):
         """ Method called from video player """
