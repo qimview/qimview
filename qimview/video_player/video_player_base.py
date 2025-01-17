@@ -148,6 +148,9 @@ class VideoPlayerBase(QtWidgets.QWidget):
     def setTimeShifts(self) -> None:
         pass # to override
 
+    def getTimeShifts(self) -> list[float]:
+        return []
+
     @property
     def vertical_layout(self):
         return self._vertical_layout

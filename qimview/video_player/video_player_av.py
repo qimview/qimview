@@ -226,6 +226,9 @@ class VideoPlayerAV(VideoPlayerBase):
             self._compare_timeshift[idx] = p.play_position - play_position
             print(f"Setting time shift for player {idx} as {self._compare_timeshift[idx]}")
 
+    def getTimeShifts(self) -> list[float]:
+        return self._compare_timeshift
+
     def speed_value_changed(self):
         # print(f"{self._name} New speed value {self.playback_speed.float}")
         self._scheduler.set_playback_speed(pow(2,self.playback_speed.float))
@@ -339,9 +342,9 @@ class VideoPlayerAV(VideoPlayerBase):
     def init_video_av(self):
         """ Initialize the container and frame generator """
         if not self._initialized:
-            print("--- init_video_av() ")
+            print("--- init_video_av()  {self._name}")
         else:
-            print("--- init_video_av() video already intialized")
+            print("--- init_video_av()  {self._name} video already intialized")
             return
         
         if self.scheduler.is_running:
@@ -390,7 +393,7 @@ class VideoPlayerAV(VideoPlayerBase):
             self.update_position()
             self.display_frame()
         else:
-            print(" --- video already initialized")
+            print(" --- video already initialized {self._name}")
 
     def keyPressEvent(self, event):
         self._key_events.key_press_event(event)
@@ -412,7 +415,7 @@ def main():
     # These 3 lines solve a flickering issue by allowing immediate repaint
     # of QOpenGLWidget objects (see https://forum.qt.io/topic/99824/qopenglwidget-immediate-opengl-repaint/3)
     format = QtGui.QSurfaceFormat.defaultFormat()
-    format.setSwapInterval(0)
+    # format.setSwapInterval(0)
     QtGui.QSurfaceFormat.setDefaultFormat(format)
 
     app = QtWidgets.QApplication()
@@ -451,16 +454,20 @@ def main():
     for p in players:
         p.show()
 
+    main_window.move(10,10)
     main_window.setMinimumHeight(100)
     main_window.show()
 
     # First display compared videos
-    for idx in range(1,len(players)):
-        p.show()
-        p.set_name(f'player{idx}')
-        p.init_and_display()
-        # First video is compare to all others
-        players[0].compare(p)
+    for idx,p in enumerate(players):
+        if idx>0:
+            print(f" --- setting player {idx}")
+            p.show()
+            p.set_name(f'player{idx}')
+            p.init_and_display()
+            # First video is compare to all others
+            players[0].compare(p)
+    print(f" --- setting player {0}")
     players[0].show()
     players[0].set_name('player0')
     players[0].init_and_display()

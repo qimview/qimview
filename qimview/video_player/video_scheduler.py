@@ -148,10 +148,13 @@ class VideoScheduler:
             return ok
         except EndOfVideo:
             print("_display_next_frame() End of video")
+            min_start_time = 0
+            for ts in self._timeshifts:
+                min_start_time = min(min_start_time, -ts)
             if self._loop:
-                for p in self._players:
+                for idx, p in enumerate(self._players):
                     if p.frame_provider is not None:
-                        p.frame_provider.set_time(p.loop_start_time)
+                        p.frame_provider.set_time(max(min_start_time,p.loop_start_time)+self._timeshifts[idx])
             else:
                 self.pause()
             return False
