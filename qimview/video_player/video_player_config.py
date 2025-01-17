@@ -22,11 +22,11 @@ class VideoConfig:
     framebuffer_max_size : int = 10
 
 if res:
-    VideoConfig.mipmap_max_level     = config.getint('VIDEOPLAYER', 'MipMapMaxLevel',
+    VideoConfig.mipmap_max_level     = config.getint('VIDEOPLAYER', 'mipmap_max_level',
                                                    fallback=VideoConfig.mipmap_max_level)
-    VideoConfig.decoder_thread_count = config.getint('VIDEOPLAYER', 'DecoderThreadCount',
+    VideoConfig.decoder_thread_count = config.getint('VIDEOPLAYER', 'decoder_thread_count',
                                                    fallback=VideoConfig.decoder_thread_count)
-    VideoConfig.framebuffer_max_size = config.getint('VIDEOPLAYER', 'FrameBufferMaxSize',
+    VideoConfig.framebuffer_max_size = config.getint('VIDEOPLAYER', 'framebuffer_max_size',
                                                    fallback=VideoConfig.framebuffer_max_size)
     print(f"{VideoConfig.mipmap_max_level=}")
     print(f"{VideoConfig.decoder_thread_count=}")
