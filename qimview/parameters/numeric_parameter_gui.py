@@ -24,10 +24,20 @@ class NumericParameterGui(QtWidgets.QSlider):
         self.created = False
         self.decimals = 2
         self._text_format : Callable | None = None
+        # This flag also updating only the label position on during slider tracking
+        self._tracking_textonly : bool = False
         if layout is not None:
             self.create()
             self.updateText()
             self.add_to_layout(layout)
+
+    @property
+    def tracking_textonly(self) -> bool:
+        return self._tracking_textonly
+
+    @tracking_textonly.setter
+    def tracking_textonly(self, val:bool) -> None:
+        self._tracking_textonly = val
 
     def set_event_recorder(self, evtrec):
         self.event_recorder = evtrec
@@ -101,8 +111,9 @@ class NumericParameterGui(QtWidgets.QSlider):
     def changed(self, callback=None):
         self.param.int = self.value()
         self.updateText()
-        if callback is not None:
-            callback()
+        if callback is None or (self._tracking_textonly and self.isSliderDown()):
+            return
+        callback()
 
     def mouseDoubleClickEvent(self, evt):
         self.reset()

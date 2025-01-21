@@ -114,8 +114,8 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.play_position_gui.decimals = 3
         self.play_position_gui.set_pressed_callback(self.pause)
         self.play_position_gui.set_released_callback(self.reset_play)
-        # Disable tracking to avoid too many slow events
-        self.play_position_gui.setTracking(False)
+        # Disable video update while moving the slider, only update the label
+        self.play_position_gui.tracking_textonly = True
         self.play_position_gui.set_valuechanged_callback(self.slider_value_changed)
         self.play_position_gui.create()
         self.play_position_gui.add_to_layout(hor_layout,5)

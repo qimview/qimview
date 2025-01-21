@@ -169,6 +169,8 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"set_play _start_video_time = {self._start_video_time:0.3f}")
 
     def reset_play(self):
+        if self.play_position_gui.tracking_textonly:
+            self.set_play_position(fromSlider=True)
         if self._was_active:
             self._scheduler.play()
 
