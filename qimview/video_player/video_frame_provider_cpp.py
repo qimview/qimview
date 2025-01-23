@@ -13,7 +13,7 @@ from qimview.video_player.video_frame_provider_base import VideoFrameProviderBas
 class VideoFrameProviderCpp(VideoFrameProviderBase[decode_lib.Frame, decode_lib.VideoDecoder]):
     def __init__(self):
         super().__protocol_init__()
-        self._name            : str                                = 'VideoFrameProviderCpp'
+        self._name : str = 'VideoFrameProviderCpp'
 
     @property
     def frame_duration(self) -> float:

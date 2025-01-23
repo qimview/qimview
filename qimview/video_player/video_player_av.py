@@ -31,6 +31,7 @@ print(f"{has_decode_video_py=}")
 
 from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from qimview.video_player.video_frame_provider     import VideoFrameProvider
+from qimview.video_player.video_player_config      import VideoConfig
 
 class AverageTime:
     def __init__(self):
@@ -364,7 +365,8 @@ class VideoPlayerAV(VideoPlayerBase):
             self._container = None
         if self._use_decode_video_py:
             device_type = self._codec if self._codec != '' else None
-            self._container = decode_lib.VideoDecoder()
+            # Use framebuffer max size to set the number of allocated frames in C++ Decoder
+            self._container = decode_lib.VideoDecoder(VideoConfig.framebuffer_max_size)
             self._container.open(self._filename, device_type, self._video_stream_number, 
                                  num_threads=8 if device_type is None else 4)
         else:

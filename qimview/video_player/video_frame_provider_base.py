@@ -3,6 +3,7 @@ from abc import abstractmethod
 import time
 from qimview.video_player.video_frame_buffer_base import VideoFrameBufferBase
 from qimview.video_player.video_exceptions import EndOfVideo
+from qimview.utils.qt_imports import QtWidgets, QtCore
 
 FRAMETYPE   = TypeVar('FRAMETYPE')
 DECODERTYPE = TypeVar('DECODERTYPE')
@@ -133,6 +134,11 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
 
             # Check if frame is in the frame buffer saved frames,
             # this allows fast moving within saved frames
+            print(f"{len(self.frame_buffer._saved_frames)=}", end=": ")
+            for f in self.frame_buffer._saved_frames:
+                fn = int(f.pts * self._time_base* self._framerate + 0.5)
+                print(f'{fn}-{f.pts}', end=', ')
+            print('')
             for f in self.frame_buffer._saved_frames:
                 fn = int(f.pts * self._time_base* self._framerate + 0.5)
                 if frame_num == fn:
@@ -143,6 +149,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
 
             # if we look for a frame slightly after, don't use seek()
             try:
+                wait_cursor = False
                 if self._from_saved or frame_num<cur_frame or frame_num > cur_frame + 10:
                     # seek to that nearest timestamp
                     self.seek_position(time_pos)
@@ -150,7 +157,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                     if time_pos==0:
                         self.frame_buffer.reset()
                     # get the next available frame
-                    frame = self.frame_buffer.get_frame(timeout=1)
+                    frame = self.frame_buffer.get_frame(timeout=1, save=False)
                     # get the proper key frame number of that timestamp
                     found_frame_pos = int(frame.pts * self._time_base * self._framerate + 0.5)
                     initial_pos = float(frame.pts * self._time_base)
@@ -160,8 +167,17 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                 # print(f"missing {int((time_pos-found_frame_pos)/float(1000000*time_base))} ")
                 # Loop over next frames to reach the exact requested position
                 if not frame or exact:
-                    for _ in range(found_frame_pos, frame_num):
-                        frame = self.frame_buffer.get_frame()
+                    wait_cursor = frame_num-found_frame_pos>10
+                    if wait_cursor:
+                        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+                    print(f" {found_frame_pos=} {frame_num=}")
+                    for idx in range(found_frame_pos, frame_num):
+                        save = (frame_num-idx)<2
+                        if save:
+                            print(f'{idx}*', end=', ')
+                        else:
+                            print(f'{idx}', end=', ')
+                        frame = self.frame_buffer.get_frame(save=save)
             except EndOfVideo: #  as e:
                 print(f"set_time(): Reached end of video stream")
                 # Reset valid generator
@@ -172,6 +188,9 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                       f"{float(frame.pts * self._time_base):0.3f} requested {time_pos}")
                 self._from_saved = False
                 self._frame = frame
+            finally:
+                if wait_cursor:
+                    QtWidgets.QApplication.restoreOverrideCursor()
 
     def get_next_frame(self, timeout=6,  verbose=False) -> bool:
         """ Obtain the next frame, usually while video is playing, 

@@ -6,6 +6,7 @@ import threading
 import gc
 from qimview.video_player.video_exceptions import EndOfVideo, TimeOut
 from qimview.video_player.video_player_config import VideoConfig
+from collections import deque
 
 FRAMETYPE = TypeVar('FRAMETYPE')
 
@@ -18,9 +19,12 @@ class VideoFrameBufferBase(Protocol):
     """
 
     _maxsize : int
-    _queue : queue.Queue
+    _queue : queue.Queue[FRAMETYPE]
     # Save frames before emptying the queue to faster manual display
-    _saved_frames = []
+    # The C++ decoder is currently limited to 8 frames in memory
+    # TODO: improve this limitation and control it better
+    _max_saved_frames : int = 8
+    _saved_frames     : deque[FRAMETYPE] = deque(maxlen=_max_saved_frames)
     _running : bool = False
     _thread : Optional[threading.Thread] = None
     _end_of_video : bool = False
@@ -29,9 +33,9 @@ class VideoFrameBufferBase(Protocol):
     def __protocol_init__(self, maxsize = VideoConfig.framebuffer_max_size):
         print(f" VideoFrameBuffer(maxsize = {maxsize})")
         self._maxsize : int = maxsize
-        self._queue : queue.Queue = queue.Queue(maxsize=self._maxsize)
+        self._queue : queue.Queue[FRAMETYPE] = queue.Queue(maxsize=self._maxsize)
         # Save frames before emptying the queue to faster manual display
-        self._saved_frames = []
+        self._saved_frames : deque[FRAMETYPE] = deque(maxlen=VideoFrameBufferBase._max_saved_frames)
         self._running : bool = False
         self._thread : Optional[threading.Thread] = None
         self._end_of_video : bool = False
@@ -40,13 +44,25 @@ class VideoFrameBufferBase(Protocol):
     def running(self) -> bool:
         return self._running
 
+    def add_saved_frame(self, frame: FRAMETYPE):
+        # Add a frame only if not already saved
+        # Warning: frames may point to the same C++ pointer, 
+        # so we have to loop over _saved_frames which might point several times to the same C++ pointer
+        for f in self._saved_frames:
+            if f.pts == frame.pts:
+                return
+        print(f"saving frame {frame.pts=}")
+        self._saved_frames.append(frame)
+
     def reset_queue(self):
-        # print("VideoFrameBuffer.reset_queue()")
-        # If queue is empty, keep current saved frames
-        if self._queue.qsize()>0:
-            # print(f"saving {self._queue.qsize()} frames")
-            self._saved_frames = [ self._queue.get() for _ in range(self._queue.qsize())]
-        self._queue = queue.Queue(maxsize=self._maxsize)
+        if self._queue.qsize() > 0:
+            print(f"VideoFrameBuffer.reset_queue() *** {self._queue.qsize()=} *** ")
+            # If queue is empty, keep current saved frames
+            if self._queue.qsize()>0:
+                # print(f"saving {self._queue.qsize()} frames")
+                for _ in range(self._queue.qsize()):
+                    self.add_saved_frame(self._queue.get())
+            self._queue = queue.Queue(maxsize=self._maxsize)
 
     @abstractmethod
     def decodeNextFrame(self) -> FRAMETYPE | None:
@@ -115,11 +131,12 @@ class VideoFrameBufferBase(Protocol):
     def size(self) -> int:
         return self._queue.qsize()
 
-    def get_frame(self, timeout=0.5) -> FRAMETYPE:
+    def get_frame(self, timeout=0.5, save:bool = True) -> FRAMETYPE:
         """ Get the next video frame from the queue or from the decoder directly
 
         Args:
             timeout (int, optional): _description_. Defaults to 6.
+            save (bool, optional): if true, save the frame if not thread is not running (not in playing mode)
 
         Raises:
             EndOfVideo: _description_
@@ -143,10 +160,10 @@ class VideoFrameBufferBase(Protocol):
         elif not self._running and self._end_of_video:
             raise EndOfVideo()
         else:
-            res = self.get_nothread()
+            res = self.get_nothread(save=save)
         return res
 
-    def get_nothread(self) -> Optional[FRAMETYPE]:
+    def get_nothread(self, save:bool = True) -> Optional[FRAMETYPE]:
         # print("VideoFrameBufferBase.get_nothread()")
         if self.decoderOk():
             res = self.decodeNextFrame()
@@ -156,6 +173,9 @@ class VideoFrameBufferBase(Protocol):
                 self.resetDecoder()
                 raise EndOfVideo()
             else:
+                if save:
+                    # Add to saved frames to speed-up moving around
+                    self.add_saved_frame(res)
                 return res
         else:
             return None
@@ -182,7 +202,7 @@ class VideoFrameBufferBase(Protocol):
             self._thread.start()
             duration = 0
             # Empty saved frames to avoid using too much memory
-            self._saved_frames = []
+            self._saved_frames.clear()
             # Fill the queue
             while self._queue.qsize()<self._maxsize and self._running:
                 time.sleep(0.1)
