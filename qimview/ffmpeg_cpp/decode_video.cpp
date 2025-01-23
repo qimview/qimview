@@ -614,7 +614,7 @@ int AV::VideoDecoder::nextFrame(bool convert)
   auto initial_idx = _current_frame_idx;
   AV::Frame* frame;
   if (!_use_hw) 
-    frame = &_frames[initial_idx];
+    frame = _frames[initial_idx];
   else
     // in case of GPU, use a single frame for decoding and save the converted frame in the array
     frame = &_gpu_frame;
@@ -633,7 +633,7 @@ int AV::VideoDecoder::nextFrame(bool convert)
       if (convert && _use_hw) {
         // use previous circular frame as frame for CPU 2 GPU convertion?
         // _nb_frames must be > 1
-        AV::Frame* cpu_frame = &_frames[initial_idx];
+        AV::Frame* cpu_frame = _frames[initial_idx];
         _current_frame = frame->gpu2Cpu(hw_pix_fmt, cpu_frame);
       }
       else
