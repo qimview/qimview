@@ -51,7 +51,7 @@ class VideoFrameBufferBase(Protocol):
         for f in self._saved_frames:
             if f.pts == frame.pts:
                 return
-        print(f"saving frame {frame.pts=}")
+        # print(f"saving frame {frame.pts=}")
         self._saved_frames.append(frame)
 
     def reset_queue(self):

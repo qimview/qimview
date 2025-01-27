@@ -367,8 +367,9 @@ class VideoPlayerAV(VideoPlayerBase):
             device_type = self._codec if self._codec != '' else None
             # Use framebuffer max size to set the number of allocated frames in C++ Decoder
             self._container = decode_lib.VideoDecoder(VideoConfig.framebuffer_max_size)
-            self._container.open(self._filename, device_type, self._video_stream_number, 
-                                 num_threads=8 if device_type is None else 4)
+            self._container.open(self._filename, device_type, self._video_stream_number,
+                                 num_threads=VideoConfig.decoder_thread_count,
+                                 thread_type=VideoConfig.decoder_thread_type)
         else:
             self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)

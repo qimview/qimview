@@ -15,7 +15,7 @@ class VideoFrameProvider(VideoFrameProviderBase[VideoFrame,  container.InputCont
         return self._container.streams.video
     
     def set_stream_threads(self, stream):
-        stream.thread_type = "FRAME"
+        stream.thread_type = VideoConfig.decoder_thread_type
         stream.thread_count = VideoConfig.decoder_thread_count
 
     def CreateFrameBuffer(self, video_stream_number: int):
