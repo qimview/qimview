@@ -362,12 +362,13 @@ PYBIND11_MODULE(decode_video_py, m) {
     ;
 
   py::class_<AV::VideoDecoder>(m, "VideoDecoder")
-    .def(py::init<const int&>(), ARG(nb_frames)=int(0)) // constructor
+    .def(py::init<const int&>(), ARG(nb_frames)=int(8)) // constructor
     .def("open",             &AV::VideoDecoder::open, "Open decoder", 
             ARG(filename), 
             ARG(devide_type_name) = nullptr, 
             ARG(video_stream_index) = -1,
-            ARG(num_threads) = 4)
+            ARG(num_threads) = 4,
+            ARG(thread_type) = "FRAME")
     .def("nextFrame",        &AV::VideoDecoder::nextFrame, "Decode next video frame", ARG(convert) = true)
     .def("getFrame",         &AV::VideoDecoder::getFrame, py::return_value_policy::reference)
     .def("seek",             &AV::VideoDecoder::seek)

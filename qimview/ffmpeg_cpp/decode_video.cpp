@@ -526,7 +526,8 @@ bool AV::VideoDecoder::open(
         const char* filename, 
         const char* device_type_name, 
         const int&  video_stream_index,
-        const int&  num_threads
+        const int&  num_threads,
+        const std::string&  thread_type // should be "SLICE" or "FRAME"
         )
 {
   try {
@@ -570,7 +571,14 @@ bool AV::VideoDecoder::open(
       _codec_ctx.get()->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {return AV::HW::get_hw_format(ctx, pix_fmts, hw_pix_fmt); };
       _codec_ctx.initHw(hw_device_type);
     }
-    _codec_ctx.setThreading(num_threads, FF_THREAD_FRAME);
+    if (thread_type == "FRAME")
+        _codec_ctx.setThreading(num_threads, FF_THREAD_FRAME);
+    else if (thread_type == "SLICE")
+        _codec_ctx.setThreading(num_threads, FF_THREAD_SLICE);
+    else {
+        std::cout << " Incorrect thread type value " << thread_type << " should be SLICE or FRAME, setting as FRAME" << std::endl;
+        _codec_ctx.setThreading(num_threads, FF_THREAD_FRAME);
+    }
     _codec_ctx.open(codec);
     return true;
   }
@@ -609,7 +617,6 @@ int AV::VideoDecoder::nextFrame(bool convert)
   //auto curr = high_resolution_clock::now();
   //auto start = curr;
   int res;
-
 
   auto initial_idx = _current_frame_idx;
   AV::Frame* frame;

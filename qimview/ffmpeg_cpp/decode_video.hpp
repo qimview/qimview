@@ -203,7 +203,13 @@ namespace AV {
       Its hold a given number of pre-allocated frames, used like a circular buffer
     */
     {
-      _init_frames( nb_frames);
+        if (nb_frames <= 0) {
+            std::cout << "VideoDecoder constructor, invalid parameter nb_frames=" << nb_frames << " setting value to 2" << std::endl;
+            _init_frames(2);
+        }
+        else {
+            _init_frames(nb_frames);
+        }
     }
 
     ~VideoDecoder()
@@ -212,7 +218,8 @@ namespace AV {
     }
 
     bool open(  const char* filename, const char* device_type_name = nullptr, 
-                const int& video_stream_index=-1, const int& num_threads = 4);
+                const int& video_stream_index=-1, const int& num_threads = 4,
+                const std::string&  thread_type = "FRAME");
     bool seek(int64_t timestamp);
     bool seek_file(int64_t timestamp);
     int  nextFrame(bool convert=true);
