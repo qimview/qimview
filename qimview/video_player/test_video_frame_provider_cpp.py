@@ -7,41 +7,62 @@ import decode_video_py as decode_lib
 from qimview.video_player.video_frame_provider     import VideoFrameProvider
 from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from time import perf_counter
+from qimview.video_player.video_player_config      import VideoConfig
 
 
-test_buffer = True
+def main():
 
-def getFrames(fp, nb):
-    if test_buffer:
-        res = []
-    total_time_start = perf_counter()
-    # record start time
-    for n in range(nb):
-        # time_start = perf_counter()
-        # f = fp._frame_buffer.get_nothread()
-        fp.get_next_frame()
-        f = fp._frame
+    import argparse
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument('input_video',      help='input video')
+    parser.add_argument('-c','--cuda',      action='store_true', help='use cuda hardware')
+    parser.add_argument('-n','--nb_frames', type=int, default=100, help=' nb of frames to decode')
+    parser.add_argument('-t','--timings',   action='store_true', help='logs decoding time per frame')
+    args = parser.parse_args()
+
+    test_buffer = False
+
+    def getFrames(fp, nb, log_timings:bool = False):
         if test_buffer:
-            res.append(f)
-            print(f"{f.pts=}")
-        # time_end = perf_counter()
-        # print(f'Took {(time_end - time_start)*1000:0.1f} msec', end="; ")
-    total_time_end = perf_counter()
-    print(f'\nTotal time Took {(total_time_end - total_time_start)} msec')
+            res = []
+        total_time_start = perf_counter()
+        # record start time
+        for n in range(nb):
+            if log_timings:
+                time_start = perf_counter()
+            # f = fp._frame_buffer.get_nothread()
+            fp.get_next_frame()
+            f = fp._frame
+            if test_buffer:
+                res.append(f)
+                print(f"{f.pts=}")
+            if log_timings:
+                time_end = perf_counter()
+                print(f' Frame {n} took {(time_end - time_start)*1000:0.1f} msec', end="; ")
+        total_time_end = perf_counter()
+        print(f'\nTotal time Took {(total_time_end - total_time_start)} msec')
+        if test_buffer:
+            return res
+
+    vd = decode_lib.VideoDecoder(VideoConfig.framebuffer_max_size)
+
+    filename = args.input_video
+    device_type = "cuda" if args.cuda else None
+    stream_number = 0
+    vd.open(filename, device_type, stream_number, 
+            num_threads = VideoConfig.decoder_thread_count,
+            thread_type = VideoConfig.decoder_thread_type
+            )
+    print(f"open ok {args=}")
+    fp = VideoFrameProviderCpp()
+    fp.set_input_container(vd, stream_number)
+    fp.set_time(0)
     if test_buffer:
-        return res
+        frames = getFrames(fp,4, log_timings=args.timings)
+        for f in frames:
+            print(f"{f.pts=}")
+    else:
+        getFrames(fp,nb=args.nb_frames, log_timings=args.timings)
 
-vd = decode_lib.VideoDecoder()
-
-filename = "C:/Users/karl/Videos/GX010296.MP4"
-device_type = None # "cuda"
-vd.open(filename, device_type, 0, num_threads = 4)
-print("open ok")
-fp = VideoFrameProviderCpp()
-fp.set_input_container(vd)
-if test_buffer:
-    frames = getFrames(fp,4)
-    for f in frames:
-        print(f"{f.pts=}")
-else:
-    getFrames(fp,100)
+if __name__ == '__main__':
+    main()
