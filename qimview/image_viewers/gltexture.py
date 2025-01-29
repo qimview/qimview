@@ -177,7 +177,8 @@ class GLTexture:
         # self._gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
 
         # Antialiasing?
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP, gl.GL_TRUE)
+        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP,
+                                 gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
     
     def bind(self, texture):
         self._gl.glBindTexture(gl.GL_TEXTURE_2D, texture)

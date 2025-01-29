@@ -25,6 +25,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
 
     _container       : Optional[DECODERTYPE] = None
     _video_stream    = None # : Optional[streams.StreamContainer]  = None
+    _debug          : bool = False
 
     def __protocol_init__(self):
         pass
@@ -134,17 +135,19 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
 
             # Check if frame is in the frame buffer saved frames,
             # this allows fast moving within saved frames
-            print(f"{len(self.frame_buffer._saved_frames)=}", end=": ")
-            for f in self.frame_buffer._saved_frames:
-                fn = int(f.pts * self._time_base* self._framerate + 0.5)
-                print(f'{fn}-{f.pts}', end=', ')
-            print('')
+            if self._debug:
+                print(f"{len(self.frame_buffer._saved_frames)=}", end=": ")
+                for f in self.frame_buffer._saved_frames:
+                    fn = int(f.pts * self._time_base* self._framerate + 0.5)
+                    print(f'{fn}-{f.pts}', end=', ')
+                print('')
             for f in self.frame_buffer._saved_frames:
                 fn = int(f.pts * self._time_base* self._framerate + 0.5)
                 if frame_num == fn:
                     self._frame = f
                     self._from_saved = True
-                    print(f"Found frame from saved ones")
+                    if self._debug:
+                        print(f"Found frame from saved ones")
                     return
 
             # if we look for a frame slightly after, don't use seek()
@@ -170,22 +173,27 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                     wait_cursor = frame_num-found_frame_pos>10
                     if wait_cursor:
                         QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
-                    print(f" {found_frame_pos=} {frame_num=}")
+                    if self._debug:
+                        print(f" {found_frame_pos=} {frame_num=}")
                     for idx in range(found_frame_pos, frame_num):
                         save = (frame_num-idx)<2
-                        if save:
-                            print(f'{idx}*', end=', ')
-                        else:
-                            print(f'{idx}', end=', ')
+                        if self._debug:
+                            if save:
+                                print(f'{idx}*', end=', ')
+                            else:
+                                print(f'{idx}', end=', ')
                         frame = self.frame_buffer.get_frame(save=save)
+                    if self._debug:
+                        print('')
             except EndOfVideo: #  as e:
                 print(f"set_time(): Reached end of video stream")
                 # Reset valid generator
                 self.frame_buffer.reset()
                 # raise EndOfVideo() from e
             else:
-                print(f"Frame at {initial_pos:0.3f}->"
-                      f"{float(frame.pts * self._time_base):0.3f} requested {time_pos}")
+                if self._debug:
+                    print(f"Frame at {initial_pos:0.3f}->"
+                        f"{float(frame.pts * self._time_base):0.3f} requested {time_pos}")
                 self._from_saved = False
                 self._frame = frame
             finally:

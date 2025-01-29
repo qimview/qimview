@@ -38,6 +38,7 @@ class VideoPlayerKeyEvents:
 
         self._help_tabs  : List[Tuple[str,str]] = []
         self._help_links : str = ''
+        self._debug : bool = False
 
     def _get_markdown_help(self) -> str:
         res = ''
@@ -111,7 +112,8 @@ class VideoPlayerKeyEvents:
 
     def togglePlayPause(self) -> bool:
         """ toggle play/pause mode """
-        print("Play/Pause")
+        if self._debug:
+            print("Play/Pause")
         self._player.play_pause()
         return True
     
@@ -244,11 +246,13 @@ class VideoPlayerKeyEvents:
         return True
     
     def key_press_event(self, event : QtGui.QKeyEvent):
-        print(f"VideoPlayerEvents: key_press_event {event.key()}")
+        if self._debug:
+            print(f"VideoPlayerEvents: key_press_event {event.key()}")
         if type(event) == QtGui.QKeyEvent:
 
             key_seq : str = VideoPlayerKeyEvents.get_key_seq(event).toString()
-            print(f"key sequence = {key_seq}")
+            if self._debug:
+                print(f"key sequence = {key_seq}")
             if key_seq in self.keys_callback:
                 event.setAccepted(self.keys_callback[key_seq]())
             else:
