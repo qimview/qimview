@@ -329,7 +329,7 @@ namespace AV
             av_strerror(receive_response, error_message, 255);
         } else {
             if (receive_mess.count(receive_response)>0)
-                std::cerr << "Failed to receive frame: " << receive_mess[receive_response] << std::endl;
+                std::cerr << "Receive frame --> " << receive_mess[receive_response] << std::endl;
         }
         return std::make_pair(send_response, receive_response);
     }
