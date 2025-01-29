@@ -19,6 +19,7 @@ extern "C" {
 #include <vector>
 #include <tuple>
 #include <array>
+#include <utility>
 
 namespace py = pybind11;
 
@@ -85,7 +86,7 @@ namespace AV
     void setThreading( int count=8, int type = FF_THREAD_FRAME);
     int initHw(const enum AVHWDeviceType type);
     void open(const AVCodec* codec, AVDictionary** options=nullptr);
-    int receiveFrame(const AVPacket* pkt, AVFrame* frame);
+    std::pair<int,int> receiveFrame(const AVPacket* pkt, AVFrame* frame, bool send_packet=true);
 
   private:
     AVCodecContext* _codec_ctx;
@@ -183,7 +184,7 @@ namespace AV {
     AVPixelFormat get_hw_format(AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts, 
     const enum AVPixelFormat& pixel_format);
 
-    AVHWDeviceType get_device_type(const char* device_type_name);
+    std::vector<AVHWDeviceType> get_device_type(const char* device_type_name);
 
     const AVCodecHWConfig* get_codec_hwconfig(const AVCodec *codec, const AVHWDeviceType & device_type);
   }

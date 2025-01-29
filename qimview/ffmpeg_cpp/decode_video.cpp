@@ -31,6 +31,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string>
+#include <map>
+#include <utility>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -281,18 +283,20 @@ namespace AV
       }
       av_buffer_unref(&ctx);
 
-      enum AVPixelFormat * 	formats;
-      av_hwframe_transfer_get_formats(_codec_ctx->hw_device_ctx, AV_HWFRAME_TRANSFER_DIRECTION_TO,
-        &formats, 0
-      );
-      std::cout << "transfer formats" << std::endl;
-      int i = 0;
-      while (formats[i] != AV_PIX_FMT_NONE)
-      {
-        std::cout << "format " << (int)formats[i] << std::endl;
-        i++;
-      }
-      av_free(formats);
+    // This part can make a segmentation fault: TODO: debug it and fix it 
+    //   enum AVPixelFormat * 	formats;
+    //   std::cout << " initHw 4 " << std::endl;
+    //   av_hwframe_transfer_get_formats(_codec_ctx->hw_device_ctx, AV_HWFRAME_TRANSFER_DIRECTION_TO,
+    //     &formats, 0
+    //   );
+    //   std::cout << "transfer formats" << std::endl;
+    //   int i = 0;
+    //   while (formats[i] != AV_PIX_FMT_NONE)
+    //   {
+    //     std::cout << "format " << (int)formats[i] << std::endl;
+    //     i++;
+    //   }
+    //   av_free(formats);
 
       return err;
     }
@@ -304,22 +308,30 @@ namespace AV
       }
     }
 
-    int CodecContext::receiveFrame(const AVPacket* pkt, AVFrame* frame)
+    std::pair<int,int> CodecContext::receiveFrame(const AVPacket* pkt, AVFrame* frame, bool send_packet)
     {
-      int response = avcodec_send_packet(_codec_ctx, pkt);
-      if (response < 0) {
-        char error_message[255];
-        av_strerror(response, error_message, 255);
-        std::cerr << "Failed to send packet: " << error_message << std::endl;
-        return response;
-      }
-      response = avcodec_receive_frame(_codec_ctx, frame);
-      if ((response < 0)&&(response!=AVERROR(EAGAIN))&&(response != AVERROR_EOF)) {
-        char error_message[255];
-        av_strerror(response, error_message, 255);
-        std::cerr << "Failed to receive frame: " << error_message << std::endl;
-      }
-      return response;
+        int send_response = 0;
+        int receive_response = 0;
+        if (send_packet) {
+          send_response = avcodec_send_packet(_codec_ctx, pkt);
+            // std::cout << "send packet --> " << send_response << std::endl;
+            if (send_response < 0) {
+                char error_message[255];
+                av_strerror(send_response, error_message, 255);
+                std::cerr << "CodecContext::receiveFrame, Failed to send packet: " << error_message << std::endl;
+                return std::make_pair(send_response, receive_response);
+            }
+        }
+        receive_response = avcodec_receive_frame(_codec_ctx, frame);
+        std::map<int, std::string>  receive_mess{ {AVERROR(EAGAIN),"AGAIN"}, {AVERROR_EOF,"EOF"}};
+        if ((receive_response < 0)&&(receive_response!=AVERROR(EAGAIN))&&(receive_response != AVERROR_EOF)) {
+            char error_message[255];
+            av_strerror(receive_response, error_message, 255);
+        } else {
+            if (receive_mess.count(receive_response)>0)
+                std::cerr << "Failed to receive frame: " << receive_mess[receive_response] << std::endl;
+        }
+        return std::make_pair(send_response, receive_response);
     }
 
     //-----------------------------------------------------------------------------------------------
@@ -464,18 +476,23 @@ namespace AV {
       return AV_PIX_FMT_NONE;
     }
 
-    AVHWDeviceType get_device_type(const char* device_type_name)
+    std::vector<AVHWDeviceType> get_device_type(const char* device_type_name)
     {
+      std::vector<AVHWDeviceType> res;
       auto hw_device_type = av_hwdevice_find_type_by_name(device_type_name);
       if (hw_device_type == AV_HWDEVICE_TYPE_NONE) {
         fprintf(stderr, "Device type %s is not supported.\n", device_type_name);
         fprintf(stderr, "Available device types:");
         while ((hw_device_type = av_hwdevice_iterate_types(hw_device_type)) != AV_HWDEVICE_TYPE_NONE)
-          fprintf(stderr, " %s", av_hwdevice_get_type_name(hw_device_type));
+        {
+            res.push_back(hw_device_type);
+            fprintf(stderr, " %s", av_hwdevice_get_type_name(hw_device_type));
+        }
         fprintf(stderr, "\n");
-        return AV_HWDEVICE_TYPE_NONE;
+        return res;
       }
-      return hw_device_type;
+      res.push_back(hw_device_type);
+      return res;
     }
 
     const AVCodecHWConfig* get_codec_hwconfig(const AVCodec *codec, const AVHWDeviceType & device_type)
@@ -551,12 +568,26 @@ bool AV::VideoDecoder::open(
 
     if (device_type_name != nullptr) {
       std::cout << "check HW" << std::endl;
-      hw_device_type = AV::HW::get_device_type(device_type_name);
-      if (hw_device_type == AV_HWDEVICE_TYPE_NONE)  return false;
+      auto hw_device_types = AV::HW::get_device_type(device_type_name);
+      if (hw_device_types.size()==0)  return false;
 
-      auto* hwconfig = AV::HW::get_codec_hwconfig(codec, hw_device_type);
-      if (hwconfig == nullptr) return false;
-      hw_pix_fmt = hwconfig->pix_fmt;
+      const AVCodecHWConfig* hwconfig = nullptr;
+      int devtype_idx = 0;
+      while ((hwconfig==nullptr)&&(devtype_idx<hw_device_types.size()))
+      {
+          hw_device_type = hw_device_types[devtype_idx];
+          // for the moment, limit hwdevice to cuda
+          if (std::string(av_hwdevice_get_type_name(hw_device_type))=="cuda")
+          {
+            std::cout << " Trying device " << av_hwdevice_get_type_name(hw_device_type) << std::endl;
+            hwconfig = AV::HW::get_codec_hwconfig(codec, hw_device_type);
+          }
+          devtype_idx++;
+      }
+      if (hwconfig == nullptr)
+        hw_pix_fmt = AV_PIX_FMT_NONE;
+      else
+        hw_pix_fmt = hwconfig->pix_fmt;
     }
     _use_hw = (hw_pix_fmt != AV_PIX_FMT_NONE) && (hw_device_type != AV_HWDEVICE_TYPE_NONE);
     std::cout << "_use_hw = " << _use_hw << " " << (hw_pix_fmt != AV_PIX_FMT_NONE) << " " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
@@ -612,63 +643,89 @@ bool AV::VideoDecoder::seek_file(int64_t timestamp)
 
 int AV::VideoDecoder::nextFrame(bool convert)
 {
-  bool frame_timer = false;
-  //auto prev = high_resolution_clock::now();
-  //auto curr = high_resolution_clock::now();
-  //auto start = curr;
-  int res;
+    bool frame_timer = false;
+    //auto prev = high_resolution_clock::now();
+    //auto curr = high_resolution_clock::now();
+    //auto start = curr;
+    int res = 0;
 
-  auto initial_idx = _current_frame_idx;
-  AV::Frame* frame;
-  if (!_use_hw) 
-    frame = _frames[initial_idx];
-  else
-    // in case of GPU, use a single frame for decoding and save the converted frame in the array
-    frame = &_gpu_frame;
-  _current_frame_idx = (_current_frame_idx + 1)%_nb_frames;
-
-  while (true) 
-  {
-    res =_format_ctx.readVideoFrame(_packet.get(), _stream_index);
-    if (res == 0) {
-      // std::cout << "nextFrame: packet pts=" << _packet.get()->pts 
-      //           << std::endl;
-      int response = _codec_ctx.receiveFrame(_packet.get(), frame->get());
-      if (response == AVERROR(EAGAIN) || response == AVERROR_EOF) continue;
-      else if (response < 0) return response;
-
-      if (convert && _use_hw) {
-        // use previous circular frame as frame for CPU 2 GPU convertion?
-        // _nb_frames must be > 1
-        AV::Frame* cpu_frame = _frames[initial_idx];
-        _current_frame = frame->gpu2Cpu(hw_pix_fmt, cpu_frame);
-      }
-      else
-        _current_frame = frame;
-      if (_current_frame->pts() != frame->get()->pts)
-      {
-        // std::cout << " current frame pts != frame pts " << _current_frame->pts() << ", " << _frame.pts() <<  std::endl;
-        // Copy timestamp from packet
-        _current_frame->get()->pts = frame->get()->pts;
-      }
-
-      if (frame_timer) {
-        //curr = high_resolution_clock::now();
-        //auto duration = duration_cast<microseconds>(curr - prev);
-        //std::cout << " got frame " << _framenum << std::endl;
-        //std::cout << "took " << duration.count() / 1000.0f << " ms" << std::endl;
-        //prev = curr;
-      }
-
-      _framenum++;
-      _packet.unRef();
-      return response;
-    }
+    auto initial_idx = _current_frame_idx;
+    AV::Frame* frame;
+    if (!_use_hw) 
+        frame = _frames[initial_idx];
     else
-      return res;
-  }
-  return res;
+        // in case of GPU, use a single frame for decoding and save the converted frame in the array
+        frame = &_gpu_frame;
+    _current_frame_idx = (_current_frame_idx + 1)%_nb_frames;
 
+    bool send_packet = true;
+    int response;
+    while (true) 
+    {
+        if (send_packet)
+            res =_format_ctx.readVideoFrame(_packet.get(), _stream_index);
+        if (res == 0) {
+            // std::cout << "nextFrame: packet pts=" << _packet.get()->pts 
+            //           << std::endl;
+            auto responses = _codec_ctx.receiveFrame(_packet.get(), frame->get(), send_packet);
+            if (responses.first<0) {
+                int response = responses.first;
+                if (response == AVERROR(EAGAIN))
+                {
+                    send_packet = false;
+                    continue;
+                }
+            }
+            else
+            {
+                response = responses.second;
+                if (response>0)
+                    send_packet = false;
+                else if (response == AVERROR(EAGAIN))
+                {
+                    send_packet = true;
+                    continue;
+                }
+                else if (response == AVERROR_EOF)
+                {
+                    return response;
+                }
+                else if (response < 0) 
+                    //continue;
+                    return response;
+            }
+
+            if (convert && _use_hw) {
+                // use previous circular frame as frame for CPU 2 GPU convertion?
+                // _nb_frames must be > 1
+                AV::Frame* cpu_frame = _frames[initial_idx];
+                _current_frame = frame->gpu2Cpu(hw_pix_fmt, cpu_frame);
+            }
+            else
+                _current_frame = frame;
+            if (_current_frame->pts() != frame->get()->pts)
+            {
+                // std::cout << " current frame pts != frame pts " << _current_frame->pts() << ", " << _frame.pts() <<  std::endl;
+                // Copy timestamp from packet
+                _current_frame->get()->pts = frame->get()->pts;
+            }
+
+            if (frame_timer) {
+                //curr = high_resolution_clock::now();
+                //auto duration = duration_cast<microseconds>(curr - prev);
+                //std::cout << " got frame " << _framenum << std::endl;
+                //std::cout << "took " << duration.count() / 1000.0f << " ms" << std::endl;
+                //prev = curr;
+            }
+
+            _framenum++;
+            _packet.unRef();
+            return response;
+        }
+        else
+        return res;
+    }
+    return res;
 }
 
 AV::Frame* AV::VideoDecoder::getFrame() const
