@@ -15,6 +15,7 @@ class MousePanActions(MouseMotionActions[V]):
     """ Panning while mouse button is pressed """
     def press(self, event : QtGui.QMouseEvent) -> None:
         """ Press event """
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.OpenHandCursor)
         super().press(event)
         event.setAccepted(True)
     def move(self, event: QtGui.QMoveEvent) -> None:
@@ -31,11 +32,13 @@ class MousePanActions(MouseMotionActions[V]):
         self._widget.current_dy = int(self._widget.check_translation()[1])
         super().release(event)
         self._widget.mouse_displ = self._delta
+        QtWidgets.QApplication.restoreOverrideCursor()
 
 class MouseZoomActions(MouseMotionActions[V]):
     """ Zooming while mouse button is pressed """
     def press(self, event : QtGui.QMouseEvent) -> None:
         """ Press event """
+        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.SizeAllCursor)
         super().press(event)
         event.setAccepted(True)
     def move(self, event: QtGui.QMoveEvent) -> None:
@@ -53,6 +56,7 @@ class MouseZoomActions(MouseMotionActions[V]):
             self._widget.current_scale = self._widget.new_scale(-self._delta.y(),im.data.shape[0])
         super().release(event)
         self._widget.mouse_zoom_displ = self._delta
+        QtWidgets.QApplication.restoreOverrideCursor()
 
 class ImageViewerMouseEvents(MouseEvents[V]):
     """ Implement events for ImageViewer """
