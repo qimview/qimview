@@ -191,6 +191,10 @@ class ImageViewerKeyEvents:
     def toggleCursor(self) ->bool:
         """ Toggle cursor display """
         self._viewer.show_cursor = not self._viewer.show_cursor
+        if self._viewer.show_cursor:
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.BlankCursor)
+        else:
+            QtWidgets.QApplication.restoreOverrideCursor()
         return self.updateAndAccept()
     
     def toggleStats(self) ->bool:
