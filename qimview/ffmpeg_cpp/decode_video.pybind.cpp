@@ -265,6 +265,23 @@ PYBIND11_MODULE(decode_video_py, m) {
     ADD_ENUM(AVPictureType, AV_PICTURE_TYPE_BI)
     ;
 
+
+  py::enum_<AVHWDeviceType>(m, "AVHWDeviceType")
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_NONE)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_VDPAU)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_CUDA)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_VAAPI)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_DXVA2)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_QSV)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_VIDEOTOOLBOX)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_D3D11VA)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_DRM)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_OPENCL)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_MEDIACODEC)
+    ADD_ENUM( AVHWDeviceType, AV_HWDEVICE_TYPE_VULKAN)
+    ;
+
+
 #define RO(_class, member) .def_readonly(#member, &_class::member)
 #define RW(_class, member) .def_readwrite(#member, &_class::member)
 
@@ -376,11 +393,17 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def("getStream",        &AV::VideoDecoder::getStream, "Get stream", ARG(idx) = -1, py::return_value_policy::reference)
     .def("getFormatContext", &AV::VideoDecoder::getFormatContext,                       py::return_value_policy::reference)
     .def("get_nb_frames",    &AV::VideoDecoder::get_nb_frames)
+    .def("useHw",            &AV::VideoDecoder::useHw)
     ;
 
   m.def("load_frames", &AV::load_frames, "Loads n first video frames");
 
   m.def("averror2str", &AV::averror2str, "Convert error code to string");
+
+  auto hw = m.def_submodule("HW");
+  hw.def("get_device_types", &AV::HW::get_device_types, "Get hardware device types");
+
+  hw.def("get_device_type_names", &AV::HW::get_device_type_names, "Get hardware device type names");
 
   // define all classes
   py::class_<AV::Packet>(m, "Packet")

@@ -186,6 +186,10 @@ namespace AV {
 
     std::vector<AVHWDeviceType> get_device_type(const char* device_type_name);
 
+    std::vector<AVHWDeviceType> get_device_types();
+
+    std::vector<std::string> get_device_type_names();
+
     const AVCodecHWConfig* get_codec_hwconfig(const AVCodec *codec, const AVHWDeviceType & device_type);
   }
 }
@@ -215,6 +219,7 @@ namespace AV {
 
     ~VideoDecoder()
     {
+        std::cout << "~VideoDecoder()" << std::endl;
       _delete_frames();
     }
 
@@ -240,6 +245,8 @@ namespace AV {
     {
       return _format_ctx.get();
     }
+
+    bool useHw() const { return this->_use_hw; }
 
     static AVPixelFormat hw_pix_fmt;
 

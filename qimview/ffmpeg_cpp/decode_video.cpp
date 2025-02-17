@@ -495,6 +495,35 @@ namespace AV {
       return res;
     }
 
+    std::vector<AVHWDeviceType> get_device_types()
+    {
+        std::vector<AVHWDeviceType> res;
+        AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
+        fprintf(stdout, "Available device types:");
+        while((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
+        {
+            res.push_back(type);
+            fprintf(stdout, " %s", av_hwdevice_get_type_name(type));
+        }
+        fprintf(stdout, "\n");
+        return res;
+    }
+
+    std::vector<std::string> get_device_type_names()
+    {
+        std::vector<std::string> res;
+        AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
+        fprintf(stdout, "Available device types:");
+        while((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
+        {
+            std::string name = av_hwdevice_get_type_name(type);
+            res.push_back(name);
+            fprintf(stdout, " %s", name.c_str());
+        }
+        fprintf(stdout, "\n");
+        return res;
+    }
+
     const AVCodecHWConfig* get_codec_hwconfig(const AVCodec *codec, const AVHWDeviceType & device_type)
     {
       for (int i = 0;; i++) {
@@ -577,11 +606,11 @@ bool AV::VideoDecoder::open(
       {
           hw_device_type = hw_device_types[devtype_idx];
           // for the moment, limit hwdevice to cuda
-          if (std::string(av_hwdevice_get_type_name(hw_device_type))=="cuda")
-          {
+        //   if (std::string(av_hwdevice_get_type_name(hw_device_type))=="cuda")
+        //   {
             std::cout << " Trying device " << av_hwdevice_get_type_name(hw_device_type) << std::endl;
             hwconfig = AV::HW::get_codec_hwconfig(codec, hw_device_type);
-          }
+        //   }
           devtype_idx++;
       }
       if (hwconfig == nullptr)
@@ -590,7 +619,7 @@ bool AV::VideoDecoder::open(
         hw_pix_fmt = hwconfig->pix_fmt;
     }
     _use_hw = (hw_pix_fmt != AV_PIX_FMT_NONE) && (hw_device_type != AV_HWDEVICE_TYPE_NONE);
-    std::cout << "_use_hw = " << _use_hw << " " << (hw_pix_fmt != AV_PIX_FMT_NONE) << " " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
+    std::cout << "_use_hw = " << _use_hw << ",  hw_pix_fmt != AV_PIX_FMT_NONE: " << (hw_pix_fmt != AV_PIX_FMT_NONE) << ", hw_device_type != AV_HWDEVICE_TYPE_NONE: " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
 
     _codec_ctx.alloc(codec);
 
