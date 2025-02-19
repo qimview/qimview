@@ -61,6 +61,7 @@ namespace AV
     bool fileOpened() const    { return _file_opened; }
 
     void openFile(const char* filename);
+    void closeFile();
     int findFirstValidVideoStream();
     int getStreamIndex(const int& video_stream_index);
     AVCodecParameters* getCodecParams(const int& stream_index);
@@ -223,6 +224,7 @@ namespace AV {
       _delete_frames();
     }
 
+    bool check_hw_device(const char* device_type_name, const AVCodec *codec);
     bool open(  const char* filename, const char* device_type_name = nullptr, 
                 const int& video_stream_index=-1, const int& num_threads = 4,
                 const std::string&  thread_type = "FRAME");
@@ -248,6 +250,7 @@ namespace AV {
 
     bool useHw() const { return this->_use_hw; }
 
+    // TODO: check if we can avoid hw_pix_fmt to be static!
     static AVPixelFormat hw_pix_fmt;
 
   private:

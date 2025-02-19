@@ -125,10 +125,7 @@ namespace AV
     }
 
     FormatContext::~FormatContext() {
-      if (_file_opened) {
-        avformat_close_input(&_format_ctx);
-        _file_opened = false;
-      }
+      closeFile();
       if (_format_ctx != nullptr) {
         avformat_free_context(_format_ctx);
         _format_ctx = nullptr;
@@ -143,6 +140,14 @@ namespace AV
       }
       else
         _file_opened = true;
+    }
+
+    void FormatContext::closeFile()
+    {
+      if (_file_opened) {
+        avformat_close_input(&_format_ctx);
+        _file_opened = false;
+      }
     }
 
     int FormatContext::findFirstValidVideoStream()
@@ -328,8 +333,8 @@ namespace AV
             char error_message[255];
             av_strerror(receive_response, error_message, 255);
         } else {
-            if (receive_mess.count(receive_response)>0)
-                std::cout << "Receive frame --> " << receive_mess[receive_response] << std::endl;
+            // if (receive_mess.count(receive_response)>0)
+            //     std::cout << "Receive frame --> " << receive_mess[receive_response] << std::endl;
         }
         return std::make_pair(send_response, receive_response);
     }
@@ -567,32 +572,11 @@ namespace AV {
     //}
 // }
 
-
-bool AV::VideoDecoder::open(
-        const char* filename, 
-        const char* device_type_name, 
-        const int&  video_stream_index,
-        const int&  num_threads,
-        const std::string&  thread_type // should be "SLICE" or "FRAME"
-        )
+bool AV::VideoDecoder::check_hw_device(
+        const char* device_type_name,
+        const AVCodec *codec
+)
 {
-  try {
-
-    const AVCodec *codec = NULL;
-    _filename = filename;
-    _format_ctx.openFile(_filename.c_str());
-    _format_ctx.findStreamInfo();
-
-    /* find the video stream information */
-    if (video_stream_index != -1) {
-        _stream_index = _format_ctx.getStreamIndex(video_stream_index);
-    }
-    if (_stream_index != -1) {
-        codec = _format_ctx.findDecoder(_stream_index);
-    } else {
-        _stream_index = _format_ctx.findBestVideoStream(&codec);
-    }
-
     AVHWDeviceType hw_device_type = AV_HWDEVICE_TYPE_NONE;
 
     if (device_type_name != nullptr) {
@@ -621,16 +605,46 @@ bool AV::VideoDecoder::open(
     _use_hw = (hw_pix_fmt != AV_PIX_FMT_NONE) && (hw_device_type != AV_HWDEVICE_TYPE_NONE);
     std::cout << "_use_hw = " << _use_hw << ",  hw_pix_fmt != AV_PIX_FMT_NONE: " << (hw_pix_fmt != AV_PIX_FMT_NONE) << ", hw_device_type != AV_HWDEVICE_TYPE_NONE: " << (hw_device_type != AV_HWDEVICE_TYPE_NONE) << std::endl;
 
-    _codec_ctx.alloc(codec);
-
-    AVStream *video = _format_ctx.get()->streams[_stream_index];
-    _codec_ctx.initFromParam(video->codecpar);
-
     if (_use_hw) {
       // Use lambda to create a callback that captures hw_pix_fmt
       _codec_ctx.get()->get_format = [](AVCodecContext *ctx, const enum AVPixelFormat *pix_fmts) {return AV::HW::get_hw_format(ctx, pix_fmts, hw_pix_fmt); };
       _codec_ctx.initHw(hw_device_type);
     }
+    return true;
+}
+
+bool AV::VideoDecoder::open(
+        const char* filename, 
+        const char* device_type_name, 
+        const int&  video_stream_index,
+        const int&  num_threads,
+        const std::string&  thread_type // should be "SLICE" or "FRAME"
+        )
+{
+  try {
+
+    const AVCodec *codec = NULL;
+    _filename = filename;
+    _format_ctx.openFile(_filename.c_str());
+    _format_ctx.findStreamInfo();
+
+    /* find the video stream information */
+    if (video_stream_index != -1) {
+        _stream_index = _format_ctx.getStreamIndex(video_stream_index);
+    }
+    if (_stream_index != -1) {
+        codec = _format_ctx.findDecoder(_stream_index);
+    } else {
+        _stream_index = _format_ctx.findBestVideoStream(&codec);
+    }
+
+    _codec_ctx.alloc(codec);
+
+    AVStream *video = _format_ctx.get()->streams[_stream_index];
+    _codec_ctx.initFromParam(video->codecpar);
+
+    bool res = check_hw_device(device_type_name, codec);
+    if (!res) return false;
     if (thread_type == "FRAME")
         _codec_ctx.setThreading(num_threads, FF_THREAD_FRAME);
     else if (thread_type == "SLICE")
@@ -644,6 +658,7 @@ bool AV::VideoDecoder::open(
   }
   catch (AV::AVException except) {
     std::cerr << "Exceptions:" << except.what() << std::endl;
+    _use_hw = false;
     return false;
   }
 

@@ -1,5 +1,6 @@
 
 include(FetchContent)
+include(ExternalProject)
 
 cmake_minimum_required(VERSION 3.22)
 
@@ -25,8 +26,15 @@ MESSAGE(" pybind11_SOURCE_DIR ${pybind11_SOURCE_DIR} pybind11_BINARY_DIR ${pybin
 
 # add_subdirectory(glfw-3.4)
 #find_package(glfw3 3.3 REQUIRED)
+# ExternalProject_Add(glew
+#     GIT_REPOSITORY https://github.com/nigels-com/glew.git
+#     GIT_TAG glew-2.2.0
+#     SOURCE_SUBDIR build/cmake
+#     BUILD_IN_SOURCE True
+# )
+# FetchContent_MakeAvailable(pybind11)
 
-set(GLEW_DIR "C:/Users/karl/GIT/qimview/qimview/opengl_cpp/glew-2.2.0/glew-2.2.0/build/cmake/installed/lib/cmake/glew")
+# set(GLEW_DIR "C:/Users/karl/GIT/qimview/qimview/opengl_cpp/glew-2.2.0/glew-2.2.0/build/cmake/installed/lib/cmake/glew")
 find_package(GLEW REQUIRED)
 find_package(OpenGL REQUIRED)
 #find_package(GLUT REQUIRED)
