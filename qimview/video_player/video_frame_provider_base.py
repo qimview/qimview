@@ -115,13 +115,14 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
         self.CreateFrameBuffer(video_stream_number)
         self._frame = None
 
-    def set_time(self, time_pos : float, exact: bool =True):
+    def set_time(self, time_pos : float, exact: bool =True) -> bool:
         """ set time position in seconds 
             the video frame corresponding to the requested time_pos is set in _frame member
         """
         # print(f"set_time {time_pos} , _end_time={self._end_time}")
         if self.frame_buffer is None or not self.frame_buffer.decoderOk():
             print("Video not initialized")
+            return False
         else:
             frame_num = int(time_pos*self._framerate+0.5)
             current_frame_time = self.get_time()
@@ -131,7 +132,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
             # print(f"{sec_frame} -> {frame_num}")
             if frame_num == cur_frame:
                 print(f"Current frame is at the requested position {frame_num} {cur_frame}")
-                return
+                return True
 
             # Check if frame is in the frame buffer saved frames,
             # this allows fast moving within saved frames
@@ -148,19 +149,25 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                     self._from_saved = True
                     if self._debug:
                         print(f"Found frame from saved ones")
-                    return
+                    return True
 
             # if we look for a frame slightly after, don't use seek()
             try:
                 wait_cursor = False
                 if self._from_saved or frame_num<cur_frame or frame_num > cur_frame + 10:
                     # seek to that nearest timestamp
-                    self.seek_position(time_pos)
+                    ok = self.seek_position(time_pos)
+                    if not ok:
+                        print(f"Failed to seek posiiton {time_pos}")
+                        return False
                     # It seems that the frame generator is not automatically updated
                     if time_pos==0:
                         self.frame_buffer.reset()
                     # get the next available frame
                     frame = self.frame_buffer.get_frame(timeout=1, save=False)
+                    if frame is None:
+                        print(f"Failed to get frame")
+                        return False
                     # get the proper key frame number of that timestamp
                     found_frame_pos = int(frame.pts * self._time_base * self._framerate + 0.5)
                     initial_pos = float(frame.pts * self._time_base)
@@ -199,6 +206,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
             finally:
                 if wait_cursor:
                     QtWidgets.QApplication.restoreOverrideCursor()
+                return True
 
     def get_next_frame(self, timeout=6,  verbose=False) -> bool:
         """ Obtain the next frame, usually while video is playing, 

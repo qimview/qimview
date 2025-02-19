@@ -168,10 +168,10 @@ class VideoFrameBufferBase(Protocol):
         if self.decoderOk():
             res = self.decodeNextFrame()
             if res is None:
-                print("get_nothread(): Reached end of video")
+                print("get_nothread(): Failed to get next frame")
                 self._running = False
                 self.resetDecoder()
-                raise EndOfVideo()
+                return None # raise EndOfVideo()
             else:
                 if save:
                     # Add to saved frames to speed-up moving around
