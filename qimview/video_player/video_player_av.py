@@ -32,6 +32,7 @@ print(f"{has_decode_video_py=}")
 from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from qimview.video_player.video_frame_provider     import VideoFrameProvider
 from qimview.video_player.video_player_config      import VideoConfig
+from qimview.video_player.test_video_frame_provider_cpp import get_best_device
 
 class AverageTime:
     def __init__(self):
@@ -51,7 +52,7 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def __init__(self, parent=None, 
                  use_decode_video_py : bool = has_decode_video_py, 
-                 codec : str = '') -> None:
+                 codec : str = 'auto') -> None:
         super().__init__(parent)
         self.event_recorder = None
         self._use_decode_video_py : bool = use_decode_video_py
@@ -364,7 +365,10 @@ class VideoPlayerAV(VideoPlayerBase):
             del self._container
             self._container = None
         if self._use_decode_video_py:
-            device_type = self._codec if self._codec != '' else None
+            if self._codec == 'auto':
+                device_type = get_best_device(self._filename, nb_frames=4)
+            else:
+                device_type = self._codec if self._codec != '' else None
             # Use framebuffer max size to set the number of allocated frames in C++ Decoder
             self._container = decode_lib.VideoDecoder(VideoConfig.framebuffer_max_size)
             self._container.open(self._filename, device_type, self._video_stream_number,
@@ -413,7 +417,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
     parser.add_argument('--pyav', action='store_true', help='Use pyav instead of ffmpeg bound with pybind11')
-    parser.add_argument('--codec', type=str, default='', help='Use codec (ex: cuda) hardware acceleration with ffmpeg bound library')
+    parser.add_argument('--codec', type=str, default='auto', help='Use codec (ex: cuda) hardware acceleration with ffmpeg bound library, auto: detect automatically')
     args = parser.parse_args()
     # _params = vars(args)
     print(args)

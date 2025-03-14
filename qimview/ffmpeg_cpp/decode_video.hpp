@@ -220,8 +220,7 @@ namespace AV {
 
     ~VideoDecoder()
     {
-        std::cout << "~VideoDecoder()" << std::endl;
-      _delete_frames();
+        _delete_frames();
     }
 
     bool check_hw_device(const char* device_type_name, const AVCodec *codec);

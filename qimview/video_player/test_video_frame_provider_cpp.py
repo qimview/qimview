@@ -49,8 +49,8 @@ def getFrames(fp, nb, log_timings:bool = False):
             time_end = perf_counter()
             print(f' Frame {n} took {(time_end - time_start)*1000:0.1f} msec', end="; ")
     if error:
-        print("Error while decoding")
-        return -1
+        print(f"Error while decoding at frame {n}")
+        return 1/n if n>0 else 10
     total_time_end = perf_counter()
     if log_timings:
         print(f'\nTotal time Took {(total_time_end - total_time_start):0.3f} msec FPS {nb/(total_time_end - total_time_start):0.2f}')
@@ -60,17 +60,18 @@ def getFrames(fp, nb, log_timings:bool = False):
         return total_time_end - total_time_start
 
 
-def get_best_device(input_video: str, codec: str, threads: int = -1, nb_frames: int = 6, timings: bool = False) -> str:
+def get_best_device(input_video: str, codec: str = '', threads: int = -1, nb_frames: int = 6, timings: bool = False) -> str:
     script_start = perf_counter()
     filename = input_video
     hw_device_names = decode_lib.HW.get_device_type_names()
-    device_type = codec if codec!="" else None
+    device_type = codec if codec!='' else None
     if device_type not in hw_device_names:
         hw_device_names.append(device_type)
     stream_number = 0
     hw_device_names_ok = []
     fp = VideoFrameProviderCpp()
     for device_name in hw_device_names:
+        print(f"*************** {device_name=} *********")
         dev_time_start = perf_counter()
         if device_name in device_skip:
             continue
@@ -99,9 +100,12 @@ def get_best_device(input_video: str, codec: str, threads: int = -1, nb_frames: 
             print(f" --- {open_ok=} {device_name} --> {vd.useHw()=}")
 
     script_end = perf_counter()
-    print(f" time spent {script_end-script_start:0.3f} sec.")
+    print(f" *** time spent {script_end-script_start:0.3f} sec.")
     print(f"{hw_device_names_ok=}")
     best_device =  min(range(len(hw_device_names_ok)), key=lambda x : hw_device_names_ok[x][1] if hw_device_names_ok[x][1]>0 else 1000 )
+    print(f"{best_device=}")
+    if hw_device_names_ok[best_device][1] == '-1':
+        print("No good device found, decoding produces errors")
     return hw_device_names_ok[best_device][0]
 
 
