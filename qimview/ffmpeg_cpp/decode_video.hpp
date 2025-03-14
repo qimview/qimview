@@ -124,12 +124,12 @@ namespace AV
 
     bool key_frame()
     {
-        return _frame->flags && AV_FRAME_FLAG_KEY;
+        return _frame->flags & AV_FRAME_FLAG_KEY;
     }
 
     bool interlaced_frame()
     {
-        return _frame->flags && AV_FRAME_FLAG_KEY;
+        return _frame->flags & AV_FRAME_FLAG_KEY;
     }
 
     AVPixelFormat getFormat() { return (AVPixelFormat) _frame->format;  }
