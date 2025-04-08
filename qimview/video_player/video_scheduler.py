@@ -30,6 +30,8 @@ class VideoScheduler:
         self._fps_start        : float                = -1        # start time to compute displayed FPS
         self._fps_count        : int                  = 0         # count displayed frames
         self._total_fps_count  : int                  = 0         # count displayed and skipped frames
+        self._displayed_fps    : int                  = 0         # displayed FPS
+        self._skipped_fps      : int                  = 0         # skipped FPS
         self._allow_skipping   : bool                 = True      # skip displaying frame if rendered FPS is late
         self._max_skip         : int                  = 6         # maximum number of successive skips
 
@@ -193,7 +195,9 @@ class VideoScheduler:
             nb_skip = 0
             if start_display>self._fps_start+1:
                 if self._fps_start >0:
-                    print(f" displayed FPS: {self._fps_count} {self._total_fps_count}")
+                    # print(f" displayed FPS: {self._fps_count} {self._total_fps_count}")
+                    self._displayed_fps = self._total_fps_count
+                    self._skipped_fps = self._total_fps_count -self._fps_count
                 self._fps_count = 0
                 self._total_fps_count = 0
                 self._fps_start = start_display

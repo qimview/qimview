@@ -213,7 +213,8 @@ class ImageViewer:
         self.paint_callbacks[cb_name] = cb
     
     def remove_paint_callback(self, cb_name):
-        self.paint_callbacks.pop(cb_name)
+        if cb_name in self.paint_callbacks:
+            self.paint_callbacks.pop(cb_name)
 
     def set_imagechange_callback(self, plugin_name, cb):
         self.imagechange_callbacks[plugin_name] = cb
@@ -222,10 +223,12 @@ class ImageViewer:
         self.gl_paint_callbacks[cb_name] = cb
     
     def remove_gl_paint_callback(self, cb_name):
-        self.gl_paint_callbacks.pop(cb_name)
+        if cb_name in self.gl_paint_callbacks:
+            self.gl_paint_callbacks.pop(cb_name)
 
     def remove_imagechange_callback(self, plugin_name):
-        self.imagechange_callbacks.pop(plugin_name)
+        if plugin_name in self.imagechange_callbacks:
+            self.imagechange_callbacks.pop(plugin_name)
 
     # === Properties
 

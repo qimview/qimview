@@ -311,8 +311,9 @@ class GLTexture:
                 glBufferSubDataFunc(target, 0, d.nbytes, d)
             self._buffersubdata_total_time[name] += time.perf_counter()-t
             self._buffersubdata_count[name]      += 1
-            if self._buffersubdata_count[name] % 30 == 0:
-                print(f" glBufferSubData() {name} took {(self._buffersubdata_total_time[name]/self._buffersubdata_count[name])*1000:0.2f} ms")
+            if self._log_timings:
+                if self._buffersubdata_count[name] % 30 == 0:
+                    print(f" glBufferSubData() {name} took {(self._buffersubdata_total_time[name]/self._buffersubdata_count[name])*1000:0.2f} ms")
 
         # Release PBOs
         gl.glBindBuffer(target, 0)

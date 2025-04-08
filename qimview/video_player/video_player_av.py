@@ -338,8 +338,9 @@ class VideoPlayerAV(VideoPlayerBase):
             frame = self._frame_provider._frame
         if frame is None:
             return
-        self.widget._custom_text =  f"\nFPS:     {self._frame_provider._framerate:0.3f}"
-        self.widget._custom_text += f"\nduration:{self._frame_provider._duration:0.3f} sec."
+        self.widget._custom_text  = f"\ninput FPS     : {self._frame_provider._framerate:0.3f}"
+        self.widget._custom_text += f"\ndispl/skip FPS: {self._scheduler._displayed_fps}/{self._scheduler._skipped_fps}"
+        self.widget._custom_text += f"\nduration      :{self._frame_provider._duration:0.3f} sec."
         if self.viewer_class is GLImageViewerShaders:
             self.display_frame_YUV420(frame)
         else:
