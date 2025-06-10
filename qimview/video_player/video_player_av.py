@@ -206,7 +206,7 @@ class VideoPlayerAV(VideoPlayerBase):
     def slider_value_changed(self):
         self.set_play_position(fromSlider=True)
 
-    def set_play_position(self, recursive=True, fromSlider=False):
+    def set_play_position(self, recursive=True, fromSlider=False, exact=True):
         """ Sets the play position based on the member play_position
 
         Args:
@@ -218,11 +218,11 @@ class VideoPlayerAV(VideoPlayerBase):
         # as much as possible
         if self._frame_provider.frame_buffer:
             self._frame_provider.frame_buffer.reset()
-        self._frame_provider.set_time(self.play_position)
+        self._frame_provider.set_time(self.play_position, exact=exact)
         self._start_video_time = self.play_position
         for idx, p in enumerate(self._compare_players):
             p.play_position = self.play_position + self._compare_timeshift[idx]
-            p.set_play_position(recursive=False)
+            p.set_play_position(recursive=False, exact=exact)
             p.update_position(recursive=False, force=fromSlider)
         self.display_frame(self._frame_provider.frame)
         
@@ -269,7 +269,7 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
-    def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str):
+    def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str, use_PBO:bool):
         video_frame = VideoFrame(frame)
         # print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
         self._im = video_frame.toViewerImage()
@@ -282,9 +282,10 @@ class VideoPlayerAV(VideoPlayerBase):
                                        image_ref = self._compare_players[0]._im,
                                        texture_ref = self._compare_players[0].widget.texture,
                                        use_crop=use_crop,
-                                       use_PBO=self._scheduler._is_running)
+                                       # PBO and image difference is not well synchronized
+                                       use_PBO=use_PBO)
         else:
-            self.widget.set_image_fast(self._im, use_crop=use_crop, use_PBO=self._scheduler._is_running)
+            self.widget.set_image_fast(self._im, use_crop=use_crop, use_PBO=use_PBO)
         self.widget.image_name = im_name + frame_str
 
     def set_image_data(self, np_array):
@@ -321,11 +322,12 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"display_frame_RGB() 5. {self._t5.average()*1000:0.1f} ms")
 
 
-    def display_frame_YUV420(self, frame: AVVideoFrame):
+    def display_frame_YUV420(self, frame: AVVideoFrame, is_running:bool):
         """ Display YUV frame, for OpenGL with shaders """
         frame_num = int(frame.pts/self._frame_provider._ticks_per_frame + 0.5)
         frame_str = ' :'+str(frame_num)
-        self.set_image_YUV420(frame, self._basename, frame_str)
+        # Use Pixel Buffer Object (2 buffers) if and only is the video is running
+        self.set_image_YUV420(frame, self._basename, frame_str, use_PBO=is_running)
         if self.viewer_class == GLImageViewerShaders and self._im and self._im.crop is not None:
             # Apply crop on the right
             self.widget.set_crop(self._im.crop)
@@ -333,7 +335,7 @@ class VideoPlayerAV(VideoPlayerBase):
             self.widget.set_crop(np.array([0,0,1,1], dtype=np.float32))
         self.widget.viewer_update()
 
-    def display_frame(self, frame=None):
+    def display_frame(self, frame=None, is_running:bool = False):
         if frame is None:
             frame = self._frame_provider._frame
         if frame is None:
@@ -342,7 +344,7 @@ class VideoPlayerAV(VideoPlayerBase):
         self.widget._custom_text += f"\ndispl/skip FPS: {self._scheduler._displayed_fps}/{self._scheduler._skipped_fps}"
         self.widget._custom_text += f"\nduration      :{self._frame_provider._duration:0.3f} sec."
         if self.viewer_class is GLImageViewerShaders:
-            self.display_frame_YUV420(frame)
+            self.display_frame_YUV420(frame, is_running)
         else:
             self.display_frame_RGB(frame)
 
@@ -396,6 +398,9 @@ class VideoPlayerAV(VideoPlayerBase):
 
         print(f"ticks_per_frame {self._frame_provider._ticks_per_frame}")
         self.yuv_array = np.empty((1), dtype=np.uint8)
+
+        self.play_position_gui.setTextFormat(lambda p: f"{p.float:0.2f}/{int(p.float*self._frame_provider._framerate+0.5)}")
+
         self._initialized = True
 
     def init_and_display(self):

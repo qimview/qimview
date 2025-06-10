@@ -113,14 +113,20 @@ class VideoScheduler:
         self._start_clock_time = time.perf_counter()
         player._start_video_time = player._frame_provider.get_time()
 
-    def _display_frame(self, player_index:int):
+    def _display_frame(self, player_index:int, is_running: bool):
+        """_summary_
+
+        Args:
+            player_index (int): _description_
+            is_running (bool): True is video is playing
+        """
         p : 'VideoPlayerAV' = self._players[player_index]
         if p._frame_provider._frame and \
             p._frame_provider._frame.pts != self._displayed_pts[player_index]:
             # print(f"*** {p._name} {time.perf_counter():0.4f}", end=' --')
             # frame_time : float = p._frame_provider.get_time() - p._start_video_time
             # time_spent = self.get_time_spent()
-            p.display_frame()
+            p.display_frame(frame=None, is_running=is_running)
             self._displayed_pts[player_index] = p._frame_provider._frame.pts
             diff = abs(p._frame_provider.get_time()-p.play_position_gui.param.float)
             # print(f"{self._name}._display_frame({player_index}) {self._displayed_pts[player_index]=}")
@@ -144,9 +150,10 @@ class VideoScheduler:
                     ok = False
             if ok:
                 # display player 0 at the end to allow multiple frames on the same display
+                # synchronize the use of PBO throught the parameter is running, for initial and compared videos
                 for n in range(1,len(self._players)):
-                    self._display_frame(n)
-                self._display_frame(0)
+                    self._display_frame(n, self.is_running)
+                self._display_frame(0, self.is_running)
             return ok
         except EndOfVideo:
             print("_display_next_frame() End of video")

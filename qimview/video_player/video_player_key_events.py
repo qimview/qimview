@@ -153,7 +153,7 @@ class VideoPlayerKeyEvents:
         """ display Frame at +1 second """
         p = self._player
         p.play_position = p.play_position+1
-        p.set_play_position()
+        p.set_play_position(exact=False)
         p.update_position(force=True)
         return True
 
@@ -161,7 +161,7 @@ class VideoPlayerKeyEvents:
         """ display Frame at -1 second """
         p = self._player
         p.play_position = max(0,p.play_position-1)
-        p.set_play_position()
+        p.set_play_position(exact=False)
         p.update_position(force=True)
         return True
 
