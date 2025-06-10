@@ -252,6 +252,11 @@ namespace AV {
     // TODO: check if we can avoid hw_pix_fmt to be static!
     static AVPixelFormat hw_pix_fmt;
 
+    AV::CodecContext& get_codec_ctx()
+    {
+        return this->_codec_ctx;
+    }
+
   private:
     std::string       _filename;
     AV::FormatContext _format_ctx;

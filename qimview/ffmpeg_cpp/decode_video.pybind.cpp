@@ -356,6 +356,11 @@ PYBIND11_MODULE(decode_video_py, m) {
     //RO(AVStream, pts_wrap_bits)
     ;
 
+    py::class_<AVCodecContext>(m, "AVCodecContext")
+    RO(AVCodecContext, bit_rate)
+    RO(AVCodecContext, gop_size)
+    ;
+
   py::class_<AVFormatContext>(m, "AVFormatContext")
     RO(AVFormatContext, nb_streams)
     ;
@@ -378,6 +383,11 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def_property_readonly("interlaced_frame",      &AV::Frame::interlaced_frame)
     ;
 
+  py::class_<AV::CodecContext>(m, "CodecContext")
+    .def(py::init<>()) // constructor
+    .def("get", &AV::CodecContext::get, py::return_value_policy::reference)
+    ;
+
   py::class_<AV::VideoDecoder>(m, "VideoDecoder")
     .def(py::init<const int&>(), ARG(nb_frames)=int(8)) // constructor
     .def("open",             &AV::VideoDecoder::open, "Open decoder", 
@@ -394,6 +404,7 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def("getFormatContext", &AV::VideoDecoder::getFormatContext,                       py::return_value_policy::reference)
     .def("get_nb_frames",    &AV::VideoDecoder::get_nb_frames)
     .def("useHw",            &AV::VideoDecoder::useHw)
+    .def("get_codec_ctx",     &AV::VideoDecoder::get_codec_ctx, py::return_value_policy::reference)
     ;
 
   m.def("load_frames", &AV::load_frames, "Loads n first video frames");
