@@ -105,9 +105,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             image_ref (_type_, optional): _description_. Defaults to None.
             texture_ref (_type_, optional): _description_. Defaults to None.
             use_crop (bool, optional): _description_. Defaults to True.
-            use_PBO (bool, optional): When PBO (Pixel Buffer Object) is used, the displayed image is delayed until the next image display. Defaults to True.
+            use_PBO (bool, optional): When PBO (Pixel Buffer Object) is used, the displayed image is
+            delayed until the next image display. Defaults to False.
         """
-        # print(f"set_image_fast {use_crop=}")
         self._image     = image
         self._image_ref = image_ref
         self.image_id += 1
@@ -253,6 +253,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             rect = QtCore.QRect(0, 0, self.width(), self.height())
             histograms = self.compute_histogram_Cpp(current_image, show_timings=self._display_timing)
             self.display_histogram(histograms, 1,  painter, rect, show_timings=self._display_timing)
+
+        for _,cb in self.gl_nonnative_paint_callbacks.items():
+            cb(self, painter)
 
         painter.end()
         # self.context().swapBuffers(self.context().surface())

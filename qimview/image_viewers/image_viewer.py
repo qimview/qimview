@@ -206,7 +206,9 @@ class ImageViewer:
 
         # Paint callback for opengl version
         # TODO: unify paint_callback and gl_paint_callback
-        self.gl_paint_callbacks       : dict[str, Callable] = {}
+        self.gl_paint_callbacks           : dict[str, Callable] = {}
+        # Callbacks for opengl viewer called after native paints (opengl based paints)
+        self.gl_nonnative_paint_callbacks : dict[str, Callable] = {}
         self.imagechange_callbacks : dict[str, Callable] = {}
 
     def set_paint_callback(self, cb_name, cb):
@@ -225,6 +227,13 @@ class ImageViewer:
     def remove_gl_paint_callback(self, cb_name):
         if cb_name in self.gl_paint_callbacks:
             self.gl_paint_callbacks.pop(cb_name)
+
+    def set_gl_nonnative_paint_callbacks(self, cb_name, cb):
+        self.gl_nonnative_paint_callbacks[cb_name] = cb
+    
+    def remove_gl_nonnative_paint_callbacks(self, cb_name):
+        if cb_name in self.gl_nonnative_paint_callbacks:
+            self.gl_nonnative_paint_callbacks.pop(cb_name)
 
     def remove_imagechange_callback(self, plugin_name):
         if plugin_name in self.imagechange_callbacks:
