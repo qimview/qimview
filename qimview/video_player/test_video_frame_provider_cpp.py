@@ -102,6 +102,8 @@ def get_best_device(input_video: str, codec: str = '', threads: int = -1, nb_fra
     script_end = perf_counter()
     print(f" *** time spent {script_end-script_start:0.3f} sec.")
     print(f"{hw_device_names_ok=}")
+    if len(hw_device_names_ok) == 0:
+        return ""
     best_device =  min(range(len(hw_device_names_ok)), key=lambda x : hw_device_names_ok[x][1] if hw_device_names_ok[x][1]>0 else 1000 )
     print(f"{best_device=}")
     if hw_device_names_ok[best_device][1] == '-1':

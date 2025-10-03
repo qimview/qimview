@@ -662,7 +662,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         # _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and (self._show_overlap or self._show_image_differences)
+        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and \
+            (self._show_overlap or self._show_image_differences) and self.texture_ref.textureY is not None
         # Default shader program
         program = self.program_RGB
         if self._image:

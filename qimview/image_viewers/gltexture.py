@@ -110,21 +110,41 @@ class GLTexture:
     def textureY(self):
         return self._texture['Y']
 
+    @textureY.setter
+    def textureY(self, value):
+        self._texture['Y'] = value
+
     @property
     def textureU(self):
         return self._texture['U']
+
+    @textureU.setter
+    def textureU(self, value):
+        self._texture['U'] = value
 
     @property
     def textureV(self):
         return self._texture['V']
 
+    @textureV.setter
+    def textureV(self, value):
+        self._texture['V'] = value
+
     @property
     def textureUV(self):
         return self._texture['UV']
 
+    @textureUV.setter
+    def textureUV(self, value):
+        self._texture['UV'] = value
+
     @property
     def textureRGB(self):
         return self._texture['RGB']
+
+    @textureRGB.setter
+    def textureRGB(self, value):
+        self._texture['RGB'] = value
 
     def _internal_format(self, image):
         # Not sure what is the right parameter for internal format of 2D texture based
@@ -205,8 +225,9 @@ class GLTexture:
         
     def free_all_textures(self):
         for k in self._texture:
-            self.free_texture(self._texture[k])
-            self._texture[k] = None
+            if self._texture[k] is not None:
+                self.free_texture(self._texture[k])
+                self._texture[k] = None
 
     def new_buffers(self, n: int) -> np.ndarray:
         """
@@ -236,7 +257,7 @@ class GLTexture:
     def reset(self):
         self.free_buffers()
         # Issue?
-        # self.free_all_textures()
+        self.free_all_textures()
 
     def texSubImage(self, tex, w, h_start, h_end, LUM, gl_type, data, name='unamed'):
         if self._log_timings:
