@@ -4,15 +4,23 @@
 """
 
 import os
-from typing import Optional
+from typing import Optional, TypeAlias
 import numpy as np
 
 if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
 import decode_video_py as decode_lib
 from cv2 import cvtColor, COLOR_YUV2RGB_I420 # type: ignore
-import av
-from av.video.frame import VideoFrame as AVVideoFrame
+
+try:
+    from av.video.frame import VideoFrame as AVVideoFrame
+except Exception as e:
+    print("PyAV not imported")
+    AVVideoFrame : TypeAlias = None
+
+FrameType : TypeAlias = decode_lib.Frame | AVVideoFrame
+
+
 from qimview.utils.viewer_image  import ViewerImage, ImageFormat
 
 class VideoFrame:
@@ -86,8 +94,8 @@ class VideoFrame:
         else:
             return None
 
-    def __init__(self, frame:decode_lib.Frame | AVVideoFrame):
-        self._frame : decode_lib.Frame | AVVideoFrame = frame
+    def __init__(self, frame: FrameType):
+        self._frame : FrameType = frame
         # Pre-allocated array to avoid allocation for each new frame
         self._yuv_array : np.ndarray = np.empty((1), dtype=np.uint8)
 

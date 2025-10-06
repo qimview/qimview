@@ -120,7 +120,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
             the video frame corresponding to the requested time_pos is set in _frame member
         """
         # print(f"set_time {time_pos} , _end_time={self._end_time}")
-        print(f"set_time() gop_size= {self._container.get_codec_ctx().get().gop_size} {self._framerate=}")
+        # print(f"set_time() gop_size= {self._container.get_codec_ctx().get().gop_size} {self._framerate=}")
         if self.frame_buffer is None or not self.frame_buffer.decoderOk():
             print("Video not initialized")
             return False
@@ -178,9 +178,10 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                 # print(f"missing {int((time_pos-found_frame_pos)/float(1000000*time_base))} ")
                 # Loop over next frames to reach the exact requested position
                 if not frame or exact or (abs(frame_num -found_frame_pos) >= abs(frame_num-cur_frame)):
-                    wait_cursor = frame_num-found_frame_pos>10
-                    if wait_cursor:
-                        QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
+                    if QtWidgets.QApplication.instance() is not None:
+                        wait_cursor = frame_num-found_frame_pos>10
+                        if wait_cursor:
+                            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
                     if self._debug:
                         print(f" {found_frame_pos=} {frame_num=}")
                     for idx in range(found_frame_pos, frame_num):

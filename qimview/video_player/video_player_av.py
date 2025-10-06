@@ -1,13 +1,13 @@
 import os
 import re
 import numpy as np
+from typing import TypeAlias
 
 if os.name == 'nt' and os.path.isdir("c:\\ffmpeg\\bin"):
     os.add_dll_directory("c:\\ffmpeg\\bin")
     #os.add_dll_directory("C:\\Users\\karl\\GIT\\vcpkg\\packages\\ffmpeg_x64-windows-release\\bin")
-import av
-from av import container
-from  av.video.frame import VideoFrame as AVVideoFrame # type: ignore
+
+from qimview.video_player.video_frame import FrameType
 
 from qimview.utils.qt_imports                          import QtWidgets, QtCore, QtGui
 from qimview.image_viewers.gl_image_viewer_shaders     import GLImageViewerShaders
@@ -30,9 +30,20 @@ except Exception as e:
 print(f"{has_decode_video_py=}")
 
 from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
-from qimview.video_player.video_frame_provider     import VideoFrameProvider
 from qimview.video_player.video_player_config      import VideoConfig
 from qimview.video_player.test_video_frame_provider_cpp import get_best_device
+
+try:
+    import av
+    from av import container
+    has_av = True
+    from qimview.video_player.video_frame_provider import VideoFrameProvider
+except ImportError as e:
+    print(f"{e}")
+    VideoFrameProvider : TypeAlias = None
+    has_av = False
+
+VideoFrameProviderType : TypeAlias = VideoFrameProviderCpp | VideoFrameProvider 
 
 class AverageTime:
     def __init__(self):
@@ -76,9 +87,9 @@ class VideoPlayerAV(VideoPlayerBase):
         self.loop_end_time    : float = -1 # -1 means end of video
         self._skipped : int = 0
         if use_decode_video_py:
-            self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProviderCpp()
+            self._frame_provider : VideoFrameProviderType = VideoFrameProviderCpp()
         else:
-            self._frame_provider : VideoFrameProvider | VideoFrameProviderCpp = VideoFrameProvider()
+            self._frame_provider : VideoFrameProviderType = VideoFrameProvider()
         self._displayed_pts : int = -1
         self._name : str = "video player"
         self._t1 : AverageTime = AverageTime()
@@ -100,7 +111,7 @@ class VideoPlayerAV(VideoPlayerBase):
         return self._scheduler
 
     @property
-    def frame_provider(self) -> VideoFrameProvider | VideoFrameProviderCpp:
+    def frame_provider(self) -> VideoFrameProviderType :
         return self._frame_provider
 
     @property
@@ -269,7 +280,7 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im.filename = f"{self._filename} : {self._frame_provider.get_frame_number()}"
         self.widget.image_name = im_name
 
-    def set_image_YUV420(self, frame: AVVideoFrame, im_name: str, frame_str: str, use_PBO:bool):
+    def set_image_YUV420(self, frame: FrameType, im_name: str, frame_str: str, use_PBO:bool):
         video_frame = VideoFrame(frame)
         # print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
         self._im = video_frame.toViewerImage()
@@ -302,7 +313,7 @@ class VideoPlayerAV(VideoPlayerBase):
     def set_synchronize(self, viewer):
         self.synchronize_viewer = viewer
 
-    def display_frame_RGB(self, frame: AVVideoFrame):
+    def display_frame_RGB(self, frame: FrameType):
         """ Convert YUV to RGB and display RGB frame """
         video_frame = VideoFrame(frame)
         im = video_frame.toViewerImage(rgb=True)
@@ -322,7 +333,7 @@ class VideoPlayerAV(VideoPlayerBase):
         print(f"display_frame_RGB() 5. {self._t5.average()*1000:0.1f} ms")
 
 
-    def display_frame_YUV420(self, frame: AVVideoFrame, is_running:bool):
+    def display_frame_YUV420(self, frame: FrameType, is_running:bool):
         """ Display YUV frame, for OpenGL with shaders """
         frame_num = int(frame.pts/self._frame_provider._ticks_per_frame + 0.5)
         frame_str = ' :'+str(frame_num)

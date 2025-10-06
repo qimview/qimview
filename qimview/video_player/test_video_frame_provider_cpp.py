@@ -5,7 +5,7 @@ if os.name == 'nt' and os.path.isdir(ffmpeg_path):
 
 import numpy as np
 import decode_video_py as decode_lib
-from qimview.video_player.video_frame_provider     import VideoFrameProvider
+# from qimview.video_player.video_frame_provider     import VideoFrameProvider
 from qimview.video_player.video_frame_provider_cpp import VideoFrameProviderCpp
 from time import perf_counter
 from qimview.video_player.video_player_config      import VideoConfig
