@@ -45,6 +45,28 @@ except ImportError as e:
 
 VideoFrameProviderType : TypeAlias = VideoFrameProviderCpp | VideoFrameProvider 
 
+# Class of different styles
+class style():
+    BLACK = '\033[30m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
+    BLUE = '\033[34m'
+    MAGENTA = '\033[35m'
+    CYAN = '\033[36m'
+    WHITE = '\033[37m'
+    UNDERLINE = '\033[4m'
+    RESET = '\033[0m'
+
+def print_error(mess:str) -> None:
+    print(f"{style.RED}ERROR:{mess}{style.RESET}")
+
+def print_warning(mess:str) -> None:
+    print(f"{style.BLUE}WARNING:{mess}{style.RESET}")
+
+def print_log(mess:str) -> None:
+    print(f"{style.CYAN}LOG:{mess}{style.RESET}")
+
 class AverageTime:
     def __init__(self):
         self._sum     : float = 0
@@ -172,6 +194,7 @@ class VideoPlayerAV(VideoPlayerBase):
         if res:
             self._filename = res.group(1)
             self._video_stream_number = int(res.group(2))
+            print(f"{self._video_stream_number=}")
         else:
             self._filename = filename
             self._video_stream_number = 0
@@ -260,7 +283,7 @@ class VideoPlayerAV(VideoPlayerBase):
         play_position = self.play_position
         for idx, p in enumerate(self._compare_players):
             self._compare_timeshift[idx] = p.play_position - play_position
-            print(f"Setting time shift for player {idx} as {self._compare_timeshift[idx]}")
+            print_log(f"Setting time shift for player {idx} as {self._compare_timeshift[idx]}")
 
     def getTimeShifts(self) -> list[float]:
         return self._compare_timeshift
@@ -381,14 +404,14 @@ class VideoPlayerAV(VideoPlayerBase):
     def init_video_av(self):
         """ Initialize the container and frame generator """
         if not self._initialized:
-            print("--- init_video_av()  {self._name}")
+            print_log("--- init_video_av()  {self._name}")
         else:
-            print("--- init_video_av()  {self._name} video already intialized")
+            print_log("--- init_video_av()  {self._name} video already intialized")
             return
         
         if self.scheduler.is_running:
             self.scheduler.pause()
-        print(f"filename = {self._filename}")
+        print_log(f"filename = {self._filename}")
         if self._container is not None:
             self._frame_provider.frame_buffer.reset()
             # del self._frame_provider.frame_buffer
@@ -400,8 +423,9 @@ class VideoPlayerAV(VideoPlayerBase):
         if self._use_decode_video_py:
             if self._codec == 'auto':
                 device_type = get_best_device(self._filename, nb_frames=4)
+                if device_type == 'cpu': device_type = None
             else:
-                device_type = self._codec if self._codec != '' else None
+                device_type = self._codec if self._codec != 'cpu' else None
             # Use framebuffer max size to set the number of allocated frames in C++ Decoder
             self._container = decode_lib.VideoDecoder(VideoConfig.framebuffer_max_size)
             self._container.open(self._filename, device_type, self._video_stream_number,
@@ -411,7 +435,7 @@ class VideoPlayerAV(VideoPlayerBase):
             self._container = av.open(self._filename)
         self._frame_provider.set_input_container(self._container, self._video_stream_number)
 
-        print(f"duration = {self._frame_provider._duration} seconds")
+        print_log(f"duration = {self._frame_provider._duration} seconds")
         slider_single_step = int(self._frame_provider._ticks_per_frame*
                                  self._frame_provider._time_base*
                                  self._play_position.float_scale+0.5)
@@ -420,13 +444,13 @@ class VideoPlayerAV(VideoPlayerBase):
         self.play_position_gui.setPageStep(slider_page_step)
         self._play_position.range = [0, int(self._frame_provider._end_time*
                                            self._play_position.float_scale)]
-        print(f"range = {self._play_position.range}")
+        print_log(f"range = {self._play_position.range}")
         self.play_position_gui.setRange(0, self._play_position.range[1])
         self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         self.play_position_gui.update()
         self.play_position_gui.changed()
 
-        print(f"ticks_per_frame {self._frame_provider._ticks_per_frame}")
+        print_log(f"ticks_per_frame {self._frame_provider._ticks_per_frame}")
         self.yuv_array = np.empty((1), dtype=np.uint8)
 
         self.play_position_gui.setTextFormat(lambda p: f"{p.float:0.2f}/{int(p.float*self._frame_provider._framerate+0.5)}")
@@ -453,10 +477,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
     parser.add_argument('--pyav', action='store_true', help='Use pyav instead of ffmpeg bound with pybind11')
-    parser.add_argument('--codec', type=str, default='auto', help='Use codec (ex: cuda) hardware acceleration with ffmpeg bound library, auto: detect automatically')
+    parser.add_argument('--codec', '-c',  type=str, default='auto', help='Use codec (ex: cuda) hardware acceleration with ffmpeg bound library, auto: detect automatically, cpu: for cpu only decoder')
     args = parser.parse_args()
     # _params = vars(args)
-    print(args)
+    print_log(args)
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
     # These 3 lines solve a flickering issue by allowing immediate repaint
@@ -477,6 +501,13 @@ def main():
     main_widget.setLayout(main_layout)
     players = []
     for input in args.input_video:
+        if ':' in os.path.splitext(input)[1]:
+            input_filename = os.path.splitext(input)[0]+os.path.splitext(input)[1].split(':')[0]
+        else:
+            input_filename = input
+        if not os.path.isfile(input_filename):
+            print_warning(f"Input file not found {input_filename}")
+            continue
         if args.pyav:
             player = VideoPlayerAV(main_widget, use_decode_video_py=False, codec=args.codec)
         else:
@@ -484,6 +515,10 @@ def main():
         player.set_video(input)
         video_layout.addWidget(player, 1)
         players.append(player)
+    if len(players) == 0:
+        import sys
+        print_error("No valid input video found")
+        sys.exit()
     main_layout.addLayout(video_layout)
 
     # button_pauseplay = QtWidgets.QPushButton(">||")
@@ -508,13 +543,13 @@ def main():
     # First display compared videos
     for idx,p in enumerate(players):
         if idx>0:
-            print(f" --- setting player {idx}")
+            print_log(f" --- setting player {idx}")
             p.show()
             p.set_name(f'player{idx}')
             p.init_and_display()
             # First video is compare to all others
             players[0].compare(p)
-    print(f" --- setting player {0}")
+    print_log(f" --- setting player {0}")
     players[0].show()
     players[0].set_name('player0')
     players[0].init_and_display()
