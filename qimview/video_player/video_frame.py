@@ -180,11 +180,11 @@ class VideoFrame:
                 else:
                     im.crop = np.array([0,0,1,1], dtype=np.float32)
                 return im
-        
 
     def toViewerImage(self, rgb=False) -> ViewerImage | None:
         if type(self._frame) is decode_lib.Frame:
             return self._libFrameToViewer()
         if type(self._frame) is AVVideoFrame:
             return self._avFrameToViewer(rgb)
+        return None
 
