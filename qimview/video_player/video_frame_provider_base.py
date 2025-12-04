@@ -4,6 +4,7 @@ import time
 from qimview.video_player.video_frame_buffer_base import VideoFrameBufferBase
 from qimview.video_player.video_exceptions import EndOfVideo
 from qimview.utils.qt_imports import QtWidgets, QtCore
+import math
 
 FRAMETYPE   = TypeVar('FRAMETYPE')
 DECODERTYPE = TypeVar('DECODERTYPE')
@@ -26,6 +27,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
     _container       : Optional[DECODERTYPE] = None
     _video_stream    = None # : Optional[streams.StreamContainer]  = None
     _debug          : bool = False
+    _guessed_gop_size : int = -1
 
     def __protocol_init__(self):
         pass
@@ -99,6 +101,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
 
     def set_input_container(self, container: DECODERTYPE, video_stream_number=0):
         self._container = container
+        print(f"set_input_container() gop_size= {self._container.get_codec_ctx().get().gop_size}")
         assert self._container is not None, "No decoder" 
         
         video_streams = self.get_video_streams()
@@ -166,6 +169,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                         self.frame_buffer.reset()
                     # get the next available frame
                     frame = self.frame_buffer.get_frame(timeout=1, save=False)
+                    self.update_gop_size(frame)
                     if frame is None:
                         print(f"Failed to get frame")
                         return False
@@ -182,8 +186,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                         wait_cursor = frame_num-found_frame_pos>10
                         if wait_cursor:
                             QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.WaitCursor)
-                    if self._debug:
-                        print(f" {found_frame_pos=} {frame_num=}")
+                    print(f" {found_frame_pos=} {frame_num=}")
                     for idx in range(found_frame_pos, frame_num):
                         save = (frame_num-idx)<2
                         if self._debug:
@@ -192,6 +195,7 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                             else:
                                 print(f'{idx}', end=', ')
                         frame = self.frame_buffer.get_frame(save=save)
+                        self.update_gop_size(frame)
                     if self._debug:
                         print('')
                 else:
@@ -214,6 +218,19 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                     QtWidgets.QApplication.restoreOverrideCursor()
                 return True
 
+    def update_gop_size(self, frame):
+        if frame is not None and frame.key_frame:
+            pos = int( frame.pts * self._time_base * self._framerate + 0.5)
+            # print(f"key frame at {pos}")
+            if pos>0:
+                if self._guessed_gop_size == -1:
+                    self._guessed_gop_size = pos
+                    print(f"{self._guessed_gop_size=}")
+                else:
+                    if pos % self._guessed_gop_size != 0:
+                        self._guessed_gop_size = math.gcd(self._guessed_gop_size, pos)
+                        print(f" --> {self._guessed_gop_size=}")
+
     def get_next_frame(self, timeout=6,  verbose=False) -> bool:
         """ Obtain the next frame, usually while video is playing, 
             can raise EndofVideo exception """
@@ -229,13 +246,17 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
             self._frame_buffer.reset()
             raise EndOfVideo() from e
         else:
+            self.update_gop_size(self._frame)
             if verbose:
                 d = time.perf_counter()-t
                 s = 'gen '
-                s += 'key ' if self._frame.key_frame else ''
+                if self._frame is not None:
+                    s += 'key ' if self._frame.key_frame else ''
+                    s += 'I ' if self._frame.interlaced_frame else ''
                 s += f'{d:0.3f} ' if d>=0.001 else ''
-                s += f'{self._frame.pict_type}'
-                s += f' {self._frame.pts}'
+                # s += f'{self._frame.pict_type}'
+                if self._frame is not None:
+                    s += f' {self._frame.pts}'
                 if s != 'gen P': 
                     print(s)
             return True
