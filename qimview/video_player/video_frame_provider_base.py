@@ -257,6 +257,6 @@ class VideoFrameProviderBase(Protocol[FRAMETYPE, DECODERTYPE]):
                 # s += f'{self._frame.pict_type}'
                 if self._frame is not None:
                     s += f' {self._frame.pts}'
-                if s != 'gen P': 
+                if s != 'gen P':
                     print(s)
             return True
