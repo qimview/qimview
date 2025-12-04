@@ -7,6 +7,8 @@
 import os
 import configparser
 from dataclasses import dataclass
+from dataclasses import field
+from typing import ClassVar
 
 config = configparser.ConfigParser()
 res = config.read([os.path.expanduser('~/.qimview.cfg')])
@@ -21,6 +23,7 @@ class VideoConfig:
     decoder_thread_type  : str = "FRAME"
     decoder_thread_count : int = 4
     framebuffer_max_size : int = 10
+    hardware_decoder_priority: ClassVar[list[str]] = ['']
 
 if res:
     VideoConfig.mipmap_max_level     = config.getint('VIDEOPLAYER', 'mipmap_max_level',
@@ -31,7 +34,10 @@ if res:
                                                    fallback=VideoConfig.decoder_thread_count)
     VideoConfig.framebuffer_max_size = config.getint('VIDEOPLAYER', 'framebuffer_max_size',
                                                    fallback=VideoConfig.framebuffer_max_size)
+    VideoConfig.hardware_decoder_priority = config.get('VIDEOPLAYER', 'hardware_decoder_priority',
+                                                   fallback=','.join(VideoConfig.hardware_decoder_priority)).split(',')
     print(f"{VideoConfig.mipmap_max_level=}")
     print(f"{VideoConfig.decoder_thread_type=}")
     print(f"{VideoConfig.decoder_thread_count=}")
     print(f"{VideoConfig.framebuffer_max_size=}")
+    print(f"{VideoConfig.hardware_decoder_priority=}")
