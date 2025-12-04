@@ -10,6 +10,7 @@ import glm
 import OpenGL.GL as gl
 from OpenGL.GL import shaders
 import numpy as np
+from dataclasses import dataclass, fields
 
 from PySide6.QtOpenGL import QOpenGLBuffer
 
@@ -43,6 +44,40 @@ else:
         }}
     """
 
+@dataclass
+class ShaderFilterParams:
+    white_level: float
+    black_level: float
+    g_r_coeff: float
+    g_b_coeff: float
+    # maximal value based on image precision
+    max_value: float
+    # maximal value based on image type (uint8, etc...)
+    max_type: float
+    gamma: float
+    
+    @staticmethod
+    def DeclareInShader() -> str:
+        res = ''
+        for f in fields(ShaderFilterParams):
+            res += f"uniform {f.type.__name__} {f.name};\n"
+        return res
+
+
+class SetShaderFilterParams:
+    params: ShaderFilterParams
+
+    def setLocations(self, program) -> None:
+        """ Precompute shader parameters locations
+        """
+        _locations = {}
+        for f in fields(ShaderFilterParams):
+            _locations[f.name] = shaders.glGetUniformLocation(program, f.name)
+        self._locations = _locations
+
+    def SetShaderValues(self, _gl):
+        for f in fields(ShaderFilterParams):
+            _gl.glUniform1f( self._locations[f.name], getattr(self.params,f.name))
 
 class GLImageViewerShaders(GLImageViewerBase):
 
@@ -94,15 +129,9 @@ class GLImageViewerShaders(GLImageViewerBase):
           }
         """
 
-    fragmentShader_declare_filter_params = """
-        uniform float white_level;
-        uniform float black_level;
-        uniform float g_r_coeff;
-        uniform float g_b_coeff;
-        uniform float max_value; // maximal value based on image precision
-        uniform float max_type;  // maximal value based on image type (uint8, etc...)
-        uniform float gamma;
-        """
+    fragmentShader_declare_filter_params = f"""
+     {ShaderFilterParams.DeclareInShader()}
+    """
 
     fragmentShader_yuv2rgb = """
           vec3 yuv2rgb(const vec3 yuv)
@@ -302,7 +331,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float texture_scale;
         uniform int channels; // channel representation
         {fragmentShader_declare_filter_params}
-        float y,u,v, r, g, b;
+        float y = 0,u = 0,v = 0, r, g, b;
         {DECLARE_GLOBAL_COLOUR}
     
         {fragmentShader_apply_filters}
@@ -475,6 +504,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self._transform_param                            = None
         # output crop [ width min, height min, width max, height max]
         self._output_crop                                = np.array([0., 0., 1., 1.], dtype=np.float32)
+        self._shader_filter_params : SetShaderFilterParams = SetShaderFilterParams()
 
     def set_shaders(self):
         if self.program_RGB is None:
@@ -689,13 +719,7 @@ class GLImageViewerShaders(GLImageViewerBase):
             else:
                 self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
             self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
-            self.black_level_location = shaders.glGetUniformLocation(self.program, "black_level")
-            self.white_level_location = shaders.glGetUniformLocation(self.program, "white_level")
-            self.g_r_coeff_location   = shaders.glGetUniformLocation(self.program, "g_r_coeff")
-            self.g_b_coeff_location   = shaders.glGetUniformLocation(self.program, "g_b_coeff")
-            self.max_value_location   = shaders.glGetUniformLocation(self.program, "max_value")
-            self.max_type_location    = shaders.glGetUniformLocation(self.program, "max_type")
-            self.gamma_location       = shaders.glGetUniformLocation(self.program, "gamma")
+            self._shader_filter_params.setLocations(program)
 
     def myPaintGL(self):
         """Paint the scene.
@@ -738,6 +762,15 @@ class GLImageViewerShaders(GLImageViewerBase):
                     program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
                 else:
                     program = self.program_YUV420_twotex if twotex else self.program_YUV420
+
+        self._shader_filter_params.params = ShaderFilterParams(
+            white_level = self.filter_params.white_level.float,
+            black_level = self.filter_params.black_level.float,
+            g_r_coeff   = self.filter_params.g_r.float,
+            g_b_coeff   = self.filter_params.g_b.float,
+            max_value   = (1 << self._image.precision)-1,
+            max_type    = np.iinfo(self._image.data.dtype).max,
+            gamma       = self.filter_params.gamma.float)
 
         # Avoid calling each time glGet{Attrib,Uniform}Location()
         self.setShaderProgram(program, twotex)
@@ -787,19 +820,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         # set color transformation parameters
         self.print_log("levels {} {}".format(self.filter_params.black_level.value,
                                              self.filter_params.white_level.value))
-        _gl.glUniform1f( self.black_level_location, self.filter_params.black_level.float)
-        _gl.glUniform1f( self.white_level_location, self.filter_params.white_level.float)
-
-        # white balance coefficients
-        _gl.glUniform1f(self.g_r_coeff_location, self.filter_params.g_r.float)
-        _gl.glUniform1f(self.g_b_coeff_location, self.filter_params.g_b.float)
-
-        # Should work for unsigned types for the moment
-        _gl.glUniform1f( self.max_value_location, (1 << self._image.precision)-1)
-        _gl.glUniform1f( self.max_type_location,  np.iinfo(self._image.data.dtype).max)
-
-        _gl.glUniform1f( self.gamma_location,       self.filter_params.gamma.float)
-
+        self._shader_filter_params.SetShaderValues(_gl)
 
         # set vertex and UV buffers
         # vert_buffers = VertexBuffers()
