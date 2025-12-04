@@ -366,6 +366,8 @@ namespace AV
         // retrieve data from GPU to CPU 
         //auto prev = high_resolution_clock::now();
         auto ret = av_hwframe_transfer_data(cpu_frame->get(), _frame, 0);
+        // need to copy flags and maybe more data ??
+        cpu_frame->get()->flags = _frame->flags;
         if (ret < 0)
           throw AV::AVException("Error transferring the data to system memory");
         //auto curr = high_resolution_clock::now();
