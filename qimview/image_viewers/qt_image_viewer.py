@@ -798,7 +798,9 @@ class QTImageViewer(ImageViewer, BaseWidget):
                     line,
                     channels = self._image.channels,
                     )
-        
+
+        self.displayed_image_shape = cropped_image_shape
+        self.displayed_rect  = rect
         for _,cb in self.paint_callbacks.items():
             cb(self, cropped_image_shape, crop_xmin, crop_ymin, rect, painter)
 
