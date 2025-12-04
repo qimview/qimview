@@ -28,6 +28,8 @@ class VideoPlayerKeyEvents:
                 'Left'        : self.prevFrame,
                 'Shift+Right' : self.nextTenFrame,
                 'Shift+Left'  : self.prevTenFrame,
+                'Ctrl+Right'  : self.nextKeyFrame,
+                'Ctrl+Left'   : self.prevKeyFrame,
                 'PgUp'        : self.nextSecond,
                 'PgDown'      : self.prevSecond,
                 'F1'          : self.helpDialog,
@@ -158,6 +160,30 @@ class VideoPlayerKeyEvents:
         """ display Frame - 10 """
         p = self._player
         p.play_position = max(0,p.play_position-10*p.frame_duration)
+        p.set_play_position()
+        p.update_position(force=True)
+        return True
+
+    def nextKeyFrame(self) -> bool:
+        """ move to next key frame """
+        p = self._player
+        gop_size = p.guessed_gop_size
+        # print(f"{gop_size=}")
+        gop_size = gop_size*p.frame_duration
+        # print(f"{gop_size=}")
+        # print(f"{p.play_position=}")
+        p.play_position = (int(p.play_position/gop_size+0.5)+1)*gop_size
+        # print(f"{p.play_position=}")
+        p.set_play_position()
+        p.update_position(force=True)
+        return True
+
+    def prevKeyFrame(self) -> bool:
+        """ move to previous key frame """
+        p = self._player
+        gop_size = p.guessed_gop_size
+        gop_size = gop_size*p.frame_duration
+        p.play_position = max(0,(int(p.play_position/gop_size+0.5)-1))*gop_size
         p.set_play_position()
         p.update_position(force=True)
         return True

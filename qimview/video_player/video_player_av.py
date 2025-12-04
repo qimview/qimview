@@ -122,6 +122,16 @@ class VideoPlayerAV(VideoPlayerBase):
             return self.frame_provider.frame_duration
         else:
             return 0.1
+    
+    @property
+    def guessed_gop_size(self) -> int:
+        if self.frame_provider._guessed_gop_size > 0:
+            return self.frame_provider._guessed_gop_size
+        else:
+            if self._frame_provider._framerate>0:
+                return int(self._frame_provider._framerate+0.5)
+            else:
+                return int(self._container.get_codec_ctx().get().gop_size)
 
     def empty_compare(self):
         self._compare_players = []
