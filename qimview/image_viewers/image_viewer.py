@@ -22,6 +22,7 @@ class OverlapMode(IntEnum):
     Horizontal  = 0
     Vertical    = 1
     Rectangle   = 2
+    EAC2toEAC   = 3
 
 QtKeys  = QtCore.Qt.Key
 QtMouse = QtCore.Qt.MouseButton
