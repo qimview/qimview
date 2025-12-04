@@ -12,6 +12,7 @@ from qimview.video_player.video_player_config      import VideoConfig
 from qimview.video_player.video_frame              import VideoFrame
 
 test_buffer = False
+max_time    = 100
 
 # Skip decoders that have never been tested
 device_skip = ['vdpau','vaapi']
@@ -26,7 +27,7 @@ def getFrames(fp, nb, log_timings:bool = False):
         if log_timings:
             time_start = perf_counter()
         # f = fp._frame_buffer.get_nothread()
-        fp.get_next_frame()
+        fp.get_next_frame(verbose=True)
         f = fp.frame
         if f is None:
             error = True
@@ -50,7 +51,7 @@ def getFrames(fp, nb, log_timings:bool = False):
             print(f' Frame {n} took {(time_end - time_start)*1000:0.1f} msec', end="; ")
     if error:
         print(f"Error while decoding at frame {n}")
-        return 1/n if n>0 else 10
+        return max_time
     total_time_end = perf_counter()
     if log_timings:
         print(f'\nTotal time Took {(total_time_end - total_time_start):0.3f} msec FPS {nb/(total_time_end - total_time_start):0.2f}')
@@ -64,19 +65,34 @@ def get_best_device(input_video: str, codec: str = '', threads: int = -1, nb_fra
     script_start = perf_counter()
     filename = input_video
     hw_device_names = decode_lib.HW.get_device_type_names()
-    device_type = codec if codec!='' else None
+    device_type = codec if codec!='' else 'cpu'
     if device_type not in hw_device_names:
         hw_device_names.append(device_type)
     stream_number = 0
     hw_device_names_ok = []
     fp = VideoFrameProviderCpp()
+    use_priority: bool = len(VideoConfig.hardware_decoder_priority)>0 
+    if use_priority:
+        print(f"initial {hw_device_names=}")
+        sorted_list = []
+        for dn in VideoConfig.hardware_decoder_priority:
+            if dn in hw_device_names:
+                sorted_list.append(dn)
+            else:
+                print(f'hardware priority device "{dn}" not available')
+        for dn in hw_device_names:
+            if dn not in VideoConfig.hardware_decoder_priority:
+                sorted_list.append(dn)
+        hw_device_names = sorted_list
+        print(f"sorted {hw_device_names=}")
+
     for device_name in hw_device_names:
         print(f"*************** {device_name=} *********")
         dev_time_start = perf_counter()
         if device_name in device_skip:
             continue
         vd = decode_lib.VideoDecoder(VideoConfig.framebuffer_max_size)
-        open_ok = vd.open(filename, device_name, stream_number, 
+        open_ok = vd.open(filename, device_name if device_name!='cpu' else None, stream_number,
                 num_threads = VideoConfig.decoder_thread_count if threads==-1 else threads,
                 thread_type = VideoConfig.decoder_thread_type
                 )
@@ -92,8 +108,11 @@ def get_best_device(input_video: str, codec: str = '', threads: int = -1, nb_fra
                     print(f"{f.pts=}")
                 hw_device_names_ok.append(device_name)
             else:
-                timing = getFrames(fp,nb=nb_frames, log_timings=timings)
+                timing = getFrames(fp,nb=nb_frames if not use_priority else 1, log_timings=timings)
                 hw_device_names_ok.append((device_name, timing))
+                if use_priority and device_name in VideoConfig.hardware_decoder_priority and timing != max_time:
+                    print(f"Priority device found")
+                    break
             dev_time = perf_counter()-dev_time_start
             print(f"{open_time=:0.3f}, {init_time=:0.3f}, {rewind_time=:0.3f} {dev_time=:0.3f}")
         else:
