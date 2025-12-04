@@ -32,6 +32,7 @@ class ImageReader:
         self._plugins = {
             ".JPG":read_jpeg,
             ".JPEG":read_jpeg,
+            ".36P": read_jpeg,
         }
         # add libraw supported extensions
         if has_rawpy:
