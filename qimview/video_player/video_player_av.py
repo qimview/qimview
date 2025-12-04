@@ -104,7 +104,9 @@ class VideoPlayerAV(VideoPlayerBase):
         self._basename            : str                 = "none"
         self._initialized         : bool                = False
         self._compare_players     : list[VideoPlayerAV] = []
+        self._compare_idx         : int                 = 0 # index of the video to compare within the _compare_players list
         self._compare_timeshift   : list[float]         = [] # time shift for each comparing player
+        self.widget.image_ref_name = f"Video {self._compare_idx+1}"
 
     @property
     def scheduler(self) -> VideoScheduler:
@@ -128,6 +130,13 @@ class VideoPlayerAV(VideoPlayerBase):
         self._compare_players.append(player)
         self._compare_timeshift.append(0)
         print(f"{self._compare_players=} {self._compare_timeshift=}")
+
+    def changeComparisonRef(self):
+        nb_comparisons = len(self._compare_players)
+        if nb_comparisons > 1:
+            self._compare_idx = (self._compare_idx + 1) % nb_comparisons
+            self.widget.image_ref_name = f"Video {self._compare_idx+1}"
+            # print(f"{self._compare_idx=}")
 
     def on_synchronize(self, viewer : ImageViewerClass) -> None:
         # Synchronize other viewer to calling viewer
@@ -289,12 +298,12 @@ class VideoPlayerAV(VideoPlayerBase):
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
             # print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
-            self.widget.set_image_fast(self._im, 
-                                       image_ref = self._compare_players[0]._im,
-                                       texture_ref = self._compare_players[0].widget.texture,
-                                       use_crop=use_crop,
-                                       # PBO and image difference is not well synchronized
-                                       use_PBO=use_PBO)
+            self.widget.set_image_fast(self._im,
+                                    image_ref = self._compare_players[self._compare_idx]._im,
+                                    texture_ref = self._compare_players[self._compare_idx].widget.texture,
+                                    use_crop=use_crop,
+                                    # PBO and image difference is not well synchronized
+                                    use_PBO=use_PBO)
         else:
             self.widget.set_image_fast(self._im, use_crop=use_crop, use_PBO=use_PBO)
         self.widget.image_name = im_name + frame_str

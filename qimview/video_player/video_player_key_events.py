@@ -21,6 +21,8 @@ class VideoPlayerKeyEvents:
         # Set key events callbacks
         self.keys_callback = {
                 'F'           : self.toggleImageFilters,
+                'S'           : self.swapVideos,
+                'Shift+C'     : self.changeComparisonRef,
                 'Space'       : self.togglePlayPause,
                 'Right'       : self.nextFrame,
                 'Left'        : self.prevFrame,
@@ -108,6 +110,17 @@ class VideoPlayerKeyEvents:
     def toggleImageFilters(self) -> bool:
         """ toggle image filters """
         self._player.filters_widget.setVisible(not self._player.filters_widget.isVisible())
+        return True
+
+    def swapVideos(self) -> bool:
+        """ Swap 2 first compared videos """
+        self._player.swapVideos()
+        return True
+
+    def changeComparisonRef(self) -> bool:
+        """ Change the comparison video if more than 2 videos are compared """
+        self._player.changeComparisonRef()
+        self._player.display_frame()
         return True
 
     def togglePlayPause(self) -> bool:

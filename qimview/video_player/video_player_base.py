@@ -38,6 +38,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self._vertical_layout.addWidget(self._filters_widget)
         self._vertical_layout.addWidget(self.widget, stretch=1)
         self._vertical_layout.addLayout(self._hor_layout)
+        self._swap_videos : bool = False
 
         # FullScreen helper features
         self._fullscreen      : FullScreenHelper = FullScreenHelper()
@@ -145,6 +146,12 @@ class VideoPlayerBase(QtWidgets.QWidget):
         pass # to override
 
     def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
+        pass # to override
+
+    def swapVideos(self) -> None:
+        self._swap_videos = not self._swap_videos
+
+    def changeComparisonRef(self) -> None:
         pass # to override
 
     def setTimeShifts(self) -> None:
