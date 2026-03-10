@@ -446,6 +446,12 @@ class VideoPlayerAV(VideoPlayerBase):
                                            self._play_position.float_scale)]
         print_log(f"range = {self._play_position.range}")
         self.play_position_gui.setRange(0, self._play_position.range[1])
+        # Limit number of ticks to avoid too much clutter
+        slider_tick_interval = max(10, int(self._play_position.range[1]/20))
+        # Get ticks to match a number of seconds if possible
+        if slider_tick_interval > self._play_position.float_scale:
+            slider_tick_interval = slider_tick_interval - slider_tick_interval % self._play_position.float_scale
+        self.play_position_gui.setTickInterval(slider_tick_interval)
         self.play_position_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
         self.play_position_gui.update()
         self.play_position_gui.changed()
