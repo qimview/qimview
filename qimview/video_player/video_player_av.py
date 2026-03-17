@@ -329,6 +329,7 @@ class VideoPlayerAV(VideoPlayerBase):
         self._im.filename = self._filename + frame_str
         # Store video time in the image viewer to be used by plugins
         self.widget.video_time = self._frame_provider.get_time()
+        use_crop = self._scheduler.is_running
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
             # print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
