@@ -327,7 +327,8 @@ class VideoPlayerAV(VideoPlayerBase):
         # print(f" --- set_image_YUV420 for {self._name} with pos {frame.pts}")
         self._im = video_frame.toViewerImage()
         self._im.filename = self._filename + frame_str
-        use_crop = self._scheduler.is_running
+        # Store video time in the image viewer to be used by plugins
+        self.widget.video_time = self._frame_provider.get_time()
         if len(self._compare_players)>0:
             # Use image from _compare_player as a ref?
             # print(f" *** comparing images ...{self._im.filename[-4:]} ...{self._compare_players[0]._im.filename[-4:]}")
