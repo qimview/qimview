@@ -356,6 +356,8 @@ class ImageViewer:
         """ Set the viewer image """
         self._image = image
         self.image_id += 1
+        for cb in self.imagechange_callbacks.values():
+            cb(self)
 
     def set_image_ref(self, image_ref : Optional[ViewerImage] = None):
         """ Set the reference image """

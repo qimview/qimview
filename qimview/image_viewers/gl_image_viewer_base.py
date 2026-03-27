@@ -111,6 +111,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self._image     = image
         self._image_ref = image_ref
         self.image_id += 1
+        for cb in self.imagechange_callbacks.values():
+            cb(self)
         res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         if not res: print("setTexture() returned False")
 
