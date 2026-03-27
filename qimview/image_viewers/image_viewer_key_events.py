@@ -192,7 +192,7 @@ class ImageViewerKeyEvents:
         """ Toggle cursor display """
         self._viewer.show_cursor = not self._viewer.show_cursor
         if self._viewer.show_cursor:
-            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.BlankCursor)
+            QtWidgets.QApplication.setOverrideCursor(QtCore.Qt.CursorShape.CrossCursor)
         else:
             QtWidgets.QApplication.restoreOverrideCursor()
         return self.updateAndAccept()
