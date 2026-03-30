@@ -880,37 +880,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         if self._display_timing: self.print_timing(force=True)
 
     def updateTransforms(self) -> float:
-        if self.trace_calls:
-            t = trace_method(self.tab)
-        if self.display_timing:
-            start_time = get_time()
-        w = self._width
-        h = self._height
-        dx, dy = self.new_translation()
-        # Deduce new scale from mouse vertical displacement
-        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
-        new_transform_params = [w,h,dx,dy,scale]
-        if self._transform_param != new_transform_params:
-            # update the window size
-            translation_unit = min(w, h)/2
-            # use_glm = False
-            m = glm.mat4()
-            # the window corner OpenGL coordinates are (-+1, -+1)
-            m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
-            m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
-            m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
-            self.pMatrix_glm = m
-            self.mvMatrix_glm = glm.mat4()
-
-            # For use in shaders
-            self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
-            self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
-
-            self._transform_param = new_transform_params
-        if self._display_timing:
-            self.print_log('updateTransforms time {:0.1f} ms'.format((get_time()-start_time)*1000))
-        return scale
-
+        return super().updateTransforms()
 
 if __name__ == '__main__':
     from qimview.image_readers import gb_image_reader

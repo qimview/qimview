@@ -13,7 +13,7 @@ OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
 
 from .gltexture import GLTexture
-from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui
+from qimview.utils.qt_imports   import QtWidgets, QOpenGLWidget, QtCore, QtGui, QMenu
 from qimview.utils.viewer_image import ViewerImage
 from qimview.image_viewers.image_viewer import ImageViewer, trace_method, OverlapMode
 import glm
@@ -67,6 +67,51 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.pMatrix_glm  : glm.mat4  = glm.mat4()
         # Model view matrix
         self.mvMatrix_glm : glm.mat4  = glm.mat4()
+
+        self.image_rotation = 0
+        self.flip_x = False
+        self.flip_y = False
+        self.initContextMenu()
+
+    def initContextMenu(self):
+        self.context_menu = QMenu(self)
+
+        self.geomtric_transform_menu = QMenu(self, title="Geometric Transfom")
+        # TODO: fix the possibility to rotate the video
+        # action1 = self.geomtric_transform_menu.addAction("Right 90°")
+        # action2 = self.geomtric_transform_menu.addAction("Left  90°")
+        action_flip_x = self.geomtric_transform_menu.addAction("Horizontal flip")
+        action_flip_y = self.geomtric_transform_menu.addAction("Vertical flip")
+        action3 = self.geomtric_transform_menu.addAction("reset")
+        # action1.triggered.connect(lambda : self.rotate_image(glm.pi()/2))
+        # action2.triggered.connect(lambda : self.rotate_image(-glm.pi()/2))
+        action_flip_x.triggered.connect(lambda : self.flip_image(True, False))
+        action_flip_y.triggered.connect(lambda : self.flip_image(False, True))
+        action3.triggered.connect(self.reset_rotation)
+
+        self.context_menu.addMenu(self.geomtric_transform_menu)
+
+    def rotate_image(self, angle=0):
+        self.image_rotation += angle
+        # if self.texture:     self.texture.reset()
+        # if self.texture_ref: self.texture_ref.reset()
+        self.viewer_update()
+
+    def flip_image(self, horizontal: bool, vertical: bool):
+        if horizontal:
+            self.flip_x = not self.flip_x
+        if vertical:
+            self.flip_y = not self.flip_y
+        self.viewer_update()
+
+    def reset_rotation(self):
+        self.image_rotation = 0
+        self.flip_x = 0
+        self.flip_y = 0
+        self.viewer_update()
+
+    def contextMenuEvent(self, event):
+        self.context_menu.exec(event.globalPos())
 
     def set_image(self, image):
         if self.trace_calls:
@@ -230,6 +275,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             # Still need this part for drawing lines (cursor, etc...)
             gl.glMatrixMode(gl.GL_PROJECTION)
             gl.glLoadMatrixf(self.pMatrix.data)
+            gl.glMatrixMode(gl.GL_MODELVIEW)
+            gl.glLoadMatrixf(self.mvMatrix.data)
             if self.show_cursor:
                 im_pos = self.gl_draw_cursor()
             if self._show_overlap:
@@ -407,29 +454,46 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self.trace_calls:
             t = trace_method(self.tab)
         if self._display_timing: self.start_timing()
-        # _gl = QtGui.QOpenGLContext.currentContext().functions()
-        _gl = gl
         w = self._width
         h = self._height
         dx, dy = self.new_translation()
         scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
+        rotation = self.image_rotation
+        flip_x   = self.flip_x
+        flip_y   = self.flip_y
+        new_transform_params = [w, h, dx, dy, scale, rotation, flip_x, flip_y]
+        if self._transform_param != new_transform_params:
+            # update the window size
+            translation_unit = min(w, h)/2
+            # use_glm = False
+            m = glm.mat4()
+            # the window corner OpenGL coordinates are (-+1, -+1)
+            m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
+            self.pMatrix_glm = m
+            m = glm.mat4()
+            if rotation != 0 or flip_y or flip_x:
+                m = m*glm.transpose(glm.translate(glm.vec3(-w/2,-h/2,0)))
+                m = m*glm.transpose(glm.rotate(glm.mat4(), rotation, glm.vec3(0,0,1)))
+                if flip_x:
+                    m = m*glm.transpose(glm.scale(glm.vec3(-1,1,1)))
+                if flip_y:
+                    m = m*glm.transpose(glm.scale(glm.vec3(1,-1,1)))
+                m = m*glm.transpose(glm.translate(glm.vec3(w/2,h/2,0)))
 
-        # update the window size
-        translation_unit = min(w, h)/2
-        # use_glm = False
-        m = glm.mat4()
-        # the window corner OpenGL coordinates are (-+1, -+1)
-        m = m*glm.transpose(glm.ortho(0., w, 0., h, -1., 1.))
-        m = m*glm.transpose(glm.translate(glm.vec3(dx/translation_unit,dy/translation_unit,0)))
-        m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
-        self.pMatrix_glm = m
-        self.mvMatrix_glm = glm.mat4()
+            m = m*glm.transpose(glm.translate(glm.vec3(dx,dy,0)))
+            if scale != 1:
+                m = m*glm.transpose(glm.translate(glm.vec3(-w/2,-h/2,0)))
+                m = m*glm.transpose(glm.scale(glm.vec3(scale,scale,scale)))
+                m = m*glm.transpose(glm.translate(glm.vec3(w/2,h/2,0)))
+            self.mvMatrix_glm = m
 
-        # For use in shaders
-        self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
-        self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
+            # For use in shaders
+            self.mvMatrix = np.array(self.mvMatrix_glm, dtype=np.float32).flatten()
+            self.pMatrix  = np.array(self.pMatrix_glm,  dtype=np.float32).flatten()
 
-        if self._display_timing: self.print_timing(add_total=True)
+            self._transform_param = new_transform_params
+        if self._display_timing:
+            self.print_timing(add_total=True)
         return scale
 
     def resizeGL(self, width, height):
