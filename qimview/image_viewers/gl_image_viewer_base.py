@@ -5,6 +5,7 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
+import sys
 import traceback
 from typing import Optional, Tuple
 import numpy as np
@@ -27,9 +28,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         _format = QtGui.QSurfaceFormat()
         #_format.setDepthBufferSize(24)
-        #_format.setVersion(3,3)
-        #_format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
-        _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        if sys.platform == 'darwin':
+            _format.setVersion(2, 1)
+            _format.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+            _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        else:
+            _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         _format.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
         self.setFormat(_format)
 
