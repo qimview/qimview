@@ -13,6 +13,11 @@ extern "C" {
 #include <libavutil/pixfmt.h>
 }
 
+#ifdef __APPLE__
+#include <CoreVideo/CVPixelBuffer.h>
+#include <IOSurface/IOSurface.h>
+#endif
+
 #include <iostream>
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -162,6 +167,31 @@ namespace AV
       currently only the Y channel
     */
     py::object getData(const int& channel, const int& height, const int& width,  bool verbose=false);
+
+#ifdef __APPLE__
+    /**
+      Returns the IOSurface handle (as uintptr_t) backing the CVPixelBuffer
+      in frame->data[3] when the format is AV_PIX_FMT_VIDEOTOOLBOX.
+      Returns 0 if no IOSurface is available.
+    */
+    uintptr_t getIOSurface() {
+        CVPixelBufferRef pixbuf = (CVPixelBufferRef)_frame->data[3];
+        if (!pixbuf) return 0;
+        IOSurfaceRef surface = CVPixelBufferGetIOSurface(pixbuf);
+        return (uintptr_t)surface;
+    }
+
+    /**
+      Returns (width, height) of the given plane inside the CVPixelBuffer.
+    */
+    std::pair<int,int> getIOSurfacePlaneSize(int plane) {
+        CVPixelBufferRef pixbuf = (CVPixelBufferRef)_frame->data[3];
+        if (!pixbuf) return {0, 0};
+        return {(int)CVPixelBufferGetWidthOfPlane(pixbuf, plane),
+                (int)CVPixelBufferGetHeightOfPlane(pixbuf, plane)};
+    }
+#endif
+
   private:
     AVFrame* _frame;
   };

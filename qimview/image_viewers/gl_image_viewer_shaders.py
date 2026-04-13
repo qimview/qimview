@@ -485,6 +485,36 @@ class GLImageViewerShaders(GLImageViewerBase):
         }}
     """
 
+    # macOS-only: NV12 IOSurface zero-copy shader (GL_TEXTURE_RECTANGLE, pixel coords)
+    # Uses GL_ARB_texture_rectangle; only compiled on macOS
+    fragmentShader_NV12_iosurface = f"""
+        #version 120
+        #extension GL_ARB_texture_rectangle : enable
+
+        {IN} vec2 UV;
+        uniform sampler2DRect YTex;
+        uniform sampler2DRect CbCrTex;
+        uniform vec2 u_resolution;   // luma pixel dimensions (width, height)
+        uniform float texture_scale;
+        uniform int channels;
+        {fragmentShader_declare_filter_params}
+        {DECLARE_GLOBAL_COLOUR}
+
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
+          {DECLARE_LOCAL_COLOUR}
+          vec2 coord = UV * u_resolution;
+          float y = texture2DRect(YTex,   coord).r * texture_scale;
+          vec2  cbcr = texture2DRect(CbCrTex, coord * 0.5).ra;  // Cb=.r, Cr=.a
+          vec3 rgb = yuv2rgb(vec3(y, cbcr.r, cbcr.g));
+          colour = apply_filters(rgb, max_value, texture_scale, max_type,
+                                 black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+          {RETURN_COLOUR}
+        }}
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -498,6 +528,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.program_YUV420_interlaced                   = None
         self.program_YUV420_interlaced_twotex            = None
         self.program_RAW                                 = None
+        self.program_NV12_iosurface                      = None
         self.program                                     = None
         self._vertex_buffer       : QOpenGLBuffer | None = None
         self._vertex_buffer_param                        = None
@@ -505,6 +536,14 @@ class GLImageViewerShaders(GLImageViewerBase):
         # output crop [ width min, height min, width max, height max]
         self._output_crop                                = np.array([0., 0., 1., 1.], dtype=np.float32)
         self._shader_filter_params : SetShaderFilterParams = SetShaderFilterParams()
+        # IOSurface zero-copy state (macOS VideoToolbox)
+        self._iosurface_mode    : bool  = False
+        self._iosurface_handle  : int   = 0
+        self._iosurface_width   : int   = 0
+        self._iosurface_height  : int   = 0
+        self._iosurface_y_tex   : int   = 0   # GL texture ID for Y plane
+        self._iosurface_cbcr_tex: int   = 0   # GL texture ID for CbCr plane
+        self._iosurface_locs    : dict  = {}   # cached uniform locations
 
     def set_shaders(self):
         if self.program_RGB is None:
@@ -591,6 +630,111 @@ class GLImageViewerShaders(GLImageViewerBase):
                 shaders.glDeleteShader(fs)
             except:
                 pass
+
+        if sys.platform == 'darwin' and self.program_NV12_iosurface is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_NV12_iosurface, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_NV12_iosurface = shaders.compileProgram(vs, fs, validate=False)
+                self.print_log(f"\n***** self.program_NV12_iosurface = {self.program_NV12_iosurface} *****\n")
+            except Exception as e:
+                print(f'failed NV12 IOSurface shaders.compileProgram() {e}')
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
+
+    def set_iosurface_frame(self, iosurface_handle: int, width: int, height: int):
+        """Store a new VideoToolbox IOSurface for zero-copy rendering.
+        Call this from the video player thread; paintGL will bind the textures.
+        """
+        self._iosurface_handle = iosurface_handle
+        self._iosurface_width  = width
+        self._iosurface_height = height
+        self._iosurface_mode   = True
+
+    def _paintGL_iosurface(self):
+        """Render the current IOSurface NV12 frame directly from GPU memory."""
+        if self.program_NV12_iosurface is None:
+            return
+        if not self._iosurface_handle:
+            return
+
+        try:
+            from qimview.video_player.iosurface_gl import bind_iosurface_nv12, GL_TEXTURE_RECTANGLE
+        except Exception as e:
+            print(f'_paintGL_iosurface: failed to import iosurface_gl: {e}')
+            return
+
+        self._iosurface_y_tex, self._iosurface_cbcr_tex = bind_iosurface_nv12(
+            self._iosurface_handle,
+            self._iosurface_width,
+            self._iosurface_height,
+            self._iosurface_y_tex,
+            self._iosurface_cbcr_tex,
+        )
+
+        _gl = QtGui.QOpenGLContext.currentContext().functions()
+        _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
+
+        # Cache uniform locations once per program
+        if not self._iosurface_locs:
+            p = self.program_NV12_iosurface
+            self._iosurface_locs = {
+                'aVert':         shaders.glGetAttribLocation(p, 'vert'),
+                'aUV':           shaders.glGetAttribLocation(p, 'uV'),
+                'uPMatrix':      shaders.glGetUniformLocation(p, 'pMatrix'),
+                'uMVMatrix':     shaders.glGetUniformLocation(p, 'mvMatrix'),
+                'uYTex':         shaders.glGetUniformLocation(p, 'YTex'),
+                'uCbCrTex':      shaders.glGetUniformLocation(p, 'CbCrTex'),
+                'uResolution':   shaders.glGetUniformLocation(p, 'u_resolution'),
+                'uTexScale':     shaders.glGetUniformLocation(p, 'texture_scale'),
+                'uChannels':     shaders.glGetUniformLocation(p, 'channels'),
+            }
+            self._shader_filter_params.setLocations(p)
+
+        loc = self._iosurface_locs
+        shaders.glUseProgram(self.program_NV12_iosurface)
+
+        gl.glUniformMatrix4fv(loc['uPMatrix'],  1, gl.GL_FALSE, self.pMatrix)
+        gl.glUniformMatrix4fv(loc['uMVMatrix'], 1, gl.GL_FALSE, self.mvMatrix)
+        _gl.glUniform1i(loc['uYTex'],    0)
+        _gl.glUniform1i(loc['uCbCrTex'], 1)
+        _gl.glUniform2f(loc['uResolution'], float(self._iosurface_width), float(self._iosurface_height))
+        _gl.glUniform1f(loc['uTexScale'], 1.0)
+        _gl.glUniform1i(loc['uChannels'], 0)
+
+        # Provide filter params (use neutral values if not set)
+        self._shader_filter_params.params = ShaderFilterParams(
+            white_level = self.filter_params.white_level.float,
+            black_level = self.filter_params.black_level.float,
+            g_r_coeff   = self.filter_params.g_r.float,
+            g_b_coeff   = self.filter_params.g_b.float,
+            max_value   = 255,
+            max_type    = 255,
+            gamma       = self.filter_params.gamma.float)
+        self._shader_filter_params.SetShaderValues(_gl)
+
+        _gl.glEnableVertexAttribArray(loc['aVert'])
+        _gl.glEnableVertexAttribArray(loc['aUV'])
+        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vertex_buffer.bufferId())
+        gl.glVertexAttribPointer(loc['aVert'], 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
+        gl.glVertexAttribPointer(loc['aUV'], 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
+
+        _gl.glActiveTexture(gl.GL_TEXTURE0)
+        _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_y_tex)
+        _gl.glActiveTexture(gl.GL_TEXTURE1)
+        _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_cbcr_tex)
+        _gl.glEnable(GL_TEXTURE_RECTANGLE)
+
+        _gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
+
+        _gl.glDisableVertexAttribArray(loc['aVert'])
+        _gl.glDisableVertexAttribArray(loc['aUV'])
+        _gl.glDisable(GL_TEXTURE_RECTANGLE)
+        shaders.glUseProgram(0)
 
     def set_crop(self, crop):
         if not np.array_equal(crop,self._output_crop):
@@ -728,6 +872,12 @@ class GLImageViewerShaders(GLImageViewerBase):
             print("*** paintGL() widget not yet valid")
             self.create()
             return
+
+        # Zero-copy IOSurface path (macOS VideoToolbox)
+        if self._iosurface_mode and self._iosurface_handle:
+            self._paintGL_iosurface()
+            return
+
         if self._image is not None:
             if self.texture is None or not self.isValid():
                 print("paintGL() not ready")
