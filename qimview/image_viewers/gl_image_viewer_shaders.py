@@ -14,7 +14,7 @@ from dataclasses import dataclass, fields
 
 from PySide6.QtOpenGL import QOpenGLBuffer
 
-from qimview.utils.qt_imports   import QtWidgets, QtGui
+from qimview.utils.qt_imports   import QtWidgets, QtGui, QtCore
 from qimview.utils.viewer_image import ImageFormat
 from .gl_image_viewer_base      import GLImageViewerBase
 from .gltexture                 import GLTexture
@@ -906,6 +906,15 @@ if __name__ == '__main__':
             self.setCentralWidget(self.widget)
 
     # create the Qt App and window
+    if sys.platform == 'darwin':
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
+        fmt = QtGui.QSurfaceFormat()
+        fmt.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+        fmt.setVersion(2, 1)
+        fmt.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        fmt.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
+        QtGui.QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QtWidgets.QApplication(sys.argv)
     window = TestWindow()
     window.load()

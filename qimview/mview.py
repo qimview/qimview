@@ -5,7 +5,7 @@ import argparse
 import os
 import glob
 
-from qimview.utils.qt_imports import QtWidgets, QtCore
+from qimview.utils.qt_imports import QtWidgets, QtCore, QtGui
 from qimview.image_viewers    import MultiView, ViewerType
 
 def get_filenames():
@@ -30,6 +30,15 @@ def main():
     _params = vars(args)
 
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    if sys.platform == 'darwin':
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
+        fmt = QtGui.QSurfaceFormat()
+        fmt.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+        fmt.setVersion(2, 1)
+        fmt.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        fmt.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
+        QtGui.QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationDisplayName('mview ' + ' '.join(sys.argv[1:]))
 
