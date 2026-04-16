@@ -386,6 +386,8 @@ PYBIND11_MODULE(decode_video_py, m) {
                            "Return IOSurface handle (uintptr_t) for VideoToolbox zero-copy GL interop; 0 if unavailable")
     .def                  ("getIOSurfacePlaneSize", &AV::Frame::getIOSurfacePlaneSize,
                            "Return (width, height) of the given CVPixelBuffer plane", ARG(plane))
+    .def                  ("getCVPixelBufferFormat", &AV::Frame::getCVPixelBufferFormat,
+                           "Return the OSType pixel format of the CVPixelBuffer backing the frame, or 0 if unavailable")
 #endif
     ;
 
