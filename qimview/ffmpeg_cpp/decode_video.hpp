@@ -190,6 +190,13 @@ namespace AV
         return {(int)CVPixelBufferGetWidthOfPlane(pixbuf, plane),
                 (int)CVPixelBufferGetHeightOfPlane(pixbuf, plane)};
     }
+
+    OSType getCVPixelBufferFormat() {
+      CVPixelBufferRef pixbuf = (CVPixelBufferRef)_frame->data[3];
+      if (!pixbuf) return 0;
+      return CVPixelBufferGetPixelFormatType(pixbuf);
+    }
+    
 #endif
 
   private:
