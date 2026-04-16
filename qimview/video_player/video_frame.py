@@ -4,6 +4,7 @@
 """
 
 import os
+import sys
 from typing import Optional, TypeAlias
 import numpy as np
 
@@ -100,7 +101,31 @@ class VideoFrame:
         self._yuv_array : np.ndarray = np.empty((1), dtype=np.uint8)
 
 
+    def VideoToolBoxIs10bit(self) -> bool:
+        import struct
+
+        def _fourcc(s: str) -> int:
+            return struct.unpack('>I', s.encode('ascii'))[0]
+
+        # # 8-bit NV12 variants
+        # kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange  = _fourcc('420v')  # 875704438
+        # kCVPixelFormatType_420YpCbCr8BiPlanarFullRange   = _fourcc('420f')  # 875704422
+        # 10-bit P010 variants
+        kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange = _fourcc('x420')  # 2016686640
+        kCVPixelFormatType_420YpCbCr10BiPlanarFullRange  = _fourcc('xf20')  # 2019422768
+        # # 10-bit YUV420P variants
+        # kCVPixelFormatType_420YpCbCr10LEPacked = _fourcc('v210')  # 875704422
+
+        fmt = self._frame.getCVPixelBufferFormat()
+        # fmt_str = struct.pack('>I', fmt).decode('ascii')
+        # print(f"VideoToolBox format: {fmt_str} ({fmt})")
+        is_10bit = fmt in (kCVPixelFormatType_420YpCbCr10BiPlanarVideoRange,
+                        kCVPixelFormatType_420YpCbCr10BiPlanarFullRange)
+        return is_10bit
+
     def _libFrameToViewer(self) -> ViewerImage | None:
+        fmt = self._frame.getFormat()
+
         linesizeall = self._frame.getLinesizeAll()
         def getArray(frame, index, height, width, dtype):
             dtype_size = np.dtype(dtype).itemsize
@@ -113,7 +138,7 @@ class VideoFrame:
         # if self.frame2:
         #     height2, width2 = self.frame2.getShape()
         #     assert self._frame.getFormat() == self.frame2.getFormat(), "Videos have different frame formats"
-        match self._frame.getFormat():
+        match fmt:
             case decode_lib.AVPixelFormat.AV_PIX_FMT_P010LE:
                 dtype, prec, hasUV = np.uint16, 16, True
             case decode_lib.AVPixelFormat.AV_PIX_FMT_YUV420P10LE:
@@ -122,24 +147,33 @@ class VideoFrame:
                 dtype, prec, hasUV = np.uint8, 8, False
             case decode_lib.AVPixelFormat.AV_PIX_FMT_NV12:
                 dtype, prec, hasUV = np.uint8, 8, True
+            case decode_lib.AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX:
+                dtype, prec, hasUV = np.uint8, 8, True
+                if self.VideoToolBoxIs10bit():
+                    dtype, prec = np.uint16, 10
             case _:
-                assert False, f"frame format {self._frame.getFormat()} not available"
-        # Create numpy array from Y and UV
-        self.memY,Y  = getArray(self._frame, 0, height, width, dtype)
-        im = ViewerImage(Y, channels = ImageFormat.CH_YUV420, precision=prec)
-        if hasUV:
-            self.memUV, UV = getArray(self._frame, 1, height//2, width, dtype)
-            im.uv = UV
+                assert False, f"frame format {fmt} not available"
+
+        if fmt == decode_lib.AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX:
+            im = ViewerImage(None, channels = ImageFormat.CH_VIDEOTOOLBOX, precision=prec)
+            im.setIOSurface(self._frame.getIOSurface(), width, height)
         else:
-            self.memU, U = getArray(self._frame, 1, height//2, width//2, dtype)
-            self.memV, V = getArray(self._frame, 2, height//2, width//2, dtype)
-            im.u = U
-            im.v = V
-        dtype_size = np.dtype(dtype).itemsize
-        linesize = int(linesizeall[0]/dtype_size)
-        if width < linesize:
-            # Apply crop on the right
-            im.crop = np.array([0,0,width/linesize,1], dtype=np.float32)
+            # Create numpy array from Y and UV
+            self.memY,Y  = getArray(self._frame, 0, height, width, dtype)
+            im = ViewerImage(Y, channels = ImageFormat.CH_YUV420, precision=prec)
+            if hasUV:
+                self.memUV, UV = getArray(self._frame, 1, height//2, width, dtype)
+                im.uv = UV
+            else:
+                self.memU, U = getArray(self._frame, 1, height//2, width//2, dtype)
+                self.memV, V = getArray(self._frame, 2, height//2, width//2, dtype)
+                im.u = U
+                im.v = V
+            dtype_size = np.dtype(dtype).itemsize
+            linesize = int(linesizeall[0]/dtype_size)
+            if width < linesize:
+                # Apply crop on the right
+                im.crop = np.array([0,0,width/linesize,1], dtype=np.float32)
         return im
 
     def _avFrameToViewer(self, rgb=False) -> ViewerImage | None:
