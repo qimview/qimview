@@ -17,9 +17,10 @@ assert sys.platform == 'darwin', "iosurface_gl is macOS-only"
 
 from OpenGL.GL import (
     glGenTextures, glBindTexture, glDeleteTextures,
-    glTexParameteri,
+    glTexParameteri, glGetError,
     GL_TEXTURE_MIN_FILTER, GL_TEXTURE_MAG_FILTER, GL_LINEAR,
     GL_TEXTURE_WRAP_S, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE,
+    GL_NO_ERROR,
 )
 
 # GL_TEXTURE_RECTANGLE is 0x84F5 (ARB extension, core since GL 3.1)
@@ -27,8 +28,12 @@ GL_TEXTURE_RECTANGLE = 0x84F5
 
 # Pixel format constants not always exported by PyOpenGL
 _GL_UNSIGNED_BYTE   = 0x1401
+_GL_UNSIGNED_SHORT  = 0x1403
 _GL_LUMINANCE       = 0x1909
 _GL_LUMINANCE_ALPHA = 0x190A
+_GL_LUMINANCE_ALPHA_INTEGER_EXT = 0x8DCD  # GL_EXT_texture_integer
+_GL_LUMINANCE_INTEGER_EXT = 0x8D90  # GL_EXT_texture_integer
+_GL_RG = 0x8227  # GL_RG, for 10-bit P010 packed UV plane (GL_EXT_texture_integer)
 
 _cgl = ctypes.CDLL('/System/Library/Frameworks/OpenGL.framework/OpenGL')
 _cgl.CGLGetCurrentContext.restype  = ctypes.c_void_p
@@ -54,7 +59,7 @@ def _set_rect_texture_params():
     glTexParameteri(GL_TEXTURE_RECTANGLE, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE)
 
 
-def bind_iosurface_nv12(iosurface_handle: int, y_width: int, y_height: int,
+def bind_iosurface_nv12(iosurface_handle: int, y_width: int, y_height: int, precision: int,
                         y_tex: int = 0, cbcr_tex: int = 0) -> tuple:
     """
     Bind the two NV12 planes of an IOSurface directly as GL_TEXTURE_RECTANGLE
@@ -88,7 +93,7 @@ def bind_iosurface_nv12(iosurface_handle: int, y_width: int, y_height: int,
         _GL_LUMINANCE,          # internalformat
         y_width, y_height,
         _GL_LUMINANCE,          # format
-        _GL_UNSIGNED_BYTE,      # type
+        _GL_UNSIGNED_BYTE if precision <= 8 else _GL_UNSIGNED_SHORT,      # type
         surface,
         0,                      # plane 0
     )
@@ -96,15 +101,24 @@ def bind_iosurface_nv12(iosurface_handle: int, y_width: int, y_height: int,
         raise RuntimeError(f"CGLTexImageIOSurface2D (Y plane) returned error {err}")
     _set_rect_texture_params()
 
-    # --- Plane 1: CbCr chroma (8-bit two-channel, half resolution) ---
+    # Drain any pending GL error left by the Y-plane CGL call (e.g. when the IOSurface
+    # is 10-bit P010 but we described it as 8-bit to CGLTexImageIOSurface2D).
+    # Without this, PyOpenGL raises a RuntimeError on the next glBindTexture call.
+    gl_err = glGetError()
+    if gl_err != GL_NO_ERROR:
+        print(f"bind_iosurface_nv12: GL error {gl_err:#x} after Y plane CGL bind (precision={precision})")
+
+    # --- Plane 1: CbCr chroma (half resolution) ---
+    # 8-bit NV12: GL_UNSIGNED_BYTE — 2 bytes per chroma pair (Cb, Cr)
+    # 10-bit P010: GL_UNSIGNED_SHORT — 2×16-bit per chroma pair, values in top 10 bits
     glBindTexture(GL_TEXTURE_RECTANGLE, cbcr_tex)
     err = _cgl.CGLTexImageIOSurface2D(
         cgl_ctx,
         GL_TEXTURE_RECTANGLE,
-        _GL_LUMINANCE_ALPHA,    # internalformat: Cb in .r, Cr in .a
+        _GL_RG,    # internalformat: Cb in .r, Cr in .a
         y_width // 2, y_height // 2,
-        _GL_LUMINANCE_ALPHA,    # format
-        _GL_UNSIGNED_BYTE,      # type
+        _GL_RG, # if precision <= 8 else _GL_LUMINANCE_ALPHA_INTEGER_EXT,    # format
+        _GL_UNSIGNED_BYTE if precision <= 8 else _GL_UNSIGNED_SHORT,
         surface,
         1,                      # plane 1
     )
