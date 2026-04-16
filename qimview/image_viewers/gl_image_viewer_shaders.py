@@ -507,7 +507,7 @@ class GLImageViewerShaders(GLImageViewerBase):
           {DECLARE_LOCAL_COLOUR}
           vec2 coord = UV * u_resolution;
           float y = texture2DRect(YTex,   coord).r * texture_scale;
-          vec2  cbcr = texture2DRect(CbCrTex, coord * 0.5).ra;  // Cb=.r, Cr=.a
+          vec2  cbcr = texture2DRect(CbCrTex, coord * 0.5).rg * texture_scale;  // Cb=.r, Cr=.g
           vec3 rgb = yuv2rgb(vec3(y, cbcr.r, cbcr.g));
           colour = apply_filters(rgb, max_value, texture_scale, max_type,
                                  black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -537,13 +537,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         self._output_crop                                = np.array([0., 0., 1., 1.], dtype=np.float32)
         self._shader_filter_params : SetShaderFilterParams = SetShaderFilterParams()
         # IOSurface zero-copy state (macOS VideoToolbox)
-        self._iosurface_mode    : bool  = False
-        self._iosurface_handle  : int   = 0
-        self._iosurface_width   : int   = 0
-        self._iosurface_height  : int   = 0
         self._iosurface_y_tex   : int   = 0   # GL texture ID for Y plane
         self._iosurface_cbcr_tex: int   = 0   # GL texture ID for CbCr plane
-        self._iosurface_locs    : dict  = {}   # cached uniform locations
 
     def set_shaders(self):
         if self.program_RGB is None:
@@ -644,97 +639,6 @@ class GLImageViewerShaders(GLImageViewerBase):
                 shaders.glDeleteShader(fs)
             except:
                 pass
-
-    def set_iosurface_frame(self, iosurface_handle: int, width: int, height: int):
-        """Store a new VideoToolbox IOSurface for zero-copy rendering.
-        Call this from the video player thread; paintGL will bind the textures.
-        """
-        self._iosurface_handle = iosurface_handle
-        self._iosurface_width  = width
-        self._iosurface_height = height
-        self._iosurface_mode   = True
-
-    def _paintGL_iosurface(self):
-        """Render the current IOSurface NV12 frame directly from GPU memory."""
-        if self.program_NV12_iosurface is None:
-            return
-        if not self._iosurface_handle:
-            return
-
-        try:
-            from qimview.video_player.iosurface_gl import bind_iosurface_nv12, GL_TEXTURE_RECTANGLE
-        except Exception as e:
-            print(f'_paintGL_iosurface: failed to import iosurface_gl: {e}')
-            return
-
-        self._iosurface_y_tex, self._iosurface_cbcr_tex = bind_iosurface_nv12(
-            self._iosurface_handle,
-            self._iosurface_width,
-            self._iosurface_height,
-            self._iosurface_y_tex,
-            self._iosurface_cbcr_tex,
-        )
-
-        _gl = QtGui.QOpenGLContext.currentContext().functions()
-        _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
-
-        # Cache uniform locations once per program
-        if not self._iosurface_locs:
-            p = self.program_NV12_iosurface
-            self._iosurface_locs = {
-                'aVert':         shaders.glGetAttribLocation(p, 'vert'),
-                'aUV':           shaders.glGetAttribLocation(p, 'uV'),
-                'uPMatrix':      shaders.glGetUniformLocation(p, 'pMatrix'),
-                'uMVMatrix':     shaders.glGetUniformLocation(p, 'mvMatrix'),
-                'uYTex':         shaders.glGetUniformLocation(p, 'YTex'),
-                'uCbCrTex':      shaders.glGetUniformLocation(p, 'CbCrTex'),
-                'uResolution':   shaders.glGetUniformLocation(p, 'u_resolution'),
-                'uTexScale':     shaders.glGetUniformLocation(p, 'texture_scale'),
-                'uChannels':     shaders.glGetUniformLocation(p, 'channels'),
-            }
-            self._shader_filter_params.setLocations(p)
-
-        loc = self._iosurface_locs
-        shaders.glUseProgram(self.program_NV12_iosurface)
-
-        gl.glUniformMatrix4fv(loc['uPMatrix'],  1, gl.GL_FALSE, self.pMatrix)
-        gl.glUniformMatrix4fv(loc['uMVMatrix'], 1, gl.GL_FALSE, self.mvMatrix)
-        _gl.glUniform1i(loc['uYTex'],    0)
-        _gl.glUniform1i(loc['uCbCrTex'], 1)
-        _gl.glUniform2f(loc['uResolution'], float(self._iosurface_width), float(self._iosurface_height))
-        _gl.glUniform1f(loc['uTexScale'], 1.0)
-        _gl.glUniform1i(loc['uChannels'], 0)
-
-        # Provide filter params (use neutral values if not set)
-        self._shader_filter_params.params = ShaderFilterParams(
-            white_level = self.filter_params.white_level.float,
-            black_level = self.filter_params.black_level.float,
-            g_r_coeff   = self.filter_params.g_r.float,
-            g_b_coeff   = self.filter_params.g_b.float,
-            max_value   = 255,
-            max_type    = 255,
-            gamma       = self.filter_params.gamma.float)
-        self._shader_filter_params.SetShaderValues(_gl)
-
-        _gl.glEnableVertexAttribArray(loc['aVert'])
-        _gl.glEnableVertexAttribArray(loc['aUV'])
-        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self._vertex_buffer.bufferId())
-        gl.glVertexAttribPointer(loc['aVert'], 3, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-        _gl.glBindBuffer(gl.GL_ARRAY_BUFFER, self.uvBuffer.bufferId())
-        gl.glVertexAttribPointer(loc['aUV'], 2, gl.GL_FLOAT, gl.GL_FALSE, 0, None)
-
-        _gl.glActiveTexture(gl.GL_TEXTURE0)
-        _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_y_tex)
-        _gl.glActiveTexture(gl.GL_TEXTURE1)
-        _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_cbcr_tex)
-        _gl.glEnable(GL_TEXTURE_RECTANGLE)
-
-        _gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
-
-        _gl.glDisableVertexAttribArray(loc['aVert'])
-        _gl.glDisableVertexAttribArray(loc['aUV'])
-        _gl.glDisable(GL_TEXTURE_RECTANGLE)
-        shaders.glUseProgram(0)
 
     def set_crop(self, crop):
         if not np.array_equal(crop,self._output_crop):
@@ -840,26 +744,32 @@ class GLImageViewerShaders(GLImageViewerBase):
             self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
             self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
             self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
-            if self._image and self._image.channels == ImageFormat.CH_YUV420:
+            if self._image:
                 self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
-                if twotex:
-                    self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
-                if self.texture.interlaced_uv:
-                    self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
-                    if twotex:
-                        self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
-                else:
-                    self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
-                    self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
-                    if twotex:
-                        self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
-                        self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
-                if twotex:
-                    self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
-                    self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
-                    self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
-                    self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
                 self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
+                # self.uTexScale = shaders.glGetUniformLocation(self.program, "texture_scale")
+                if self._image.channels == ImageFormat.CH_YUV420:
+                    if twotex:
+                        self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
+                    if self.texture.interlaced_uv:
+                        self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
+                        if twotex:
+                            self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
+                    else:
+                        self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
+                        self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+                        if twotex:
+                            self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
+                            self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
+                    if twotex:
+                        self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
+                        self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
+                        self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
+                        self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
+                elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                    self.uCbCrTex = shaders.glGetUniformLocation(self.program, "CbCrTex")
+                    self.uResolution = shaders.glGetUniformLocation(self.program, "u_resolution")
+                    self.uChannels = shaders.glGetUniformLocation(self.program, "channels")
             else:
                 self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
             self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
@@ -873,21 +783,31 @@ class GLImageViewerShaders(GLImageViewerBase):
             self.create()
             return
 
-        # Zero-copy IOSurface path (macOS VideoToolbox)
-        if self._iosurface_mode and self._iosurface_handle:
-            self._paintGL_iosurface()
+        if self._image is None:
+            print("paintGL() no image")
             return
 
-        if self._image is not None:
-            if self.texture is None or not self.isValid():
-                print("paintGL() not ready")
-                return
-        else:
-            print("Image is None")
+        if not self._image.ioSurfaceMode() and self.texture is None or not self.isValid():
+            print("paintGL() not ready")
             return
 
         # Asserts that avoid syntax highlighting errors
-        assert self.texture is not None
+        assert self._image.ioSurfaceMode() or self.texture is not None
+
+        if self._image.ioSurfaceMode():
+            try:
+                from qimview.video_player.iosurface_gl import bind_iosurface_nv12, GL_TEXTURE_RECTANGLE
+            except Exception as e:
+                print(f'_paintGL_iosurface: failed to import iosurface_gl: {e}')
+                return
+            self._iosurface_y_tex, self._iosurface_cbcr_tex = bind_iosurface_nv12(
+                self._image._surface_handle,
+                self._image.shape[1],   # width
+                self._image.shape[0],   # height
+                self._image.precision,  # bits per channel
+                self._iosurface_y_tex,
+                self._iosurface_cbcr_tex,
+            )
 
         self.opengl_error()
         if self._display_timing: self.start_timing()
@@ -896,8 +816,11 @@ class GLImageViewerShaders(GLImageViewerBase):
         # _gl = gl
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and \
-            (self._show_overlap or self._show_image_differences) and self.texture_ref.textureY is not None
+        if self._image.ioSurfaceMode():
+            twotex = False  # Not supported yet in IOSurface mode
+        else:
+            twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and \
+                (self._show_overlap or self._show_image_differences) and self.texture_ref.textureY is not None
 
         self._show_overlap_possible = twotex
         self._show_image_differences_possible = twotex
@@ -905,21 +828,34 @@ class GLImageViewerShaders(GLImageViewerBase):
         # Default shader program
         program = self.program_RGB
         if self._image:
-            if self._image.channels in ImageFormat.CH_RAWFORMATS():
-                self.program = self.program_RAW
-            elif self._image.channels == ImageFormat.CH_YUV420:
-                if self.texture.interlaced_uv:
-                    program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
-                else:
-                    program = self.program_YUV420_twotex if twotex else self.program_YUV420
+            if self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                program = self.program_NV12_iosurface
+            else:
+                if self._image.channels in ImageFormat.CH_RAWFORMATS():
+                    self.program = self.program_RAW
+                elif self._image.channels == ImageFormat.CH_YUV420:
+                    if self.texture.interlaced_uv:
+                        program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
+                    else:
+                        program = self.program_YUV420_twotex if twotex else self.program_YUV420
 
+        # For IOSurface (CH_VIDEOTOOLBOX), CGLTexImageIOSurface2D always normalizes to [0,1]
+        # regardless of bit depth, so apply_filters must treat max_value == max_type to
+        # avoid a spurious ×64 scale-up for 10-bit content.  For all other paths the
+        # precision-derived max_value is correct.
+        if self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+            _max_type  = np.iinfo(self._image.dtype).max
+            _max_value = _max_type  # pass-through: res/(max_value*1)*max_type == res
+        else:
+            _max_type  = np.iinfo(self._image.dtype).max
+            _max_value = (1 << self._image.precision) - 1
         self._shader_filter_params.params = ShaderFilterParams(
             white_level = self.filter_params.white_level.float,
             black_level = self.filter_params.black_level.float,
             g_r_coeff   = self.filter_params.g_r.float,
             g_b_coeff   = self.filter_params.g_b.float,
-            max_value   = (1 << self._image.precision)-1,
-            max_type    = np.iinfo(self._image.data.dtype).max,
+            max_value   = _max_value,
+            max_type    = _max_type,
             gamma       = self.filter_params.gamma.float)
 
         # Avoid calling each time glGet{Attrib,Uniform}Location()
@@ -932,35 +868,42 @@ class GLImageViewerShaders(GLImageViewerBase):
         # set uniforms
         gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE,  self.pMatrix)
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
-        if self._image and self._image.channels == ImageFormat.CH_YUV420:
+        if self._image:
             _gl.glUniform1i(self.uYTex, 0)
-            if twotex:
-                _gl.glUniform1i(self.uYTex2, 1)
-            if self.texture.interlaced_uv:
-                _gl.glUniform1i(self.uUVTex, 2)
-                if twotex:
-                    _gl.glUniform1i(self.uUVTex2, 3)
-            else:
-                _gl.glUniform1i(self.uUTex, 2)
-                _gl.glUniform1i(self.uVTex, 4)
-                if twotex:
-                    _gl.glUniform1i(self.uUTex2, 3)
-                    _gl.glUniform1i(self.uVTex2, 5)
-            match self._image.data.dtype:
+            match self._image.dtype:
                 case np.uint8:  texture_scale = 1
                 # Normalize image to full intensity range
                 case np.uint16: texture_scale = 1<<(16-self._image.precision)
                 case _: texture_scale = 1
-            # print(f"-- texture_scale = {texture_scale}")
-            if twotex:
-                _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
-                _gl.glUniform1i( self.texture_overlap_mode,  self._overlap_mode.value                                                      )
-                if self._show_overlap:
-                    _gl.glUniform1f( self.texture_cursor_x, self.cursor_imx_ratio )
-                    _gl.glUniform1f( self.texture_cursor_y, self.cursor_imy_ratio )
+            if self._image.channels == ImageFormat.CH_YUV420:
+                if twotex:
+                    _gl.glUniform1i(self.uYTex2, 1)
+                if self.texture.interlaced_uv:
+                    _gl.glUniform1i(self.uUVTex, 2)
+                    if twotex:
+                        _gl.glUniform1i(self.uUVTex2, 3)
                 else:
-                    _gl.glUniform1f( self.texture_cursor_x, 1 )
-                    _gl.glUniform1f( self.texture_cursor_y, 1 )
+                    _gl.glUniform1i(self.uUTex, 2)
+                    _gl.glUniform1i(self.uVTex, 4)
+                    if twotex:
+                        _gl.glUniform1i(self.uUTex2, 3)
+                        _gl.glUniform1i(self.uVTex2, 5)
+                # print(f"-- texture_scale = {texture_scale}")
+                if twotex:
+                    _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
+                    _gl.glUniform1i( self.texture_overlap_mode,  self._overlap_mode.value                                                      )
+                    if self._show_overlap:
+                        _gl.glUniform1f( self.texture_cursor_x, self.cursor_imx_ratio )
+                        _gl.glUniform1f( self.texture_cursor_y, self.cursor_imy_ratio )
+                    else:
+                        _gl.glUniform1f( self.texture_cursor_x, 1 )
+                        _gl.glUniform1f( self.texture_cursor_y, 1 )
+            elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                _gl.glUniform1i(self.uCbCrTex, 1)
+                _gl.glUniform2f(self.uResolution, float(self._image.shape[1]), float(self._image.shape[0]))
+                # CGLTexImageIOSurface2D normalizes to [0,1] for both 8-bit (÷255) and 10-bit P010
+                # (÷65535), so texture_scale=1 keeps y/cbcr in the correct range for yuv2rgb.
+                texture_scale = 1
             _gl.glUniform1f( self.texture_scale_location, texture_scale)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
@@ -990,28 +933,35 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
-        if self._image and self._image.channels == ImageFormat.CH_YUV420 and self.texture:
-            _gl.glActiveTexture(gl.GL_TEXTURE0)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureY)
-            if twotex:
+        if self._image:
+            if self._image.channels == ImageFormat.CH_YUV420 and self.texture:
+                _gl.glActiveTexture(gl.GL_TEXTURE0)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureY)
+                if twotex:
+                    _gl.glActiveTexture(gl.GL_TEXTURE1)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureY)
+                if self.texture.interlaced_uv:
+                    _gl.glActiveTexture(gl.GL_TEXTURE2)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureUV)
+                    if twotex:
+                        _gl.glActiveTexture(gl.GL_TEXTURE3)
+                        _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureUV)
+                else:
+                    _gl.glActiveTexture(gl.GL_TEXTURE2)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
+                    _gl.glActiveTexture(gl.GL_TEXTURE4)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureV)
+                    if twotex:
+                        _gl.glActiveTexture(gl.GL_TEXTURE3)
+                        _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureU)
+                        _gl.glActiveTexture(gl.GL_TEXTURE5)
+                        _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
+            elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                _gl.glActiveTexture(gl.GL_TEXTURE0)
+                _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_y_tex)
                 _gl.glActiveTexture(gl.GL_TEXTURE1)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureY)
-            if self.texture.interlaced_uv:
-                _gl.glActiveTexture(gl.GL_TEXTURE2)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureUV)
-                if twotex:
-                    _gl.glActiveTexture(gl.GL_TEXTURE3)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureUV)
-            else:
-                _gl.glActiveTexture(gl.GL_TEXTURE2)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
-                _gl.glActiveTexture(gl.GL_TEXTURE4)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureV)
-                if twotex:
-                    _gl.glActiveTexture(gl.GL_TEXTURE3)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureU)
-                    _gl.glActiveTexture(gl.GL_TEXTURE5)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
+                _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_cbcr_tex)
+                _gl.glEnable(GL_TEXTURE_RECTANGLE)
         else:
             if self.texture:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
