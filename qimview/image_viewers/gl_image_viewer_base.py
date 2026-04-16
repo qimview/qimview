@@ -82,13 +82,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         self.geomtric_transform_menu = QMenu(self, title="Geometric Transfom")
         # TODO: fix the possibility to rotate the video
-        # action1 = self.geomtric_transform_menu.addAction("Right 90°")
-        # action2 = self.geomtric_transform_menu.addAction("Left  90°")
+        action_rotate_90  = self.geomtric_transform_menu.addAction("Left 90°")
+        action_rotate_270 = self.geomtric_transform_menu.addAction("Right 90°")
         action_flip_x = self.geomtric_transform_menu.addAction("Horizontal flip")
         action_flip_y = self.geomtric_transform_menu.addAction("Vertical flip")
         action3 = self.geomtric_transform_menu.addAction("reset")
-        # action1.triggered.connect(lambda : self.rotate_image(glm.pi()/2))
-        # action2.triggered.connect(lambda : self.rotate_image(-glm.pi()/2))
+        action_rotate_90.triggered.connect(lambda : self.rotate_image(glm.pi()/2))
+        action_rotate_270.triggered.connect(lambda : self.rotate_image(-glm.pi()/2))
         action_flip_x.triggered.connect(lambda : self.flip_image(True, False))
         action_flip_y.triggered.connect(lambda : self.flip_image(False, True))
         action3.triggered.connect(self.reset_rotation)
