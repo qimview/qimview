@@ -343,11 +343,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         x0, x1, y0, y1 = self.image_centered_position()
 
-        im_x = int(self.cursor_imx_ratio*self.texture.width)
-        im_y = int(self.cursor_imy_ratio*self.texture.height)
+        texture_height, texture_width = self._image.shape[:2]
+        im_x = int(self.cursor_imx_ratio*texture_width)
+        im_y = int(self.cursor_imy_ratio*texture_height)
 
-        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.texture.width + x0
-        glpos_from_im_y = (self.texture.height - (im_y+0.5))*(y1-y0)/self.texture.height+y0
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/texture_width + x0
+        glpos_from_im_y = (texture_height - (im_y+0.5))*(y1-y0)/texture_height+y0
 
         # get image coordinates
         length = 20 # /self.current_scale
@@ -360,7 +361,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
         gl.glEnd()
-        if im_x>=0 and im_x<self.texture.width and im_y>=0 and im_y<=self.texture.height:
+        if im_x>=0 and im_x<texture_width and im_y>=0 and im_y<=texture_height:
             return (im_x, im_y)
         return None
 
@@ -370,11 +371,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         x0, x1, y0, y1 = self.image_centered_position()
 
-        im_x = int(self.cursor_imx_ratio*self.texture.width)
-        im_y = int(self.cursor_imy_ratio*self.texture.height)
+        texture_width = self._image.shape[1]
+        texture_height = self._image.shape[0]
 
-        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.texture.width + x0
-        glpos_from_im_y = (self.texture.height - (im_y+0.5))*(y1-y0)/self.texture.height+y0
+        im_x = int(self.cursor_imx_ratio*texture_width)
+        im_y = int(self.cursor_imy_ratio*texture_height)
+
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/texture_width + x0
+        glpos_from_im_y = (texture_height - (im_y+0.5))*(y1-y0)/texture_height+y0
 
         match self._overlap_mode:
             case OverlapMode.Horizontal:
@@ -419,11 +423,21 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     def image_centered_position(self):
         w = self._width
         h = self._height
-        self.print_log(f'self width height {self._width} {self._height} tex {self.texture.width} {self.texture.height}')
-        if self.texture.width == 0 or self.texture.height == 0:
+        if self.texture is None:
+            try:
+                texture_width = self._image.shape[1]
+                texture_height = self._image.shape[0]
+            except:
+                texture_width = 0
+                texture_height = 0
+        else:
+            texture_width = self.texture.width
+            texture_height = self.texture.height
+        self.print_log(f'self width height {self._width} {self._height} tex {texture_width} {texture_height}')
+        if texture_width == 0 or texture_height == 0:
             return 0, w, 0, h
         # self.print_log(' {}x{}'.format(w, h))
-        image_ratio = float(self.texture.width)/float(self.texture.height)
+        image_ratio = float(texture_width)/float(texture_height)
         if h*image_ratio < w:
             view_width  = int(h*image_ratio+0.5)
             view_height = h
@@ -461,8 +475,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self._display_timing: self.start_timing()
         w = self._width
         h = self._height
+        texture_height = self._image.shape[0]
+
         dx, dy = self.new_translation()
-        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
+        scale = self.new_scale(-self.mouse_zoom_displ.y(), texture_height)
         rotation = self.image_rotation
         flip_x   = self.flip_x
         flip_y   = self.flip_y
