@@ -200,6 +200,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print("self._image is None")
             return False
 
+        if self._image.ioSurfaceMode():
+            # In this mode, the texture is created from the IOSurface and not from the image data, so we can skip this part
+            return True
+
         # Set Y, U and V
         if self.texture is None:
             self.texture = GLTexture(_gl)
@@ -260,9 +264,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             t = trace_method(self.tab)
         if self._image is None:
             return
-        if self.texture is None or not self.isValid() or not self.isVisible():
-            print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
-            return
+        if not self._image.ioSurfaceMode():
+            if self.texture is None or not self.isValid() or not self.isVisible():
+                print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
+                return
         # No need for makeCurrent() since it is called from PaintGL() only ?
         if make_current: self._makeCurrent()
         painter = QtGui.QPainter()
