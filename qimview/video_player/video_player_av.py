@@ -380,17 +380,6 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def display_frame_YUV420(self, frame: FrameType, is_running:bool):
         """ Display YUV frame, for OpenGL with shaders """
-        # Zero-copy path: on macOS with VideoToolbox, bind IOSurface directly as GL texture
-        if sys.platform == 'darwin' and has_decode_video_py and isinstance(frame, decode_lib.Frame):
-            fmt = frame.getFormat()
-            if fmt == decode_lib.AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX:
-                surface = frame.getIOSurface()
-                if surface:
-                    h, w = frame.getShape()
-                    self.widget.set_iosurface_frame(surface, w, h)
-                    self.widget.viewer_update()
-                    return
-
         frame_num = int(frame.pts/self._frame_provider._ticks_per_frame + 0.5)
         frame_str = ' :'+str(frame_num)
         # Use Pixel Buffer Object (2 buffers) if and only is the video is running
