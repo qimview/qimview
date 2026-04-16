@@ -467,11 +467,11 @@ class ImageViewer:
         text : str = f'im:{self.image_name}'
         text += f'\nref:{self.image_ref_name}'
         if self.show_cursor and im_pos and self._image:
-            text +=  f"\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}"
+            text +=  f"\n {self._image.shape} {self._image.dtype} prec:{self._image.precision}"
             if scale is not None:
                 text += f"\n x{scale:0.2f}"
             im_x, im_y = im_pos
-            values = self._image.data[im_y, im_x]
+            values = self._image.data[im_y, im_x] if self._image.data is not None else "n.a."
             text += f"\n pos {im_x:4}, {im_y:4} \n {self._image.channels.name[3:]}:{str(values).strip('[]')}"
 
         # ref_txt = self.image_ref_name if self.image_ref_name else 'ref'
