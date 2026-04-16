@@ -124,14 +124,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         if self._image is None:
             return
-        img_width = self._image.data.shape[1]
+        img_width = self._image.shape[1]
         if img_width % 4 != 0:
             print("Image is resized to a multiple of 4 dimension in X")
             img_width = ((img_width >> 4) << 4)
             im = np.ascontiguousarray(self._image.data[:,:img_width, :])
             self._image = ViewerImage(im, precision = self._image.precision, downscale = 1,
                                         channels = self._image.channels)
-            print(self._image.data.shape)
+            print(self._image.shape)
 
         if changed:
             if self.setTexture():
@@ -204,7 +204,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self.texture is None:
             self.texture = GLTexture(_gl)
             h_min = 0
-            h_max = self._image.data.shape[0]
+            h_max = self._image.shape[0]
         else:
             if use_crop:
                 # Compute Y range of displayed texture
@@ -223,7 +223,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 h_max = max(h0,h1)
             else:
                 h_min = 0
-                h_max = self._image.data.shape[0]
+                h_max = self._image.shape[0]
             # print(f"{h_min=} {h_max=}")
 
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
@@ -297,7 +297,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         # adapt scale depending on the ratio image / viewport
         if self._show_text:
-            scale *= self._width/self._image.data.shape[1]
+            image_width = self._image.shape[1]
+            scale *= self._width/image_width
             self.display_text(painter, self.display_message(im_pos, scale))
 
         # draw histogram
