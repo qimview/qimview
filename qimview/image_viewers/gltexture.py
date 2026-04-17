@@ -1,13 +1,15 @@
 
 from types import ModuleType
+from typing import Optional
 import numpy as np
 import OpenGL
+
 OpenGL.ERROR_ON_COPY = True
 import OpenGL.GL as gl
 from qimview.utils.qt_imports   import QtGui, QOpenGLTexture, QImage
 from qimview.utils.viewer_image import ImageFormat, ViewerImage
 import time
-import ctypes
+import sys, ctypes
 
 from qimview.video_player.video_player_config import VideoConfig
 
@@ -40,8 +42,8 @@ class GLTexture:
         self._use_buffers: bool = True
         self._buf_idx : int = 0
         self._nbuf = 2
-        self._buffers : dict[str, np.ndarray | None] = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None }
-        self._texture : dict[str, int | None]        = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None }
+        self._buffers : dict[str, np.ndarray | None] = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None, 'CbCr': None }
+        self._texture : dict[str, int | None]        = { 'Y' : None, 'U': None, 'V': None, 'UV': None, 'RGB': None, 'CbCr': None }
         self.interlaced_uv = False
         self._gl_types = {
             'int8'   : gl.GL_BYTE,
@@ -106,10 +108,12 @@ class GLTexture:
         if self._use_opengl_cpp:
             self._glew_initialized = False
 
+        # On macOS, bind cgl
+        self._cgl : Optional[ctypes.CDLL] = None
+
     @property
     def textureY(self):
         return self._texture['Y']
-
     @textureY.setter
     def textureY(self, value):
         self._texture['Y'] = value
@@ -117,7 +121,6 @@ class GLTexture:
     @property
     def textureU(self):
         return self._texture['U']
-
     @textureU.setter
     def textureU(self, value):
         self._texture['U'] = value
@@ -125,7 +128,6 @@ class GLTexture:
     @property
     def textureV(self):
         return self._texture['V']
-
     @textureV.setter
     def textureV(self, value):
         self._texture['V'] = value
@@ -133,15 +135,20 @@ class GLTexture:
     @property
     def textureUV(self):
         return self._texture['UV']
-
     @textureUV.setter
     def textureUV(self, value):
         self._texture['UV'] = value
 
     @property
+    def textureCbCr(self):
+        return self._texture['CbCr']
+    @textureCbCr.setter
+    def textureCbCr(self, value):
+        self._texture['CbCr'] = value
+
+    @property
     def textureRGB(self):
         return self._texture['RGB']
-
     @textureRGB.setter
     def textureRGB(self, value):
         self._texture['RGB'] = value
@@ -183,27 +190,28 @@ class GLTexture:
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionS, QOpenGLTexture.WrapMode.Repeat)
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionT, QOpenGLTexture.WrapMode.Repeat)
 
-    def set_default_parameters(self):
+    def set_default_parameters(self, target: gl.GL_TEXTURE_2D):
         """ Default texture parameters for active texture unit using OpenGL functions """
         # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_BASE_LEVEL, 0)
+        self._gl.glTexParameteri(target, gl.GL_TEXTURE_BASE_LEVEL, 0)
         # Setting max level >0 slows down on non GPU graphics
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, VideoConfig.mipmap_max_level)
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
-        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MAX_LEVEL, 10)
-        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
-        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
-        # self._gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+        self._gl.glTexParameteri(target, gl.GL_TEXTURE_MAX_LEVEL, VideoConfig.mipmap_max_level)
+        # We could also use GL_LINEAR, and we may set it as an option later
+        self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        self._gl.glTexParameteri(target, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
+        # self._gl.glTexParameteri(target, gl.GL_TEXTURE_MAX_LEVEL, 10)
+        # self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
+        # self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
+        # self._gl.glGenerateMipmap(target)
 
         # Antialiasing?
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP,
+        self._gl.glTexParameteri(target, gl.GL_GENERATE_MIPMAP,
                                  gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
     
-    def bind(self, texture):
-        self._gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
+    def bind(self, texture, target = gl.GL_TEXTURE_2D):
+        self._gl.glBindTexture(target, texture)
         # Need to call this function or it does not work
-        self.set_default_parameters()
+        self.set_default_parameters(target)
 
     def new_texture(self):
         # if texture is not None: gl.glDeleteTextures(np.array([texture]))
@@ -400,110 +408,202 @@ class GLTexture:
     def resize_event(self):
         self.free_buffers()
 
+    def check_cgl_binding(self):
+        """
+        Check that we can bind the IOSurface texture with CGL functions, 
+        this is required for zero-copy display of VideoToolbox frames on macOS
+        """
+        if self._cgl is None:
+            assert sys.platform == 'darwin', "iosurface_gl is macOS-only"
+
+            _cgl = ctypes.CDLL('/System/Library/Frameworks/OpenGL.framework/OpenGL')
+            _cgl.CGLGetCurrentContext.restype  = ctypes.c_void_p
+            _cgl.CGLTexImageIOSurface2D.restype = ctypes.c_int
+            _cgl.CGLTexImageIOSurface2D.argtypes = [
+                ctypes.c_void_p,  # CGLContextObj   ctx
+                ctypes.c_uint,    # GLenum          target
+                ctypes.c_uint,    # GLenum          internalformat
+                ctypes.c_int,     # GLsizei         width
+                ctypes.c_int,     # GLsizei         height
+                ctypes.c_uint,    # GLenum          format
+                ctypes.c_uint,    # GLenum          type
+                ctypes.c_void_p,  # IOSurfaceRef    ioSurface
+                ctypes.c_uint,    # GLuint          plane
+            ]
+            self._cgl = _cgl
+
     def create_texture_gl(self, image: ViewerImage, h_min: int = 0, h_max: int = -1, use_PBO:bool = False):
         """ Create an OpenGL texture from a ViewerImage using OpenGL functions """
         # Copy to temporary textures
-        height, width = image.data.shape[:2]
+        height, width = image.shape[:2]
         if h_max == -1:
             h_max = height
-        gl_type = self._gl_types[image.data.dtype.name]
-        if image.channels == ImageFormat.CH_YUV420:
-            # TODO: check if this condition is sufficient
-            LUM = gl.GL_LUMINANCE
-            match image.data.dtype:
-                case np.uint8:  format = gl.GL_R8
-                # TODO: check if SHORT or UNSIGNED_SHORT
-                case np.uint16: format = gl.GL_R16
-                case _:
-                    print(f"create_texture_gl(): Image format not supported {image.data.dtype}")
-                    format = gl.GL_R8
-            self.interlaced_uv = image.uv is not None
-            if self.interlaced_uv:
-                RG = gl.GL_RG
+        match image.channels:
+            case ImageFormat.CH_YUV420:
+                gl_type = self._gl_types[image.data.dtype.name]
+                # TODO: check if this condition is sufficient
+                LUM = gl.GL_LUMINANCE
                 match image.data.dtype:
-                    case np.uint8:  format_uv = gl.GL_RG8
+                    case np.uint8:  format = gl.GL_R8
                     # TODO: check if SHORT or UNSIGNED_SHORT
-                    case np.uint16: format_uv = gl.GL_RG16
+                    case np.uint16: format = gl.GL_R16
                     case _:
                         print(f"create_texture_gl(): Image format not supported {image.data.dtype}")
-                        format_uv = gl.GL_R8
-            
-            w, h = width, height
-            w2, h2 = w>>1, h>>1
-            h2_min = h_min>>1
-            h2_max = h_max>>1
-            if use_PBO:
-                self.check_buffers()
-
-            if (self.width,self.height) != (width,height) or self._texture['Y'] is None:
-                self._texture['Y'] = self.new_texture()
-                self.bind(self._texture['Y'])
-                self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
-                self.width, self.height = width, height
+                        format = gl.GL_R8
+                self.interlaced_uv = image.uv is not None
                 if self.interlaced_uv:
-                    # UV
-                    self._texture['UV'] = self.new_texture()
-                    self.bind(self._texture['UV'])
-                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format_uv, w2, h2, 0, RG, gl_type, image.uv)
-                else:
-                    # U
-                    self._texture['U'] = self.new_texture()
-                    self.bind(self._texture['U'])
-                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
-                    # V
-                    self._texture['V'] = self.new_texture()
-                    self.bind(self._texture['V'])
-                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
-            else:
-                if self._use_buffers and use_PBO:
-                    self.bufferTexSubImage(self._buffers['Y'], self._buf_idx,  self._texture['Y'], 
-                        w, h_min, h_max,LUM, gl_type, image.data, 'BY')
-                else:
-                    self.texSubImage(self._texture['Y'], w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
-                # self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureY)
-                # # Split in two
-                # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h2, LUM, gl_type, image.data)
-                # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h2, w, h2, LUM, gl_type, image.data[h2:,:])
-                if self.interlaced_uv:
-                    assert self.textureUV is not None, "textureUV should not be None"
-                    if self._use_buffers and use_PBO:
-                        self.bufferTexSubImage(self._buffers['UV'], self._buf_idx,  self._texture['UV'], 
-                            w2, h2_min, h2_max,RG, gl_type, image.uv, 'BUV')
-                    else:
-                        self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureUV)
-                        self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, RG, gl_type, image.uv)
-                else:
-                    assert self._texture['U'] is not None and self._texture['V'] is not None, \
-                            "textureV and textureV should not be None"
-                    if self._use_buffers and use_PBO:
-                        self.bufferTexSubImage(self._buffers['U'], self._buf_idx,  self._texture['U'], 
-                            w2, h2_min, h2_max,LUM, gl_type, image.u, 'BU')
-                        self.bufferTexSubImage(self._buffers['V'], self._buf_idx,  self._texture['V'], 
-                            w2, h2_min, h2_max,LUM, gl_type, image.v, 'BV')
-                    else:
-                        self.texSubImage(self._texture['U'], w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
-                        self.texSubImage(self._texture['V'], w2, h2_min, h2_max, LUM, gl_type, image.v,'V')
-                self._buf_idx += 1
-        else:
-            # Texture pixel format
-            pix_fmt = self._channels2format[image.channels]
+                    RG = gl.GL_RG
+                    match image.data.dtype:
+                        case np.uint8:  format_uv = gl.GL_RG8
+                        # TODO: check if SHORT or UNSIGNED_SHORT
+                        case np.uint16: format_uv = gl.GL_RG16
+                        case _:
+                            print(f"create_texture_gl(): Image format not supported {image.data.dtype}")
+                            format_uv = gl.GL_R8
+                
+                w, h = width, height
+                w2, h2 = w>>1, h>>1
+                h2_min = h_min>>1
+                h2_max = h_max>>1
+                if use_PBO:
+                    self.check_buffers()
 
-            if (self.width,self.height) != (width,height):
-                try:
-                    self.free_texture(self._texture['RGB'])
-                    self._texture['RGB'] = gl.glGenTextures(1)
-                    self.bind(self._texture['RGB'])
-                    # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
-                    format = self._internal_format(image)
-                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, width, height, 0, pix_fmt, gl_type, image.data)
+                if (self.width,self.height) != (width,height) or self._texture['Y'] is None:
+                    self._texture['Y'] = self.new_texture()
+                    self.bind(self._texture['Y'])
+                    self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w, h, 0, LUM, gl_type, image.data)
                     self.width, self.height = width, height
-                except Exception as e:
-                    print(f"setTexture failed shape={image.data.shape}: {e}")
-                    return False
-            else:
-                try:
-                    self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, width, height, pix_fmt, gl_type, image.data)
-                    # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
-                except Exception as e:
-                    print(f"setTexture glTexSubImage2D() failed shape={image.data.shape} {self.height, self.width}: {e}")
-                    return False
+                    if self.interlaced_uv:
+                        # UV
+                        self._texture['UV'] = self.new_texture()
+                        self.bind(self._texture['UV'])
+                        self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format_uv, w2, h2, 0, RG, gl_type, image.uv)
+                    else:
+                        # U
+                        self._texture['U'] = self.new_texture()
+                        self.bind(self._texture['U'])
+                        self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0, LUM, gl_type, image.u)
+                        # V
+                        self._texture['V'] = self.new_texture()
+                        self.bind(self._texture['V'])
+                        self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, w2, h2, 0,LUM, gl_type, image.v)
+                else:
+                    if self._use_buffers and use_PBO:
+                        self.bufferTexSubImage(self._buffers['Y'], self._buf_idx,  self._texture['Y'], 
+                            w, h_min, h_max,LUM, gl_type, image.data, 'BY')
+                    else:
+                        self.texSubImage(self._texture['Y'], w, h_min, h_max ,LUM, gl_type, image.data, 'Y')
+                    # self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureY)
+                    # # Split in two
+                    # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w, h2, LUM, gl_type, image.data)
+                    # self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, h2, w, h2, LUM, gl_type, image.data[h2:,:])
+                    if self.interlaced_uv:
+                        assert self.textureUV is not None, "textureUV should not be None"
+                        if self._use_buffers and use_PBO:
+                            self.bufferTexSubImage(self._buffers['UV'], self._buf_idx,  self._texture['UV'], 
+                                w2, h2_min, h2_max,RG, gl_type, image.uv, 'BUV')
+                        else:
+                            self._gl.glBindTexture(  gl.GL_TEXTURE_2D, self.textureUV)
+                            self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, w2, h2, RG, gl_type, image.uv)
+                    else:
+                        assert self._texture['U'] is not None and self._texture['V'] is not None, \
+                                "textureV and textureV should not be None"
+                        if self._use_buffers and use_PBO:
+                            self.bufferTexSubImage(self._buffers['U'], self._buf_idx,  self._texture['U'], 
+                                w2, h2_min, h2_max,LUM, gl_type, image.u, 'BU')
+                            self.bufferTexSubImage(self._buffers['V'], self._buf_idx,  self._texture['V'], 
+                                w2, h2_min, h2_max,LUM, gl_type, image.v, 'BV')
+                        else:
+                            self.texSubImage(self._texture['U'], w2, h2_min, h2_max, LUM, gl_type, image.u,'U')
+                            self.texSubImage(self._texture['V'], w2, h2_min, h2_max, LUM, gl_type, image.v,'V')
+                    self._buf_idx += 1
+            case ImageFormat.CH_VIDEOTOOLBOX:
+                """
+                macOS-only: zero-copy VideoToolbox → OpenGL texture interop via IOSurface.
+
+                VideoToolbox decoded frames (AV_PIX_FMT_VIDEOTOOLBOX) are NV12-encoded
+                CVPixelBuffers backed by IOSurface.  We can bind each plane directly as a
+                GL_TEXTURE_RECTANGLE texture using CGLTexImageIOSurface2D, avoiding any
+                CPU-side copy or colour-conversion.
+
+                Plane 0: Y  luma       — 8 or 10-bit  GL_LUMINANCE,       width   × height
+                Plane 1: CbCr chroma   — 8or 10-bit  GL_LUMINANCE_ALPHA,  width/2 × height/2
+                """
+                self.check_cgl_binding()
+
+                cgl_ctx = self._cgl.CGLGetCurrentContext()
+                if cgl_ctx is None:
+                    raise RuntimeError("No current CGL context — call bind_iosurface inside paintGL()")
+                surface = ctypes.c_void_p(image._surface_handle)
+
+                # This is a special case for VideoToolbox CVPixelBufferRef, we need to use the IOSurface plane size and format to create the texture
+                # no PBO here
+                if self._texture['Y'] is None:
+                    self._texture['Y'] = self.new_texture()
+                self.width, self.height = width, height
+                precision = image.precision
+
+                # TODO: check if we can use GL_TEXTURE_2D instead of GL_TEXTURE_RECTANGLE
+                self.bind(self._texture['Y'], gl.GL_TEXTURE_RECTANGLE)
+
+                err = self._cgl.CGLTexImageIOSurface2D(
+                    cgl_ctx,
+                    self._gl.GL_TEXTURE_RECTANGLE,
+                    self._gl.GL_LUMINANCE,          # internalformat
+                    width, height,
+                    self._gl.GL_LUMINANCE,          # format
+                    self._gl.GL_UNSIGNED_BYTE if precision <= 8 else self._gl.GL_UNSIGNED_SHORT,      # type
+                    surface,
+                    0,                      # plane 0
+                )
+                if err:
+                    raise RuntimeError(f"CGLTexImageIOSurface2D (Y plane) returned error {err}")
+                
+                # Drain any pending GL error left by the Y-plane CGL call
+                gl_err = gl.glGetError()
+                if gl_err != gl.GL_NO_ERROR:
+                    print(f"create_texture_gl: GL error {gl_err:#x} after Y plane CGL bind (precision={precision})")
+
+                # Not used, is it different from image dimensions?
+                # w, h = image.getIOSurfacePlaneSize(0)
+
+                if self._texture['CbCr'] is None:
+                    self._texture['CbCr'] = self.new_texture()
+                self.bind(self._texture['CbCr'], gl.GL_TEXTURE_RECTANGLE)
+                err = self._cgl.CGLTexImageIOSurface2D(
+                    cgl_ctx,
+                    self._gl.GL_TEXTURE_RECTANGLE,
+                    self._gl.GL_RG,    # internalformat: Cb in .r, Cr in .a
+                    width // 2, height // 2,
+                    self._gl.GL_RG, # if precision <= 8 else self._gl.GL_LUMINANCE_ALPHA_INTEGER_EXT,    # format
+                    self._gl.GL_UNSIGNED_BYTE if precision <= 8 else self._gl.GL_UNSIGNED_SHORT,
+                    surface,
+                    1,                      # plane 1
+                )
+                if err:
+                    raise RuntimeError(f"CGLTexImageIOSurface2D (CbCr plane) returned error {err}")
+
+            case _:
+                gl_type = self._gl_types[image.data.dtype.name]
+                # Texture pixel format
+                pix_fmt = self._channels2format[image.channels]
+
+                if (self.width,self.height) != (width,height):
+                    try:
+                        self.free_texture(self._texture['RGB'])
+                        self._texture['RGB'] = gl.glGenTextures(1)
+                        self.bind(self._texture['RGB'])
+                        # _gl.glBindTexture(gl.GL_TEXTURE_2D, self.textureID)
+                        format = self._internal_format(image)
+                        self._gl.glTexImage2D(gl.GL_TEXTURE_2D, 0, format, width, height, 0, pix_fmt, gl_type, image.data)
+                        self.width, self.height = width, height
+                    except Exception as e:
+                        print(f"setTexture failed shape={image.data.shape}: {e}")
+                        return False
+                else:
+                    try:
+                        self._gl.glTexSubImage2D(gl.GL_TEXTURE_2D, 0, 0, 0, width, height, pix_fmt, gl_type, image.data)
+                        # _gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
+                    except Exception as e:
+                        print(f"setTexture glTexSubImage2D() failed shape={image.data.shape} {self.height, self.width}: {e}")
+                        return False

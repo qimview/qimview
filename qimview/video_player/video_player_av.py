@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import numpy as np
 from typing import TypeAlias
 
@@ -524,7 +525,6 @@ def main():
         video_layout.addWidget(player, 1)
         players.append(player)
     if len(players) == 0:
-        import sys
         print_error("No valid input video found")
         sys.exit()
     main_layout.addLayout(video_layout)

@@ -381,6 +381,14 @@ PYBIND11_MODULE(decode_video_py, m) {
     .def_property_readonly("best_effort_timestamp", &AV::Frame::best_effort_timestamp)
     .def_property_readonly("key_frame",             &AV::Frame::key_frame)
     .def_property_readonly("interlaced_frame",      &AV::Frame::interlaced_frame)
+#ifdef __APPLE__
+    .def                  ("getIOSurface",          &AV::Frame::getIOSurface,
+                           "Return IOSurface handle (uintptr_t) for VideoToolbox zero-copy GL interop; 0 if unavailable")
+    .def                  ("getIOSurfacePlaneSize", &AV::Frame::getIOSurfacePlaneSize,
+                           "Return (width, height) of the given CVPixelBuffer plane", ARG(plane))
+    .def                  ("getCVPixelBufferFormat", &AV::Frame::getCVPixelBufferFormat,
+                           "Return the OSType pixel format of the CVPixelBuffer backing the frame, or 0 if unavailable")
+#endif
     ;
 
   py::class_<AV::CodecContext>(m, "CodecContext")

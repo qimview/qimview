@@ -76,7 +76,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
     def apply_zoom(self, crop):
         if self._image is None: return crop
-        (height, width) = self._image.data.shape[:2]
+        (height, width) = self._image.shape[:2]
         # print(f"height, width = {height, width}")
         # Apply zoom
         coeff = 1.0/self.new_scale(-self.mouse_zoom_displ.y(), height)
@@ -180,7 +180,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         return new_crop
 
     def apply_filters(self, current_image: ViewerImage) -> np.ndarray:
-        self.print_log(f"current_image.data.shape {current_image.data.shape}")
+        self.print_log(f"current_image.shape {current_image.shape}")
         # return current_image
 
         if self._display_timing: self.start_timing(title='apply_filters()')
@@ -199,7 +199,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             max_type = 1  # not used
             gamma = self.filter_params.gamma.float  # not used
 
-            rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), dtype=np.uint8)
+            rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), dtype=np.uint8)
             time1 = get_time()
             ok = False
             if ch in ImageFormat.CH_RAWFORMATS() or ch in ImageFormat.CH_RGBFORMATS():
@@ -250,7 +250,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                 channel_pos = channel_position[current_image.channels]
                 self.print_log("Converting to RGB")
                 # convert Bayer to RGB
-                rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), 
                                         dtype=current_image.data.dtype)
                 rgb_image[:, :, 0] = current_image.data[:, :, channel_pos['r']]
                 rgb_image[:, :, 1] = (current_image.data[:, :, channel_pos['gr']]+current_image.data[:, :, channel_pos['gb']])/2
@@ -258,7 +258,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             else:
                 if ch == ImageFormat.CH_Y:
                     # Transform to RGB is it a good idea?
-                    rgb_image = np.empty((current_image.data.shape[0], current_image.data.shape[1], 3), 
+                    rgb_image = np.empty((current_image.shape[0], current_image.shape[1], 3), 
                                             dtype=current_image.data.dtype)
                     rgb_image[:, :, 0] = current_image.data
                     rgb_image[:, :, 1] = current_image.data
@@ -507,7 +507,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
 
         show_diff = self._show_image_differences and self._image is not self._image_ref and \
                     self._image is not None and \
-                    self._image_ref is not None and self._image.data.shape == self._image_ref.data.shape
+                    self._image_ref is not None and self._image.shape == self._image_ref.data.shape
         self._show_image_differences_possible = show_diff
 
         c = self.update_crop()
@@ -574,7 +574,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
         self._show_overlap_possible = self._show_overlap and \
                 self._image_ref is not self._image and \
                 self._image_ref is not None and self._image is not None and \
-                self._image.data.shape == self._image_ref.data.shape
+                self._image.shape == self._image_ref.data.shape
                 
         # TODO: show overlap with different filters applied on each image?
         if self._show_overlap_possible:
@@ -641,7 +641,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                                             interpolation=opencv_downscale_interpolation)
                     if self.display_timing:
                         print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from '
-                            f'{current_image.data.shape} to '
+                            f'{current_image.shape} to '
                             f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
                     image_data = resized_image
                     if ratio<=0.25:
@@ -653,7 +653,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
                                                 interpolation=opencv_downscale_interpolation)
                         if self.display_timing:
                             print(f' === qtImageViewer: ratio {ratio:0.2f} paint_image() OpenCV resize from '
-                                f'{current_image.data.shape} to '
+                                f'{current_image.shape} to '
                                 f'{resized_image.shape} --> {int((get_time()-start_0)*1000)} ms')
                         image_data = resized_image
 
@@ -673,7 +673,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             if self.show_stats and self._image:
                 # Output RGB from input
                 ch = self._image.channels
-                data_shape = current_image.data.shape
+                data_shape = current_image.shape
                 if len(data_shape)==2:
                     print(f"input average {np.average(current_image.data)}")
                 if len(data_shape)==3:
@@ -788,7 +788,7 @@ class QTImageViewer(ImageViewer, BaseWidget):
             (height, width) = cropped_image_shape[:2]
             im_y = int((self.mouse_pos.y() -rect.y())/rect.height()*height)
             im_y += crop_ymin
-            im_shape = self._image.data.shape
+            im_shape = self._image.shape
             # Horizontal display
             if im_y>=0 and im_y<im_shape[0] and crop_xmin>=0 and crop_xmin+cropped_image_shape[1]<=im_shape[1]:
                 line = self._image.data[im_y, crop_xmin:crop_xmin+cropped_image_shape[1]]

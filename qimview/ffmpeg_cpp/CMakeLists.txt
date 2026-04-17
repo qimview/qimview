@@ -77,4 +77,11 @@ target_link_libraries(
         decode_video_lib
 )
 
+if(APPLE)
+    target_link_libraries(decode_video_py PRIVATE
+        "-framework CoreVideo"
+        "-framework IOSurface"
+    )
+endif()
+
 install(TARGETS decode_video_py DESTINATION .)

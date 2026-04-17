@@ -5,6 +5,7 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
+import sys
 import traceback
 from typing import Optional, Tuple
 import numpy as np
@@ -27,9 +28,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         _format = QtGui.QSurfaceFormat()
         #_format.setDepthBufferSize(24)
-        #_format.setVersion(3,3)
-        #_format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CoreProfile)
-        _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        if sys.platform == 'darwin':
+            _format.setVersion(2, 1)
+            _format.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+            _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        else:
+            _format.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
         _format.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
         self.setFormat(_format)
 
@@ -78,13 +82,13 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         self.geomtric_transform_menu = QMenu(self, title="Geometric Transfom")
         # TODO: fix the possibility to rotate the video
-        # action1 = self.geomtric_transform_menu.addAction("Right 90°")
-        # action2 = self.geomtric_transform_menu.addAction("Left  90°")
+        action_rotate_90  = self.geomtric_transform_menu.addAction("Left 90°")
+        action_rotate_270 = self.geomtric_transform_menu.addAction("Right 90°")
         action_flip_x = self.geomtric_transform_menu.addAction("Horizontal flip")
         action_flip_y = self.geomtric_transform_menu.addAction("Vertical flip")
         action3 = self.geomtric_transform_menu.addAction("reset")
-        # action1.triggered.connect(lambda : self.rotate_image(glm.pi()/2))
-        # action2.triggered.connect(lambda : self.rotate_image(-glm.pi()/2))
+        action_rotate_90.triggered.connect(lambda : self.rotate_image(glm.pi()/2))
+        action_rotate_270.triggered.connect(lambda : self.rotate_image(-glm.pi()/2))
         action_flip_x.triggered.connect(lambda : self.flip_image(True, False))
         action_flip_y.triggered.connect(lambda : self.flip_image(False, True))
         action3.triggered.connect(self.reset_rotation)
@@ -120,14 +124,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         if self._image is None:
             return
-        img_width = self._image.data.shape[1]
+        img_width = self._image.shape[1]
         if img_width % 4 != 0:
             print("Image is resized to a multiple of 4 dimension in X")
             img_width = ((img_width >> 4) << 4)
             im = np.ascontiguousarray(self._image.data[:,:img_width, :])
             self._image = ViewerImage(im, precision = self._image.precision, downscale = 1,
                                         channels = self._image.channels)
-            print(self._image.data.shape)
+            print(self._image.shape)
 
         if changed:
             if self.setTexture():
@@ -158,7 +162,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.image_id += 1
         for cb in self.imagechange_callbacks.values():
             cb(self)
-        res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
+        if self._image.ioSurfaceMode():
+            res = self.setTexture(False, texture_ref, False)
+        else:
+            res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         if not res: print("setTexture() returned False")
 
     def synchronize_data(self, other_viewer):
@@ -195,12 +202,16 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self._image is None:
             print("self._image is None")
             return False
+        
+        if self._image.ioSurfaceMode():
+            use_crop = False
+            use_PBO = False
 
         # Set Y, U and V
         if self.texture is None:
             self.texture = GLTexture(_gl)
             h_min = 0
-            h_max = self._image.data.shape[0]
+            h_max = self._image.shape[0]
         else:
             if use_crop:
                 # Compute Y range of displayed texture
@@ -219,7 +230,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 h_max = max(h0,h1)
             else:
                 h_min = 0
-                h_max = self._image.data.shape[0]
+                h_max = self._image.shape[0]
             # print(f"{h_min=} {h_max=}")
 
         self.print_log("cursor ratio {} {}".format(self.cursor_imx_ratio, self.cursor_imy_ratio))
@@ -256,9 +267,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             t = trace_method(self.tab)
         if self._image is None:
             return
-        if self.texture is None or not self.isValid() or not self.isVisible():
-            print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
-            return
+        if not self._image.ioSurfaceMode():
+            if self.texture is None or not self.isValid() or not self.isVisible():
+                print(f"paintGL()** not ready {self.texture} isValid = {self.isValid()} isVisible {self.isVisible()}")
+                return
         # No need for makeCurrent() since it is called from PaintGL() only ?
         if make_current: self._makeCurrent()
         painter = QtGui.QPainter()
@@ -293,7 +305,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         # adapt scale depending on the ratio image / viewport
         if self._show_text:
-            scale *= self._width/self._image.data.shape[1]
+            image_width = self._image.shape[1]
+            scale *= self._width/image_width
             self.display_text(painter, self.display_message(im_pos, scale))
 
         # draw histogram
@@ -338,11 +351,12 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         x0, x1, y0, y1 = self.image_centered_position()
 
-        im_x = int(self.cursor_imx_ratio*self.texture.width)
-        im_y = int(self.cursor_imy_ratio*self.texture.height)
+        texture_height, texture_width = self._image.shape[:2]
+        im_x = int(self.cursor_imx_ratio*texture_width)
+        im_y = int(self.cursor_imy_ratio*texture_height)
 
-        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.texture.width + x0
-        glpos_from_im_y = (self.texture.height - (im_y+0.5))*(y1-y0)/self.texture.height+y0
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/texture_width + x0
+        glpos_from_im_y = (texture_height - (im_y+0.5))*(y1-y0)/texture_height+y0
 
         # get image coordinates
         length = 20 # /self.current_scale
@@ -355,7 +369,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y-length, -0.001)
         gl.glVertex3f(glpos_from_im_x, glpos_from_im_y+length, -0.001)
         gl.glEnd()
-        if im_x>=0 and im_x<self.texture.width and im_y>=0 and im_y<=self.texture.height:
+        if im_x>=0 and im_x<texture_width and im_y>=0 and im_y<=texture_height:
             return (im_x, im_y)
         return None
 
@@ -365,11 +379,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
 
         x0, x1, y0, y1 = self.image_centered_position()
 
-        im_x = int(self.cursor_imx_ratio*self.texture.width)
-        im_y = int(self.cursor_imy_ratio*self.texture.height)
+        texture_width = self._image.shape[1]
+        texture_height = self._image.shape[0]
 
-        glpos_from_im_x = (im_x+0.5)*(x1-x0)/self.texture.width + x0
-        glpos_from_im_y = (self.texture.height - (im_y+0.5))*(y1-y0)/self.texture.height+y0
+        im_x = int(self.cursor_imx_ratio*texture_width)
+        im_y = int(self.cursor_imy_ratio*texture_height)
+
+        glpos_from_im_x = (im_x+0.5)*(x1-x0)/texture_width + x0
+        glpos_from_im_y = (texture_height - (im_y+0.5))*(y1-y0)/texture_height+y0
 
         match self._overlap_mode:
             case OverlapMode.Horizontal:
@@ -414,11 +431,21 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
     def image_centered_position(self):
         w = self._width
         h = self._height
-        self.print_log(f'self width height {self._width} {self._height} tex {self.texture.width} {self.texture.height}')
-        if self.texture.width == 0 or self.texture.height == 0:
+        if self.texture is None:
+            try:
+                texture_width = self._image.shape[1]
+                texture_height = self._image.shape[0]
+            except:
+                texture_width = 0
+                texture_height = 0
+        else:
+            texture_width = self.texture.width
+            texture_height = self.texture.height
+        self.print_log(f'self width height {self._width} {self._height} tex {texture_width} {texture_height}')
+        if texture_width == 0 or texture_height == 0:
             return 0, w, 0, h
         # self.print_log(' {}x{}'.format(w, h))
-        image_ratio = float(self.texture.width)/float(self.texture.height)
+        image_ratio = float(texture_width)/float(texture_height)
         if h*image_ratio < w:
             view_width  = int(h*image_ratio+0.5)
             view_height = h
@@ -456,8 +483,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self._display_timing: self.start_timing()
         w = self._width
         h = self._height
+        texture_height = self._image.shape[0]
+
         dx, dy = self.new_translation()
-        scale = self.new_scale(-self.mouse_zoom_displ.y(), self.texture.height)
+        scale = self.new_scale(-self.mouse_zoom_displ.y(), texture_height)
         rotation = self.image_rotation
         flip_x   = self.flip_x
         flip_y   = self.flip_y

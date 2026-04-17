@@ -53,7 +53,7 @@ class MouseZoomActions(MouseMotionActions[V]):
         """ Release event """
         im = self._widget.get_image()
         if im is not None:
-            self._widget.current_scale = self._widget.new_scale(-self._delta.y(),im.data.shape[0])
+            self._widget.current_scale = self._widget.new_scale(-self._delta.y(),im.shape[0])
         super().release(event)
         self._widget.mouse_zoom_displ = self._delta
         QtWidgets.QApplication.restoreOverrideCursor()
@@ -132,7 +132,7 @@ class ImageViewerMouseEvents(MouseEvents[V]):
         coeff = delta/5
         # coeff = 20 if delta > 0 else -20
         if im := self._widget.get_image():
-            self._widget.current_scale = self._widget.new_scale(coeff, im.data.shape[0])
+            self._widget.current_scale = self._widget.new_scale(coeff, im.shape[0])
             self._widget.viewer_update()
             self._widget.synchronize()
             return True
