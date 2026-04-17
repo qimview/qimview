@@ -190,7 +190,7 @@ class GLTexture:
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionS, QOpenGLTexture.WrapMode.Repeat)
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionT, QOpenGLTexture.WrapMode.Repeat)
 
-    def set_default_parameters(self, target: gl.GLEnum = gl.GL_TEXTURE_2D):
+    def set_default_parameters(self, target: gl.GL_TEXTURE_2D):
         """ Default texture parameters for active texture unit using OpenGL functions """
         # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
         self._gl.glTexParameteri(target, gl.GL_TEXTURE_BASE_LEVEL, 0)
@@ -208,7 +208,7 @@ class GLTexture:
         self._gl.glTexParameteri(target, gl.GL_GENERATE_MIPMAP,
                                  gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
     
-    def bind(self, texture, target: gl.GLEnum = gl.GL_TEXTURE_2D):
+    def bind(self, texture, target = gl.GL_TEXTURE_2D):
         self._gl.glBindTexture(target, texture)
         # Need to call this function or it does not work
         self.set_default_parameters(target)
