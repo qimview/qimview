@@ -584,6 +584,7 @@ class GLTexture:
                     raise RuntimeError(f"CGLTexImageIOSurface2D (CbCr plane) returned error {err}")
 
             case _:
+                gl_type = self._gl_types[image.data.dtype.name]
                 # Texture pixel format
                 pix_fmt = self._channels2format[image.channels]
 
