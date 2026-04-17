@@ -536,9 +536,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         # output crop [ width min, height min, width max, height max]
         self._output_crop                                = np.array([0., 0., 1., 1.], dtype=np.float32)
         self._shader_filter_params : SetShaderFilterParams = SetShaderFilterParams()
-        # IOSurface zero-copy state (macOS VideoToolbox)
-        self._iosurface_y_tex   : int   = 0   # GL texture ID for Y plane
-        self._iosurface_cbcr_tex: int   = 0   # GL texture ID for CbCr plane
 
     def set_shaders(self):
         if self.program_RGB is None:
@@ -794,21 +791,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         # Asserts that avoid syntax highlighting errors
         assert self._image.ioSurfaceMode() or self.texture is not None
 
-        if self._image.ioSurfaceMode():
-            try:
-                from qimview.video_player.iosurface_gl import bind_iosurface_nv12, GL_TEXTURE_RECTANGLE
-            except Exception as e:
-                print(f'_paintGL_iosurface: failed to import iosurface_gl: {e}')
-                return
-            self._iosurface_y_tex, self._iosurface_cbcr_tex = bind_iosurface_nv12(
-                self._image._surface_handle,
-                self._image.shape[1],   # width
-                self._image.shape[0],   # height
-                self._image.precision,  # bits per channel
-                self._iosurface_y_tex,
-                self._iosurface_cbcr_tex,
-            )
-
         self.opengl_error()
         if self._display_timing: self.start_timing()
 
@@ -958,10 +940,10 @@ class GLImageViewerShaders(GLImageViewerBase):
                         _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
             elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
                 _gl.glActiveTexture(gl.GL_TEXTURE0)
-                _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_y_tex)
+                _gl.glBindTexture(gl.GL_TEXTURE_RECTANGLE, self.texture.textureY)
                 _gl.glActiveTexture(gl.GL_TEXTURE1)
-                _gl.glBindTexture(GL_TEXTURE_RECTANGLE, self._iosurface_cbcr_tex)
-                _gl.glEnable(GL_TEXTURE_RECTANGLE)
+                _gl.glBindTexture(gl.GL_TEXTURE_RECTANGLE, self.texture.textureCbCr)
+                _gl.glEnable(gl.GL_TEXTURE_RECTANGLE)
         else:
             if self.texture:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
