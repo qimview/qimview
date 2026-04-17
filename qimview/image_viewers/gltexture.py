@@ -109,7 +109,7 @@ class GLTexture:
             self._glew_initialized = False
 
         # On macOS, bind cgl
-        self._cgl_bind : Optional[ctypes.CDLL] = None
+        self._cgl : Optional[ctypes.CDLL] = None
 
     @property
     def textureY(self):
@@ -408,12 +408,12 @@ class GLTexture:
     def resize_event(self):
         self.free_buffers()
 
-    def check_cgl_bindind(self):
+    def check_cgl_binding(self):
         """
         Check that we can bind the IOSurface texture with CGL functions, 
         this is required for zero-copy display of VideoToolbox frames on macOS
         """
-        if self._cgl_bind is None:
+        if self._cgl is None:
             assert sys.platform == 'darwin', "iosurface_gl is macOS-only"
 
             _cgl = ctypes.CDLL('/System/Library/Frameworks/OpenGL.framework/OpenGL')
@@ -529,7 +529,7 @@ class GLTexture:
                 Plane 0: Y  luma       — 8 or 10-bit  GL_LUMINANCE,       width   × height
                 Plane 1: CbCr chroma   — 8or 10-bit  GL_LUMINANCE_ALPHA,  width/2 × height/2
                 """
-                self.check_cgl_bindind()
+                self.check_cgl_binding()
 
                 cgl_ctx = self._cgl.CGLGetCurrentContext()
                 if cgl_ctx is None:
