@@ -162,7 +162,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         self.image_id += 1
         for cb in self.imagechange_callbacks.values():
             cb(self)
-        res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
+        if self._image.ioSurfaceMode():
+            res = self.setTexture(False, texture_ref, False)
+        else:
+            res = self.setTexture(use_crop, texture_ref, use_PBO=use_PBO)
         if not res: print("setTexture() returned False")
 
     def synchronize_data(self, other_viewer):
@@ -199,10 +202,10 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         if self._image is None:
             print("self._image is None")
             return False
-
+        
         if self._image.ioSurfaceMode():
-            # In this mode, the texture is created from the IOSurface and not from the image data, so we can skip this part
-            return True
+            use_crop = False
+            use_PBO = False
 
         # Set Y, U and V
         if self.texture is None:

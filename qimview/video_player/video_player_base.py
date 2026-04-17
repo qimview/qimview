@@ -104,7 +104,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
         self.playback_speed_gui.add_to_layout(hor_layout,1)
         self.playback_speed_gui.setSingleStep(1)
         self.playback_speed_gui.setPageStep(10)
-        self.playback_speed_gui.setTickInterval(10)
+        self.playback_speed_gui.setTickInterval(100)
         self.playback_speed_gui.setTickPosition(QtWidgets.QSlider.TickPosition.TicksBelow)
 
     def _add_playback_position_slider(self, hor_layout):
