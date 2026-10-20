@@ -243,7 +243,9 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             else:
                 if self.texture_ref is None:
                     self.texture_ref = GLTexture(_gl)
-                self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max, use_PBO=use_PBO)
+                # We can not safely use h_min and h_max for the reference image since it may have a different height, so we set them to 0 and the image height
+                self.texture_ref.create_texture_gl(self._image_ref, 0, self._image_ref.shape[0], use_PBO=use_PBO)
+                # self.texture_ref.create_texture_gl(self._image_ref, h_min, h_max, use_PBO=use_PBO)
 
         if self._display_timing: self.print_timing(add_total=True)
         self.opengl_error()
