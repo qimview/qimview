@@ -10,10 +10,16 @@ if os.name == 'nt' and os.path.isdir(ffmpeg_path):
 
 import decode_video_py as decode_lib
 
-# On macOS, keep VideoToolbox frames on the GPU (convert=False) so that
-# display_frame_YUV420() can bind them as IOSurface textures without a CPU copy.
-_HW_ZERO_COPY = sys.platform == 'darwin'
-
+import configparser,os
+config = configparser.ConfigParser()
+res = config.read([os.path.expanduser('~/.qimview.cfg')])
+if config.has_option('VIDEOPLAYER', 'hw_zero_copy'):
+    # On macOS, keep VideoToolbox frames on the GPU (convert=False) so that
+    # display_frame_YUV420() can bind them as IOSurface textures without a CPU copy.
+    _HW_ZERO_COPY = config.getboolean('VIDEOPLAYER', 'hw_zero_copy') and sys.platform == 'darwin'
+else:
+    _HW_ZERO_COPY = False
+print(f"VideoFrameBufferCpp: hw_zero_copy={_HW_ZERO_COPY}")
 
 class VideoFrameBufferCpp(VideoFrameBufferBase):
     """ This class uses a thread to store several successive videos frame in a queue
