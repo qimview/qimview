@@ -136,7 +136,7 @@ class VideoPlayerKeyEvents:
         """ display next Frame """
         p = self._player
         p.play_position = p.play_position+p.frame_duration
-        p.set_play_position()
+        p.set_play_position(fromGUI=True)
         p.update_position(force=True)
         return True
 
@@ -144,7 +144,7 @@ class VideoPlayerKeyEvents:
         """ display previous Frame """
         p = self._player
         p.play_position = max(0,p.play_position-p.frame_duration)
-        p.set_play_position()
+        p.set_play_position(fromGUI=True)
         p.update_position(force=True)
         return True
 
@@ -152,7 +152,7 @@ class VideoPlayerKeyEvents:
         """ display Frame + 10 """
         p = self._player
         p.play_position = p.play_position+10*p.frame_duration
-        p.set_play_position()
+        p.set_play_position(fromGUI=True)
         p.update_position(force=True)
         return True
 
@@ -160,7 +160,7 @@ class VideoPlayerKeyEvents:
         """ display Frame - 10 """
         p = self._player
         p.play_position = max(0,p.play_position-10*p.frame_duration)
-        p.set_play_position()
+        p.set_play_position(fromGUI=True)
         p.update_position(force=True)
         return True
 
@@ -174,7 +174,7 @@ class VideoPlayerKeyEvents:
         # print(f"{p.play_position=}")
         p.play_position = (int(p.play_position/gop_size+0.5)+1)*gop_size
         # print(f"{p.play_position=}")
-        p.set_play_position()
+        p.set_play_position(fromGUI=True)
         p.update_position(force=True)
         return True
 
@@ -184,7 +184,7 @@ class VideoPlayerKeyEvents:
         gop_size = p.guessed_gop_size
         gop_size = gop_size*p.frame_duration
         p.play_position = max(0,(int(p.play_position/gop_size+0.5)-1))*gop_size
-        p.set_play_position()
+        p.set_play_position(fromGUI=True)
         p.update_position(force=True)
         return True
 
@@ -192,7 +192,7 @@ class VideoPlayerKeyEvents:
         """ display Frame at +1 second """
         p = self._player
         p.play_position = p.play_position+1
-        p.set_play_position(exact=False)
+        p.set_play_position(fromGUI=True, exact=False)
         p.update_position(force=True)
         return True
 
@@ -200,7 +200,7 @@ class VideoPlayerKeyEvents:
         """ display Frame at -1 second """
         p = self._player
         p.play_position = max(0,p.play_position-1)
-        p.set_play_position(exact=False)
+        p.set_play_position(fromGUI=True, exact=False)
         p.update_position(force=True)
         return True
 
