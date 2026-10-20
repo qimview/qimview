@@ -2,6 +2,7 @@
 # from https://numpy.org/doc/stable/user/basics.subclassing.html
 
 from __future__ import annotations
+import ctypes
 from typing import Tuple, Optional
 from enum import Enum, IntEnum
 import numpy as np
@@ -25,6 +26,8 @@ class ImageFormat(IntEnum):
     "phase 3, bayer 1"
     CH_YUV420 = 8
     "YUV 420 format"
+    CH_VIDEOTOOLBOX = 9
+    "VideoToolbox (GPU) format"
 
     @staticmethod
     def CH_RAWFORMATS() -> Tuple[ImageFormat, ...]:
@@ -51,10 +54,10 @@ class ViewerImage:
     """
 
     def __init__(self, 
-                 input_array : np.ndarray, 
+                 input_array : Optional[np.ndarray] = None, 
                  precision : int =8, 
                  downscale=1, 
-                 channels: ImageFormat = ImageFormat.CH_RGB,
+                 channels: ImageFormat = ImageFormat.CH_RGB
                  ):
         """
         :param input_array:
@@ -77,6 +80,33 @@ class ViewerImage:
         self._uv : Optional[np.ndarray]   = None
         self._crop : Optional[np.ndarray] = None
 
+        # Zero-copy path: on macOS with VideoToolbox, bind IOSurface directly as GL texture
+        self._surface_handle : Optional[ctypes.c_void_p] = None
+
+    def setIOSurface(self, surface_handle: int, width: int, height: int):
+        self._surface_handle = surface_handle
+        self._shape = (height, width)
+
+    def ioSurfaceMode(self) -> bool:
+        return self._surface_handle is not None
+
+    @property    
+    def shape(self) -> Tuple[int, int]:
+        if self._surface_handle is not None:
+            return self._shape
+        elif self._data is not None:
+            return self._data.shape
+        else:
+            return (0, 0)
+
+    @property    
+    def dtype(self) -> np.dtype:
+        if self._surface_handle is not None:
+            return np.uint8 if self.precision <= 8 else np.uint16
+        elif self._data is not None:
+            return self._data.dtype
+        else:
+            return np.uint8
 
     @property
     def crop(self) -> Optional[np.ndarray] :

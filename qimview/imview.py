@@ -1,9 +1,7 @@
-from qimview.utils.qt_imports import QtWidgets
+from qimview.utils.qt_imports import QtWidgets, QtCore, QtGui
 import argparse
 import sys
 import json
-
-import sys
 
 from qimview.tests_utils.event_recorder import EventRecorder
 from qimview.tests_utils.event_player   import EventPlayer
@@ -133,6 +131,15 @@ def main():
 
     # create the Qt App and window
     QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_ShareOpenGLContexts)
+    if sys.platform == 'darwin':
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
+        fmt = QtGui.QSurfaceFormat()
+        fmt.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+        fmt.setVersion(2, 1)
+        fmt.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        fmt.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
+        QtGui.QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationDisplayName('imview ' + ' '.join(sys.argv[1:]))
     if _params['play'] is not None:

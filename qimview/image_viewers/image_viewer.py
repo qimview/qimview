@@ -203,6 +203,7 @@ class ImageViewer:
         self.evt_height : int
 
         self.synchronize_pos       : bool                = True
+        self.synchronize_zoom      : bool                = True
         self.paint_callbacks       : dict[str, Callable] = {}
 
         # Paint callback for opengl version
@@ -422,13 +423,14 @@ class ImageViewer:
     def synchronize_data(self, dest_viewer: 'ImageViewer') -> None:
         """ Synchronize: copy parameters to another viewer
         """
-        dest_viewer.current_scale = self.current_scale
+        if dest_viewer.synchronize_zoom:
+            dest_viewer.current_scale = self.current_scale
+            dest_viewer.mouse_zoom_displ = self.mouse_zoom_displ
         if dest_viewer.synchronize_pos:
             dest_viewer.current_dx = self.current_dx
             dest_viewer.current_dy = self.current_dy
             dest_viewer.mouse_displ      = self.mouse_displ
             dest_viewer.mouse_pos        = self.mouse_pos
-        dest_viewer.mouse_zoom_displ = self.mouse_zoom_displ
 
         dest_viewer.show_histogram      = self.show_histogram
         dest_viewer.show_cursor         = self.show_cursor
@@ -467,11 +469,11 @@ class ImageViewer:
         text : str = f'im:{self.image_name}'
         text += f'\nref:{self.image_ref_name}'
         if self.show_cursor and im_pos and self._image:
-            text +=  f"\n {self._image.data.shape} {self._image.data.dtype} prec:{self._image.precision}"
+            text +=  f"\n {self._image.shape} {self._image.dtype} prec:{self._image.precision}"
             if scale is not None:
                 text += f"\n x{scale:0.2f}"
             im_x, im_y = im_pos
-            values = self._image.data[im_y, im_x]
+            values = self._image.data[im_y, im_x] if self._image.data is not None else "n.a."
             text += f"\n pos {im_x:4}, {im_y:4} \n {self._image.channels.name[3:]}:{str(values).strip('[]')}"
 
         # ref_txt = self.image_ref_name if self.image_ref_name else 'ref'

@@ -5,7 +5,7 @@
 # check also https://doc.qt.io/archives/4.6/opengl-overpainting.html
 #
 
-from ..utils.qt_imports    import QtWidgets
+from ..utils.qt_imports    import QtWidgets, QtCore, QtGui
 from .image_viewer         import trace_method
 from .gl_image_viewer_base import GLImageViewerBase
 
@@ -126,6 +126,15 @@ if __name__ == '__main__':
             self.setCentralWidget(self.widget)
 
     # create the Qt App and window
+    if sys.platform == 'darwin':
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
+        fmt = QtGui.QSurfaceFormat()
+        fmt.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+        fmt.setVersion(2, 1)
+        fmt.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        fmt.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
+        QtGui.QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QtWidgets.QApplication(sys.argv)
     window = TestWindow()
     window.load()
