@@ -207,10 +207,6 @@ class GLTexture:
         # self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         # self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
         # self._gl.glGenerateMipmap(target)
-
-        # Antialiasing ?
-        self._gl.glTexParameteri(target, gl.GL_GENERATE_MIPMAP,
-                                 gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
     
     def bind(self, texture, target = gl.GL_TEXTURE_2D):
         self._gl.glBindTexture(target, texture)
