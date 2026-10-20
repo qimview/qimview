@@ -41,6 +41,7 @@ class ImageViewerKeyEvents:
                 'Ctrl+B'   : self.copy2Clipboard,
                 'Ctrl+S'   : self.saveImage,
                 'Shift+P'  : self.syncPos,
+                'Shift+Z'  : self.syncZoom,
         }
         for plg,plg_cb in self.plugins_key_events.items():
             f = lambda cb=plg_cb: cb(self)
@@ -129,6 +130,11 @@ class ImageViewerKeyEvents:
     def syncPos(self) -> bool:
         """ Toggle position synchronization from other viewer on/off """
         self._viewer.synchronize_pos = not self._viewer.synchronize_pos
+        return self.updateAndAccept()
+ 
+    def syncZoom(self) -> bool:
+        """ Toggle zoom synchronization from other viewer on/off """
+        self._viewer.synchronize_zoom = not self._viewer.synchronize_zoom
         return self.updateAndAccept()
  
     def zoomUpperLeft(self) -> bool:

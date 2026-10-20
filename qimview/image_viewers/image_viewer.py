@@ -203,6 +203,7 @@ class ImageViewer:
         self.evt_height : int
 
         self.synchronize_pos       : bool                = True
+        self.synchronize_zoom      : bool                = True
         self.paint_callbacks       : dict[str, Callable] = {}
 
         # Paint callback for opengl version
@@ -422,13 +423,14 @@ class ImageViewer:
     def synchronize_data(self, dest_viewer: 'ImageViewer') -> None:
         """ Synchronize: copy parameters to another viewer
         """
-        dest_viewer.current_scale = self.current_scale
+        if dest_viewer.synchronize_zoom:
+            dest_viewer.current_scale = self.current_scale
+            dest_viewer.mouse_zoom_displ = self.mouse_zoom_displ
         if dest_viewer.synchronize_pos:
             dest_viewer.current_dx = self.current_dx
             dest_viewer.current_dy = self.current_dy
             dest_viewer.mouse_displ      = self.mouse_displ
             dest_viewer.mouse_pos        = self.mouse_pos
-        dest_viewer.mouse_zoom_displ = self.mouse_zoom_displ
 
         dest_viewer.show_histogram      = self.show_histogram
         dest_viewer.show_cursor         = self.show_cursor
