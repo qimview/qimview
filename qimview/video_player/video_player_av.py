@@ -226,7 +226,7 @@ class VideoPlayerAV(VideoPlayerBase):
 
     def reset_play(self):
         if self.play_position_gui.tracking_textonly:
-            self.set_play_position(fromSlider=True)
+            self.set_play_position(fromGUI=True)
         if self._was_active:
             self._scheduler.play()
 
@@ -258,16 +258,16 @@ class VideoPlayerAV(VideoPlayerBase):
                 self._scheduler.play()
 
     def slider_value_changed(self):
-        self.set_play_position(fromSlider=True)
+        self.set_play_position(fromGUI=True)
 
-    def set_play_position(self, recursive=True, fromSlider=False, exact=True):
+    def set_play_position(self, recursive=True, fromGUI=False, exact=True):
         """ Sets the play position based on the member play_position
 
         Args:
             recursive (bool, optional): _description_. Defaults to True.
-            fromSlider (bool, optional): _description_. Defaults to False.
+            fromGUI (bool, optional): _description_. Defaults to False.
         """
-        # print(f"{self._name} set_play_position {fromSlider=} {self.play_position=}")
+        # print(f"{self._name} set_play_position {fromGUI=} {self.play_position=}")
         # Here, instead of resetting the frame_buffer, we want to use existing frames
         # as much as possible
         if self._frame_provider.frame_buffer:
@@ -277,7 +277,7 @@ class VideoPlayerAV(VideoPlayerBase):
         for idx, p in enumerate(self._compare_players):
             p.play_position = self.play_position + self._compare_timeshift[idx]
             p.set_play_position(recursive=False, exact=exact)
-            p.update_position(recursive=False, force=fromSlider)
+            p.update_position(recursive=False, force=fromGUI)
         self.display_frame(self._frame_provider.frame)
         
     def setTimeShifts(self) -> None:

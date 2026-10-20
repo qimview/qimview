@@ -142,7 +142,7 @@ class VideoPlayerBase(QtWidgets.QWidget):
     def play_pause(self):
         pass # to override
 
-    def set_play_position(self, recursive=True, fromSlider=False):
+    def set_play_position(self, recursive=True, fromGUI=False):
         pass # to override
 
     def update_position(self, precision=0.02, recursive=True, force=False) -> bool:
