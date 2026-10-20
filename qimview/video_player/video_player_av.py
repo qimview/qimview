@@ -487,6 +487,7 @@ def main():
     parser.add_argument('input_video', nargs='+', help='video[:stream_number]')
     parser.add_argument('--pyav', action='store_true', help='Use pyav instead of ffmpeg bound with pybind11')
     parser.add_argument('--codec', '-c',  type=str, default='auto', help='Use codec (ex: cuda) hardware acceleration with ffmpeg bound library, auto: detect automatically, cpu: for cpu only decoder')
+    parser.add_argument('--loop', nargs=2, type=float, help='Loop between 2 times in seconds (ex: --loop 1.5 4.0)')
     args = parser.parse_args()
     # _params = vars(args)
     print_log(args)
@@ -521,6 +522,9 @@ def main():
             player = VideoPlayerAV(main_widget, use_decode_video_py=False, codec=args.codec)
         else:
             player = VideoPlayerAV(main_widget, codec=args.codec)
+        if len(players)==0:
+            player.loop_start_time = args.loop[0] if args.loop else 0
+            player.loop_end_time   = args.loop[1] if args.loop else -1  
         player.set_video(input)
         video_layout.addWidget(player, 1)
         players.append(player)

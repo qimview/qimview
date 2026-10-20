@@ -149,6 +149,17 @@ class VideoScheduler:
                 else:
                     ok = False
             if ok:
+                p0 : 'VideoPlayerAV' = self._players[0]
+                if self._loop and p0.loop_end_time >0 and p0.frame_provider.get_time() > p0.loop_end_time:
+                    print(f"Looping video {p0._name} at time {p0.frame_provider.get_time():0.3f} sec")
+                    min_start_time = 0
+                    for ts in self._timeshifts:
+                        if ts<0:
+                            min_start_time = min(min_start_time, -ts)
+                    for idx, p in enumerate(self._players):
+                        if p.frame_provider is not None:
+                            p.frame_provider.set_time(max(min_start_time,p0.loop_start_time)+self._timeshifts[idx])
+
                 # display player 0 at the end to allow multiple frames on the same display
                 # synchronize the use of PBO throught the parameter is running, for initial and compared videos
                 for n in range(1,len(self._players)):
