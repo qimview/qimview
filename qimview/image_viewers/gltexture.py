@@ -190,12 +190,16 @@ class GLTexture:
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionS, QOpenGLTexture.WrapMode.Repeat)
         self.texture.setWrapMode(QOpenGLTexture.CoordinateDirection.DirectionT, QOpenGLTexture.WrapMode.Repeat)
 
-    def set_default_parameters(self, target: gl.GL_TEXTURE_2D):
+    def set_default_parameters(self, target = gl.GL_TEXTURE_2D):
         """ Default texture parameters for active texture unit using OpenGL functions """
-        # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
-        self._gl.glTexParameteri(target, gl.GL_TEXTURE_BASE_LEVEL, 0)
-        # Setting max level >0 slows down on non GPU graphics
-        self._gl.glTexParameteri(target, gl.GL_TEXTURE_MAX_LEVEL, VideoConfig.mipmap_max_level)
+        if target == gl.GL_TEXTURE_2D:
+            # self._gl.glPixelStorei(gl.GL_UNPACK_ALIGNMENT, 4)
+            self._gl.glTexParameteri(target, gl.GL_TEXTURE_BASE_LEVEL, 0)
+            # Setting max level >0 slows down on non GPU graphics
+            self._gl.glTexParameteri(target, gl.GL_TEXTURE_MAX_LEVEL, VideoConfig.mipmap_max_level)
+            # Antialiasing?
+            self._gl.glTexParameteri(target, gl.GL_GENERATE_MIPMAP,
+                                    gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
         # We could also use GL_LINEAR, and we may set it as an option later
         self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST)
         self._gl.glTexParameteri(target, gl.GL_TEXTURE_MAG_FILTER, gl.GL_NEAREST)
@@ -204,7 +208,7 @@ class GLTexture:
         # self._gl.glTexParameteri(target, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
         # self._gl.glGenerateMipmap(target)
 
-        # Antialiasing?
+        # Antialiasing ?
         self._gl.glTexParameteri(target, gl.GL_GENERATE_MIPMAP,
                                  gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
     
@@ -363,7 +367,7 @@ class GLTexture:
             image (ViewerImage): _description_
         """
         height, width = image.data.shape[:2]
-        qt_gl_type = self._qt_gl_types[image.data.dtype.name]
+        gl_type = self._qt_gl_types[image.data.dtype.name]
         if image.channels == ImageFormat.CH_YUV420:
             LUM = QOpenGLTexture.PixelFormat.Luminance
             match image.data.dtype:
@@ -438,6 +442,10 @@ class GLTexture:
         height, width = image.shape[:2]
         if h_max == -1:
             h_max = height
+        # Fix setting h_max to height when it is larger, this can happen when the compared image has a smaller height than the reference image
+        else:
+            h_max = min(h_max, height)
+        h_min = min(h_min, h_max-1)
         match image.channels:
             case ImageFormat.CH_YUV420:
                 gl_type = self._gl_types[image.data.dtype.name]
