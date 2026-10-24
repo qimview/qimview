@@ -2,6 +2,7 @@
 # from https://numpy.org/doc/stable/user/basics.subclassing.html
 
 from __future__ import annotations
+import ctypes
 from typing import Tuple, Optional
 from enum import Enum, IntEnum
 import numpy as np
@@ -25,6 +26,8 @@ class ImageFormat(IntEnum):
     "phase 3, bayer 1"
     CH_YUV420 = 8
     "YUV 420 format"
+    CH_VIDEOTOOLBOX = 9
+    "VideoToolbox (GPU) format"
 
     @staticmethod
     def CH_RAWFORMATS() -> Tuple[ImageFormat, ...]:
@@ -51,10 +54,10 @@ class ViewerImage:
     """
 
     def __init__(self, 
-                 input_array : np.ndarray, 
+                 input_array : Optional[np.ndarray] = None, 
                  precision : int =8, 
                  downscale=1, 
-                 channels: ImageFormat = ImageFormat.CH_RGB,
+                 channels: ImageFormat = ImageFormat.CH_RGB
                  ):
         """
         :param input_array:
@@ -62,7 +65,7 @@ class ViewerImage:
         """
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
-        self._data = input_array
+        self._data : Optional[np.ndarray] = input_array
         # add the new attribute to the created instance
         self.precision : int           = precision
         self.downscale : int           = downscale
@@ -77,6 +80,33 @@ class ViewerImage:
         self._uv : Optional[np.ndarray]   = None
         self._crop : Optional[np.ndarray] = None
 
+        # Zero-copy path: on macOS with VideoToolbox, bind IOSurface directly as GL texture
+        self._surface_handle : Optional[ctypes.c_void_p] = None
+
+    def setIOSurface(self, surface_handle: int, width: int, height: int):
+        self._surface_handle = surface_handle
+        self._shape = (height, width)
+
+    def ioSurfaceMode(self) -> bool:
+        return self._surface_handle is not None
+
+    @property    
+    def shape(self) -> Tuple[int, int]:
+        if self._surface_handle is not None:
+            return self._shape
+        elif self._data is not None:
+            return self._data.shape
+        else:
+            return (0, 0)
+
+    @property    
+    def dtype(self) -> np.dtype:
+        if self._surface_handle is not None:
+            return np.uint8 if self.precision <= 8 else np.uint16
+        elif self._data is not None:
+            return self._data.dtype
+        else:
+            return np.uint8
 
     @property
     def crop(self) -> Optional[np.ndarray] :
@@ -91,7 +121,7 @@ class ViewerImage:
         return self._data
 
     @y.setter
-    def y(self, d : np.ndarray):
+    def y(self, d : Optional[np.ndarray]):
         self._data = d
 
     @property
@@ -99,7 +129,7 @@ class ViewerImage:
         return self._u
 
     @u.setter
-    def u(self, d : np.ndarray):
+    def u(self, d : Optional[np.ndarray]):
         self._u = d
 
     @property
@@ -107,7 +137,7 @@ class ViewerImage:
         return self._v
 
     @v.setter
-    def v(self, d : np.ndarray):
+    def v(self, d : Optional[np.ndarray]):
         self._v = d
 
     @property
@@ -115,7 +145,7 @@ class ViewerImage:
         return self._uv
 
     @uv.setter
-    def uv(self, d : np.ndarray):
+    def uv(self, d : Optional[np.ndarray]):
         self._uv = d
 
     @property
@@ -142,6 +172,8 @@ class ViewerImage:
 
     # Seems interesting to have this method, but it is not so obvious
     def get_data_for_ratio(self, ratio, display_timing=False):
+        if self._data is None:
+            return None
         prev_shape = self._data.shape
         image_height, image_width  = self._data.shape[:2]
         downscale_interpolation = cv2.INTER_AREA
@@ -161,6 +193,8 @@ class ViewerImage:
         self.filename = fn
 
     def __sizeof__(self):
+        if self._data is None:
+            return 0
         # approximative estimation
         size = self.data.nbytes
         for v in vars(self):

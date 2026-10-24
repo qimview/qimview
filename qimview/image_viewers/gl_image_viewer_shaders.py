@@ -14,7 +14,7 @@ from dataclasses import dataclass, fields
 
 from PySide6.QtOpenGL import QOpenGLBuffer
 
-from qimview.utils.qt_imports   import QtWidgets, QtGui
+from qimview.utils.qt_imports   import QtWidgets, QtGui, QtCore
 from qimview.utils.viewer_image import ImageFormat
 from .gl_image_viewer_base      import GLImageViewerBase
 from .gltexture                 import GLTexture
@@ -390,7 +390,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                 vec3 rgb1 = yuv2rgb(vec3(y,u,v));
                 vec3 rgb2 = yuv2rgb(vec3(y2,u2,v2));
                 vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
-             colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+                colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
             }} else {{
                 vec3 rgb = yuv2rgb(vec3(y2,u2,v2));
                 colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
@@ -485,6 +485,102 @@ class GLImageViewerShaders(GLImageViewerBase):
         }}
     """
 
+    # macOS-only: NV12 IOSurface zero-copy shader (GL_TEXTURE_RECTANGLE, pixel coords)
+    # Uses GL_ARB_texture_rectangle; only compiled on macOS
+    fragmentShader_NV12_iosurface = f"""
+        #version 120
+        #extension GL_ARB_texture_rectangle : enable
+
+        {IN} vec2 UV;
+        uniform sampler2DRect YTex;
+        uniform sampler2DRect CbCrTex;
+        uniform vec2 u_resolution;   // luma pixel dimensions (width, height)
+        uniform float texture_scale;
+        uniform int channels;
+        {fragmentShader_declare_filter_params}
+        {DECLARE_GLOBAL_COLOUR}
+
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
+          {DECLARE_LOCAL_COLOUR}
+          vec2 coord = UV * u_resolution;
+          float y = texture2DRect(YTex,   coord).r * texture_scale;
+          vec2  cbcr = texture2DRect(CbCrTex, coord * 0.5).rg * texture_scale;  // Cb=.r, Cr=.g
+          vec3 rgb = yuv2rgb(vec3(y, cbcr.r, cbcr.g));
+          colour = apply_filters(rgb, max_value, texture_scale, max_type,
+                                 black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+          {RETURN_COLOUR}
+        }}
+    """
+
+    fragmentShader_NV12_iosurface_twotex = f"""
+        #version 120
+        #extension GL_ARB_texture_rectangle : enable
+
+        {IN} vec2 UV;
+        uniform sampler2DRect YTex;
+        uniform sampler2DRect CbCrTex;
+        uniform sampler2DRect YTex2;
+        uniform sampler2DRect CbCrTex2;
+        uniform float difference_scaling;
+        uniform int   overlap_mode;
+        uniform float cursor_x;
+        uniform float cursor_y;
+        uniform vec2 u_resolution;   // luma pixel dimensions (width, height)
+        uniform vec2 u_resolution2;  // reference luma pixel dimensions (width, height)
+        uniform float texture_scale;
+        uniform int channels;
+        {fragmentShader_declare_filter_params}
+        {DECLARE_GLOBAL_COLOUR}
+
+        {fragmentShader_apply_filters}
+        {fragmentShader_yuv2rgb}
+
+        void main() {{
+          {DECLARE_LOCAL_COLOUR}
+          vec2 coord = UV * u_resolution;
+          float y = texture2DRect(YTex,   coord).r * texture_scale;
+          vec2  cbcr = texture2DRect(CbCrTex, coord * 0.5).rg * texture_scale;  // Cb=.r, Cr=.g
+          vec3 rgb = yuv2rgb(vec3(y, cbcr.r, cbcr.g));
+          colour = apply_filters(rgb, max_value, texture_scale, max_type,
+                                 black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+
+          
+          float overlap_pos = (overlap_mode==0)?UV.x:UV.y;
+          float overlap_ratio = (overlap_mode==0)?cursor_x:cursor_y;
+          vec2 coord2 = UV * u_resolution2;
+          if (difference_scaling>0) {{
+              float y2 = texture2DRect(YTex2,   coord2).r * texture_scale;
+              vec2 cbcr2 = texture2DRect(CbCrTex2, coord2 * 0.5).rg * texture_scale;
+              if (overlap_pos<=overlap_ratio) {{
+                  vec3 rgb1 = rgb;
+                  vec3 rgb2 = yuv2rgb(vec3(y2,cbcr2.r, cbcr2.g));
+                  vec3 rgb_diff = min(max((rgb2-rgb1)*difference_scaling+0.5,0),1);
+                  colour = apply_filters(rgb_diff,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+              }} else {{
+                  vec3 rgb = yuv2rgb(vec3(y2,cbcr2.r, cbcr2.g));
+                  colour = apply_filters(rgb,max_value, texture_scale, max_type, black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+              }}
+          }} else {{
+            // skip overlap_mode==3 for now, as it is not supported for NV12 IOSurface
+            if (overlap_pos<=overlap_ratio) {{
+                y = texture2DRect(YTex,   coord).r * texture_scale;
+                cbcr = texture2DRect(CbCrTex, coord * 0.5).rg * texture_scale;
+            }} else {{
+                y = texture2DRect(YTex2,   coord2).r * texture_scale;
+                cbcr = texture2DRect(CbCrTex2, coord2 * 0.5).rg * texture_scale;
+            }}
+            vec3 rgb = yuv2rgb(vec3(y, cbcr.r, cbcr.g));
+            colour = apply_filters(rgb, max_value, texture_scale, max_type,
+                                    black_level, g_r_coeff, g_b_coeff, white_level, gamma);
+          }}
+
+          {RETURN_COLOUR}
+        }}
+    """
+
     def __init__(self, parent=None):
         super().__init__(parent)
 
@@ -498,6 +594,8 @@ class GLImageViewerShaders(GLImageViewerBase):
         self.program_YUV420_interlaced                   = None
         self.program_YUV420_interlaced_twotex            = None
         self.program_RAW                                 = None
+        self.program_NV12_iosurface                      = None
+        self.program_NV12_iosurface_twotex               = None
         self.program                                     = None
         self._vertex_buffer       : QOpenGLBuffer | None = None
         self._vertex_buffer_param                        = None
@@ -591,6 +689,39 @@ class GLImageViewerShaders(GLImageViewerBase):
                 shaders.glDeleteShader(fs)
             except:
                 pass
+
+        if sys.platform == 'darwin' and self.program_NV12_iosurface is None:
+            vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+            fs = shaders.compileShader(self.fragmentShader_NV12_iosurface, gl.GL_FRAGMENT_SHADER)
+            try:
+                self.program_NV12_iosurface = shaders.compileProgram(vs, fs, validate=False)
+                self.print_log(f"\n***** self.program_NV12_iosurface = {self.program_NV12_iosurface} *****\n")
+            except Exception as e:
+                print(f'failed NV12 IOSurface shaders.compileProgram() {e}')
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
+
+        self.print_log("compile NV12 IOSurface twotex shaders")
+        if sys.platform == 'darwin' and self.program_NV12_iosurface_twotex is None:
+            try:
+                vs = shaders.compileShader(self.vertexShader, gl.GL_VERTEX_SHADER)
+                fs = shaders.compileShader(self.fragmentShader_NV12_iosurface_twotex, gl.GL_FRAGMENT_SHADER)
+            except Exception as e:
+                print(f'failed NV12 IOSurface twotex shaders.compileShader() {e}')
+            try:
+                self.program_NV12_iosurface_twotex = shaders.compileProgram(vs, fs, validate=False)
+                self.print_log(f"\n***** self.program_NV12_iosurface_twotex = {self.program_NV12_iosurface_twotex} *****\n")
+            except Exception as e:
+                print(f'failed NV12 IOSurface twotex shaders.compileProgram() {e}')
+            try:
+                shaders.glDeleteShader(vs)
+                shaders.glDeleteShader(fs)
+            except:
+                pass
+        self.print_log("set_shaders() done")
 
     def set_crop(self, crop):
         if not np.array_equal(crop,self._output_crop):
@@ -696,26 +827,40 @@ class GLImageViewerShaders(GLImageViewerBase):
             self.aUV                = shaders.glGetAttribLocation(self.program, "uV")
             self.uPMatrix           = shaders.glGetUniformLocation(self.program, 'pMatrix')
             self.uMVMatrix          = shaders.glGetUniformLocation(self.program, "mvMatrix")
-            if self._image and self._image.channels == ImageFormat.CH_YUV420:
+            if self._image:
                 self.uYTex = shaders.glGetUniformLocation(self.program, "YTex")
-                if twotex:
-                    self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
-                if self.texture.interlaced_uv:
-                    self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
-                    if twotex:
-                        self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
-                else:
-                    self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
-                    self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
-                    if twotex:
-                        self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
-                        self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
-                if twotex:
-                    self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
-                    self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
-                    self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
-                    self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
                 self.texture_scale_location = shaders.glGetUniformLocation(self.program, "texture_scale")
+                # self.uTexScale = shaders.glGetUniformLocation(self.program, "texture_scale")
+                if self._image.channels == ImageFormat.CH_YUV420:
+                    if twotex:
+                        self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
+                    if self.texture.interlaced_uv:
+                        self.uUVTex = shaders.glGetUniformLocation(self.program, "UVTex")
+                        if twotex:
+                            self.uUVTex2 = shaders.glGetUniformLocation(self.program, "UVTex2")
+                    else:
+                        self.uUTex = shaders.glGetUniformLocation(self.program, "UTex")
+                        self.uVTex = shaders.glGetUniformLocation(self.program, "VTex")
+                        if twotex:
+                            self.uUTex2 = shaders.glGetUniformLocation(self.program, "UTex2")
+                            self.uVTex2 = shaders.glGetUniformLocation(self.program, "VTex2")
+                    if twotex:
+                        self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
+                        self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
+                        self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
+                        self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
+                elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                    self.uCbCrTex = shaders.glGetUniformLocation(self.program, "CbCrTex")
+                    self.uResolution = shaders.glGetUniformLocation(self.program, "u_resolution")
+                    self.uChannels = shaders.glGetUniformLocation(self.program, "channels")
+                    if twotex:
+                        self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
+                        self.uCbCrTex2 = shaders.glGetUniformLocation(self.program, "CbCrTex2")
+                        self.uResolution2 = shaders.glGetUniformLocation(self.program, "u_resolution2")
+                        self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
+                        self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
+                        self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
+                        self.texture_cursor_y      = shaders.glGetUniformLocation(self.program, "cursor_y")
             else:
                 self.uBackgroundTexture = shaders.glGetUniformLocation(self.program, "backgroundTexture")
             self.channels_location    = shaders.glGetUniformLocation(self.program, "channels")
@@ -728,16 +873,17 @@ class GLImageViewerShaders(GLImageViewerBase):
             print("*** paintGL() widget not yet valid")
             self.create()
             return
-        if self._image is not None:
-            if self.texture is None or not self.isValid():
-                print("paintGL() not ready")
-                return
-        else:
-            print("Image is None")
+
+        if self._image is None:
+            print("paintGL() no image")
+            return
+
+        if not self._image.ioSurfaceMode() and self.texture is None or not self.isValid():
+            print("paintGL() not ready")
             return
 
         # Asserts that avoid syntax highlighting errors
-        assert self.texture is not None
+        assert self._image.ioSurfaceMode() or self.texture is not None
 
         self.opengl_error()
         if self._display_timing: self.start_timing()
@@ -747,8 +893,12 @@ class GLImageViewerShaders(GLImageViewerBase):
         _gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
-        twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and \
-            (self._show_overlap or self._show_image_differences) and self.texture_ref.textureY is not None
+        if self._image.ioSurfaceMode():
+            twotex = self.texture_ref is not None and \
+                (self._show_overlap or self._show_image_differences) and self.texture_ref.textureY is not None
+        else:
+            twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and \
+                (self._show_overlap or self._show_image_differences) and self.texture_ref.textureY is not None
 
         self._show_overlap_possible = twotex
         self._show_image_differences_possible = twotex
@@ -756,21 +906,34 @@ class GLImageViewerShaders(GLImageViewerBase):
         # Default shader program
         program = self.program_RGB
         if self._image:
-            if self._image.channels in ImageFormat.CH_RAWFORMATS():
-                self.program = self.program_RAW
-            elif self._image.channels == ImageFormat.CH_YUV420:
-                if self.texture.interlaced_uv:
-                    program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
-                else:
-                    program = self.program_YUV420_twotex if twotex else self.program_YUV420
+            if self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                program = self.program_NV12_iosurface_twotex if twotex else self.program_NV12_iosurface
+            else:
+                if self._image.channels in ImageFormat.CH_RAWFORMATS():
+                    self.program = self.program_RAW
+                elif self._image.channels == ImageFormat.CH_YUV420:
+                    if self.texture.interlaced_uv:
+                        program = self.program_YUV420_interlaced_twotex if twotex else self.program_YUV420_interlaced
+                    else:
+                        program = self.program_YUV420_twotex if twotex else self.program_YUV420
 
+        # For IOSurface (CH_VIDEOTOOLBOX), CGLTexImageIOSurface2D always normalizes to [0,1]
+        # regardless of bit depth, so apply_filters must treat max_value == max_type to
+        # avoid a spurious ×64 scale-up for 10-bit content.  For all other paths the
+        # precision-derived max_value is correct.
+        if self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+            _max_type  = np.iinfo(self._image.dtype).max
+            _max_value = _max_type  # pass-through: res/(max_value*1)*max_type == res
+        else:
+            _max_type  = np.iinfo(self._image.dtype).max
+            _max_value = (1 << self._image.precision) - 1
         self._shader_filter_params.params = ShaderFilterParams(
             white_level = self.filter_params.white_level.float,
             black_level = self.filter_params.black_level.float,
             g_r_coeff   = self.filter_params.g_r.float,
             g_b_coeff   = self.filter_params.g_b.float,
-            max_value   = (1 << self._image.precision)-1,
-            max_type    = np.iinfo(self._image.data.dtype).max,
+            max_value   = _max_value,
+            max_type    = _max_type,
             gamma       = self.filter_params.gamma.float)
 
         # Avoid calling each time glGet{Attrib,Uniform}Location()
@@ -783,35 +946,54 @@ class GLImageViewerShaders(GLImageViewerBase):
         # set uniforms
         gl.glUniformMatrix4fv(self.uPMatrix, 1, gl.GL_FALSE,  self.pMatrix)
         gl.glUniformMatrix4fv(self.uMVMatrix, 1, gl.GL_FALSE, self.mvMatrix)
-        if self._image and self._image.channels == ImageFormat.CH_YUV420:
+        if self._image:
             _gl.glUniform1i(self.uYTex, 0)
-            if twotex:
-                _gl.glUniform1i(self.uYTex2, 1)
-            if self.texture.interlaced_uv:
-                _gl.glUniform1i(self.uUVTex, 2)
-                if twotex:
-                    _gl.glUniform1i(self.uUVTex2, 3)
-            else:
-                _gl.glUniform1i(self.uUTex, 2)
-                _gl.glUniform1i(self.uVTex, 4)
-                if twotex:
-                    _gl.glUniform1i(self.uUTex2, 3)
-                    _gl.glUniform1i(self.uVTex2, 5)
-            match self._image.data.dtype:
+            match self._image.dtype:
                 case np.uint8:  texture_scale = 1
                 # Normalize image to full intensity range
                 case np.uint16: texture_scale = 1<<(16-self._image.precision)
                 case _: texture_scale = 1
-            # print(f"-- texture_scale = {texture_scale}")
-            if twotex:
-                _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
-                _gl.glUniform1i( self.texture_overlap_mode,  self._overlap_mode.value                                                      )
-                if self._show_overlap:
-                    _gl.glUniform1f( self.texture_cursor_x, self.cursor_imx_ratio )
-                    _gl.glUniform1f( self.texture_cursor_y, self.cursor_imy_ratio )
+            if self._image.channels == ImageFormat.CH_YUV420:
+                if twotex:
+                    _gl.glUniform1i(self.uYTex2, 1)
+                if self.texture.interlaced_uv:
+                    _gl.glUniform1i(self.uUVTex, 2)
+                    if twotex:
+                        _gl.glUniform1i(self.uUVTex2, 3)
                 else:
-                    _gl.glUniform1f( self.texture_cursor_x, 1 )
-                    _gl.glUniform1f( self.texture_cursor_y, 1 )
+                    _gl.glUniform1i(self.uUTex, 2)
+                    _gl.glUniform1i(self.uVTex, 4)
+                    if twotex:
+                        _gl.glUniform1i(self.uUTex2, 3)
+                        _gl.glUniform1i(self.uVTex2, 5)
+                # print(f"-- texture_scale = {texture_scale}")
+                if twotex:
+                    _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
+                    _gl.glUniform1i( self.texture_overlap_mode,  self._overlap_mode.value                                                      )
+                    if self._show_overlap:
+                        _gl.glUniform1f( self.texture_cursor_x, self.cursor_imx_ratio )
+                        _gl.glUniform1f( self.texture_cursor_y, self.cursor_imy_ratio )
+                    else:
+                        _gl.glUniform1f( self.texture_cursor_x, 1 )
+                        _gl.glUniform1f( self.texture_cursor_y, 1 )
+            elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                _gl.glUniform1i(self.uCbCrTex, 1)
+                _gl.glUniform2f(self.uResolution, float(self._image.shape[1]), float(self._image.shape[0]))
+                if twotex:
+                    _gl.glUniform2f(self.uResolution2, float(self._image_ref.shape[1]), float(self._image_ref.shape[0]))
+                    _gl.glUniform1i(self.uYTex2, 2)
+                    _gl.glUniform1i(self.uCbCrTex2, 3)
+                    _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
+                    _gl.glUniform1i( self.texture_overlap_mode,  self._overlap_mode.value                                                      )
+                    if self._show_overlap:
+                        _gl.glUniform1f( self.texture_cursor_x, self.cursor_imx_ratio )
+                        _gl.glUniform1f( self.texture_cursor_y, self.cursor_imy_ratio )
+                    else:
+                        _gl.glUniform1f( self.texture_cursor_x, 1 )
+                        _gl.glUniform1f( self.texture_cursor_y, 1 )
+                # CGLTexImageIOSurface2D normalizes to [0,1] for both 8-bit (÷255) and 10-bit P010
+                # (÷65535), so texture_scale=1 keeps y/cbcr in the correct range for yuv2rgb.
+                texture_scale = 1
             _gl.glUniform1f( self.texture_scale_location, texture_scale)
         else:
             _gl.glUniform1i(self.uBackgroundTexture, 0)
@@ -841,28 +1023,42 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
-        if self._image and self._image.channels == ImageFormat.CH_YUV420 and self.texture:
-            _gl.glActiveTexture(gl.GL_TEXTURE0)
-            _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureY)
-            if twotex:
+        _gl.glActiveTexture(gl.GL_TEXTURE0)
+        if self._image.channels in (ImageFormat.CH_YUV420, ImageFormat.CH_VIDEOTOOLBOX):
+            if self._image.channels == ImageFormat.CH_YUV420 and self.texture:
+                _gl.glActiveTexture(gl.GL_TEXTURE0)
+                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureY)
+                if twotex:
+                    _gl.glActiveTexture(gl.GL_TEXTURE1)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureY)
+                if self.texture.interlaced_uv:
+                    _gl.glActiveTexture(gl.GL_TEXTURE2)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureUV)
+                    if twotex:
+                        _gl.glActiveTexture(gl.GL_TEXTURE3)
+                        _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureUV)
+                else:
+                    _gl.glActiveTexture(gl.GL_TEXTURE2)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
+                    _gl.glActiveTexture(gl.GL_TEXTURE4)
+                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureV)
+                    if twotex:
+                        _gl.glActiveTexture(gl.GL_TEXTURE3)
+                        _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureU)
+                        _gl.glActiveTexture(gl.GL_TEXTURE5)
+                        _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
+            elif self._image.channels == ImageFormat.CH_VIDEOTOOLBOX:
+                _gl.glActiveTexture(gl.GL_TEXTURE0)
+                _gl.glBindTexture(gl.GL_TEXTURE_RECTANGLE, self.texture.textureY)
                 _gl.glActiveTexture(gl.GL_TEXTURE1)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureY)
-            if self.texture.interlaced_uv:
-                _gl.glActiveTexture(gl.GL_TEXTURE2)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureUV)
+                _gl.glBindTexture(gl.GL_TEXTURE_RECTANGLE, self.texture.textureCbCr)
+                _gl.glEnable(gl.GL_TEXTURE_RECTANGLE)
                 if twotex:
+                    _gl.glActiveTexture(gl.GL_TEXTURE2)
+                    _gl.glBindTexture(gl.GL_TEXTURE_RECTANGLE, self.texture_ref.textureY)
                     _gl.glActiveTexture(gl.GL_TEXTURE3)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureUV)
-            else:
-                _gl.glActiveTexture(gl.GL_TEXTURE2)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureU)
-                _gl.glActiveTexture(gl.GL_TEXTURE4)
-                _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureV)
-                if twotex:
-                    _gl.glActiveTexture(gl.GL_TEXTURE3)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureU)
-                    _gl.glActiveTexture(gl.GL_TEXTURE5)
-                    _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture_ref.textureV)
+                    _gl.glBindTexture(gl.GL_TEXTURE_RECTANGLE, self.texture_ref.textureCbCr)
+                    _gl.glEnable(gl.GL_TEXTURE_RECTANGLE)
         else:
             if self.texture:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
@@ -905,6 +1101,15 @@ if __name__ == '__main__':
             self.setCentralWidget(self.widget)
 
     # create the Qt App and window
+    if sys.platform == 'darwin':
+        QtCore.QCoreApplication.setAttribute(QtCore.Qt.ApplicationAttribute.AA_UseDesktopOpenGL)
+        fmt = QtGui.QSurfaceFormat()
+        fmt.setRenderableType(QtGui.QSurfaceFormat.RenderableType.OpenGL)
+        fmt.setVersion(2, 1)
+        fmt.setProfile(QtGui.QSurfaceFormat.OpenGLContextProfile.CompatibilityProfile)
+        fmt.setSwapBehavior(QtGui.QSurfaceFormat.SwapBehavior.DoubleBuffer)
+        QtGui.QSurfaceFormat.setDefaultFormat(fmt)
+
     app = QtWidgets.QApplication(sys.argv)
     window = TestWindow()
     window.load()

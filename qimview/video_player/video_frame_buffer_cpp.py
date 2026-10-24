@@ -1,6 +1,7 @@
 from qimview.video_player.video_player_config import VideoConfig
 
 import os
+import sys
 from qimview.video_player.video_frame_buffer_base import VideoFrameBufferBase
 
 ffmpeg_path = os.path.join(os.environ.get('FFMPEG_ROOT', ''),'bin')
@@ -9,6 +10,16 @@ if os.name == 'nt' and os.path.isdir(ffmpeg_path):
 
 import decode_video_py as decode_lib
 
+import configparser,os
+config = configparser.ConfigParser()
+res = config.read([os.path.expanduser('~/.qimview.cfg')])
+if config.has_option('VIDEOPLAYER', 'hw_zero_copy'):
+    # On macOS, keep VideoToolbox frames on the GPU (convert=False) so that
+    # display_frame_YUV420() can bind them as IOSurface textures without a CPU copy.
+    _HW_ZERO_COPY = config.getboolean('VIDEOPLAYER', 'hw_zero_copy') and sys.platform == 'darwin'
+else:
+    _HW_ZERO_COPY = False
+print(f"VideoFrameBufferCpp: hw_zero_copy={_HW_ZERO_COPY}")
 
 class VideoFrameBufferCpp(VideoFrameBufferBase):
     """ This class uses a thread to store several successive videos frame in a queue
@@ -19,7 +30,10 @@ class VideoFrameBufferCpp(VideoFrameBufferBase):
         self._decoder : decode_lib.VideoDecoder = decoder
 
     def decodeNextFrame(self):
-        res = self._decoder.nextFrame(convert=True)
+        # On macOS: avoid GPU→CPU transfer so IOSurface interop can be used.
+        # On other platforms (or when not using hw decode): convert to CPU memory.
+        convert = not _HW_ZERO_COPY
+        res = self._decoder.nextFrame(convert=convert)
         if res !=0: return None
         f = self._decoder.getFrame()
         return f

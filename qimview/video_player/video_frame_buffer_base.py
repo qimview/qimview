@@ -64,6 +64,12 @@ class VideoFrameBufferBase(Protocol):
                     self.add_saved_frame(self._queue.get())
             self._queue = queue.Queue(maxsize=self._maxsize)
 
+    def clear_frames(self):
+        self.pause_frames()
+        self._queue = queue.Queue(maxsize=self._maxsize)
+        self._saved_frames.clear()
+        self._end_of_video = False
+
     @abstractmethod
     def decodeNextFrame(self) -> FRAMETYPE | None:
         return None

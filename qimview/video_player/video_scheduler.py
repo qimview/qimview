@@ -135,6 +135,24 @@ class VideoScheduler:
 
             # print(f" done {time.perf_counter():0.4f}")
 
+    def _seek_players(self, times: List[float]):
+        buffers = []
+        for p in self._players:
+            provider = p.frame_provider
+            buffer = provider.frame_buffer if provider is not None else None
+            buffers.append((buffer, provider.playing if buffer is not None else False))
+        for buffer, _ in buffers:
+            if buffer is not None:
+                buffer.clear_frames()
+        try:
+            for p, time_pos in zip(self._players, times):
+                if p.frame_provider is not None:
+                    p.frame_provider.set_time(time_pos)
+        finally:
+            for buffer, was_running in buffers:
+                if buffer is not None and was_running:
+                    buffer.start_thread()
+
     def _display_next_frame(self) -> bool:
         """
             Get and display next frame of each video player 
@@ -149,6 +167,18 @@ class VideoScheduler:
                 else:
                     ok = False
             if ok:
+                p0 : 'VideoPlayerAV' = self._players[0]
+                if self._loop and p0.loop_end_time >0 and p0.frame_provider.get_time() > p0.loop_end_time:
+                    print(f"Looping video {p0._name} at time {p0.frame_provider.get_time():0.3f} sec")
+                    min_start_time = 0
+                    for ts in self._timeshifts:
+                        if ts<0:
+                            min_start_time = min(min_start_time, -ts)
+                    self._seek_players([
+                        max(min_start_time, p0.loop_start_time) + self._timeshifts[idx]
+                        for idx in range(len(self._players))
+                    ])
+
                 # display player 0 at the end to allow multiple frames on the same display
                 # synchronize the use of PBO throught the parameter is running, for initial and compared videos
                 for n in range(1,len(self._players)):
@@ -161,9 +191,10 @@ class VideoScheduler:
             for ts in self._timeshifts:
                 min_start_time = min(min_start_time, -ts)
             if self._loop:
-                for idx, p in enumerate(self._players):
-                    if p.frame_provider is not None:
-                        p.frame_provider.set_time(max(min_start_time,p.loop_start_time)+self._timeshifts[idx])
+                self._seek_players([
+                    max(min_start_time, p.loop_start_time) + self._timeshifts[idx]
+                    for idx, p in enumerate(self._players)
+                ])
             else:
                 self.pause()
             return False
@@ -183,9 +214,7 @@ class VideoScheduler:
         except EndOfVideo:
             print("_skip_next_frame() End of video")
             if self._loop:
-                for p in self._players:
-                    if p.frame_provider is not None:
-                        p.frame_provider.set_time(p.loop_start_time)
+                self._seek_players([p.loop_start_time for p in self._players])
             else:
                 self.pause()
             return False
