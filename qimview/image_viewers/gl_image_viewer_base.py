@@ -203,6 +203,8 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             print("self._image is None")
             return False
         
+        if self.image_rotation != 0:
+            use_crop = False
         if self._image.ioSurfaceMode():
             use_crop = False
             use_PBO = False
