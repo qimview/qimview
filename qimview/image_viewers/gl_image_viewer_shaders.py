@@ -529,6 +529,7 @@ class GLImageViewerShaders(GLImageViewerBase):
         uniform float cursor_x;
         uniform float cursor_y;
         uniform vec2 u_resolution;   // luma pixel dimensions (width, height)
+        uniform vec2 u_resolution2;  // reference luma pixel dimensions (width, height)
         uniform float texture_scale;
         uniform int channels;
         {fragmentShader_declare_filter_params}
@@ -549,9 +550,10 @@ class GLImageViewerShaders(GLImageViewerBase):
           
           float overlap_pos = (overlap_mode==0)?UV.x:UV.y;
           float overlap_ratio = (overlap_mode==0)?cursor_x:cursor_y;
+          vec2 coord2 = UV * u_resolution2;
           if (difference_scaling>0) {{
-              float y2 = texture2DRect(YTex2,   coord).r * texture_scale;
-              vec2 cbcr2 = texture2DRect(CbCrTex2, coord * 0.5).rg * texture_scale;
+              float y2 = texture2DRect(YTex2,   coord2).r * texture_scale;
+              vec2 cbcr2 = texture2DRect(CbCrTex2, coord2 * 0.5).rg * texture_scale;
               if (overlap_pos<=overlap_ratio) {{
                   vec3 rgb1 = rgb;
                   vec3 rgb2 = yuv2rgb(vec3(y2,cbcr2.r, cbcr2.g));
@@ -567,8 +569,8 @@ class GLImageViewerShaders(GLImageViewerBase):
                 y = texture2DRect(YTex,   coord).r * texture_scale;
                 cbcr = texture2DRect(CbCrTex, coord * 0.5).rg * texture_scale;
             }} else {{
-                y = texture2DRect(YTex2,   coord).r * texture_scale;
-                cbcr = texture2DRect(CbCrTex2, coord * 0.5).rg * texture_scale;
+                y = texture2DRect(YTex2,   coord2).r * texture_scale;
+                cbcr = texture2DRect(CbCrTex2, coord2 * 0.5).rg * texture_scale;
             }}
             vec3 rgb = yuv2rgb(vec3(y, cbcr.r, cbcr.g));
             colour = apply_filters(rgb, max_value, texture_scale, max_type,
@@ -854,6 +856,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                     if twotex:
                         self.uYTex2 = shaders.glGetUniformLocation(self.program, "YTex2")
                         self.uCbCrTex2 = shaders.glGetUniformLocation(self.program, "CbCrTex2")
+                        self.uResolution2 = shaders.glGetUniformLocation(self.program, "u_resolution2")
                         self.difference_scaling    = shaders.glGetUniformLocation(self.program, "difference_scaling")
                         self.texture_overlap_mode  = shaders.glGetUniformLocation(self.program, "overlap_mode")
                         self.texture_cursor_x      = shaders.glGetUniformLocation(self.program, "cursor_x")
@@ -977,6 +980,7 @@ class GLImageViewerShaders(GLImageViewerBase):
                 _gl.glUniform1i(self.uCbCrTex, 1)
                 _gl.glUniform2f(self.uResolution, float(self._image.shape[1]), float(self._image.shape[0]))
                 if twotex:
+                    _gl.glUniform2f(self.uResolution2, float(self._image_ref.shape[1]), float(self._image_ref.shape[0]))
                     _gl.glUniform1i(self.uYTex2, 2)
                     _gl.glUniform1i(self.uCbCrTex2, 3)
                     _gl.glUniform1f( self.difference_scaling,    self.filter_params.imdiff_factor.float if self._show_image_differences else -1)
