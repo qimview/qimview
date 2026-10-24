@@ -348,7 +348,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
         length = 20 # /self.current_scale
         width = 4
         _gl.glLineWidth(width)
-        gl.glColor3f(0.0, 1.0, 1.0)
+        gl.glColor4f(0.0, 1.0, 1.0, 1.0)
         gl.glBegin(gl.GL_LINES)
         gl.glVertex3f(glpos_from_im_x-length, glpos_from_im_y, -0.001)
         gl.glVertex3f(glpos_from_im_x+length, glpos_from_im_y, -0.001)
@@ -375,7 +375,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             case OverlapMode.Horizontal:
                 width = 2
                 _gl.glLineWidth(width)
-                _gl.glColor3f(0.0, 1.0, 1.0)
+                _gl.glColor4f(0.0, 1.0, 1.0, 1.0)
                 _gl.glBegin(gl.GL_LINES)
                 _gl.glVertex3f(glpos_from_im_x, y0, -0.001)
                 _gl.glVertex3f(glpos_from_im_x, y1, -0.001)
@@ -383,7 +383,7 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
             case OverlapMode.Vertical:
                 width = 2
                 _gl.glLineWidth(width)
-                _gl.glColor3f(0.0, 1.0, 1.0)
+                _gl.glColor4f(0.0, 1.0, 1.0, 1.0)
                 _gl.glBegin(gl.GL_LINES)
                 _gl.glVertex3f(x0, glpos_from_im_y, -0.001)
                 _gl.glVertex3f(x1, glpos_from_im_y, -0.001)
@@ -396,14 +396,14 @@ class GLImageViewerBase(ImageViewer, QOpenGLWidget, ):
                 dx = w*(1.01)
                 dy = 0.0
                 _gl.glLineWidth(1)
-                _gl.glColor3f(1.0, 1.0, 0.0)
+                _gl.glColor4f(1.0, 1.0, 0.0, 1.0)
                 _gl.glBegin(gl.GL_LINES)
                 _gl.glVertex3f(px,py, -0.001)
                 _gl.glVertex3f(px+dx, py+dy, -0.001)
                 _gl.glEnd()
                 width = 2
                 _gl.glLineWidth(width)
-                _gl.glColor3f(0.0, 1.0, 1.0)
+                _gl.glColor4f(0.0, 1.0, 1.0, 1.0)
                 _gl.glBegin(gl.GL_LINE_LOOP)
                 _gl.glVertex3f(px+dx,   py+dy,   -0.001)
                 _gl.glVertex3f(px+dx+w, py+dy,   -0.001)
