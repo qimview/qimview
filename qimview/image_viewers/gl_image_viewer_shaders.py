@@ -1023,7 +1023,8 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         # bind background texture
         # gl.glActiveTexture(gl.GL_TEXTURE0)
-        if self._image:
+        _gl.glActiveTexture(gl.GL_TEXTURE0)
+        if self._image.channels in (ImageFormat.CH_YUV420, ImageFormat.CH_VIDEOTOOLBOX):
             if self._image.channels == ImageFormat.CH_YUV420 and self.texture:
                 _gl.glActiveTexture(gl.GL_TEXTURE0)
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureY)
