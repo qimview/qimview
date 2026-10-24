@@ -100,7 +100,7 @@ class VideoFrame:
         self._yuv_array : np.ndarray = np.empty((1), dtype=np.uint8)
 
 
-    def VideoToolBoxIs10bit(self) -> bool:
+    def videotoolbox_is_10bit(self) -> bool:
         import struct
 
         def _fourcc(s: str) -> int:
@@ -148,7 +148,7 @@ class VideoFrame:
                 dtype, prec, hasUV = np.uint8, 8, True
             case decode_lib.AVPixelFormat.AV_PIX_FMT_VIDEOTOOLBOX:
                 dtype, prec, hasUV = np.uint8, 8, True
-                if self.VideoToolBoxIs10bit():
+                if self.videotoolbox_is_10bit():
                     dtype, prec = np.uint16, 10
             case _:
                 assert False, f"frame format {fmt} not available"
