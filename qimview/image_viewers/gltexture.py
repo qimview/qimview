@@ -446,7 +446,7 @@ class GLTexture:
             case ImageFormat.CH_YUV420:
                 gl_type = self._gl_types[image.data.dtype.name]
                 # TODO: check if this condition is sufficient
-            LUM = gl.GL_RED # GL_LUMINANCE is invalid with R8/R16 on NVIDIA
+                LUM = gl.GL_RED # GL_LUMINANCE is invalid with R8/R16 on NVIDIA
                 match image.data.dtype:
                     case np.uint8:  format = gl.GL_R8
                     # TODO: check if SHORT or UNSIGNED_SHORT
