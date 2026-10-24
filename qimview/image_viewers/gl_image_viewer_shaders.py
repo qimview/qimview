@@ -26,9 +26,9 @@ OUT = 'varying'       if GLSL_VERSION=='120' else 'out'
 IN  = 'varying'       if GLSL_VERSION=='120' else 'in'
 VERT_IN = 'attribute' if GLSL_VERSION=='120' else 'in' # Quick fix for 1.2
 
-DECLARE_GLOBAL_COLOUR = ''                                 if GLSL_VERSION=='120' else 'out vec3 colour;'
-DECLARE_LOCAL_COLOUR  = 'vec3 colour;'                     if GLSL_VERSION=='120' else ''
-RETURN_COLOUR         = 'gl_FragColor=vec4(colour.xyz,1);' if GLSL_VERSION=='120' else ''
+DECLARE_GLOBAL_COLOUR = ''                                 if GLSL_VERSION=='120' else 'out vec4 frag_colour;'
+DECLARE_LOCAL_COLOUR  = 'vec3 colour;'
+RETURN_COLOUR         = 'gl_FragColor=vec4(colour.xyz,1);' if GLSL_VERSION=='120' else 'frag_colour=vec4(colour.xyz,1);'
 TEXTURE               = 'texture2D'                        if GLSL_VERSION=='120' else 'texture'
 
 if GLSL_VERSION=='120':
@@ -744,6 +744,7 @@ class GLImageViewerShaders(GLImageViewerBase):
 
         _gl = QtGui.QOpenGLContext.currentContext().functions()
         # _gl = gl
+        _gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         _gl.glClear(gl.GL_COLOR_BUFFER_BIT)
 
         twotex = self.texture_ref is not None and (self.texture.interlaced_uv==self.texture_ref.interlaced_uv) and \
@@ -865,7 +866,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         else:
             if self.texture:
                 _gl.glBindTexture(gl.GL_TEXTURE_2D, self.texture.textureRGB)
-        _gl.glEnable(gl.GL_TEXTURE_2D)
 
         # draw
         _gl.glDrawArrays(gl.GL_TRIANGLES, 0, 6)
@@ -873,7 +873,6 @@ class GLImageViewerShaders(GLImageViewerBase):
         # disable attribute arrays
         _gl.glDisableVertexAttribArray(self.aVert)
         _gl.glDisableVertexAttribArray(self.aUV)
-        _gl.glDisable(gl.GL_TEXTURE_2D)
 
         shaders.glUseProgram(0)
 

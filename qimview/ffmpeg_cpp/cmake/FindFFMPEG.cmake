@@ -44,6 +44,7 @@ function (_ffmpeg_find component headername)
       /opt/csw/include # Blastwave
       /opt/include
       /usr/freeware/include
+      /usr/include/x86_64-linux-gnu # Ubuntu
     PATH_SUFFIXES
       ffmpeg
     DOC "FFMPEG's ${component} include directory")
@@ -71,6 +72,7 @@ function (_ffmpeg_find component headername)
       /opt/csw/lib
       /opt/lib
       /usr/freeware/lib64
+      /usr/lib/x86_64-linux-gnu # Ubuntu
       "${FFMPEG_ROOT}/bin"
     DOC "FFMPEG's ${component} library")
   mark_as_advanced("FFMPEG_${component}_LIBRARY")

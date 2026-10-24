@@ -47,6 +47,7 @@ class GLImageViewer(GLImageViewerBase):
         if self.texture is None:
             print("GLImageViewer paintGL texture not set")
             return
+        gl.glClearColor(0.0, 0.0, 0.0, 1.0)
         gl.glClear(gl.GL_COLOR_BUFFER_BIT)
         gl.glTexEnvi(gl.GL_TEXTURE_ENV, gl.GL_TEXTURE_ENV_MODE, gl.GL_DECAL)
         # TODO: fix textureID will only work for RGB textures, not YUV

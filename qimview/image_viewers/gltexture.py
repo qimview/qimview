@@ -196,9 +196,9 @@ class GLTexture:
         # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_TEXTURE_MIN_FILTER, gl.GL_NEAREST_MIPMAP_NEAREST)
         # self._gl.glGenerateMipmap(gl.GL_TEXTURE_2D)
 
-        # Antialiasing?
-        self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP,
-                                 gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
+        # # Antialiasing?
+        # self._gl.glTexParameteri(gl.GL_TEXTURE_2D, gl.GL_GENERATE_MIPMAP,
+        #                          gl.GL_TRUE if VideoConfig.mipmap_max_level>0 else gl.GL_FALSE)
     
     def bind(self, texture):
         self._gl.glBindTexture(gl.GL_TEXTURE_2D, texture)
@@ -409,7 +409,7 @@ class GLTexture:
         gl_type = self._gl_types[image.data.dtype.name]
         if image.channels == ImageFormat.CH_YUV420:
             # TODO: check if this condition is sufficient
-            LUM = gl.GL_LUMINANCE
+            LUM = gl.GL_RED # GL_LUMINANCE is invalid with R8/R16 on NVIDIA
             match image.data.dtype:
                 case np.uint8:  format = gl.GL_R8
                 # TODO: check if SHORT or UNSIGNED_SHORT

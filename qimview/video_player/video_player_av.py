@@ -497,6 +497,9 @@ def main():
     # format.setSwapInterval(0)
     QtGui.QSurfaceFormat.setDefaultFormat(format)
 
+    # The Qt gtk3 platform theme aborts on recent GNOME where the xsettings
+    # schema no longer has the 'antialiasing' key; avoid it unless user chose one.
+    os.environ.setdefault('QT_QPA_PLATFORMTHEME', 'generic')
     app = QtWidgets.QApplication()
     app.setApplicationDisplayName(f'ffmpeg on imview: {args.input_video}')
 
