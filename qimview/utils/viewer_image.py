@@ -65,7 +65,7 @@ class ViewerImage:
         """
         # Input array is an already formed ndarray instance
         # We first cast to be our class type
-        self._data = input_array
+        self._data : Optional[np.ndarray] = input_array
         # add the new attribute to the created instance
         self.precision : int           = precision
         self.downscale : int           = downscale
@@ -121,7 +121,7 @@ class ViewerImage:
         return self._data
 
     @y.setter
-    def y(self, d : np.ndarray):
+    def y(self, d : Optional[np.ndarray]):
         self._data = d
 
     @property
@@ -129,7 +129,7 @@ class ViewerImage:
         return self._u
 
     @u.setter
-    def u(self, d : np.ndarray):
+    def u(self, d : Optional[np.ndarray]):
         self._u = d
 
     @property
@@ -137,7 +137,7 @@ class ViewerImage:
         return self._v
 
     @v.setter
-    def v(self, d : np.ndarray):
+    def v(self, d : Optional[np.ndarray]):
         self._v = d
 
     @property
@@ -145,7 +145,7 @@ class ViewerImage:
         return self._uv
 
     @uv.setter
-    def uv(self, d : np.ndarray):
+    def uv(self, d : Optional[np.ndarray]):
         self._uv = d
 
     @property
@@ -172,6 +172,8 @@ class ViewerImage:
 
     # Seems interesting to have this method, but it is not so obvious
     def get_data_for_ratio(self, ratio, display_timing=False):
+        if self._data is None:
+            return None
         prev_shape = self._data.shape
         image_height, image_width  = self._data.shape[:2]
         downscale_interpolation = cv2.INTER_AREA
@@ -191,6 +193,8 @@ class ViewerImage:
         self.filename = fn
 
     def __sizeof__(self):
+        if self._data is None:
+            return 0
         # approximative estimation
         size = self.data.nbytes
         for v in vars(self):
